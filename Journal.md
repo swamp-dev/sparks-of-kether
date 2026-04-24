@@ -349,3 +349,79 @@ line as the design/reference docs.
 
 **Commit(s):** `2c3499e`
 
+---
+
+## 2026-04-24T17:20:35-04:00 — #8: Vitest + RTL + Playwright skeleton (initial push)
+
+**Pushed:**
+- Added dev deps: `vitest@4`, `@vitejs/plugin-react`, `jsdom`,
+  `@testing-library/react`, `@testing-library/jest-dom`,
+  `@testing-library/user-event`, `@playwright/test`.
+- `vitest.config.ts` — jsdom env, globals, `test/setup.ts` setupFile,
+  excludes `e2e/`, path alias `@` → repo root (matches tsconfig),
+  coverage reporter config.
+- `test/setup.ts` — imports `@testing-library/jest-dom/vitest` and
+  registers `afterEach(cleanup)` so RTL renders don't bleed.
+- `playwright.config.ts` — testDir `e2e/`, chromium project, webServer
+  **conditional** on `PLAYWRIGHT_BROWSERS_INSTALLED`; keeps `pnpm e2e`
+  cheap in CI / local gate when browsers aren't installed.
+- `lib/__tests__/sanity.test.ts` — 2 vitest smoke tests.
+- `components/__tests__/home.test.tsx` — 2 RTL smoke tests rendering
+  `app/page.tsx` and asserting on title + coming-soon.
+- `e2e/home.spec.ts` — 1 Playwright stub (skips unless
+  `PLAYWRIGHT_BROWSERS_INSTALLED` is set).
+- `package.json` — replaced echo-placeholder `test` with `vitest run`;
+  added `test:watch`, `test:coverage`, `e2e`.
+- `.gitignore` — added Playwright/vitest artifacts
+  (playwright-report/, test-results/, blob-report/, playwright/.cache/).
+
+**Why:** Ticket #8. Unblocks TDD for every ticket from #10 onward —
+engine logic, reducers, and UI all rely on this stack.
+
+**Notes:**
+- Hit a TS error in `playwright.config.ts` from
+  `exactOptionalPropertyTypes: true` rejecting `workers: undefined`.
+  Fixed with a conditional spread `...(CI ? { workers: 1 } : {})`.
+- First `pnpm e2e` attempt timed out because webServer tried to start
+  `pnpm dev` on port 3000 which was held by a zombie. Better fix than
+  chasing the port: made `webServer` itself conditional on
+  `PLAYWRIGHT_BROWSERS_INSTALLED`. No browsers = no web server = no
+  startup cost = clean skip.
+- Full gate green: typecheck ✓, lint ✓, test ✓ (4/4), e2e ✓ (1
+  skipped), build ✓.
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `c7f2d1a`
+
+---
+
+## 2026-04-24T17:25:22-04:00 — #8: testing review fixes (second push)
+
+**Pushed:** code-reviewer findings addressed:
+- **Significant (blocker):** removed `**/*.spec.ts` from vitest
+  `exclude`. That glob would have silently swallowed any future
+  `engine/__tests__/*.spec.ts` unit test. `**/e2e/**` alone is
+  sufficient to keep Playwright files out. Added an explicit
+  comment warning the next contributor not to re-add it.
+- **Significant (CI-adjacent):** added a loud `console.warn` in
+  `playwright.config.ts` that fires whenever `CI` is set but
+  `PLAYWRIGHT_BROWSERS_INSTALLED` isn't. Prevents green-wash when
+  ticket #9's workflow wires up `pnpm e2e` without the env flag.
+  Verified: `CI=1 pnpm e2e` now prints the warning loudly before
+  skipping.
+- **Minor:** removed `globals: true` from vitest config. The test
+  files already import `describe/it/expect` explicitly, so the flag
+  bought nothing and muddied the contract. Added a comment explaining
+  the decision.
+
+**Why:** Review pass; bring testing skeleton onto the quality line
+before #9's CI starts depending on it.
+
+**Notes:**
+- All gates re-ran clean: typecheck ✓, lint ✓, test ✓ (4/4), e2e ✓
+  (1 skipped), CI-mode e2e ✓ (warning printed, 1 skipped, exit 0).
+- RTL/jest-dom wiring confirmed good by reviewer; sample tests
+  exercise the full setup chain.
+
+**Commit(s):** `19cf339`
+
