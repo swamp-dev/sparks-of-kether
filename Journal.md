@@ -491,3 +491,101 @@ durability.
 
 **Commit(s):** `346079e`
 
+---
+
+## 2026-04-24T17:57:18-04:00 — #10: typed data from reference/*.md (initial push)
+
+**Pushed:** first real Phase 1 ticket — converted the symbolic tables
+in `reference/*.md` into typed, immutable TypeScript modules.
+
+- `data/types.ts` — discriminated `Attribution` union (element/planet/sign);
+  keyed types for `SefirahKey`, `StatKey`, `LetterKey`, `LetterClass`,
+  `Pillar`, `SoulAspectKey`; `readonly` everywhere; record interfaces for
+  `Sefirah`, `HebrewLetter`, `Arcanum`, `Path`, `SoulAspect`.
+- `data/sefirot.ts` — 10 records, Kether through Malkuth, colors matching
+  Tailwind tokens, DCs from `design/mechanics.md`, Shell keywords from
+  `reference/correspondences.md`. `challengeDC` is `null` only for Kether
+  (collective Final Threshold) and Malkuth (starting waypoint).
+- `data/letters.ts` — 22 records, aleph → tav, gematric values, Sepher
+  Yetzirah class, attribution, path number.
+- `data/arcana.ts` — 22 records, 0–21, keywords + attribution matching
+  the letter.
+- `data/paths.ts` — 22 records, 11–32, `pillarsCrossed` tuple, `from`/`to`
+  in traditional top-down order but treated as bidirectional by the engine.
+- `data/soul-aspects.ts` — 6 playable classes (the personality Sefirot);
+  title, flavor, ability + weakness per `design/mechanics.md`.
+- `data/index.ts` — re-exports + throwing lookup helpers (`sefirahByKey`,
+  `arcanumByNumber`, `pathByArcanum`, etc.). Throws on miss because
+  symbolic content is fixed at build time; a miss is a programming error,
+  not a runtime-data issue.
+
+**Why:** Ticket #10. Every engine/UI ticket from here on consumes typed
+records; no one should re-parse markdown at runtime.
+
+**Notes:**
+- **TDD-first:** wrote `data/__tests__/data.test.ts` with 27
+  structural-invariant tests *before* the data files (10-count,
+  number ranges, class partition 3/7/12, gematria allow-list,
+  lookup round-trips, arcanum↔path↔letter cross-consistency, Soul
+  Aspect alignment with its Sefirah's stat). Then built the data
+  until every test went green. 31/31 passing (plus 4 pre-existing
+  scaffold tests).
+- First-run typecheck failed with a `baseUrl deprecated` error —
+  turned out the worktree had no `node_modules` yet; `pnpm install
+  --frozen-lockfile` fixed it. The deprecation warning itself is a
+  future-TS concern (7.0), but the `bundler` module resolution
+  accepts it for now.
+- Build remains clean (5 static routes).
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `c5acbf8`
+
+---
+
+## 2026-04-24T18:04:07-04:00 — #10: review fixes (second push)
+
+**Pushed:** code-reviewer findings addressed. No critical issues; two
+significant, plus test-invariant additions + doc comments:
+
+- **Significant:** `challengeDC: number | null` was hiding two
+  semantically distinct states (Malkuth "no-check" vs Kether
+  "collective Final Threshold"). Refactored `Sefirah.challenge` to a
+  discriminated union `{ kind: 'check'; dc } | { kind: 'no-check' } |
+  { kind: 'collective' }` in `types.ts`; updated every record in
+  `sefirot.ts`. The engine now branches exhaustively in a switch
+  instead of guessing from a null sentinel.
+- **Significant:** lookup helpers in `index.ts` were O(n) linear
+  scans. Rewrote all six (`sefirahByKey`, `sefirahByNumber`,
+  `letterByKey`, `arcanumByNumber`, `pathByNumber`, `soulAspectByKey`)
+  as Map-backed, built once at module load. O(1) access, no public
+  API change.
+- **Minor (tests):** added two new invariants that the reviewer
+  flagged as absent: pillar partition is exactly 3 mercy / 3
+  severity / 4 balance, and no path connects a Sefirah to itself.
+  Also updated the old `challengeDC is null` test to exercise the
+  new discriminated shape.
+- **Minor (docs):** added a comment on `Element` explaining Earth is
+  deliberately absent (Sepher Yetzirah Mother letters only cover 3
+  elements; Earth arrives with Minor Arcana/Four Worlds later).
+  Added a Golden-Dawn-vs-Thoth attribution note to `letters.ts` so a
+  future agent who swaps to Thoth knows to update both letters and
+  arcana together.
+- **Minor (flag):** added a `TODO(engine)` on Yesod's weakness
+  description pointing to the setup ticket (#29) where the
+  sub-Malkuth starting state will need a real mechanical hook.
+
+**Why:** Reviewer said: fix before engine tickets consume this —
+the null sentinel bug would ship silently, and the O(n) pattern
+would get copied. Better to fix while the surface is just `data/`.
+
+**Notes:**
+- Gates all re-ran clean: typecheck ✓, lint ✓, test ✓ (33/33 — was
+  31, added the two new invariants), build ✓.
+- Didn't touch the Attribution type-guard suggestion or the color
+  precision nit — both can wait for the first UI component that
+  actually needs them.
+- Factual data accuracy was reviewer-verified against Golden Dawn /
+  Sepher Yetzirah; no corrections needed.
+
+**Commit(s):** `662b467`
+
