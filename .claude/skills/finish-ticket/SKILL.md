@@ -1,26 +1,37 @@
 ---
 name: finish-ticket
-description: Close out a Sparks of Kether ticket end-to-end. Runs the local quality gate, prompts for a Journal.md entry, appends it, commits, pushes, invokes code-reviewer, opens a PR with Closes #NN, and prints the URL. Use at the end of every ticket implementation once the functional work is done. Stops short of merging — the user merges.
+description: Close out a Sparks of Kether ticket end-to-end — run the local gate, invoke code-reviewer, append the final push's Journal entry, commit, push, and open a PR with Closes #NN. Use after the functional work on a ticket is done. Journal entries for intermediate pushes are handled as they happen (per CLAUDE.md step 7); this skill is for the final push + PR-open step only. Stops short of merging — the user merges.
 ---
 
 # /finish-ticket
 
-Ticket closeout routine for this repo. Codifies the last-mile steps from
-`CLAUDE.md` so they happen consistently and nothing gets skipped.
+Ticket closeout routine for this repo. Codifies the last-mile PR-opening
+steps from `CLAUDE.md` so they happen consistently and nothing gets
+skipped.
+
+> **Per-push journaling is the default rule** (CLAUDE.md step 7). Every
+> `git push` on a feature branch has its own Journal entry. This skill
+> handles the Journal entry for the *final* push that immediately
+> precedes opening the PR. Intermediate pushes — e.g. during TDD
+> iteration or while addressing review feedback — journal themselves
+> as they happen, not through this skill.
 
 ## Preconditions
 
 Before invoking this skill:
+
 - You are in a worktree (not on `main`).
-- The code changes for the ticket are complete and working.
+- The functional code changes for the ticket are complete and working.
+- Every **prior** push on this branch already has a Journal entry (per the
+  per-push rule). If one is missing, append it before running `/finish-ticket`.
 - You know the ticket number (`#NN`).
 
 If any of these is not true, stop and fix before running `/finish-ticket`.
 
 ## Steps
 
-Follow these in order. Do not skip. If a step fails, surface the failure
-to the user before proceeding.
+Follow in order. If a step fails, surface the failure to the user before
+proceeding.
 
 ### 1. Confirm branch
 
@@ -38,8 +49,8 @@ pnpm typecheck && pnpm lint && pnpm test
 ```
 
 If any fails, stop and report to the user. Do not auto-fix lint
-errors — the human should decide. (Pre-scaffold tickets #2–#5 skip this
-step because `package.json` doesn't exist yet; see `CLAUDE.md` § Test commands.)
+errors — the human should decide. (Pre-scaffold tickets skip this step
+because `package.json` doesn't exist yet; see `CLAUDE.md` § Test commands.)
 
 ### 3. Run CI status check (if a PR is already open for this branch)
 
@@ -49,61 +60,64 @@ gh pr checks --watch 2>/dev/null || true
 
 Skip if there's no PR yet (first time running for this ticket).
 
-### 4. Gather Journal entry fields
+### 4. Verify Journal.md is current
 
-Ask the user four questions — one prompt per field — and record the answers:
+Walk backwards through the branch's commit log:
 
-1. **What did you build?** (1–2 sentences on the concrete output)
-2. **Any surprises?** (unexpected things during implementation)
-3. **Any trips or blockers?** (what took longer than it should have)
-4. **Notes for future agents?** (anything the next handler should know)
+```bash
+git log --oneline origin/main..HEAD
+```
 
-If the ticket was entirely uneventful, "none" is an acceptable answer for
-surprises/trips/notes. Don't invent color.
+Every push that appears there should already have a corresponding Journal
+entry. If any push is missing an entry, **stop** and tell the user —
+append the missing entries first, then resume.
 
-### 5. Append to `Journal.md`
+This skill only adds the entry for the final (still-unpushed) push.
 
-Append a new block at the **bottom** of `Journal.md`, using today's date
-(ISO: `YYYY-MM-DD`):
+### 5. Gather fields for this final push's Journal entry
+
+Ask the user four questions:
+
+1. **What does this final push contain?** (short summary of commits)
+2. **Why this push?** (e.g. "final code-reviewer fixes", "last doc tweaks")
+3. **Any notes for future agents?** ("none" is fine)
+4. **Which commit(s)?** (the agent can compute this from `git log`, but
+   confirm with the user if ambiguous)
+
+### 6. Append to `Journal.md`
+
+Append a new block at the **bottom** of `Journal.md`, using the current
+ISO-8601 timestamp with timezone. The date should come from
+`date -Iseconds` or equivalent:
 
 ```markdown
 
-## YYYY-MM-DD — Ticket #NN: Short title
+## YYYY-MM-DDTHH:MM:SS±ZZ:ZZ — #NN: Short context line
 
-**What I built:** <field 1>
-**Surprises:** <field 2>
-**Trips / blockers:** <field 3>
-**Notes for future agents:** <field 4>
-**PR:** #NN (or "pending" if the PR number isn't known yet)
+**Pushed:** <field 1>
+**Why:** <field 2>
+**Notes:** <field 3>
+**Commit(s):** `<sha-short>` (or range)
 ```
 
 Never edit or delete past entries — append only.
 
-### 6. Commit outstanding changes
+### 7. Commit the Journal entry + any outstanding work
 
-Stage everything touched, including the Journal update. Commit with a
-conventional-commit message:
+Stage everything, commit, push. Prefer folding the Journal entry into the
+push's main commit when the remaining work is small; otherwise make a
+separate `docs(journal): entry for #NN <tag>` commit.
 
 ```bash
 git add <files>
 git commit -m "<type>(<scope>): <short summary> (#NN)"
-```
-
-If the Journal update is the only remaining change, commit it as:
-
-```bash
-git commit -m "docs(journal): add entry for #NN"
-```
-
-### 7. Push the branch
-
-```bash
-git push -u origin <branch-name>
+git push
 ```
 
 ### 8. Invoke code-reviewer
 
 Call the `code-reviewer` subagent on the diff. Prompt it with:
+
 - The ticket URL (`https://github.com/swamp-dev/sparks-of-kether/issues/NN`).
 - The acceptance criteria from the ticket.
 - Any ticket-specific context the reviewer would need.
@@ -112,8 +126,9 @@ Surface findings to the user by severity (CRITICAL / SIGNIFICANT / MINOR).
 Fix all CRITICAL and SIGNIFICANT findings. Minor findings may be deferred
 with a note in the PR body.
 
-If fixes are made, commit them (small, separate commits), push, and
-optionally re-run code-reviewer on the diff.
+If fixes are made: commit them, append a **new** Journal entry for that
+push, push again, re-run code-reviewer if meaningful changes were made.
+Each of those pushes follows the per-push Journal rule.
 
 ### 9. Open the PR
 
@@ -121,21 +136,23 @@ optionally re-run code-reviewer on the diff.
 gh pr create --title "<conventional-commit title>" --body "<body>"
 ```
 
-The title follows conventional-commit format:
-`<type>(<scope>): <description>`
+The title follows conventional-commit format: `<type>(<scope>): <description>`.
 
 The body must include:
-- **Summary** — 1-paragraph description
-- **Changes** — bullet list of key changes
-- **Test plan** — checklist of what was verified
-- **Journal entry** — the entry written in step 5, as a read-only copy
-- **Closes #NN** — on its own line so GitHub auto-links
+
+- **Summary** — 1-paragraph description.
+- **Changes** — bullet list of key changes.
+- **Test plan** — checklist of what was verified.
+- **Journal entries** — copy the relevant Journal entries from `Journal.md`
+  for this branch's pushes (read-only reference — `Journal.md` is source of truth).
+- **Closes #NN** — on its own line so GitHub auto-links.
 
 ### 10. Print the PR URL and stop
 
 Print the PR URL for the user. Then stop.
 
 **Do NOT:**
+
 - Run `gh pr merge` — ever.
 - Force-push.
 - Auto-approve the PR.
@@ -158,7 +175,7 @@ step 10.
 ## Invariants
 
 - One ticket = one branch = one PR.
-- Journal.md grows, never shrinks or reshuffles.
+- Every push has a Journal entry; `Journal.md` grows, never shrinks.
 - User merges; agents do not.
 - Hooks and signing are never bypassed.
 - If in doubt, ask the user.

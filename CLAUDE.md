@@ -80,23 +80,26 @@ Every ticket follows this loop. There are no shortcuts.
 6. **Code review before PR.** Invoke the `code-reviewer` subagent on the
    diff. Fix all critical and significant findings. Minor findings can
    be deferred (note them in the PR description).
-7. **Append a Journal entry** to [`Journal.md`](Journal.md) (ticket #4
-   creates the file; before then, create it with the template at the top
-   if absent). The `/finish-ticket` skill from ticket #5 automates this
-   once it exists; before then, append by hand. Required format:
+7. **Journal every push.** Every single `git push` on the branch —
+   initial, review fixes, doc tweaks, CI-green attempts — gets **one**
+   entry appended to the bottom of [`Journal.md`](Journal.md). Write the
+   entry *before* the push so it lands in the same push. Never edit past
+   entries — append only.
+
+   Required format (full template at top of `Journal.md`):
 
    ```markdown
-   ## YYYY-MM-DD — Ticket #NN: Short title
+   ## YYYY-MM-DDTHH:MM:SS±ZZ:ZZ — #NN: Short context line
 
-   **What I built:** one or two sentences.
-   **Surprises:** what was unexpected during implementation.
-   **Trips / blockers:** what took longer than it should have; why.
-   **Notes for future agents:** anything the next ticket handler should know.
-   **PR:** #NN
+   **Pushed:** what this push contains.
+   **Why:** motivation (e.g. "draft 1", "review fixes for X").
+   **Notes:** anything worth remembering; "None" is fine.
+   **Commit(s):** `<sha-short>`
    ```
 
-   Commit the Journal update with the rest of the work (or as a final
-   commit): `docs(journal): add entry for #NN`.
+   Commit the Journal update alongside the rest of the push. Suggested
+   commit name: `docs(journal): entry for #NN <short tag>`. For tiny
+   pushes, fold the Journal entry into the main commit.
 8. **Open the PR** with title in conventional-commit format and
    `Closes #NN` in the body. Copy the Journal entry from `Journal.md`
    into the PR body as a read-only reference. **If you need to revise,
