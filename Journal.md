@@ -256,3 +256,96 @@ subsequent ticket on a clean foundation.
 
 **Commit(s):** `7d4fdf0`
 
+---
+
+## 2026-04-24T16:50:08-04:00 — #7: Tailwind 3 + Sefirah color tokens + typography
+
+**Pushed:**
+- Installed Tailwind 3.4 + PostCSS + Autoprefixer.
+- `tailwind.config.ts` — color tokens for all 10 Sefirot (`bg-kether`,
+  `bg-chesed`, etc.) keyed to Golden-Dawn / Kabbalistic hex values,
+  plus `bg-ground` (deep indigo `#0e0a1f`), `bg-veil` (off-white text),
+  three `pillar-*` accents, and `illumination`/`separation` meter colors.
+- `tailwind.config.ts` — font families `font-display` (Cinzel),
+  `font-sans` (Inter), `font-hebrew` (Noto Sans Hebrew), each wired to
+  CSS variables set by `next/font`.
+- `postcss.config.mjs` with Tailwind + Autoprefixer.
+- `app/globals.css` — Tailwind directives + default dark scheme
+  (`color-scheme: dark`, body = ground, text = veil).
+- `app/layout.tsx` — loads the three fonts via `next/font/google` and
+  attaches their CSS variables to `<html>`; body uses `font-sans`.
+- `app/page.tsx` — placeholder home page migrated from inline styles
+  to Tailwind utilities.
+- `app/tokens/page.tsx` — dev-only `/tokens` gallery: all 10 Sefirah
+  swatches (color, Hebrew name in RTL, English name, quality keyword,
+  class name), the three pillar accents, and the three typography stacks.
+- Hebrew text everywhere uses `dir="rtl" lang="he"` on the containing
+  element so bidi rendering is unambiguous even in an LTR page.
+
+**Why:** Ticket #7. Every UI component in later phases needs Tailwind
+tokens to match the design spec — no literal hex values scattered
+across the codebase.
+
+**Notes:**
+- User feedback mid-implementation: Hebrew strings are stored in
+  logical (Unicode) order, which renders RTL by default via bidi, but
+  adding explicit `dir="rtl"` is safer in mixed-script contexts. Done.
+- Initial lint failure on `tokens/page.tsx` — `ReadonlyArray<T>` and
+  `type Foo = {...}` syntax are forbidden by `@typescript-eslint/stylistic`
+  (prefers `readonly T[]` and `interface`). Fixed in the same push.
+- Verified dev server served `/tokens` with HTTP 200; all 10
+  `bg-sefirah` classes present in rendered HTML; all 10 Hebrew names
+  rendered with `dir="rtl" lang="he"` attrs.
+- Initial attempts hit port collisions (3000, 3001 occupied by
+  zombies); next dev fell back to 3002. Killed stray `next-server`
+  processes between checks.
+
+**Commit(s):** `3e51e8f`
+
+---
+
+## 2026-04-24T16:57:53-04:00 — #7: Tailwind review fixes (second push)
+
+**Pushed:** code-reviewer subagent findings addressed:
+- **Blocker:** Hebrew font fallback `'Noto Sans Hebrew'` could trigger
+  Google Fonts CDN fetch on Windows/Linux if `--font-hebrew` fails to
+  resolve — violates "no external CDN" acceptance criterion. Dropped
+  named fallbacks from all three font stacks; they now degrade to
+  generic `serif` / `sans-serif` only. `next/font` self-hosts the
+  woff2 files so the named fallback added risk with zero benefit.
+- **Blocker:** Binah swatch (`#1a1a1a`) was invisible against
+  `ground` (`#0e0a1f`) at 1.12:1 contrast. Added `border
+  border-white/15` to every swatch so each card shape is visible
+  regardless of bg color.
+- **Significant:** `/tokens` was publicly indexable in production.
+  Added a `process.env.NODE_ENV === 'production'` guard that calls
+  `notFound()` at build/request time. Dev `/tokens` → 200 (verified).
+  Prod build pre-renders the 404 page for the route.
+- **Minor:** Netzach (4.1:1) and Yesod (3.6:1) fail WCAG AA for body
+  text on `text-veil`. Added per-swatch `contrastNote` with a warning
+  banner so future UI work knows to use dark text for body copy on
+  those grounds.
+- **Minor:** Tailwind `content` globs extended from `{ts,tsx}` to
+  `{js,jsx,ts,tsx}` — defensive.
+- **Minor:** Added `aria-label` to every swatch + `role="list"` /
+  `role="listitem"` structure + `aria-labelledby` on section headings.
+- **Minor:** Added comment explaining the deliberate
+  `illumination`/`separation` duplication of `tiferet`/`binah`.
+- **Minor:** Documented the EB Garamond gap in a comment at the top
+  of `tokens/page.tsx` — ticket said "Cinzel or EB Garamond"; chose
+  Cinzel, flagged `font-body-serif` as a future token name if a body
+  serif is later wanted.
+
+**Why:** Review pass. Bringing the scaffold onto the same quality
+line as the design/reference docs.
+
+**Notes:**
+- Prod smoke-test of `/tokens` via `pnpm start` was flaky (port
+  collision with other next processes in the sandbox); confirmed via
+  build output `○ /tokens` + the presence of `notFound()` at SSG
+  time that the route is prerendered as 404 in production.
+- Dev server still returns 200 on `/tokens`.
+- All three gates clean: typecheck, lint (no warnings), build.
+
+**Commit(s):** `2c3499e`
+
