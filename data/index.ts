@@ -88,6 +88,16 @@ export function pathByNumber(n: number): Path {
   return found;
 }
 
+/**
+ * Non-throwing variant of `pathByNumber` — returns the Path record or
+ * `undefined`. Use when the caller genuinely doesn't know whether the
+ * number is valid (e.g. user-supplied input the engine must reject
+ * without surfacing a throw up the stack).
+ */
+export function tryPathByNumber(n: number): Path | undefined {
+  return pathsByNumberIndex.get(n);
+}
+
 /** Path → Arcanum: every path has exactly one arcanum (its "key card"). */
 export function arcanumByPath(pathNumber: number): Arcanum {
   const path = pathByNumber(pathNumber);

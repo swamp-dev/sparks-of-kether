@@ -589,3 +589,108 @@ would get copied. Better to fix while the surface is just `data/`.
 
 **Commit(s):** `662b467`
 
+---
+
+## 2026-04-24T18:26:41-04:00 — #11: movement engine (initial push)
+
+**Pushed:** first pure engine module, TDD-first.
+
+- `engine/types.ts` — foundation types for every engine ticket:
+  - `Result<T, E>` discriminated union (engine never throws on
+    *expected* failures — returns a tagged Result so callers branch).
+  - `PlayerState`, `GameState` (minimal subsets; later tickets
+    extend with stats/sparks/counters).
+  - `MoveRejection` tagged union: `unknown-player`, `unknown-path`,
+    `card-not-in-hand`, `path-does-not-connect`.
+  - `MoveResult = Result<GameState, MoveRejection>`.
+- `engine/movement.ts` — four pure functions:
+  - `adjacentSefirot(key)` — connected Sefirot via the `paths` table.
+  - `canTravelPath(state, playerId, pathNumber)` — validates without
+    mutating; returns the `Path` on success so `applyMove` doesn't
+    re-look it up.
+  - `applyMove(state, playerId, pathNumber)` — returns a fresh
+    `GameState` with position updated, arcanum moved from hand to
+    discard. Other players untouched. Removes exactly one copy if
+    duplicates exist.
+  - `adjacentPaths(state, playerId)` — path numbers the player can
+    play right now (hand ∩ paths touching position).
+- `engine/__tests__/movement.test.ts` — 18 tests across 4 describe
+  blocks; 51/51 overall (scaffold 4 + data 29 + movement 18).
+- Removed `engine/.gitkeep`.
+
+**Why:** Ticket #11. First real engine-logic ticket, unblocks every
+subsequent reducer (checks, sparks, shells, endgame).
+
+**TDD note:** Wrote the tests first — valid-move acceptance,
+bidirectional traversal, every rejection kind, invariant that
+`applyMove` never mutates on failure, duplicate-removal edge case,
+multi-player preservation. Then built the minimum implementation to
+pass each. Caught and removed a leftover `pathByNumber` import (my
+first pass had a `void pathByNumber` hack to silence unused; lint
+caught it, cleaned up).
+
+**Design choices worth noting for future engine tickets:**
+- **Throw for programmer errors, Result for expected failures.**
+  `adjacentPaths` throws on unknown player (stale id = caller bug);
+  `canTravelPath` / `applyMove` return Results because the UI
+  surfaces those failures.
+- **`canTravelPath` returns the `Path` on success.** Avoids
+  `applyMove` doing the lookup twice. Keeps the reducer pure + cheap.
+- **Paths are bidirectional everywhere.** Either endpoint works.
+- **No turn-ownership here.** That's ticket #25 (turn
+  orchestration). Movement only validates can-travel given cards +
+  position — whose turn it is is out of scope for this module.
+
+**Notes:**
+- All gates green: typecheck ✓, lint ✓, test ✓ (51/51), build ✓.
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `ac68975`
+
+---
+
+## 2026-04-24T18:31:38-04:00 — #11: review fixes (second push)
+
+**Pushed:** code-reviewer findings addressed — no critical issues;
+two significant + one suggested helper + two new tests.
+
+- **Significant:** `applyMove` was doing a second `findPlayer` call
+  after `canTravelPath` already validated — latent footgun (two
+  lookups to stay in sync) plus a defensive throw that couldn't
+  actually fire in pure code. Changed `canTravelPath` to return
+  `Result<MoveValidationContext, MoveRejection>` where the context
+  is `{ path, player }`. `applyMove` destructures both from the
+  validated Result and never re-queries.
+- **Significant:** `MoveRejection.card-not-in-hand` gained a
+  `pathNumber` field so the UI can render "you need X to travel
+  path Y" without re-deriving the path from the arcanum.
+- **Suggested helper:** added `tryPathByNumber(n)` to
+  `data/index.ts` — non-throwing Path-or-undefined lookup. Engine
+  now calls this instead of duplicating `paths.find` for its
+  Result-returning validation. Keeps the throw-on-miss variant for
+  programmer-error use cases.
+- **Missing invariant (added):** two new `applyMove` tests —
+  sequential apply (path 32 → path 28, hand shrinks to empty,
+  discard grows to [21, 17]) and second-apply fails on a path that
+  the updated position no longer touches. Both prove the reducer
+  truly commits new state rather than re-reading the original.
+
+**Why:** Reviewer said "Ship" but flagged two patterns worth fixing
+*before* ticket #12 lands. Fixing now is cheap; after #12/#13/#14
+accumulate, it's intrusive.
+
+**Notes:**
+- Didn't add `ok()`/`fail()` constructor helpers — reviewer said
+  they can wait for a helper module.
+- Didn't touch the `JSON.stringify` brittleness in the
+  "no-mutation-on-failure" test — reviewer called it acceptable.
+- Flagged future-ticket coupling: sparks (#13) may need to decide
+  whether spark-granted paths go through `hand` or a parallel slot;
+  turn ownership (#25) will add an `unknown-turn` rejection. Both
+  non-breaking additions but worth the ticket authors seeing them.
+- All gates clean: typecheck ✓, lint ✓, test ✓ (53/53 — was 51,
+  added 2 sequential-apply invariants), build (not re-run; no
+  runtime surface changed).
+
+**Commit(s):** `962b67b`
+
