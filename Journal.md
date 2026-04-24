@@ -425,3 +425,69 @@ before #9's CI starts depending on it.
 
 **Commit(s):** `19cf339`
 
+---
+
+## 2026-04-24T17:30:48-04:00 — #9: GitHub Actions CI (initial push)
+
+**Pushed:**
+- `.github/workflows/ci.yml` — two jobs:
+  - `verify` runs `pnpm install --frozen-lockfile`, `pnpm typecheck`,
+    `pnpm lint`, `pnpm test` on Ubuntu latest / Node 20 with pnpm
+    cache via `pnpm/action-setup@v4` and `actions/setup-node@v4`.
+  - `build` depends on `verify` and runs `pnpm build` separately so
+    a failed build doesn't mask a failed test (and vice versa).
+- `concurrency` group cancels in-flight runs on PR re-pushes; does
+  not cancel `main`-branch runs (those always finish).
+- `permissions: contents: read` — least-privilege default.
+- 10-minute timeout per job; pnpm version pinned to 10.33.2 to match
+  `packageManager` in `package.json`.
+
+**Why:** Ticket #9. Guardrail every subsequent PR — the "green
+locally before review" rule in CLAUDE.md only really holds if a
+second pair of eyes (CI) also runs the gate.
+
+**Notes:**
+- Intentionally NOT running `pnpm e2e` in CI — browsers aren't
+  installed and the Playwright config from #8 skips silently when
+  `PLAYWRIGHT_BROWSERS_INSTALLED` is unset (with the loud CI warning
+  I added in #8's review pass). A later ticket can opt CI into e2e
+  by installing chromium and exporting the env var.
+- Local dry-run of every CI step clean: install, typecheck, lint,
+  test (4/4), build (5 routes).
+- Pre-review commit; code-reviewer runs next.
+- **Followup for user after merge:** configure `verify` and `build`
+  as required status checks in the repo's branch protection rules.
+  Repo-settings action, not a file change.
+
+**Commit(s):** `4bd9665`
+
+---
+
+## 2026-04-24T17:34:05-04:00 — #9: CI review fixes (second push)
+
+**Pushed:** code-reviewer findings addressed (no blockers, one minor
++ one durability nit):
+- **Minor:** duplicated the "Keep in sync with packageManager field
+  in package.json" comment on the `build` job's `pnpm/action-setup`
+  block. Previously only the `verify` job carried it.
+- **Durability:** added a `CLAUDE.md` Do-NOT rule: "Never bump pnpm
+  in `package.json` without also updating `.github/workflows/ci.yml`
+  in the **same commit**." Codifies the reviewer's recommendation
+  so the drift risk is written down, not just commented.
+
+**Why:** Review pass. The CI workflow itself was clean — no security,
+structural, or correctness issues. The fixes are forward-looking
+durability.
+
+**Notes:**
+- Reviewer confirmed: action versions current, concurrency correct,
+  `contents: read` sufficient, `--frozen-lockfile` correct, SHA
+  pinning unnecessary for a private hobby repo, Node 20 in CI vs
+  Node 24 locally is the correct direction given `engines.node: >=20`.
+- Not touching the "build reinstalls from scratch" observation —
+  the separate job is deliberate for failure-label clarity in the
+  GitHub UI. Reviewer agreed this was a reasonable trade.
+- Local gate still clean (no functional changes — just comments).
+
+**Commit(s):** `346079e`
+

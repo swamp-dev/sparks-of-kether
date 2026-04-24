@@ -131,6 +131,7 @@ These are tripwires. If you find yourself about to do one, stop and ask.
 - **Never write files outside the repo** unless the ticket explicitly calls for it (e.g. `/tmp/` scripts).
 - **Never** use the traditional named Qliphothic intelligences. Shells are referred to descriptively only (`Shell of Chesed`, `Shadow of Hod`). See `design/shells.md`.
 - **Never** treat `KabballahGame.md` as authoritative. It is the ideation archive, preserved for history. The source of truth is `design/` and `reference/`.
+- **Never** bump pnpm in `package.json` without also updating `.github/workflows/ci.yml` in the **same commit**. The `packageManager` field and the workflow's `pnpm/action-setup` version are both sources of truth — they must move together. Drift silently breaks CI.
 
 ---
 
