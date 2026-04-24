@@ -694,3 +694,118 @@ accumulate, it's intrusive.
 
 **Commit(s):** `962b67b`
 
+---
+
+## 2026-04-24T18:42:45-04:00 — #12: challenge resolution (initial push)
+
+**Pushed:** second engine reducer. Seeded RNG + stat check +
+state-mutating challenge reducer.
+
+- `engine/rng.ts` — Mulberry32 PRNG behind an `Rng` interface
+  (`d20()`, `int(min, max)`). Seeded → deterministic; prod uses
+  `seededRng(Date.now())`.
+- `engine/checks.ts` — three reducers + three modifier constants
+  (`CARD_BURN_BONUS=3`, `SPARK_BURN_BONUS=5`, `SHORTCUT_DC_PENALTY=3`):
+  - `rollCheck({stat, dc, modifiers, rng})`: pure math. Stacks
+    assist (+½ each ally stat, floored), card burns (+3 each),
+    spark burns (+5 each). `shortcutPenalty` bumps *effective DC*
+    rather than subtracting from total.
+  - `resolveChallenge(...)`: state mutator. Rejects unknown
+    player, Malkuth/Kether (`no-standard-check`), already-cleared
+    Sefirot. On pass: marks cleared, grants Spark, +1 Illumination.
+    On fail: returns outcome with state UNCHANGED so caller picks
+    retry vs setback.
+  - `acceptSetback(state)`: +1 Separation. Position rollback lives
+    at the movement layer; this reducer owns the counter bump only.
+- `engine/types.ts` — extended `PlayerState` with `stats`,
+  `clearedSefirot`, `sparksHeld`. Extended `GameState` with
+  `illumination`/`separation`. Ticket #15 will wire event sourcing
+  on top.
+- `test/fixtures.ts` — shared `makePlayer`/`makeState`/`statSheet`
+  so movement + checks tests use one factory. Movement tests
+  refactored to use them (20 tests, still green).
+- `engine/__tests__/checks.test.ts` — 17 tests.
+
+**Why:** Ticket #12. Unblocks sparks (#13 consumes stored sparks)
+and shells (#14 can now spawn pressure on failure).
+
+**TDD note:** Wrote checks tests first — DC-met-exactly boundary,
+modifier stacking, shortcut-penalty effect, seeded-RNG
+determinism, every rejection kind, pass/fail state mutation,
+setback. Two catches:
+- Test mocks for `Rng` had to include both `d20` and `int` since
+  `d20()` calls `this.int(1, 20)`.
+- Collapsed "Malkuth has no check" and "Kether is collective"
+  into one `no-standard-check` rejection — engine response is
+  identical; UI gets the Sefirah key for rendering.
+
+**Design choices for future tickets:**
+- `shortcutPenalty` raises `effectiveDC`, not a negative modifier.
+  UI shows "DC 19 (penalty)" not "you rolled -3."
+- State unchanged on failure — caller picks retry or setback.
+  Reducer stays side-effect-free on the failure branch.
+- `resolveChallenge` takes an object input. Future tickets add
+  optional context (Shell flags, etc.) without breaking call sites.
+
+**Notes:**
+- All gates green: typecheck ✓, lint ✓, test ✓ (70/70 — was 53,
+  added 17 for checks), build ✓.
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `18eea24`
+
+---
+
+## 2026-04-24T18:48:31-04:00 — #12: review fixes (second push)
+
+**Pushed:** code-reviewer flagged three significant issues. All
+addressed:
+
+- **Significant — `acceptSetback` +1 vs +2 mismatch:**
+  `design/mechanics.md` says shortcut-path failures are +2
+  Separation, not +1. The original reducer added 1
+  unconditionally; caller would have had to double-call. Changed
+  signature to `acceptSetback(state, { shortcut?: boolean })`:
+  default adds 1, `shortcut: true` adds 2. Added a test.
+- **Significant — `ok: true` wrapping a failed outcome:**
+  `resolveChallenge` returns `Result<ChallengeSuccess, _>` where
+  `ok: true` means "resolved cleanly," not "passed." Future
+  engineers could easily misread. Added a prominent JSDoc warning
+  on `ChallengeSuccess` noting that `outcome.pass` is the real
+  success flag, and that on failure `newState === input.state`
+  (same reference). Added a reference-equality assertion to the
+  failure test.
+- **Significant — array types invite duplicates and O(n) lookups:**
+  Changed `PlayerState.clearedSefirot` and `PlayerState.sparksHeld`
+  from `readonly SefirahKey[]` to `ReadonlySet<SefirahKey>`. The
+  `already-cleared` guard was load-bearing for the array version;
+  the Set makes uniqueness structural. `resolveChallenge` now uses
+  `.has()` for O(1) membership, `new Set(...).add()` for immutable
+  update. Fixture defaults updated to `new Set()`. Test expectations
+  updated to `toEqual(new Set([...]))` / `.size`.
+
+**Improvements also taken:**
+- Documented RNG seed semantics: 32-bit, seed 0 is valid, prod
+  should use `Date.now() >>> 0` or `Math.floor(Math.random() * 0x100000000)`.
+- Documented that `nextFloat()` is [0, 1) so `int(min, max)` has
+  no upper-bound off-by-one; `int(n, n)` correctly returns `n`.
+
+**Skipped (low value now):**
+- "Negative burns throw" — the type is `number`; negative values
+  would reduce total. Doesn't seem like a real footgun, and
+  `exactOptionalPropertyTypes` already prevents undefined.
+  Revisit if a UI ticket passes user-editable negative values.
+- Cross-Sefirah-assist rejection. `rollCheck` has no Sefirah
+  context by design — the caller filters. Tests don't exercise a
+  rejection that `rollCheck` doesn't actually make.
+- `makePlayers` helper — one-off in movement tests for now.
+
+**Notes:**
+- All gates re-ran clean: typecheck ✓, lint ✓, test ✓ (71/71 — was
+  70, added the shortcut-setback test), build (unchanged since
+  last push, not re-run).
+- Reviewer also praised the "`shortcutPenalty` raises effectiveDC,
+  not a negative modifier" design — kept as-is.
+
+**Commit(s):** `3dc9ea3`
+

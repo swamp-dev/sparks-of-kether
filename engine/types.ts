@@ -1,4 +1,4 @@
-import type { SefirahKey } from '@/data';
+import type { SefirahKey, StatKey } from '@/data';
 
 /**
  * Result discriminated union for fallible engine operations.
@@ -21,23 +21,49 @@ export type Result<T, E> =
  * separate type extensions; this module keeps only what the movement
  * engine needs, so those additions don't churn this file.
  */
+/** Ten-stat character sheet, one stat per Sefirah. */
+export type StatSheet = Readonly<Record<StatKey, number>>;
+
 export interface PlayerState {
   readonly id: string;
   readonly name: string;
   readonly position: SefirahKey;
   /** Major Arcana numbers (0–21) held by the player. */
   readonly hand: readonly number[];
+  /**
+   * Stats produced by the Sefirot-blessing ritual at setup. Keyed by
+   * the corresponding Sefirah's `stat` field in `data/sefirot.ts`.
+   */
+  readonly stats: StatSheet;
+  /**
+   * Sefirot this player has personally cleared — one Spark earned per
+   * entry. A `ReadonlySet` (not array) because membership checks are
+   * O(1) on the hot path, and the game's rules guarantee uniqueness.
+   */
+  readonly clearedSefirot: ReadonlySet<SefirahKey>;
+  /**
+   * Sparks held, keyed by the Sefirah that granted them. Spent sparks
+   * are removed; Illumination tracking still sees them via the event
+   * log (ticket #15).
+   */
+  readonly sparksHeld: ReadonlySet<SefirahKey>;
 }
 
 /**
- * Minimal game state for the movement engine. Future tickets extend
- * this with `deck`/`discardPile` contents, counters, shell status, etc.
- * The movement engine only reads the discard pile as a write target
- * (played cards go there) so it's modelled here.
+ * Game-wide state. Engine reducers return new instances; this is
+ * never mutated in place.
+ *
+ * Counters are stored as simple totals; ticket #15 adds event sourcing
+ * on top so that pillar-streak tracking and auditability come for free.
+ * The shape here is forward-compatible.
  */
 export interface GameState {
   readonly players: readonly PlayerState[];
   readonly discardPile: readonly number[];
+  /** Team Illumination counter. Raised by Sparks, gifts, cleared Sefirot. */
+  readonly illumination: number;
+  /** Team Separation counter. Raised by accepted failures, shortcuts. */
+  readonly separation: number;
 }
 
 // ──────────────── Move-specific failure kinds ────────────────

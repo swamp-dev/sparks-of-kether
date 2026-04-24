@@ -1,27 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { PlayerState, GameState } from '../types';
 import { adjacentSefirot, canTravelPath, applyMove, adjacentPaths } from '../movement';
-
-// ──────────────── Fixtures ────────────────
-
-/**
- * Minimal game-state factory for tests. Override as needed. One
- * player, default position Malkuth, default empty hand & discard.
- */
-function makeState(overrides: Partial<PlayerState> = {}, extra: Partial<GameState> = {}): GameState {
-  const player: PlayerState = {
-    id: 'p1',
-    name: 'Alex',
-    position: 'malkuth',
-    hand: [],
-    ...overrides,
-  };
-  return {
-    players: [player],
-    discardPile: [],
-    ...extra,
-  };
-}
+import { makePlayer, makeState } from '@/test/fixtures';
+import type { GameState } from '../types';
 
 // ──────────────── adjacentSefirot ────────────────
 
@@ -143,19 +123,14 @@ describe('applyMove', () => {
 
   it('preserves other players untouched when one player moves', () => {
     const base = makeState({ id: 'p1', hand: [21] });
-    const state: GameState = {
-      ...base,
-      players: [
-        ...base.players,
-        { id: 'p2', name: 'Jordan', position: 'hod', hand: [12] },
-      ],
-    };
+    const other = makePlayer({ id: 'p2', name: 'Jordan', position: 'hod', hand: [12] });
+    const state: GameState = { ...base, players: [...base.players, other] };
     const result = applyMove(state, 'p1', 32);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     const p2 = result.value.players.find((p) => p.id === 'p2');
-    expect(p2).toEqual({ id: 'p2', name: 'Jordan', position: 'hod', hand: [12] });
+    expect(p2).toEqual(other);
   });
 
   it('removes exactly one copy of the card if duplicates exist', () => {
