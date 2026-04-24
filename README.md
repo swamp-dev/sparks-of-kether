@@ -33,3 +33,40 @@ soul of the game lives here; any implementation is downstream.
 
 The `reference/` files are the raw source of truth for the symbolic system;
 the `design/` files describe how the game uses them.
+
+## Running the web app
+
+The web implementation is a Next.js 14 (App Router) project using
+TypeScript strict mode and pnpm. Node 20+ required.
+
+```bash
+# one-time setup — enables pnpm via Node's corepack
+corepack enable
+
+# install dependencies
+pnpm install
+
+# dev server on http://localhost:3000
+pnpm dev
+
+# production build
+pnpm build
+
+# gate commands (run before every push)
+pnpm typecheck && pnpm lint
+```
+
+Directory layout:
+
+| Path | Purpose |
+|---|---|
+| `app/` | Next.js App Router routes |
+| `components/` | React components |
+| `engine/` | Pure game logic (no React, no side effects) |
+| `data/` | Typed data derived from `reference/*.md` |
+| `lib/` | Utilities and hooks |
+| `test/` | Test helpers (fixtures, mocks) |
+
+See [`CLAUDE.md`](CLAUDE.md) for the working agreement, and the
+[Epic issue](https://github.com/swamp-dev/sparks-of-kether/issues/1) for
+implementation tracking.

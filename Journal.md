@@ -191,3 +191,68 @@ clean typed-data tickets and engine-logic tickets. Re-use across media
 
 **Commit(s):** bundled with `#44` commit above.
 
+---
+
+## 2026-04-24T16:34:31-04:00 — #6: Next.js 14 App Router scaffold (initial push)
+
+**Pushed:**
+- `package.json` (Next 14.2, React 18.3, TS 5.5, ESLint, Prettier; pnpm 10.33.2 via corepack; Node ≥20).
+- `tsconfig.json` — strict + `exactOptionalPropertyTypes` + `noUncheckedIndexedAccess`; path aliases for `app/`, `components/`, `engine/`, `data/`, `lib/`, `test/`.
+- `next.config.mjs` (reactStrictMode, no poweredByHeader).
+- `.eslintrc.json` — `next/core-web-vitals` + `@typescript-eslint/strict` + `stylistic`; consistent-type-imports rule.
+- `.prettierrc` + `.prettierignore` + `.editorconfig`.
+- `.gitignore` expanded for Node/Next artifacts (node_modules, .next, next-env.d.ts, etc.).
+- `app/layout.tsx` + `app/page.tsx` (placeholder "Sparks of Kether — coming soon" on deep-indigo background).
+- Empty directories `components/`, `engine/`, `data/`, `lib/`, `test/` seeded with `.gitkeep`.
+- `pnpm-lock.yaml` generated.
+- `README.md` gets a "Running the web app" section with quick-start commands and directory layout.
+
+**Why:** Ticket #6 — foundation for every downstream ticket. Nothing else can start until this lands.
+
+**Notes:**
+- Verified locally: `pnpm install` clean, `pnpm typecheck` clean, `pnpm lint` clean, `pnpm build` succeeds (4 static routes), `pnpm dev` serves HTTP 200 at `/` with placeholder content.
+- Node 24 used locally (user's machine); Node ≥20 declared in `engines`. Not a problem but worth noting.
+- pnpm emitted a warning about ignored build scripts for `unrs-resolver@1.11.1` (Next.js transitive). Left unaddressed — not exercising native resolver paths.
+- Pre-review commit; code-reviewer has not run yet.
+
+**Commit(s):** `163367f` (amended to `5a66fc4` on push — sha drift noted)
+
+---
+
+## 2026-04-24T16:39:40-04:00 — #6: scaffold review fixes (second push)
+
+**Pushed:** `code-reviewer` subagent findings addressed:
+- **Blocker:** `next-env.d.ts` was gitignored but the file exists on disk.
+  Per Next.js convention the file should be committed so fresh clones get
+  type references immediately. Removed from `.gitignore` (with a comment
+  linking the Next.js docs) and added to tracked files.
+- **Blocker:** `pnpm test` script was missing; CLAUDE.md's local gate
+  (`pnpm typecheck && pnpm lint && pnpm test`) is mandatory from ticket
+  #6 onward. Added a placeholder `test` script that echoes a note and
+  exits 0, so the gate works until ticket #8 wires up Vitest.
+- **Significant:** ESLint `stylistic` was fighting Prettier. Added
+  `eslint-config-prettier` (v9.1) to `extends` to turn off
+  Prettier-conflicting rules.
+- **Minor:** Removed redundant `noImplicitAny` and `strictNullChecks`
+  from `tsconfig.json` (`strict: true` already implies both).
+- **Minor:** Simplified `tsconfig.json` path aliases to just `@/*` →
+  `./*` (the sub-path aliases were redundant).
+- **Minor:** Added `metadataBase` to `app/layout.tsx` (env-overridable)
+  to pre-empt the Next.js build warning about relative OG URLs.
+- **Minor:** Added `app/icon.svg` — a simple radiant-spark glyph on the
+  deep-indigo background. Prevents favicon 404s on every request and
+  matches the SVG-only art direction.
+
+**Why:** Reviewer flagged the first push would leave the scaffold mildly
+inconsistent with its own working agreement (missing `pnpm test`) and
+with Next.js conventions (`next-env.d.ts`). Fixing now keeps every
+subsequent ticket on a clean foundation.
+
+**Notes:**
+- Re-ran the full local gate after fixes: install, typecheck, lint,
+  test (placeholder), build — all clean.
+- `app/icon.svg` is 12 lines of SVG; Next.js App Router serves it as
+  the favicon automatically.
+
+**Commit(s):** `7d4fdf0`
+
