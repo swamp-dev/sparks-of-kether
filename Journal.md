@@ -809,3 +809,118 @@ addressed:
 
 **Commit(s):** `3dc9ea3`
 
+---
+
+## 2026-04-24T19:41:43-04:00 — #13: Sparks & one-use abilities (initial push)
+
+**Pushed:** ten Spark abilities as a pure `useSpark` reducer.
+
+- `engine/types.ts` — extended:
+  - `PlayerState.pendingAbilities: PlayerAbilityFlags` — counter +
+    boolean flags Spark spends set; later subsystems consume.
+  - `GameState` gained `deck`, `revealedCards`,
+    `shellCancellationsAvailable`, `spentSparks`.
+  - `EMPTY_ABILITY_FLAGS` constant for setup.
+- `engine/sparks.ts`:
+  - `SparkAbility` discriminated union (10 variants).
+  - `earnSpark(state, playerId, sefirah)` — grants; idempotent;
+    throws on unknown player.
+  - `useSpark(state, playerId, ability): Result<GameState, SparkRejection>`.
+    Rejects unknown-player / spark-not-held / payload-invalid.
+    On success spends the Spark and appends a `SpentSpark` record.
+  - Ten per-ability updaters:
+    - **Chesed (Grace):** transfer card giver→receiver. Rejects
+      missing card / missing receiver / self-gift.
+    - **Gevurah (Severance):** `shellCancellationsAvailable++`.
+    - **Tiferet (Harmony):** `pendingAbilities.harmonyArmed = true`.
+    - **Hod (Clarity):** add arcanum to `revealedCards` if any
+      player holds it. Otherwise Spark spent, no reveal (by design).
+    - **Netzach (Courage):** `courageRetryAvailable = true`.
+    - **Yesod (Intuition):** replace top-N of deck. Rejects
+      non-permutations / over-long reorders.
+    - **Binah (Acceptance):** `acceptanceArmed = true`.
+    - **Chokmah (Flash):** `flashExtraMoves++`.
+    - **Kether (Unity):** each player draws 1 from deck top;
+      exhaustion mid-draw → remaining players get nothing.
+    - **Malkuth (Grounding):** `separationShields++`, stacks.
+- `test/fixtures.ts` — added new required state/player fields.
+- `engine/__tests__/sparks.test.ts` — 31 tests.
+
+**Why:** Ticket #13. Unblocks turn orchestration (#25), challenge
+consumption of flags, and shells (#14 will read
+`shellCancellationsAvailable`).
+
+**TDD note:** 31 tests first, then impl. Design decisions:
+
+- **Hod's "named card not held" is NOT a rejection.** Spark still
+  spent, no reveal. Makes the ability feel like a gamble not a
+  guaranteed info-win.
+- **Kether's deck-exhaustion mid-draw is NOT a rejection.**
+  Partial distribution still counts. Full rollback would require
+  reverting earlier draws or refusing when N > deck.len; the
+  ability's spirit is "share what's available."
+- **Chesed refuses self-gift.** Not in mechanics.md, but a silent
+  no-op could mask a UI bug.
+
+**Design choices for later tickets:**
+- `PlayerAbilityFlags` keeps separate flags per ability even where
+  similar. Different subsystems consume at different times;
+  conflating would invite a bug.
+- `spentSparks` is append-only. #15 (counters) will use its length
+  as a contribution to Illumination regardless of current Spark
+  inventory.
+- `resolveChallenge` from #12 awards Sparks via direct `sparksHeld`
+  mutation; could delegate to `earnSpark` but that's a refactor,
+  deferred.
+
+**Notes:**
+- All gates green: typecheck ✓, lint ✓, test ✓ (102/102 — was 71,
+  added 31), build ✓.
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `d7c5f44`
+
+---
+
+## 2026-04-24T19:47:05-04:00 — #13: review fixes (second push)
+
+**Pushed:** code-reviewer fixes — one critical, three significant,
+one improvement.
+
+- **Critical (CLAUDE.md rule violation):** `useSpark` used a `!`
+  non-null assertion on `findPlayer(applied.value, ...)` — banned
+  by CLAUDE.md. Replaced with an explicit guard that throws with a
+  contract-violation message naming the offending ability kind.
+  Makes the invariant ("no ability may remove the acting player")
+  explicit and enforced at the mutation site.
+- **Significant (Kether + The Fool):** Arcanum 0 is a valid card
+  and must be drawable. Previous code used `??` and
+  `(number | null)[]` — correct by accident. Refactored to a
+  direct `state.deck[idx]` read + `if (card === undefined)` guard,
+  with a loud comment forbidding truthiness-check refactors
+  (`!card` / `|| undefined`) that would swallow The Fool.
+- **Significant (Chesed missing from invariant sweep):** Chesed
+  was the one ability not in the "spark spent exactly once" sweep —
+  ironic since it's the highest-risk double-mutate candidate.
+  Added a dedicated cross-player test.
+- **Significant (missing self-gift test):** Chesed rejects giver
+  === receiver in code but no test enforced it. Added.
+- **Significant (missing Chokmah stacking test):** Malkuth had a
+  stacking test, Chokmah didn't. Added one.
+- **Improvement (Yesod permutation via string-join):** Fragile —
+  `[1, 11]` and `[11, 1]` both sort to `'1,11'` and would pass a
+  non-permutation for multi-digit values. Switched to sorted
+  element-wise comparison.
+
+**Why:** Critical fix was a rule violation with a real latent
+bug. The others were defensive. Worth taking now before #14
+reads `shellCancellationsAvailable`.
+
+**Notes:**
+- All gates green: typecheck ✓, lint ✓, test ✓ (105/105 — was
+  102, added 3 new tests).
+- Reviewer praised `SparkAbility` + `ABILITY_TO_SEFIRAH` mapping,
+  `useSpark` sequencing, `spentSparks` shape, flag split.
+
+**Commit(s):** `300664d`
+

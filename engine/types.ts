@@ -47,7 +47,41 @@ export interface PlayerState {
    * log (ticket #15).
    */
   readonly sparksHeld: ReadonlySet<SefirahKey>;
+  /**
+   * Per-player ability flags that Spark expenditures set. Consumed by
+   * subsystems in later tickets (turn orchestration, challenge
+   * resolution). Each flag counts remaining uses or arms a one-shot.
+   */
+  readonly pendingAbilities: PlayerAbilityFlags;
 }
+
+/**
+ * Flags set by Spark expenditures; read by later engine subsystems.
+ * Counters (`flashExtraMoves`, `separationShields`) decrement as used;
+ * one-shot booleans (`harmonyArmed`, `acceptanceArmed`,
+ * `courageRetryAvailable`) flip back to false on consumption.
+ */
+export interface PlayerAbilityFlags {
+  /** Remaining free second-moves in this round (Chokmah — Flash). */
+  readonly flashExtraMoves: number;
+  /** Remaining "ignore this Separation increase" shields (Malkuth — Grounding). */
+  readonly separationShields: number;
+  /** True if Tiferet — Harmony is armed for the next challenge. */
+  readonly harmonyArmed: boolean;
+  /** True if Binah — Acceptance is armed to fire when any ally fails. */
+  readonly acceptanceArmed: boolean;
+  /** True if Netzach — Courage is available for a single reroll. */
+  readonly courageRetryAvailable: boolean;
+}
+
+/** Canonical zeroed ability-flag shape for initializing players. */
+export const EMPTY_ABILITY_FLAGS: PlayerAbilityFlags = {
+  flashExtraMoves: 0,
+  separationShields: 0,
+  harmonyArmed: false,
+  acceptanceArmed: false,
+  courageRetryAvailable: false,
+};
 
 /**
  * Game-wide state. Engine reducers return new instances; this is
@@ -59,11 +93,36 @@ export interface PlayerState {
  */
 export interface GameState {
   readonly players: readonly PlayerState[];
+  /** Face-down draw pile. Top of the deck is index 0. */
+  readonly deck: readonly number[];
   readonly discardPile: readonly number[];
   /** Team Illumination counter. Raised by Sparks, gifts, cleared Sefirot. */
   readonly illumination: number;
   /** Team Separation counter. Raised by accepted failures, shortcuts. */
   readonly separation: number;
+  /**
+   * Arcanum numbers publicly revealed (e.g. by a Hod Spark). Distinct
+   * from "hand visibility" which is Sefirah-zone-based; this set is
+   * explicitly outed cards.
+   */
+  readonly revealedCards: ReadonlySet<number>;
+  /**
+   * Counter of Shell-effect / Separation-trigger cancellations banked
+   * by Gevurah Sparks; decremented when a Shell awakens or a
+   * Separation trigger would fire.
+   */
+  readonly shellCancellationsAvailable: number;
+  /**
+   * Record of all spent Sparks — one entry per use. Read by Illumination
+   * tracking (each spent Spark still contributes) and for replay logs.
+   */
+  readonly spentSparks: readonly SpentSpark[];
+}
+
+/** Permanent record of a single Spark expenditure. */
+export interface SpentSpark {
+  readonly playerId: string;
+  readonly sefirah: SefirahKey;
 }
 
 // ──────────────── Move-specific failure kinds ────────────────

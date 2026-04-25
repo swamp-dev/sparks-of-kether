@@ -1,5 +1,6 @@
 import type { StatKey } from '@/data';
 import type { GameState, PlayerState, StatSheet } from '@/engine/types';
+import { EMPTY_ABILITY_FLAGS } from '@/engine/types';
 
 /** A sensible-default stat sheet so test fixtures don't have to enumerate all ten. */
 export const DEFAULT_STATS: StatSheet = {
@@ -36,6 +37,7 @@ export function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
     stats: DEFAULT_STATS,
     clearedSefirot: new Set(),
     sparksHeld: new Set(),
+    pendingAbilities: EMPTY_ABILITY_FLAGS,
     ...overrides,
   };
 }
@@ -50,9 +52,13 @@ export function makeState(
 ): GameState {
   return {
     players: [makePlayer(playerOverrides)],
+    deck: [],
     discardPile: [],
     illumination: 0,
     separation: 0,
+    revealedCards: new Set(),
+    shellCancellationsAvailable: 0,
+    spentSparks: [],
     ...stateOverrides,
   };
 }
