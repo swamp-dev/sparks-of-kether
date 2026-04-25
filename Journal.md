@@ -1593,3 +1593,31 @@ game — every Sefirah arrival flows through it.
 - Gates green: typecheck ✓, lint ✓, test ✓ (353/353), build ✓.
 
 **Commit(s):** `dc4be3e`, `6a0f610`
+
+---
+
+## 2026-04-25T18:04:53-04:00 — #25: team Illumination + Separation tracker
+
+**Pushed:** Two vertical meters side-by-side, both keyed to
+`SEPARATION_LOSS_THRESHOLD` (15) so heights are commensurable.
+Separation overlays Shell-activation threshold markers at
+{3, 6, 9, 12}. aria-live announcer reports deltas. Optional
+pillar-streak readout below.
+
+**Why:** Self-contained team-counter component for the orchestrator
+HUD to compose against game state.
+
+**Reviewer findings addressed in fix push:**
+- Significant: threshold marker transforms split between className
+  and inline style — inline overwrote className, dropping the X
+  centering. All transforms now live in inline style.
+- Significant: dead `liveRef` removed.
+- Significant: 0/0 streak now labeled "none" (was "imbalance" by
+  default — misleading for fresh games).
+- Improvement: replaced `indexOf` with map index for the Shell
+  number in the threshold tooltip.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (351/351), build ✓.
+
+**Commit(s):** `4866200`, `c480cb3`
