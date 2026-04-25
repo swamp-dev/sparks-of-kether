@@ -1475,3 +1475,51 @@ board becomes a control, not a decoration.
 - Gates green: typecheck ✓, lint ✓, test ✓ (352/352), build ✓.
 
 **Commit(s):** `db8837b`, `0b8f3d0`
+
+---
+
+## 2026-04-25T17:37:59-04:00 — #22: card hand component
+
+**Pushed:** Player hand renders as a fan of cards. ArcanumCard faces
+when `visible`, CardBack when not. `onCardSelect` fires on click +
+Enter/Space; ArrowLeft/Right roving-tabindex navigation across the
+hand. `selectedArcanum` highlights the selection.
+
+- Visibility derived via `isHandVisible(state, viewer, owner)`:
+  always true for the owner; otherwise true only when the owner has
+  ascended into the upper Tree (Kether/Chokmah/Binah). Tiferet
+  intentionally excluded — the supernal threshold matters
+  narratively.
+- When `visible={false}`, no arcanum number reaches the DOM at all
+  (no `data-arcanum`, no ArcanumCard rendered) — defensive against
+  a server that mistakenly sends hidden hands.
+- `CardBack` shares ArcanumCard's 200×320 footprint so they're
+  interchangeable in any layout.
+
+**Why:** First UI surface for actually playing cards. Pairs with
+the interactive Tree from #21 — click a card to select, then click
+a highlighted path to play. (Two-click flow per the design doc;
+drag-and-drop is a later ticket.)
+
+**Reviewer findings addressed in fix push:**
+- Significant AT regression: visible read-only hands used HTML
+  `disabled`, which strips buttons from the accessibility tree.
+  Switched to `aria-disabled` for visible hands so AT users can
+  still read their cards. HTML `disabled` only applies to
+  face-down cards now.
+- `useEffect` focus clamp had `focusIndex` in its dep array,
+  causing spurious re-evaluations on every keypress. Switched to
+  a functional updater, dep array reduced to `[hand.length]`.
+- Tightened the leak test from a substring match (`'arcanum-2'`)
+  to an attribute match (`data-arcanum=`) plus card-name
+  exclusion.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (355/355), build ✓.
+- React key on hand items is `${i}-${arcanum}`. Major Arcana are
+  unique within one deck; the 3–4-player hybrid rule allows two
+  decks where duplicates can occur. Comment on the key documents
+  this; switching to card-instance identity is a future schema
+  change to PlayerState.hand.
+
+**Commit(s):** `7c01bc8`, `777e8a5`
