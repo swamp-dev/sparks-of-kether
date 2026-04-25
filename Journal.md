@@ -1349,3 +1349,45 @@ identity is established. Phase 3 components (#21 interactive tree,
   are independent.
 
 **Commit(s):** `b499b7c`, `a401b4a`
+
+---
+
+## 2026-04-25T02:09:37-04:00 — #19: tokens (player, Spark, Shell, d20)
+
+**Pushed:** Token-tier SVGs to complement the Tree (#17) and the
+Major Arcana (#18).
+
+- `PlayerToken` — colored circle + initial, 4 distinct accent colors.
+- `SparkIcon` — 10 Sefirah-keyed inventory glyphs (lit core,
+  Sefirah-color, Hebrew mark letter).
+- `ShellIcon` — 10 Sefirah-keyed pressure indicators with
+  dormant/active/banished states; jagged 12-tooth ring inverts the
+  Spark's smooth halo.
+- `D20` — hexagonal-projection icon with optional value overlay.
+
+**Why:** Phase 2 art moves from "centerpiece + cards" into the
+smaller-asset layer the UI will need everywhere — inventory rows,
+on-tree player markers, roll modals, Shell-state panels.
+
+**Reviewer findings addressed in fix push:**
+- Significant: Chokmah and Chesed both used ח as their mark letter
+  (each Sefirah's first Hebrew letter, naive heuristic). Players
+  relying on glyph (colorblind / monochrome) couldn't tell them
+  apart. Extracted `sefirahMarkLetter` to `data/sefirah-glyphs.ts`,
+  Chesed special-cased to ס. New test asserts 10 distinct glyphs.
+- Significant: `darken()` would collapse Binah's near-black base
+  into the page background. Added a 0x30 per-channel floor.
+- Significant: D20 text at fontSize 14 was tight against the inner
+  triangle for two-digit values. Reduced to 11, switched to
+  `dominantBaseline="central"`. Also added `data-d20-value` hook
+  for the Phase 3 challenge-modal animation.
+- Improvement: Shell ring + disc now grouped under one
+  `<g opacity={...}>` so future translucent fills won't stack
+  weirdly.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (227/227), build ✓.
+- Branched from main while #58, #59, #60 are all in review. No
+  file conflicts.
+
+**Commit(s):** `68f2708`, `eeac5f3`

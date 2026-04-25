@@ -33,6 +33,7 @@ export { letters } from './letters';
 export { arcana } from './arcana';
 export { paths } from './paths';
 export { soulAspects } from './soul-aspects';
+export { sefirahMarkLetter } from './sefirah-glyphs';
 export * from './types';
 
 // ──────────────── Indexes (built once) ────────────────

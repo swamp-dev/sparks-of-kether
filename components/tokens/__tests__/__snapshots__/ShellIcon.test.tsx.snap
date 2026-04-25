@@ -1,0 +1,481 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ShellIcon > matches active snapshot for binah 1`] = `
+<svg
+  aria-label="Shell of Understanding — Despair (active)"
+  data-sefirah="binah"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Understanding — Despair (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#303030"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#303030"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ב
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for chesed 1`] = `
+<svg
+  aria-label="Shell of Mercy — Hoarding (active)"
+  data-sefirah="chesed"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Mercy — Hoarding (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#303065"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#303065"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ס
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for chokmah 1`] = `
+<svg
+  aria-label="Shell of Wisdom — Paralysis (active)"
+  data-sefirah="chokmah"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Wisdom — Paralysis (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#565656"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#565656"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ח
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for gevurah 1`] = `
+<svg
+  aria-label="Shell of Severity — Cruelty (active)"
+  data-sefirah="gevurah"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Severity — Cruelty (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#633030"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#633030"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ג
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for hod 1`] = `
+<svg
+  aria-label="Shell of Splendor — Deception (active)"
+  data-sefirah="hod"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Splendor — Deception (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#733f30"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#733f30"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ה
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for kether 1`] = `
+<svg
+  aria-label="Shell of Crown — Fragmentation (active)"
+  data-sefirah="kether"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Crown — Fragmentation (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#737373"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#737373"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    כ
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for malkuth 1`] = `
+<svg
+  aria-label="Shell of Kingdom — Inertia (active)"
+  data-sefirah="malkuth"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Kingdom — Inertia (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#3f3030"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#3f3030"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    מ
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for netzach 1`] = `
+<svg
+  aria-label="Shell of Victory — Obsession (active)"
+  data-sefirah="netzach"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Victory — Obsession (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#303f30"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#303f30"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    נ
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for tiferet 1`] = `
+<svg
+  aria-label="Shell of Beauty — Vanity (active)"
+  data-sefirah="tiferet"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Beauty — Vanity (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#736130"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#736130"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ת
+  </text>
+</svg>
+`;
+
+exports[`ShellIcon > matches active snapshot for yesod 1`] = `
+<svg
+  aria-label="Shell of Foundation — Illusion (active)"
+  data-sefirah="yesod"
+  data-status="active"
+  data-token="shell"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Shell of Foundation — Illusion (active)
+  </title>
+  <g
+    opacity="1"
+  >
+    <polygon
+      fill="#423263"
+      points="14.00,1.00 16.59,4.34 20.50,2.74 21.07,6.93 25.26,7.50 23.66,11.41 27.00,14.00 23.66,16.59 25.26,20.50 21.07,21.07 20.50,25.26 16.59,23.66 14.00,27.00 11.41,23.66 7.50,25.26 6.93,21.07 2.74,20.50 4.34,16.59 1.00,14.00 4.34,11.41 2.74,7.50 6.93,6.93 7.50,2.74 11.41,4.34"
+      stroke="#f8f8ff"
+      stroke-opacity="0.3"
+      stroke-width="0.8"
+    />
+    <circle
+      cx="14"
+      cy="14"
+      fill="#0e0a1f"
+      r="7"
+      stroke="#423263"
+      stroke-width="0.8"
+    />
+  </g>
+  <text
+    fill="#f8f8ff"
+    fill-opacity="0.7"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    י
+  </text>
+</svg>
+`;

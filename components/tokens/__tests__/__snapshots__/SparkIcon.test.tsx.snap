@@ -1,0 +1,451 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SparkIcon > matches snapshot for binah 1`] = `
+<svg
+  aria-label="Spark of Understanding (בינה)"
+  data-sefirah="binah"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Understanding (בינה)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#1a1a1a"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#1a1a1a"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#f8f8ff"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ב
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for chesed 1`] = `
+<svg
+  aria-label="Spark of Mercy (חסד)"
+  data-sefirah="chesed"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Mercy (חסד)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#4169e1"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#4169e1"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#f8f8ff"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ס
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for chokmah 1`] = `
+<svg
+  aria-label="Spark of Wisdom (חכמה)"
+  data-sefirah="chokmah"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Wisdom (חכמה)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#c0c0c0"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#c0c0c0"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#1a1a1a"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ח
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for gevurah 1`] = `
+<svg
+  aria-label="Spark of Severity (גבורה)"
+  data-sefirah="gevurah"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Severity (גבורה)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#dc143c"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#dc143c"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#f8f8ff"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ג
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for hod 1`] = `
+<svg
+  aria-label="Spark of Splendor (הוד)"
+  data-sefirah="hod"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Splendor (הוד)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#ff8c00"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#ff8c00"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#1a1a1a"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ה
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for kether 1`] = `
+<svg
+  aria-label="Spark of Crown (כתר)"
+  data-sefirah="kether"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Crown (כתר)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#ffffff"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#ffffff"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#1a1a1a"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    כ
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for malkuth 1`] = `
+<svg
+  aria-label="Spark of Kingdom (מלכות)"
+  data-sefirah="malkuth"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Kingdom (מלכות)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#8b4513"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#8b4513"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#f8f8ff"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    מ
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for netzach 1`] = `
+<svg
+  aria-label="Spark of Victory (נצח)"
+  data-sefirah="netzach"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Victory (נצח)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#228b22"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#228b22"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#f8f8ff"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    נ
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for tiferet 1`] = `
+<svg
+  aria-label="Spark of Beauty (תפארת)"
+  data-sefirah="tiferet"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Beauty (תפארת)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#ffd700"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#ffd700"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#1a1a1a"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    ת
+  </text>
+</svg>
+`;
+
+exports[`SparkIcon > matches snapshot for yesod 1`] = `
+<svg
+  aria-label="Spark of Foundation (יסוד)"
+  data-sefirah="yesod"
+  data-token="spark"
+  role="img"
+  viewBox="0 0 28 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Spark of Foundation (יסוד)
+  </title>
+  <circle
+    cx="14"
+    cy="14"
+    fill="none"
+    r="13"
+    stroke="#9370db"
+    stroke-opacity="0.4"
+    stroke-width="1"
+  />
+  <circle
+    cx="14"
+    cy="14"
+    fill="#9370db"
+    r="9"
+    stroke="#f8f8ff"
+    stroke-opacity="0.6"
+    stroke-width="0.8"
+  />
+  <text
+    fill="#f8f8ff"
+    font-family="var(--font-hebrew), serif"
+    font-size="13"
+    lang="he"
+    style="direction: rtl; unicode-bidi: isolate;"
+    text-anchor="middle"
+    x="14"
+    y="19"
+  >
+    י
+  </text>
+</svg>
+`;

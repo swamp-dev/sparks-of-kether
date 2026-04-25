@@ -1,0 +1,137 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PlayerToken > matches snapshot for variant 1 1`] = `
+<svg
+  aria-label="Player token 1"
+  data-token="player"
+  data-variant="1"
+  role="img"
+  viewBox="0 0 36 36"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Player token 1
+  </title>
+  <circle
+    cx="18"
+    cy="18"
+    fill="#d4af37"
+    r="16"
+    stroke="#0e0a1f"
+    stroke-width="2"
+  />
+  <text
+    fill="#0e0a1f"
+    font-family="var(--font-display), serif"
+    font-size="18"
+    font-weight="600"
+    text-anchor="middle"
+    x="18"
+    y="24"
+  >
+    1
+  </text>
+</svg>
+`;
+
+exports[`PlayerToken > matches snapshot for variant 2 1`] = `
+<svg
+  aria-label="Player token 2"
+  data-token="player"
+  data-variant="2"
+  role="img"
+  viewBox="0 0 36 36"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Player token 2
+  </title>
+  <circle
+    cx="18"
+    cy="18"
+    fill="#3a8f4a"
+    r="16"
+    stroke="#0e0a1f"
+    stroke-width="2"
+  />
+  <text
+    fill="#0e0a1f"
+    font-family="var(--font-display), serif"
+    font-size="18"
+    font-weight="600"
+    text-anchor="middle"
+    x="18"
+    y="24"
+  >
+    2
+  </text>
+</svg>
+`;
+
+exports[`PlayerToken > matches snapshot for variant 3 1`] = `
+<svg
+  aria-label="Player token 3"
+  data-token="player"
+  data-variant="3"
+  role="img"
+  viewBox="0 0 36 36"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Player token 3
+  </title>
+  <circle
+    cx="18"
+    cy="18"
+    fill="#9b88c4"
+    r="16"
+    stroke="#0e0a1f"
+    stroke-width="2"
+  />
+  <text
+    fill="#0e0a1f"
+    font-family="var(--font-display), serif"
+    font-size="18"
+    font-weight="600"
+    text-anchor="middle"
+    x="18"
+    y="24"
+  >
+    3
+  </text>
+</svg>
+`;
+
+exports[`PlayerToken > matches snapshot for variant 4 1`] = `
+<svg
+  aria-label="Player token 4"
+  data-token="player"
+  data-variant="4"
+  role="img"
+  viewBox="0 0 36 36"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Player token 4
+  </title>
+  <circle
+    cx="18"
+    cy="18"
+    fill="#e07b00"
+    r="16"
+    stroke="#0e0a1f"
+    stroke-width="2"
+  />
+  <text
+    fill="#0e0a1f"
+    font-family="var(--font-display), serif"
+    font-size="18"
+    font-weight="600"
+    text-anchor="middle"
+    x="18"
+    y="24"
+  >
+    4
+  </text>
+</svg>
+`;

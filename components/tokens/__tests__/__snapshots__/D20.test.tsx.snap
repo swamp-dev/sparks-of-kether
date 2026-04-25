@@ -1,0 +1,182 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`D20 > matches snapshot — die showing 20 1`] = `
+<svg
+  aria-label="d20 showing 20"
+  data-token="d20"
+  role="img"
+  viewBox="0 0 40 40"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    d20 showing 20
+  </title>
+  <polygon
+    fill="#0e0a1f"
+    points="20.00,2.00 35.59,11.00 35.59,29.00 20.00,38.00 4.41,29.00 4.41,11.00"
+    stroke="#f8f8ff"
+    stroke-linejoin="round"
+    stroke-opacity="0.85"
+    stroke-width="1.5"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="20"
+    x2="20"
+    y1="2"
+    y2="10.1"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="35.588457268119896"
+    x2="28.573651497465946"
+    y1="11"
+    y2="24.95"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="35.588457268119896"
+    x2="11.426348502534058"
+    y1="28.999999999999996"
+    y2="24.950000000000003"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="20"
+    x2="20"
+    y1="38"
+    y2="10.1"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="4.4115427318801075"
+    x2="28.573651497465946"
+    y1="29.000000000000007"
+    y2="24.95"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="4.411542731880106"
+    x2="11.426348502534058"
+    y1="10.999999999999998"
+    y2="24.950000000000003"
+  />
+  <polygon
+    fill="none"
+    points="20.00,10.10 28.57,24.95 11.43,24.95"
+    stroke="#f8f8ff"
+    stroke-linejoin="round"
+    stroke-opacity="0.85"
+    stroke-width="1.2"
+  />
+  <text
+    data-d20-value="true"
+    dominant-baseline="central"
+    fill="#f8f8ff"
+    font-family="var(--font-display), serif"
+    font-size="11"
+    font-weight="700"
+    text-anchor="middle"
+    x="20"
+    y="20"
+  >
+    20
+  </text>
+</svg>
+`;
+
+exports[`D20 > matches snapshot — empty die 1`] = `
+<svg
+  aria-label="d20 die"
+  data-token="d20"
+  role="img"
+  viewBox="0 0 40 40"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    d20 die
+  </title>
+  <polygon
+    fill="#0e0a1f"
+    points="20.00,2.00 35.59,11.00 35.59,29.00 20.00,38.00 4.41,29.00 4.41,11.00"
+    stroke="#f8f8ff"
+    stroke-linejoin="round"
+    stroke-opacity="0.85"
+    stroke-width="1.5"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="20"
+    x2="20"
+    y1="2"
+    y2="10.1"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="35.588457268119896"
+    x2="28.573651497465946"
+    y1="11"
+    y2="24.95"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="35.588457268119896"
+    x2="11.426348502534058"
+    y1="28.999999999999996"
+    y2="24.950000000000003"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="20"
+    x2="20"
+    y1="38"
+    y2="10.1"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="4.4115427318801075"
+    x2="28.573651497465946"
+    y1="29.000000000000007"
+    y2="24.95"
+  />
+  <line
+    stroke="#f8f8ff"
+    stroke-opacity="0.5"
+    stroke-width="0.8"
+    x1="4.411542731880106"
+    x2="11.426348502534058"
+    y1="10.999999999999998"
+    y2="24.950000000000003"
+  />
+  <polygon
+    fill="none"
+    points="20.00,10.10 28.57,24.95 11.43,24.95"
+    stroke="#f8f8ff"
+    stroke-linejoin="round"
+    stroke-opacity="0.85"
+    stroke-width="1.2"
+  />
+</svg>
+`;
