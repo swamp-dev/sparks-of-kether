@@ -1523,3 +1523,37 @@ drag-and-drop is a later ticket.)
   change to PlayerState.hand.
 
 **Commit(s):** `7c01bc8`, `777e8a5`
+
+---
+
+## 2026-04-25T17:46:34-04:00 — #23: stat sheet / character panel
+
+**Pushed:** Per-player display — 10 stats, optional Soul Aspect
+badge with +2 to the bonus stat, Sparks held. `activeStat` highlights
+the stat being rolled this turn. Two layout modes: expanded (default,
+2-col grid) and compact (single wrap-row of stat chips).
+
+- Soul Aspect bonus is rendered into the displayed total so the
+  player rolls with the visible number; a small `(+2)` badge surfaces
+  the source via `aria-label="Soul Aspect bonus, +2"` and a `title`
+  carrying the base value.
+- `activeStat` triggers `bg-illumination/10 ring-1 ring-illumination`
+  on the matching row.
+- Sparks held render as a row of `SparkIcon`s; an empty state
+  shows a "No Sparks held" line.
+
+**Why:** Orchestrator view needs per-player at-a-glance state during
+a turn. `activeStat` will tie this panel to the challenge modal (#24).
+
+**Reviewer findings addressed in fix push:**
+- Significant: redundant `role="region"` on a `<section>` that
+  already gets the implicit region role via aria-label.
+- Significant: `(+2)` badge had no `aria-label` for AT.
+- Compact-mode bonus test added: bonus logic lives on two render
+  branches; existing tests only covered the expanded one.
+- `BodyProps` marked `readonly` for parity with public props.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (354/354), build ✓.
+
+**Commit(s):** `452c195`, `526e00a`
