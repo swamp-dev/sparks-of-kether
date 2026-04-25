@@ -1,0 +1,21 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Meter > matches snapshot for a half-full Illumination meter 1`] = `
+<div
+  aria-label="Illumination: 5 of 10"
+  aria-valuemax="10"
+  aria-valuemin="0"
+  aria-valuenow="5"
+  data-orientation="vertical"
+  role="meter"
+  style="position: relative;"
+>
+  <div
+    style="position: absolute; inset: 0px; background-color: rgb(14, 10, 31); border: 1px solid rgba(248, 248, 255, 0.25); border-radius: 4px;"
+  />
+  <div
+    data-meter-fill="true"
+    style="position: absolute; background-color: rgb(255, 215, 0); border-radius: 4px; transition: height 320ms ease-out; height: 50%; width: 100%; bottom: 0px; left: 0px;"
+  />
+</div>
+`;

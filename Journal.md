@@ -1391,3 +1391,43 @@ on-tree player markers, roll modals, Shell-state panels.
   file conflicts.
 
 **Commit(s):** `68f2708`, `eeac5f3`
+
+---
+
+## 2026-04-25T02:19:51-04:00 — #20: iconography & UI chrome (Phase 2 complete)
+
+**Pushed:** Final Phase 2 art ticket. Smaller chrome SVGs filling
+the gap between the centerpiece (Tree, Cards) and the per-game
+tokens (Spark, Shell, d20, Player).
+
+- `PillarMarker` (3): Mercy/Severity/Balance chevron variants.
+- `StatIcon` (10): one geometric glyph per stat, themed via
+  `currentColor` for consumer flexibility.
+- `Meter`: `<div role="meter">` with CSS-transition fill, vertical
+  or horizontal. Throws on `max <= 0` (programmer error). Visual
+  and ARIA agree on clamp semantics.
+- `Flourish`: decorative section divider.
+
+**Why:** With this, every static visual the UI tickets in Phase 3
+will need is in place. No more art ticketing until Phase 6 polish.
+
+**Reviewer findings addressed in fix push:**
+- Significant: `Meter` silently treated `max=0` as `max=1`. Now
+  throws — consistent with engine programmer-error pattern.
+- Significant: `aria-valuenow` reported raw value while visual
+  was clamped (e.g. `aria-valuenow="25"` on a full bar with
+  `max=10`). Now both clamp to `[0, max]`.
+- Significant: inline `width`/`height` on the Meter root silently
+  overrode `className`-based sizing. Removed; sizing now comes
+  purely from class or wrapper style.
+- Significant: `strength` stat icon used two triangles sharing an
+  edge — double-stroke read as a glitch at small sizes. Collapsed
+  to a single chevron polygon.
+- Tests added: max=0 throw, aria clamp on overflow, CSS transition
+  on the fill axis (the "animates smoothly" acceptance criterion).
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (203/203), build ✓.
+- Phase 2 (#17–#20) now all in review: #59, #60, #61, and this PR.
+
+**Commit(s):** `4d3f84a`, `800dfd0`

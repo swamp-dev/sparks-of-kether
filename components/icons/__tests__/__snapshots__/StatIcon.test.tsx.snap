@@ -1,0 +1,282 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StatIcon > matches snapshot for body 1`] = `
+<svg
+  aria-label="Body (Malkuth)"
+  data-stat="body"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Body (Malkuth)
+  </title>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  >
+    <rect
+      height="7"
+      width="14"
+      x="5"
+      y="13"
+    />
+    <line
+      x1="12"
+      x2="12"
+      y1="3"
+      y2="13"
+    />
+    <line
+      x1="8"
+      x2="16"
+      y1="6"
+      y2="6"
+    />
+  </g>
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for harmony 1`] = `
+<svg
+  aria-label="Harmony (Tiferet)"
+  data-stat="harmony"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Harmony (Tiferet)
+  </title>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  >
+    <polygon
+      points="12,3 19,16 5,16"
+    />
+    <polygon
+      points="12,21 5,8 19,8"
+    />
+  </g>
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for insight 1`] = `
+<svg
+  aria-label="Insight (Chokmah)"
+  data-stat="insight"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Insight (Chokmah)
+  </title>
+  <path
+    d="M 14,3 L 7,12 L 11,12 L 8,21 L 16,11 L 12,11 Z"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  />
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for intellect 1`] = `
+<svg
+  aria-label="Intellect (Hod)"
+  data-stat="intellect"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Intellect (Hod)
+  </title>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  >
+    <path
+      d="M 8,4 C 16,9 8,15 16,20"
+    />
+    <path
+      d="M 16,4 C 8,9 16,15 8,20"
+    />
+  </g>
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for intuition 1`] = `
+<svg
+  aria-label="Intuition (Yesod)"
+  data-stat="intuition"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Intuition (Yesod)
+  </title>
+  <path
+    d="M 16,4 A 8,8 0 1 0 16,20 A 6,6 0 1 1 16,4 Z"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  />
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for lovingkindness 1`] = `
+<svg
+  aria-label="Lovingkindness (Chesed)"
+  data-stat="lovingkindness"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Lovingkindness (Chesed)
+  </title>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  >
+    <path
+      d="M 5,8 Q 12,20 19,8"
+    />
+    <circle
+      cx="12"
+      cy="6"
+      r="2"
+    />
+  </g>
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for passion 1`] = `
+<svg
+  aria-label="Passion (Netzach)"
+  data-stat="passion"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Passion (Netzach)
+  </title>
+  <path
+    d="M 12,3 Q 6,11 12,21 Q 18,11 12,3 Z"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  />
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for strength 1`] = `
+<svg
+  aria-label="Strength (Gevurah)"
+  data-stat="strength"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Strength (Gevurah)
+  </title>
+  <polygon
+    fill="none"
+    points="4,18 12,6 20,18"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  />
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for understanding 1`] = `
+<svg
+  aria-label="Understanding (Binah)"
+  data-stat="understanding"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Understanding (Binah)
+  </title>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  >
+    <rect
+      height="16"
+      width="16"
+      x="4"
+      y="4"
+    />
+    <rect
+      height="6"
+      width="6"
+      x="9"
+      y="9"
+    />
+  </g>
+</svg>
+`;
+
+exports[`StatIcon > matches snapshot for unity 1`] = `
+<svg
+  aria-label="Unity (Kether)"
+  data-stat="unity"
+  role="img"
+  viewBox="0 0 24 24"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Unity (Kether)
+  </title>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1.6"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="9"
+    />
+    <circle
+      cx="12"
+      cy="12"
+      fill="currentColor"
+      r="1.2"
+    />
+  </g>
+</svg>
+`;

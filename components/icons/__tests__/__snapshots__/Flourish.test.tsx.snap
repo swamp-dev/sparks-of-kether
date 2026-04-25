@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Flourish > matches snapshot 1`] = `
+<svg
+  aria-hidden="true"
+  data-flourish="true"
+  role="presentation"
+  viewBox="0 0 120 16"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M 4,8 Q 30,2 56,8"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-width="1"
+  />
+  <path
+    d="M 64,8 Q 90,14 116,8"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-width="1"
+  />
+  <polygon
+    fill="none"
+    points="60,3 64,8 60,13 56,8"
+    stroke="currentColor"
+    stroke-linejoin="round"
+    stroke-width="1"
+  />
+</svg>
+`;

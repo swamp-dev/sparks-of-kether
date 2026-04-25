@@ -1,0 +1,73 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PillarMarker > matches snapshot for balance 1`] = `
+<svg
+  aria-label="Pillar of Balance"
+  data-pillar="balance"
+  role="img"
+  viewBox="0 0 36 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Pillar of Balance
+  </title>
+  <g
+    fill="none"
+    stroke="#ffd700"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.4"
+  >
+    <polyline
+      points="6,18 18,6 30,18"
+    />
+    <polyline
+      points="6,22 18,10 30,22"
+    />
+  </g>
+</svg>
+`;
+
+exports[`PillarMarker > matches snapshot for mercy 1`] = `
+<svg
+  aria-label="Pillar of Mercy"
+  data-pillar="mercy"
+  role="img"
+  viewBox="0 0 36 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Pillar of Mercy
+  </title>
+  <polyline
+    fill="none"
+    points="6,22 18,8 30,22"
+    stroke="#4169e1"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.4"
+  />
+</svg>
+`;
+
+exports[`PillarMarker > matches snapshot for severity 1`] = `
+<svg
+  aria-label="Pillar of Severity"
+  data-pillar="severity"
+  role="img"
+  viewBox="0 0 36 28"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Pillar of Severity
+  </title>
+  <polyline
+    fill="none"
+    points="6,8 18,22 30,8"
+    stroke="#dc143c"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.4"
+  />
+</svg>
+`;
