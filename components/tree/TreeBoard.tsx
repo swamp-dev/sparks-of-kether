@@ -1,14 +1,22 @@
-import { useId } from 'react';
+import { useId, type KeyboardEvent } from 'react';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
 import type { SefirahKey } from '@/data';
+import type { GameState } from '@/engine/types';
+import { validPathsForPlayer } from './valid-paths';
 
 /**
- * Static SVG of the Tree of Life — 10 Sefirot + 22 paths laid out in
- * the traditional three-pillar geometry. Pure presentation, no game
- * state. Interactivity (move highlighting, click handlers) lands in
- * Phase 3's `Tree board interactive` ticket.
+ * SVG of the Tree of Life — 10 Sefirot + 22 paths laid out in the
+ * traditional three-pillar geometry. Optional interactive overlay:
+ * pass `state` to render player tokens, pass `activePlayerId` to
+ * highlight the paths that player can travel right now, and pass
+ * `onPathClick` to receive a callback when a highlighted path is
+ * clicked or activated by keyboard.
  *
- * Coordinate system: 400×600 viewBox. Pillars are anchored at x=80
+ * Without those props the board stays purely static — that's the
+ * dev-only `/demo/tree` rendering. The interactive props are additive,
+ * so existing call sites are unaffected.
+ *
+ * Coordinate system: 400×620 viewBox. Pillars are anchored at x=80
  * (Severity, viewer's left), x=200 (Balance, center), x=320 (Mercy,
  * viewer's right). Vertical positions are tuned for readability
  * rather than reproducing any specific historical diagram exactly.
@@ -63,12 +71,36 @@ const glyphForeground: Readonly<Record<SefirahKey, string>> = {
 
 interface TreeBoardProps {
   readonly className?: string;
+  /**
+   * If provided, the board renders player tokens at each player's
+   * current Sefirah. Without it, the board is purely decorative.
+   */
+  readonly state?: GameState;
+  /**
+   * Player whose move highlights to show. Must match an `id` in
+   * `state.players`. If omitted (or unknown), no highlights render
+   * even when `state` is provided.
+   */
+  readonly activePlayerId?: string;
+  /**
+   * Fires when a *highlighted* path is clicked or keyboard-activated.
+   * Clicks on non-highlighted paths are no-ops by design — invalid
+   * moves shouldn't cost a click.
+   */
+  readonly onPathClick?: (pathNumber: number) => void;
 }
 
-export function TreeBoard({ className }: TreeBoardProps): JSX.Element {
+export function TreeBoard({
+  className,
+  state,
+  activePlayerId,
+  onPathClick,
+}: TreeBoardProps): JSX.Element {
   // Scope the gradient ID per render so two TreeBoards in the same DOM
   // don't fight over a global #treeBackground reference.
   const gradientId = `tree-bg-${useId()}`;
+  const validPaths = computeValidPaths(state, activePlayerId);
+  const interactive = onPathClick !== undefined;
   // Map-style accessibility: the SVG carries `role="figure"` with a
   // `<title>` describing the whole. Each Sefirah and path then exposes
   // its own `aria-label` so screen-reader users can navigate the tree
@@ -99,28 +131,56 @@ export function TreeBoard({ className }: TreeBoardProps): JSX.Element {
           const letter = letterByKey(path.letterKey);
           const fromName = sefirahByKey(path.from).englishName;
           const toName = sefirahByKey(path.to).englishName;
+          const isValid = validPaths.has(path.number);
           // Prose, not "↔" — screen readers announce the arrow as
           // "left right arrow" which clutters every label.
-          const label = `Path ${path.number} (${letter.name}) — Arcanum ${path.arcanumNumber}, between ${fromName} and ${toName}`;
+          const baseLabel = `Path ${path.number} (${letter.name}) — Arcanum ${path.arcanumNumber}, between ${fromName} and ${toName}`;
+          const label = isValid ? `${baseLabel} (available move)` : baseLabel;
+          // `clickable` is true only when `onPathClick` is defined AND
+          // the path is currently valid for the active player. Capture
+          // the callback in a const so the closures below don't carry
+          // a misleading optional-chain through the type system.
+          const clickable = interactive && isValid;
+          const onClickHandler = onPathClick;
+          const handleClick =
+            clickable && onClickHandler
+              ? () => onClickHandler(path.number)
+              : undefined;
+          const handleKey =
+            clickable && onClickHandler
+              ? (e: KeyboardEvent<SVGLineElement>): void => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onClickHandler(path.number);
+                  }
+                }
+              : undefined;
           return (
             <line
               key={path.number}
               data-path={path.number}
+              data-valid={isValid ? 'true' : 'false'}
               x1={a.x}
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke="#f8f8ff"
-              strokeOpacity={0.35}
-              strokeWidth={1.5}
-              role="img"
+              stroke={isValid ? '#ffd700' : '#f8f8ff'}
+              strokeOpacity={isValid ? 0.95 : 0.35}
+              strokeWidth={isValid ? 3 : 1.5}
+              role={clickable ? 'button' : 'img'}
               aria-label={label}
+              tabIndex={clickable ? 0 : undefined}
+              style={clickable ? { cursor: 'pointer' } : undefined}
+              onClick={handleClick}
+              onKeyDown={handleKey}
             >
               <title>{label}</title>
             </line>
           );
         })}
       </g>
+
+      <PlayerTokens state={state} activePlayerId={activePlayerId} />
 
       <g data-layer="nodes">
         {sefirot.map((sefirah) => {
@@ -214,4 +274,130 @@ function Starfield(): JSX.Element {
       ))}
     </g>
   );
+}
+
+const PLAYER_TOKEN_COLORS: readonly string[] = [
+  '#d4af37', // gold
+  '#3a8f4a', // green
+  '#9b88c4', // violet
+  '#e07b00', // orange
+];
+const TOKEN_RADIUS = 10;
+
+/**
+ * Pick a stable color for a player based on their id, not their array
+ * index. If a player disconnects mid-session, the remaining players'
+ * colors must not shuffle — observers track each other by color, and
+ * a silent reassignment is a real UX trap.
+ *
+ * Hash is djb2-style and intentionally weak — we only need a uniform
+ * mapping into 4 buckets. Colour collisions across 5+ players are
+ * possible but tolerable; the active-ring + initial differentiate.
+ */
+function tokenColorForId(playerId: string): string {
+  let hash = 5381;
+  for (let i = 0; i < playerId.length; i++) {
+    hash = (hash * 33) ^ playerId.charCodeAt(i);
+  }
+  const idx = Math.abs(hash) % PLAYER_TOKEN_COLORS.length;
+  return PLAYER_TOKEN_COLORS[idx] ?? '#f8f8ff';
+}
+
+/**
+ * Render player tokens on top of their current Sefirah. Multiple
+ * players on one Sefirah stack horizontally below the node so they
+ * don't overlap. The active player's token gets a brighter outer
+ * ring so the orchestrator can read "whose turn is it" from the board
+ * without consulting another panel.
+ *
+ * Pure presentational layer — no interaction, no token-drag. Phase 3
+ * surfaces movement via the path click handler; the token is just an
+ * indicator of who's where.
+ */
+function PlayerTokens({
+  state,
+  activePlayerId,
+}: {
+  state: GameState | undefined;
+  activePlayerId: string | undefined;
+}): JSX.Element | null {
+  if (!state) return null;
+  const groups = new Map<SefirahKey, typeof state.players>();
+  for (const player of state.players) {
+    const list = groups.get(player.position) ?? [];
+    groups.set(player.position, [...list, player]);
+  }
+  const tokens: JSX.Element[] = [];
+  for (const player of state.players) {
+    const groupAtPos = groups.get(player.position) ?? [];
+    const positionInGroup = groupAtPos.findIndex((p) => p.id === player.id);
+    const groupSize = groupAtPos.length;
+    const node = nodeLayout[player.position];
+    // Center the row: each token sits at offset (i - (n-1)/2) * spacing
+    // from the node's x. With one player the offset is 0; with two,
+    // ±(spacing/2); etc.
+    const spacing = TOKEN_RADIUS * 2 + 2;
+    const groupWidth = (groupSize - 1) * spacing;
+    const tokenX = node.x - groupWidth / 2 + positionInGroup * spacing;
+    const tokenY = node.y + NODE_RADIUS + 4 + TOKEN_RADIUS;
+    const color = tokenColorForId(player.id);
+    const isActive = player.id === activePlayerId;
+    const initial =
+      (player.name.charAt(0) || player.id.charAt(0) || '?').toUpperCase();
+    tokens.push(
+      <g
+        key={player.id}
+        data-player={player.id}
+        data-active={isActive ? 'true' : 'false'}
+        role="img"
+        aria-label={`${player.name} at ${sefirahByKey(player.position).englishName}${isActive ? ' (active turn)' : ''}`}
+      >
+        {isActive ? (
+          <circle
+            cx={tokenX}
+            cy={tokenY}
+            r={TOKEN_RADIUS + 3}
+            fill="none"
+            stroke="#f8f8ff"
+            strokeOpacity={0.9}
+            strokeWidth={1.5}
+          />
+        ) : null}
+        <circle
+          cx={tokenX}
+          cy={tokenY}
+          r={TOKEN_RADIUS}
+          fill={color}
+          stroke="#0e0a1f"
+          strokeWidth={1.5}
+        />
+        <text
+          x={tokenX}
+          y={tokenY + 4}
+          textAnchor="middle"
+          fontSize={11}
+          fontFamily="var(--font-display), serif"
+          fontWeight={600}
+          fill="#0e0a1f"
+        >
+          {initial}
+        </text>
+      </g>,
+    );
+  }
+  return <g data-layer="players">{tokens}</g>;
+}
+
+/**
+ * Build the set of valid path numbers for the active player, or an
+ * empty set when interactivity isn't engaged. Returning a `Set` (not
+ * an array) keeps the per-path lookup O(1) — there are 22 paths so
+ * the difference is academic, but the intent is clearer.
+ */
+function computeValidPaths(
+  state: GameState | undefined,
+  activePlayerId: string | undefined,
+): ReadonlySet<number> {
+  if (!state || !activePlayerId) return new Set();
+  return new Set(validPathsForPlayer(state, activePlayerId));
 }

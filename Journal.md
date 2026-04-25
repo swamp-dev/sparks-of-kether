@@ -1431,3 +1431,47 @@ will need is in place. No more art ticketing until Phase 6 polish.
 - Phase 2 (#17–#20) now all in review: #59, #60, #61, and this PR.
 
 **Commit(s):** `4d3f84a`, `800dfd0`
+
+---
+
+## 2026-04-25T17:27:57-04:00 — #21: Tree board interactive (Phase 3 begins)
+
+**Pushed:** First Phase 3 ticket. Extended `TreeBoard` with optional
+GameState-driven props that turn the static board into the game's
+primary interactive surface.
+
+- New props on `TreeBoard`: `state`, `activePlayerId`, `onPathClick`.
+  All optional and additive — without them the board renders exactly
+  as before.
+- Player tokens render on top of each player's current Sefirah,
+  stacking horizontally below the node when multiple players share
+  one. The active player's token gets a brighter outer ring.
+- Paths the active player can travel render gold + thicker stroke;
+  others stay dim. Highlighted paths become `role="button"` with
+  `tabIndex={0}` and respond to click + Enter/Space — non-
+  highlighted paths stay `role="img"`.
+- `components/tree/valid-paths.ts` is the UI-side wrapper around
+  the engine's `adjacentPaths`. Soft-fails to `[]` on unknown ids
+  so a stale `activePlayerId` during a real-time state transition
+  doesn't crash the render path.
+
+**Why:** First piece of UI that actually plays the game — the
+board becomes a control, not a decoration.
+
+**Reviewer findings addressed in fix push:**
+- Significant: token color was indexed by array position. If a
+  player disconnected, the others' colors silently reshuffled.
+  Switched to a djb2 hash of `player.id` so colors are stable.
+- Significant: dead `onPathClick?.()` optional chains. Captured
+  the callback in a const so closures don't carry misleading `?.`.
+- Tests added: read-only highlight case (state + activePlayerId,
+  no onPathClick); stale-id case (activePlayerId not in state).
+- Stacking test now asserts exact cx values (189/211 for two
+  tokens centered on Malkuth at x=200).
+- Aria-label assertions tightened to the exact template.
+- Initial-letter fallback uses player id rather than array index.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (352/352), build ✓.
+
+**Commit(s):** `db8837b`, `0b8f3d0`
