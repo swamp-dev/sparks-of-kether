@@ -1,4 +1,5 @@
 import type { SefirahKey } from '@/data';
+import { applyEvent } from './counters';
 import type { GameState, PlayerAbilityFlags, PlayerState, Result, SpentSpark } from './types';
 
 // ──────────────── Public types ────────────────
@@ -134,7 +135,15 @@ export function useSpark(
     );
   }
   const afterSpend = replacePlayer(applied.value, spendSparkOn(postApplyPlayer, requiredSefirah));
-  return { ok: true, value: recordSpend(afterSpend, { playerId, sefirah: requiredSefirah }) };
+  const recorded = recordSpend(afterSpend, { playerId, sefirah: requiredSefirah });
+  // Spent Sparks still contribute +1 Illumination per design/mechanics.md.
+  // Routed through applyEvent so the rule lives in events.ts.
+  const final = applyEvent(recorded, {
+    kind: 'spark-spent',
+    playerId,
+    sefirah: requiredSefirah,
+  });
+  return { ok: true, value: final };
 }
 
 // ──────────────── Per-ability effect application ────────────────
@@ -209,7 +218,7 @@ function applyChesedGrace(
     ...receiver,
     hand: [...receiver.hand, arcanumNumber],
   };
-  const next: GameState = {
+  const transferred: GameState = {
     ...state,
     players: state.players.map((p) => {
       if (p.id === giver.id) return nextGiver;
@@ -217,6 +226,14 @@ function applyChesedGrace(
       return p;
     }),
   };
+  // Gifts give the giver +1 Illumination per `design/mechanics.md`.
+  // Routed through applyEvent so the counter rule lives in events.ts.
+  const next = applyEvent(transferred, {
+    kind: 'card-gifted',
+    fromPlayerId: giver.id,
+    toPlayerId: receiver.id,
+    arcanumNumber,
+  });
   return { ok: true, value: next };
 }
 

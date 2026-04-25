@@ -1,5 +1,6 @@
-import { paths, tryPathByNumber } from '@/data';
+import { paths, sefirahByKey, tryPathByNumber } from '@/data';
 import type { Path, SefirahKey } from '@/data';
+import { applyEvent, applyEvents, recordPillarMove } from './counters';
 import type { GameState, MoveRejection, MoveResult, PlayerState, Result } from './types';
 
 // ──────────────── Pure derivations ────────────────
@@ -95,13 +96,18 @@ export function canTravelPath(
  *   - The played arcanum moves from the player's hand to the shared
  *     discard pile (one copy only, even if duplicates exist).
  *   - Other players are untouched.
+ *   - Pillar streak updated; threshold events emitted via `applyEvents`
+ *     for imbalance / equilibrium.
+ *   - Downward moves (toward Malkuth) emit `move-downward` for +1 Illumination.
  */
 export function applyMove(state: GameState, playerId: string, pathNumber: number): MoveResult {
   const validation = canTravelPath(state, playerId, pathNumber);
   if (!validation.ok) return validation;
   const { path, player } = validation.value;
 
+  const fromSefirah = sefirahByKey(player.position);
   const destination: SefirahKey = path.from === player.position ? path.to : path.from;
+  const toSefirah = sefirahByKey(destination);
   const handIndex = player.hand.indexOf(path.arcanumNumber);
   const nextHand = [...player.hand.slice(0, handIndex), ...player.hand.slice(handIndex + 1)];
 
@@ -111,11 +117,25 @@ export function applyMove(state: GameState, playerId: string, pathNumber: number
     hand: nextHand,
   };
 
-  const nextState: GameState = {
+  // Pillar streak: tracked team-wide. The destination's pillar is
+  // what counts toward streaks; Balance moves are neutral.
+  const streakResult = recordPillarMove(state.pillarStreak, toSefirah.pillar);
+
+  let nextState: GameState = {
     ...state,
     players: state.players.map((p) => (p.id === playerId ? nextPlayer : p)),
     discardPile: [...state.discardPile, path.arcanumNumber],
+    pillarStreak: streakResult.streak,
   };
+  // Fold pillar threshold events into counters.
+  nextState = applyEvents(nextState, streakResult.events);
+
+  // "Downward" = toward Malkuth (higher sefirah.number). Moving
+  // voluntarily downward grants +1 Illumination per design/mechanics.md
+  // (an act of humility).
+  if (toSefirah.number > fromSefirah.number) {
+    nextState = applyEvent(nextState, { kind: 'move-downward', playerId, pathNumber });
+  }
 
   return { ok: true, value: nextState };
 }

@@ -1018,3 +1018,152 @@ adds another layer of indirection that obscures intent.
 
 **Commit(s):** `e229677`
 
+---
+
+## 2026-04-24T23:42:19-04:00 — #15: event-sourced counters + pillar streak (initial push)
+
+**Pushed:** event-sourcing layer for Illumination/Separation; pillar
+streak detection; refactor of every counter write through `applyEvent`.
+
+- `engine/events.ts` — NEW. `GameEvent` discriminated union (8
+  variants): `spark-earned`, `spark-spent`, `card-gifted`,
+  `check-failed-accepted` (with `shortcut` flag),
+  `pillar-streak-imbalance`, `pillar-streak-equilibrium`,
+  `shell-activated`, `gift-refused`. `deltaFor(event)` is the
+  single table of counter rules.
+- `engine/counters.ts` — NEW. `applyEvent`/`applyEvents` reducers,
+  `recordPillarMove(streak, pillar)` emits zero, one, or two
+  threshold events per move. `STREAK_THRESHOLD = 3`.
+- `engine/types.ts` — `PillarStreakState`, `EMPTY_PILLAR_STREAK`,
+  `GameState.pillarStreak`.
+- `test/fixtures.ts` — defaults updated.
+- `engine/__tests__/counters.test.ts` — 20 tests, TDD-first.
+- **Refactor**:
+  - `engine/checks.ts` `resolveChallenge` success → emits
+    `spark-earned` instead of bumping `illumination` directly.
+  - `engine/checks.ts` `acceptSetback` → emits
+    `check-failed-accepted`. Signature now takes
+    `{ playerId, sefirah, shortcut? }` so the event has context.
+    Tests updated to pass the required fields.
+  - `engine/sparks.ts` Chesed Grace → emits `card-gifted`. This
+    fixes a pre-existing bug: prior to this refactor, gifts
+    weren't bumping Illumination, despite mechanics.md mandating it.
+  - `engine/shells.ts` `maybeActivateShell` → emits
+    `shell-activated` on every real activation (not stillborn,
+    not deflect). Adds +2 Separation per the design rule.
+
+**Why:** Ticket #15. Single source of truth for counter rules
+(events.ts) makes #16 (endgame) trivial — it'll be a fold-and-
+compare, no need to chase counter-write sites across modules.
+
+**TDD note:** Wrote 20 counter tests first, then implemented. One
+test had wrong expected value: after two same-pillar moves,
+switching pillar gave alternationCount=2 in my expectation but
+=1 in the impl (correct — same-pillar resets alternationCount to
+0, then the switch goes 0→1). Updated test, not impl.
+
+**Cascading shell activations:** Shell-activated +2 Separation
+can cross the next threshold and activate ANOTHER Shell on the
+next call (not within the same call — `expected` is computed
+from input sep before the loop). At sep=5, one call activates 1
+shell and raises sep to 7; a second call sees sep≥6 and activates
+another. Updated the "calling twice at sep=5" test to assert this
+intentional cross-call cascade behaviour.
+
+**Pre-existing bug fix flagged:** `card-gifted` event now bumps
+Illumination on Chesed gift. Before this refactor, gifts were
+silent. This is a behaviour fix, not just a refactor — called out
+explicitly in the commit message.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (152/152 — was 132,
+  added 20 for counters), build ✓.
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `33f3006`
+
+---
+
+## 2026-04-24T23:51:26-04:00 — #15: review fixes (second push)
+
+**Pushed:** code-reviewer found four significant gaps. All addressed:
+
+- **`spark-spent` event never emitted.** `useSpark` removed the
+  Spark from `sparksHeld` but didn't bump Illumination. Same class
+  as the Chesed-gift bug. Added emission after `recordSpend`.
+- **`recordPillarMove` was dead code.** `applyMove` never called
+  it. Wired the streak update + event fold into `applyMove`'s
+  success path. Pillar tracking now actually fires.
+- **`assist-contributed` event variant added.** Per
+  `design/mechanics.md`, a successful assisted check awards the
+  *assistant* +1 Illumination per assist. Variant added to
+  `events.ts`; one event emitted per non-empty `assistStats` entry
+  in `resolveChallenge` on success.
+- **`move-downward` event variant added.** Per design, a voluntary
+  move toward Malkuth (higher `sefirah.number`) grants +1 Illumination
+  as humility. Variant added; `applyMove` emits it when the
+  destination's number exceeds the origin's.
+
+**Improvements taken:**
+- Documented the dual-threshold-emission case in `recordPillarMove`
+  jsdoc — same-pillar resets alternation to 0 and cross-pillar
+  resets sameCount to 1, so dual emission is structurally
+  unreachable. The dual checks remain as defensive code.
+- Documented the streak-state bifurcation (state updates inline,
+  side-effects via events).
+- Added a one-sentence note that the triggering move isn't
+  counted toward the next streak (sameCount → 0, not 1).
+- New tests:
+  - `assist-contributed` and `move-downward` deltas in counters.test.ts.
+  - Integration: `applyMove` downward → +1 Illumination.
+  - Integration: `applyMove` upward → 0 Illumination.
+  - Integration: `applyMove` updates `pillarStreak`.
+  - Integration: per-Spark, `useSpark` emits +1 Illumination on spend.
+
+**Why:** All four reviewer findings were live counter gaps. The
+ticket explicitly says "every counter change traceable to an event"
+— with these gaps, that wasn't true. Now it is.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (166/166 — was 152,
+  added 14 here), build ✓.
+- Reviewer praised closed-union shape, applyEvent same-reference
+  on zero-delta, acceptSetback signature, shell-activated emission
+  scope, and the card-gifted behavior fix folded in.
+
+**Commit(s):** `6c118a9` (pushed as `9013877`)
+
+---
+
+## 2026-04-25T00:12:12-04:00 — #15: second-round review polish
+
+**Pushed:** Re-ran `code-reviewer` on the fix commit (user asked
+whether the fix itself had been reviewed; it hadn't). Verdict:
+"Ship." Two minor improvements taken:
+
+- **`assist-contributed` JSDoc contradiction.** Previously said
+  "the challenger does not get the +1 — the assistant does" and
+  then admitted the event was anonymous. Reviewer flagged the
+  mismatch. Rephrased: "Illumination is team-wide, so per-
+  assistant attribution isn't needed for the counter; `challengerId`
+  and `sefirah` are recorded for audit/log use."
+- **`for (let i = 0; ...)` with unused `i`** in `resolveChallenge`
+  → `for (const _stat of modifiers.assistStats)`. Same loop count;
+  unused-binding intent is now explicit.
+
+**Why:** Closing the workflow loop. Per CLAUDE.md, code review
+runs before PR — but I'd been pushing fix commits without
+re-review. Surfaced when the user asked directly. Pattern fix:
+re-review fix pushes, even minor ones.
+
+**Design question deferred:** reviewer noted a zero-stat assist
+still emits +1 Illumination. Whether that's "declared assist" or
+"meaningful assist" is a design call. Leaving as-is for #15; a
+future ticket can clarify.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (166/166).
+- Build not re-run (no runtime change).
+
+**Commit(s):** `42a66c5`
+

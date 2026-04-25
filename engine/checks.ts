@@ -1,5 +1,6 @@
 import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
+import { applyEvent } from './counters';
 import type { Rng } from './rng';
 import type { GameState, PlayerState, Result } from './types';
 
@@ -169,18 +170,35 @@ export function resolveChallenge(
     sparksHeld: new Set(player.sparksHeld).add(sefirah),
   };
 
-  const newState: GameState = {
+  const stateWithCleared: GameState = {
     ...state,
     players: state.players.map((p) => (p.id === playerId ? updatedPlayer : p)),
-    illumination: state.illumination + 1,
   };
+  // Each counter bump goes through applyEvent — single source of truth.
+  // Spark earned for the challenger; one assist-contributed event per
+  // assistant (design/mechanics.md: "the assistant gets the +1, not
+  // the challenger").
+  let newState = applyEvent(stateWithCleared, {
+    kind: 'spark-earned',
+    playerId,
+    sefirah,
+  });
+  for (const _stat of modifiers.assistStats) {
+    newState = applyEvent(newState, {
+      kind: 'assist-contributed',
+      challengerId: playerId,
+      sefirah,
+    });
+  }
 
   return { ok: true, value: { newState, outcome } };
 }
 
 // ──────────────── acceptSetback ────────────────
 
-export interface SetbackOptions {
+export interface SetbackInput {
+  readonly playerId: string;
+  readonly sefirah: SefirahKey;
   /**
    * True if the failure was on a shortcut-path challenge (central
    * pillar arrival at Yesod/Tiferet/Kether). Per `design/mechanics.md`,
@@ -191,11 +209,16 @@ export interface SetbackOptions {
 
 /**
  * Absorb the cost of a failed challenge the player chose not to retry.
- * Raises team Separation by 1 (or by 2 for shortcut failures). Position
- * rollback (being pushed back one Sefirah) happens at the movement
- * layer, not here — this reducer owns the counter bump only.
+ * Emits a `check-failed-accepted` event — the counter bump (+1, or +2
+ * for shortcut failures) happens through `applyEvent` so all rules
+ * stay in `events.ts`. Position rollback (push back one Sefirah)
+ * happens at the movement layer, not here.
  */
-export function acceptSetback(state: GameState, opts: SetbackOptions = {}): GameState {
-  const delta = opts.shortcut ? 2 : 1;
-  return { ...state, separation: state.separation + delta };
+export function acceptSetback(state: GameState, input: SetbackInput): GameState {
+  return applyEvent(state, {
+    kind: 'check-failed-accepted',
+    playerId: input.playerId,
+    sefirah: input.sefirah,
+    shortcut: input.shortcut ?? false,
+  });
 }

@@ -264,14 +264,14 @@ describe('resolveChallenge', () => {
 describe('acceptSetback', () => {
   it('increments separation by 1 and returns new state', () => {
     const state = makeState({ position: 'yesod' });
-    const next = acceptSetback(state);
+    const next = acceptSetback(state, { playerId: 'p1', sefirah: 'yesod' });
     expect(next.separation).toBe(1);
     expect(next).not.toBe(state); // fresh object
   });
 
   it('does not touch player state or other counters', () => {
     const state = makeState({ position: 'yesod', clearedSefirot: new Set(['hod']) });
-    const next = acceptSetback(state);
+    const next = acceptSetback(state, { playerId: 'p1', sefirah: 'yesod' });
     expect(next.illumination).toBe(0);
     expect(next.players[0]).toEqual(state.players[0]);
   });
@@ -281,7 +281,7 @@ describe('acceptSetback', () => {
     // not +1. The caller flags the shortcut context; the reducer
     // reads it.
     const state = makeState({ position: 'yesod' });
-    const next = acceptSetback(state, { shortcut: true });
+    const next = acceptSetback(state, { playerId: 'p1', sefirah: 'yesod', shortcut: true });
     expect(next.separation).toBe(2);
   });
 });

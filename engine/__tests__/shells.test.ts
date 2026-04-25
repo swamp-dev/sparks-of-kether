@@ -126,11 +126,19 @@ describe('maybeActivateShell — threshold crossings', () => {
     ).toBe(4);
   });
 
-  it('is idempotent within a threshold window — calling twice at separation 5 still activates only 1', () => {
-    const state = makeState({}, { separation: 5 });
-    const once = maybeActivateShell(state);
-    const twice = maybeActivateShell(once);
-    expect(countShellsBy(twice.shells, 'active')).toBe(1);
+  it('a single call activates exactly the shells the input separation demands (cascade across calls)', () => {
+    // Each Shell activation now bumps Separation by +2 (the rule moved
+    // into events.ts in #15). At sep=5, a single call has expected=1
+    // and activates one Shell, raising Separation to 7. A *second*
+    // call sees the new threshold (≥6) and activates another. That
+    // cross-call cascade is intentional. The first call alone never
+    // overshoots its input.
+    const start = makeState({}, { separation: 5 });
+    const after = maybeActivateShell(start);
+    expect(countShellsBy(after.shells, 'active')).toBe(1);
+    expect(after.separation).toBe(7);
+    const next = maybeActivateShell(after);
+    expect(countShellsBy(next.shells, 'active')).toBe(2);
   });
 });
 

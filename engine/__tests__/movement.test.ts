@@ -166,6 +166,36 @@ describe('applyMove', () => {
     expect(second.value.discardPile).toEqual([21, 17]);
   });
 
+  it('downward move (toward Malkuth) emits +1 Illumination', () => {
+    // Path 32 (Yesod ↔ Malkuth, arcanum 21). Yesod number = 9, Malkuth = 10
+    // → traversing Yesod → Malkuth is downward.
+    const state = makeState({ position: 'yesod', hand: [21] });
+    const result = applyMove(state, 'p1', 32);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.illumination).toBe(1);
+  });
+
+  it('upward move (away from Malkuth) does NOT emit downward Illumination', () => {
+    // Same path 32, traversed Malkuth → Yesod. Malkuth(10) → Yesod(9) is upward.
+    const state = makeState({ position: 'malkuth', hand: [21] });
+    const result = applyMove(state, 'p1', 32);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.illumination).toBe(0);
+  });
+
+  it('updates pillarStreak on each move', () => {
+    // Path 21 (Chesed↔Netzach) is Mercy↔Mercy. After one such move,
+    // streak.currentPillar should be mercy with sameCount=1.
+    const state = makeState({ position: 'chesed', hand: [10] });
+    const result = applyMove(state, 'p1', 21);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.pillarStreak.currentPillar).toBe('mercy');
+    expect(result.value.pillarStreak.sameCount).toBe(1);
+  });
+
   it('second applyMove fails when the original-state path is no longer adjacent', () => {
     // After moving off Malkuth, a Malkuth-adjacent path should fail —
     // confirms that apply actually commits the new position.

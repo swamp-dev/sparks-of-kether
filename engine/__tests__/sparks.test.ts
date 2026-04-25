@@ -331,6 +331,16 @@ describe('useSpark — invariants across all abilities', () => {
     },
   );
 
+  it.each(soloAbilities)('$key: spending emits +1 Illumination', ({ key, ability }) => {
+    // design/mechanics.md: spent Sparks still contribute +1 Illumination.
+    // Routed through the spark-spent event in #15.
+    const state = stateWithSpark(key);
+    const result = useSpark(state, 'p1', ability);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.illumination).toBe(1);
+  });
+
   it('chesed-grace: Spark is spent exactly once (despite touching two players)', () => {
     // Chesed needs a receiver, so it can't share the solo fixture.
     // The real risk here is double-spend or partial-spend bugs when

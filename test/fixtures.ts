@@ -1,6 +1,6 @@
 import type { StatKey } from '@/data';
 import type { GameState, PlayerState, StatSheet } from '@/engine/types';
-import { EMPTY_ABILITY_FLAGS, EMPTY_SHELL_STATE } from '@/engine/types';
+import { EMPTY_ABILITY_FLAGS, EMPTY_PILLAR_STREAK, EMPTY_SHELL_STATE } from '@/engine/types';
 
 /** A sensible-default stat sheet so test fixtures don't have to enumerate all ten. */
 export const DEFAULT_STATS: StatSheet = {
@@ -61,6 +61,7 @@ export function makeState(
     spentSparks: [],
     shells: EMPTY_SHELL_STATE,
     shellsDeflected: 0,
+    pillarStreak: EMPTY_PILLAR_STREAK,
     ...stateOverrides,
   };
 }

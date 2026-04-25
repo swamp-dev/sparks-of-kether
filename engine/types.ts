@@ -130,7 +130,35 @@ export interface GameState {
    * if another threshold fires.
    */
   readonly shellsDeflected: number;
+  /**
+   * Team-wide pillar-streak tracker. Mercy/Severity moves build streaks
+   * in two directions (sameness and alternation); reaching a threshold
+   * (3) emits the corresponding event. Balance moves are neutral.
+   */
+  readonly pillarStreak: PillarStreakState;
 }
+
+/**
+ * Pillar-streak position. Two counters move in parallel:
+ *   - `sameCount` rises on consecutive non-Balance moves on the same
+ *     pillar; at 3 → imbalance event (+1 Separation).
+ *   - `alternationCount` rises on consecutive Mercy↔Severity crossings;
+ *     at 3 → equilibrium event (+1 Illumination).
+ * Balance moves do nothing — they neither advance nor reset either.
+ */
+export interface PillarStreakState {
+  /** Last non-Balance pillar moved on; `null` until the first such move. */
+  readonly currentPillar: 'mercy' | 'severity' | null;
+  readonly sameCount: number;
+  readonly alternationCount: number;
+}
+
+/** Canonical zeroed pillar-streak shape for new games. */
+export const EMPTY_PILLAR_STREAK: PillarStreakState = {
+  currentPillar: null,
+  sameCount: 0,
+  alternationCount: 0,
+};
 
 /** Permanent record of a single Spark expenditure. */
 export interface SpentSpark {

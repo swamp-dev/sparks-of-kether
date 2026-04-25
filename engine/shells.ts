@@ -1,5 +1,6 @@
 import { sefirot } from '@/data';
 import type { SefirahKey } from '@/data';
+import { applyEvent } from './counters';
 import type { GameState, ShellStateMap, ShellStatus } from './types';
 
 /**
@@ -157,6 +158,12 @@ export function maybeActivateShell(state: GameState): GameState {
       ...result,
       shells: { ...result.shells, [target]: newStatus },
     };
+    // Activations cost the team +2 Separation per design/mechanics.md.
+    // Stillborn-banishments do NOT — the Shell never woke. Routed
+    // through applyEvent so the rule lives in events.ts.
+    if (newStatus === 'active') {
+      result = applyEvent(result, { kind: 'shell-activated', sefirah: target });
+    }
   }
 
   return result;
