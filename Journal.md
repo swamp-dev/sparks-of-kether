@@ -1207,3 +1207,50 @@ math obviously couldn't support a 4-player session.
 
 **Commit(s):** `ae703df`
 
+---
+
+## 2026-04-25T00:52:02-04:00 — #16: endgame + Final Threshold (last Phase 1 ticket)
+
+**Pushed:** TDD-first implementation of the win/loss + Final
+Threshold engine layer.
+
+- `checkEndgame(state)` — flat `EndgameStatus` with `status` and
+  optional `reason`. Loss precedence: separation overflow at ≥15,
+  then stranded (no cards anywhere). Win when all at Kether AND
+  illumination ≥ separation + 5.
+- `canReachKether(state, from)` — BFS over the induced subgraph
+  whose edges are paths whose arcanum cards are pooled across the
+  team (hands + deck + discard). 10 Sefirot, 22 paths max — array-
+  shift queue is fine. Pure utility, exposed for UI hints.
+- `resolveFinalThreshold({ state, cardPlays, sparkBurns })` — the
+  Kether ritual. Discards committed plays (no path travel at
+  Kether), burns sparks 1-for-1 via the standard `spark-spent`
+  event (each = +1 Illumination through `applyEvent`), then
+  evaluates the win condition. Returns `Result<…, 'not-all-at-
+  kether' | 'game-already-lost' | 'card-not-held' | 'spark-not-
+  held'>`. On success, status is `'won'` or `'lost'` with
+  `reason: 'illumination-gap'`.
+
+**Why:** Closes the Phase 1 engine. With this, every counter
+rule that affects the outcome is in code, and the orchestrator
+(later ticket) can drive a full game from setup through threshold.
+
+**Reviewer findings addressed in fix push:**
+- Significant: `resolveFinalThreshold` could declare a win on a
+  state `checkEndgame` calls lost (separation overflow). Added
+  `'game-already-lost'` rejection at the top of the ritual.
+- Significant: `'illumination-gap'` lived on `EndgameStatus`
+  where it was dead — `checkEndgame` never emits it. Moved onto
+  `FinalThresholdSuccess.reason`, its only emission site.
+- Minor: BFS adjacency build cleaned via local `addEdge` helper.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (189/189).
+- Tests adjusted: the "fresh game returns ongoing" test originally
+  used `makeState()` defaults (empty deck), which collided with
+  the explicit "stranded" test using identical state. Updated the
+  ongoing/won-at-Kether tests to provide a card so the contrast
+  with stranded is unambiguous.
+
+**Commit(s):** `6f0935e`, `1b9c186`
+
