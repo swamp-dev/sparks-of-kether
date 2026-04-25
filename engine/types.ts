@@ -117,6 +117,19 @@ export interface GameState {
    * tracking (each spent Spark still contributes) and for replay logs.
    */
   readonly spentSparks: readonly SpentSpark[];
+  /**
+   * Lifecycle status of every Shell. Default for a new game is all
+   * `dormant`; `EMPTY_SHELL_STATE` is the canonical starter.
+   */
+  readonly shells: ShellStateMap;
+  /**
+   * Count of Shell-activation thresholds the team has *deflected* via
+   * Gevurah cancellations. The Shell never wakes — distinct from a
+   * banishment, which is the post-active end state. Stored separately
+   * from the `shells` map so a deflected Shell can still wake later
+   * if another threshold fires.
+   */
+  readonly shellsDeflected: number;
 }
 
 /** Permanent record of a single Spark expenditure. */
@@ -124,6 +137,38 @@ export interface SpentSpark {
   readonly playerId: string;
   readonly sefirah: SefirahKey;
 }
+
+// ──────────────── Shells ────────────────
+
+/**
+ * Lifecycle of a Shell:
+ *   `dormant`  — default; Shell is asleep, no effect on the game.
+ *   `active`   — Shell awakened; its inversion-of-Sefirah pressure is
+ *                in force until banished.
+ *   `banished` — Shell defeated; cannot wake again this game.
+ *
+ * Once banished, a Shell stays banished — there's no path back to
+ * dormant or active. Names are descriptive only ("Shell of X");
+ * traditional Qliphothic intelligences are NEVER named in code or UI.
+ */
+export type ShellStatus = 'dormant' | 'active' | 'banished';
+
+/** Map of every Sefirah's Shell status. Default is all `dormant`. */
+export type ShellStateMap = Readonly<Record<SefirahKey, ShellStatus>>;
+
+/** Canonical "everything dormant" starter for new games. */
+export const EMPTY_SHELL_STATE: ShellStateMap = {
+  kether: 'dormant',
+  chokmah: 'dormant',
+  binah: 'dormant',
+  chesed: 'dormant',
+  gevurah: 'dormant',
+  tiferet: 'dormant',
+  netzach: 'dormant',
+  hod: 'dormant',
+  yesod: 'dormant',
+  malkuth: 'dormant',
+};
 
 // ──────────────── Move-specific failure kinds ────────────────
 

@@ -924,3 +924,97 @@ reads `shellCancellationsAvailable`.
 
 **Commit(s):** `300664d`
 
+---
+
+## 2026-04-24T22:44:59-04:00 — #14: Shells (initial push)
+
+**Pushed:** the Qliphothic-pressure system. Ten Shells, awakening on
+Separation thresholds, banishing on Sefirah-clear, deflectable by
+Gevurah cancellations.
+
+- `engine/types.ts` — extended:
+  - `ShellStatus = 'dormant' | 'active' | 'banished'`.
+  - `ShellStateMap = Readonly<Record<SefirahKey, ShellStatus>>`.
+  - `EMPTY_SHELL_STATE` (all dormant).
+  - `GameState.shells` + `GameState.shellsDeflected` (counter for
+    thresholds consumed by Gevurah cancellations — distinct from
+    banishment so a deflected Shell can still wake later).
+- `engine/shells.ts`:
+  - `pickNextShellTarget(state)` — fewest team Sparks among dormant
+    Sefirot; tie-break by lowest-on-tree (highest sefirah number).
+  - `maybeActivateShell(state)` — idempotent. Activates Shells
+    until `thresholdsHandled = floor(sep/3)` (capped at 4). Each
+    pass: consume cancellation if available (deflect, Shell stays
+    dormant) → otherwise pick target → stillborn-banish if cleared,
+    else activate.
+  - `banishShell(state, sefirah)` — public. Idempotent.
+  - `isShellActive(state, sefirah)` generic + 10 named per-Shell
+    helpers.
+  - `countShellsBy(map, status)`, `SHELL_THRESHOLD_STEP=3`,
+    `MAX_ACTIVATIONS=4`.
+- `test/fixtures.ts` — defaults for new fields.
+- `engine/__tests__/shells.test.ts` — 27 tests.
+
+**Why:** Ticket #14. Last antagonistic mechanic before counters
+(#15) and endgame (#16). Reads `shellCancellationsAvailable` from
+#13.
+
+**TDD note:** Wrote 27 tests first; 3 failed on first run — useful
+forcing function on design:
+1. **Stillborn test** assumed the picker would land on a cleared
+   Sefirah by tie-break. Realised the picker correctly avoids
+   cleared ones via the "fewest Sparks" rule. Rewrote setup to
+   clear ALL 10 Sefirot — picker tie-breaks to Malkuth, which IS
+   cleared → stillborn-banish.
+2. **Cancellation tests** initially expected deflection to leave
+   shells fully dormant, but my impl banished one to account for
+   the threshold. Refactored: added `shellsDeflected` counter so
+   deflected Shells stay dormant and can wake on later thresholds.
+   Cleaner semantically.
+3. Final 132/132 (was 105, +27 shells).
+
+**Design choices for later tickets:**
+- `banishShell` is standalone; #25 (turn orchestration) wires it
+  to challenge-clear events. Could delegate to `resolveChallenge`
+  from #12 in a refactor — deferred.
+- 10 named effect helpers are pure derivations of `isShellActive`.
+  Call sites read clearer ("if (isInertiaActive(state))").
+- Shell *effects* (movement costs 2 under Inertia, etc.) are NOT
+  enforced here. Subsystems read the helpers and apply their own
+  behaviour. This module owns lifecycle only.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (132/132), build ✓.
+- Pre-review commit; code-reviewer runs next.
+
+**Commit(s):** `b8f1bf1`
+
+---
+
+## 2026-04-24T22:49:27-04:00 — #14: review fixes (second push)
+
+**Pushed:** code-reviewer said "Ship." with one significant clarity
+nit + two safety/readability improvements. All addressed:
+
+- **Significant — silent break in `maybeActivateShell` loop:** when
+  `pickNextShellTarget` returns `null` mid-loop, exit was opaque.
+  Added an explanatory comment saying this branch is unreachable
+  under MAX_ACTIVATIONS=4 + 10 Shells, but is a defensive guard
+  against future ticket changes.
+- **Improvement — unsafe `Object.keys as SefirahKey[]` cast:**
+  `countShellsBy` only needs values; switched to `Object.values()
+  .filter` — same semantics, no type cast.
+- **Improvement — `isShellActive` could be misused at call sites
+  that should prefer named helpers:** added a JSDoc note pointing
+  callers at `isInertiaActive` etc. and explaining the generic
+  form is for engine internals + parameterized tests.
+
+**Why:** Polish items. Worth doing now before #15 (event sourcing)
+adds another layer of indirection that obscures intent.
+
+**Notes:**
+- Gates remain green: typecheck ✓, lint ✓, test ✓ (132/132 — no
+  new tests; pure refactors and comments).
+
+**Commit(s):** `e229677`
+

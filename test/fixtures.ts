@@ -1,6 +1,6 @@
 import type { StatKey } from '@/data';
 import type { GameState, PlayerState, StatSheet } from '@/engine/types';
-import { EMPTY_ABILITY_FLAGS } from '@/engine/types';
+import { EMPTY_ABILITY_FLAGS, EMPTY_SHELL_STATE } from '@/engine/types';
 
 /** A sensible-default stat sheet so test fixtures don't have to enumerate all ten. */
 export const DEFAULT_STATS: StatSheet = {
@@ -59,6 +59,8 @@ export function makeState(
     revealedCards: new Set(),
     shellCancellationsAvailable: 0,
     spentSparks: [],
+    shells: EMPTY_SHELL_STATE,
+    shellsDeflected: 0,
     ...stateOverrides,
   };
 }
