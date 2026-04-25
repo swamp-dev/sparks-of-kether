@@ -1693,3 +1693,33 @@ on-screen experience for a new player.
 - Gates green: typecheck ✓, lint ✓, test ✓ (414/414), build ✓.
 
 **Commit(s):** `5882a84`, `4ecd122`
+
+---
+
+## 2026-04-25T19:13:41-04:00 — #28: Soul Aspect picker
+
+**Pushed:** Six-card class picker (Chesed, Gevurah, Tiferet, Hod,
+Netzach, Yesod). Each card shows title, +2 stat callout, ability,
+and weakness. Selecting + Confirm fires `onPick(aspectKey)`.
+
+- `taken` prop maps already-claimed aspects → taker names. Those
+  cards render aria-disabled with the taker name visible (kept
+  focusable so AT users can hear "Taken by Andy").
+- Pure presentation. The orchestrator applies the +2 bonus and
+  persists the choice; this component just emits the pick.
+
+**Why:** Second Phase 4 setup component. After the blessing
+ritual produces stats, the aspect picker layers the class
+identity on top.
+
+**Reviewer findings addressed in fix push:**
+- Significant: `taken` prop typed `Partial<Record<SoulAspectKey,
+  string>>` rather than `Record<string, string>` so a typo
+  doesn't silently render an aspect as available.
+- Improvement: aria-disabled instead of HTML `disabled` so AT
+  users can read the taker text.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (413/413), build ✓.
+
+**Commit(s):** `324ca6f`, `785b32c`
