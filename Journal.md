@@ -1659,3 +1659,37 @@ is in place. Phase 4 wires these together via game-flow tickets.
 - Phase 3 complete pending merges (#63–#67 + this PR).
 
 **Commit(s):** `005ee00`, `e61c9f5`
+
+---
+
+## 2026-04-25T19:07:04-04:00 — #27: Sefirot-blessing ritual (Phase 4 begins)
+
+**Pushed:** First Phase 4 (game-flow) ticket. Ten-step ritual where
+players roll 3d6 for each stat in Kether → Malkuth order.
+
+- `ritual-copy.ts` holds per-Sefirah essence (verbatim from
+  reference/sefirot.md) + invocation (one-line imperative).
+- Component takes a seeded `Rng` so tests assert deterministic
+  stats. State machine per step: 'awaiting' → 'rolled' → 'received'.
+- onComplete fires from a useEffect, not synchronously inside the
+  advance handler.
+- Pre-commit completeness check throws loudly if any stat is
+  missing, rather than silently casting an incomplete StatSheet.
+
+**Why:** The ritual is the game's emotional opening — the first
+on-screen experience for a new player.
+
+**Reviewer findings addressed in fix push:**
+- Significant: `stats as StatSheet` cast was unsound. Now validated
+  with an explicit missing-stat check that throws.
+- Significant: `onComplete` was firing mid-handler. Moved to
+  useEffect keyed on stepIndex crossing the boundary.
+- Significant: dead `autoAdvance` prop + empty block removed.
+- Tests: onComplete called exactly once; not fired mid-flow;
+  first-stat lookup derives from data.
+- A11y: RollDisplay wrapped in role=status / aria-live=polite.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (414/414), build ✓.
+
+**Commit(s):** `5882a84`, `4ecd122`
