@@ -1621,3 +1621,41 @@ HUD to compose against game state.
 - Gates green: typecheck ✓, lint ✓, test ✓ (351/351), build ✓.
 
 **Commit(s):** `4866200`, `c480cb3`
+
+---
+
+## 2026-04-25T18:12:11-04:00 — #26: Shell indicator panel (Phase 3 complete)
+
+**Pushed:** Per-Sefirah Shell display: 10 slots in a grid, one per
+Sefirah. Each slot uses the existing ShellIcon and shows dormant
+/ active / banished state. Active slots render the effect copy
+inline; banished slots strike through their keyword.
+
+- `shell-copy.ts` — descriptive (non-traditional) Shell titles +
+  one-sentence effect summaries per `design/shells.md`.
+- `headingLevel` prop (default 3) drives the panel's heading
+  element so callers slot into their own document hierarchy
+  without producing a heading skip.
+- Each slot is keyboard-focusable (`role=group`, `tabIndex=0`)
+  with the full title + effect + status composed into a single
+  `aria-label`. AT users tab through the panel and hear the
+  context on focus.
+
+**Why:** Last Phase 3 ticket. With this, the team-side UI surface
+(Tree + Hand + StatSheet + ChallengeModal + TeamMeters + ShellPanel)
+is in place. Phase 4 wires these together via game-flow tickets.
+
+**Reviewer findings addressed in fix push:**
+- Significant: AT regression — sr-only span had no programmatic
+  association to any focusable element. Slot is now focusable with
+  a comprehensive aria-label.
+- Significant: hardcoded <h3>. Now level-driven via prop with a
+  sensible default.
+- Improvement: Tailwind opacity conflict on banished keyword
+  resolved by computing the class once.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (350/350), build ✓.
+- Phase 3 complete pending merges (#63–#67 + this PR).
+
+**Commit(s):** `005ee00`, `e61c9f5`
