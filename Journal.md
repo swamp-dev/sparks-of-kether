@@ -1299,3 +1299,53 @@ will be designed to live alongside it.
 
 **Commit(s):** `180feda`, `bd55a9b`
 
+---
+
+## 2026-04-25T01:56:38-04:00 — #18: 22 Major Arcana SVGs (symbolic minimalist)
+
+**Pushed:** Full Tarot deck for the player's hand. 16-glyph shared
+vocabulary, per-card composition, three-thirds layout, parameterized
+snapshot tests, demo grid at `/demo/cards`.
+
+- `components/cards/glyphs.tsx` — 16 atomic geometric primitives
+  (Triangle, InvertedTriangle, Square, Circle, Crescent, Sun,
+  Cross, Wave, Spiral, Lightning, Star, Vesica, Wheel, Scales,
+  Hexagram, Crown). Each is a stateless component taking
+  `{cx, cy, size, color, opacity}`. `Star` parameterized by
+  `points` (5/6/8) and `rotation` (degrees).
+- `components/cards/glyph-mapping.ts` — per-card composition
+  (1–3 glyphs each) inside a 200×106 glyph zone. Each entry has
+  a comment justifying the symbolic choice.
+- `components/cards/attribution-colors.ts` — element/planet/sign
+  → muted hex. Color band at the card's bottom is keyed off this.
+- `components/cards/ArcanumCard.tsx` — 200×320 viewBox, three
+  thirds: large Hebrew letter / glyph composition / number+name+
+  attribution + accent band. `role="figure"` + `<title>` follows
+  the same AT pattern as TreeBoard.
+
+**Why:** With Tree (#17) and Cards (#18) both done, the visual
+identity is established. Phase 3 components (#21 interactive tree,
+#22 hand fan) can compose these without any further art work.
+
+**Reviewer findings addressed in fix push:**
+- Significant: Scales pan arcs drew upside-down (sweep flag 0
+  traces ∩, needed 1 for ∪). Justice was rendering with crown-
+  shapes instead of pans.
+- Significant: Devil's pentagram pointed up despite the comment
+  claiming "microcosm flipped". Added `rotation` prop to `Star`
+  and rotated the Devil 180°.
+- Significant: glyph-zone height comment said 200×100, actually
+  200×106 — would have caused ~6px placement errors for future
+  authors.
+- Improvement: Aquarius and Cancer shared a hex; bumped Aquarius
+  to a distinct teal.
+- Improvement: glyph keys are stable strings (`glyph-cx-cy`) not
+  array indices.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (216/216), build ✓.
+- Branched from main while #58 (engine endgame) and #59 (tree
+  board) were both still in review. No file conflicts — all three
+  are independent.
+
+**Commit(s):** `b499b7c`, `a401b4a`

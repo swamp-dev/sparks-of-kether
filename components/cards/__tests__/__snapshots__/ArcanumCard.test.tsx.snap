@@ -1,0 +1,3586 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 0 (The Fool) 1`] = `
+<svg
+  aria-label="Arcanum 0, The Fool — Hebrew letter Aleph, attribution Air"
+  data-arcanum="0"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 0, The Fool — Hebrew letter Aleph, attribution Air
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1g:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1g:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#d4af37"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      א
+    </text>
+  </g>
+  <line
+    stroke="#d4af37"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100,34.01923788646684 70,85.98076211353316 130,85.98076211353316"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <circle
+      cx="100"
+      cy="18"
+      fill="none"
+      r="4"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#d4af37"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      00
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Fool
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Air
+    </text>
+  </g>
+  <rect
+    fill="#d4af37"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 1 (The Magician) 1`] = `
+<svg
+  aria-label="Arcanum 1, The Magician — Hebrew letter Beth, attribution Mercury"
+  data-arcanum="1"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 1, The Magician — Hebrew letter Beth, attribution Mercury
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1h:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1h:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#e07b00"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ב
+    </text>
+  </g>
+  <line
+    stroke="#e07b00"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <g>
+      <circle
+        cx="86"
+        cy="50"
+        fill="none"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <circle
+        cx="114"
+        cy="50"
+        fill="none"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+    </g>
+    <g>
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="65"
+        x2="135"
+        y1="50"
+        y2="50"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="15"
+        y2="85"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#e07b00"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      01
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Magician
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Mercury
+    </text>
+  </g>
+  <rect
+    fill="#e07b00"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 2 (The High Priestess) 1`] = `
+<svg
+  aria-label="Arcanum 2, The High Priestess — Hebrew letter Gimel, attribution Moon"
+  data-arcanum="2"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 2, The High Priestess — Hebrew letter Gimel, attribution Moon
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1i:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1i:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#9b88c4"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ג
+    </text>
+  </g>
+  <line
+    stroke="#9b88c4"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <path
+      d="
+    M 105.4,14
+    A 18,18 0 1 0 105.4,50
+    A 15.299999999999999,15.299999999999999 0 1 1 105.4,14
+    Z
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <g>
+      <circle
+        cx="90"
+        cy="70"
+        fill="none"
+        r="20"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <circle
+        cx="110"
+        cy="70"
+        fill="none"
+        r="20"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#9b88c4"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      02
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The High Priestess
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Moon
+    </text>
+  </g>
+  <rect
+    fill="#9b88c4"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 3 (The Empress) 1`] = `
+<svg
+  aria-label="Arcanum 3, The Empress — Hebrew letter Daleth, attribution Venus"
+  data-arcanum="3"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 3, The Empress — Hebrew letter Daleth, attribution Venus
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1j:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1j:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#3a8f4a"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ד
+    </text>
+  </g>
+  <line
+    stroke="#3a8f4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <circle
+      cx="100"
+      cy="30"
+      fill="none"
+      r="20"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <polygon
+      fill="none"
+      points="100,56.411542731880104 82,87.5884572681199 118,87.5884572681199"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#3a8f4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      03
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Empress
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Venus
+    </text>
+  </g>
+  <rect
+    fill="#3a8f4a"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 4 (The Emperor) 1`] = `
+<svg
+  aria-label="Arcanum 4, The Emperor — Hebrew letter He, attribution Aries"
+  data-arcanum="4"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 4, The Emperor — Hebrew letter He, attribution Aries
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1k:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1k:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#c0392b"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ה
+    </text>
+  </g>
+  <line
+    stroke="#c0392b"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <rect
+      fill="none"
+      height="50"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+      width="50"
+      x="75"
+      y="35"
+    />
+    <path
+      d="
+    M 82,31
+    L 82,22
+    L 91,26.5
+    L 100,13
+    L 109,26.5
+    L 118,22
+    L 118,31
+    Z
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#c0392b"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      04
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Emperor
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Aries
+    </text>
+  </g>
+  <rect
+    fill="#c0392b"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 5 (The Hierophant) 1`] = `
+<svg
+  aria-label="Arcanum 5, The Hierophant — Hebrew letter Vav, attribution Taurus"
+  data-arcanum="5"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 5, The Hierophant — Hebrew letter Vav, attribution Taurus
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1l:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1l:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#3a8f4a"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ו
+    </text>
+  </g>
+  <line
+    stroke="#3a8f4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100,30.75128869403572 72,79.24871130596428 128,79.24871130596428"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <g>
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="0.7"
+        stroke-width="1.6"
+        x1="82"
+        x2="118"
+        y1="35"
+        y2="35"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="0.7"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="17"
+        y2="53"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#3a8f4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      05
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Hierophant
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Taurus
+    </text>
+  </g>
+  <rect
+    fill="#3a8f4a"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 6 (The Lovers) 1`] = `
+<svg
+  aria-label="Arcanum 6, The Lovers — Hebrew letter Zayin, attribution Gemini"
+  data-arcanum="6"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 6, The Lovers — Hebrew letter Zayin, attribution Gemini
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1m:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1m:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#d4af37"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ז
+    </text>
+  </g>
+  <line
+    stroke="#d4af37"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <g>
+      <circle
+        cx="86"
+        cy="50"
+        fill="none"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <circle
+        cx="114"
+        cy="50"
+        fill="none"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#d4af37"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      06
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Lovers
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Gemini
+    </text>
+  </g>
+  <rect
+    fill="#d4af37"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 7 (The Chariot) 1`] = `
+<svg
+  aria-label="Arcanum 7, The Chariot — Hebrew letter Cheth, attribution Cancer"
+  data-arcanum="7"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 7, The Chariot — Hebrew letter Cheth, attribution Cancer
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1n:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1n:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#7fa6c2"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ח
+    </text>
+  </g>
+  <line
+    stroke="#7fa6c2"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <path
+      d="
+    M 104.8,12
+    A 16,16 0 1 0 104.8,44
+    A 13.6,13.6 0 1 1 104.8,12
+    Z
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <rect
+      fill="none"
+      height="36"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+      width="36"
+      x="82"
+      y="50"
+    />
+  </g>
+  <line
+    stroke="#7fa6c2"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      07
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Chariot
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Cancer
+    </text>
+  </g>
+  <rect
+    fill="#7fa6c2"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 8 (Strength) 1`] = `
+<svg
+  aria-label="Arcanum 8, Strength — Hebrew letter Teth, attribution Leo"
+  data-arcanum="8"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 8, Strength — Hebrew letter Teth, attribution Leo
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1o:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1o:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#e07b00"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ט
+    </text>
+  </g>
+  <line
+    stroke="#e07b00"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <g>
+      <polygon
+        fill="none"
+        points="100,25.75128869403572 72,74.24871130596428 128,74.24871130596428"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <polygon
+        fill="none"
+        points="100,74.24871130596428 72,25.75128869403572 128,25.75128869403572"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#e07b00"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      08
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      Strength
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Leo
+    </text>
+  </g>
+  <rect
+    fill="#e07b00"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 9 (The Hermit) 1`] = `
+<svg
+  aria-label="Arcanum 9, The Hermit — Hebrew letter Yod, attribution Virgo"
+  data-arcanum="9"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 9, The Hermit — Hebrew letter Yod, attribution Virgo
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1p:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1p:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#7a8c5c"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      י
+    </text>
+  </g>
+  <line
+    stroke="#7a8c5c"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100.00,22.00 105.60,40.30 124.25,36.00 111.20,50.00 124.25,64.00 105.60,59.70 100.00,78.00 94.40,59.70 75.75,64.00 88.80,50.00 75.75,36.00 94.40,40.30"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#7a8c5c"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      09
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Hermit
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Virgo
+    </text>
+  </g>
+  <rect
+    fill="#7a8c5c"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 10 (Wheel of Fortune) 1`] = `
+<svg
+  aria-label="Arcanum 10, Wheel of Fortune — Hebrew letter Kaph, attribution Jupiter"
+  data-arcanum="10"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 10, Wheel of Fortune — Hebrew letter Kaph, attribution Jupiter
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1q:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1q:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#4169e1"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      כ
+    </text>
+  </g>
+  <line
+    stroke="#4169e1"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <g>
+      <circle
+        cx="100"
+        cy="50"
+        fill="none"
+        r="30"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="70"
+        x2="130"
+        y1="50"
+        y2="50"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="20"
+        y2="80"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="78.79"
+        x2="121.21"
+        y1="28.790000000000003"
+        y2="71.21"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="78.79"
+        x2="121.21"
+        y1="71.21"
+        y2="28.790000000000003"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#4169e1"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      10
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      Wheel of Fortune
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Jupiter
+    </text>
+  </g>
+  <rect
+    fill="#4169e1"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 11 (Justice) 1`] = `
+<svg
+  aria-label="Arcanum 11, Justice — Hebrew letter Lamed, attribution Libra"
+  data-arcanum="11"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 11, Justice — Hebrew letter Lamed, attribution Libra
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1r:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1r:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#b8a3c2"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ל
+    </text>
+  </g>
+  <line
+    stroke="#b8a3c2"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <g>
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="18"
+        y2="36"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="79"
+        x2="121"
+        y1="36"
+        y2="36"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="79"
+        x2="79"
+        y1="36"
+        y2="44.4"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="121"
+        x2="121"
+        y1="36"
+        y2="44.4"
+      />
+      <path
+        d="M 69.4,44.4 A 9.6,6.72 0 0 1 88.6,44.4"
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <path
+        d="M 111.4,44.4 A 9.6,6.72 0 0 1 130.6,44.4"
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#b8a3c2"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      11
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      Justice
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Libra
+    </text>
+  </g>
+  <rect
+    fill="#b8a3c2"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 12 (The Hanged Man) 1`] = `
+<svg
+  aria-label="Arcanum 12, The Hanged Man — Hebrew letter Mem, attribution Water"
+  data-arcanum="12"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 12, The Hanged Man — Hebrew letter Mem, attribution Water
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1s:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1s:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#2980b9"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      מ
+    </text>
+  </g>
+  <line
+    stroke="#2980b9"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100,74.24871130596428 72,25.75128869403572 128,25.75128869403572"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <g>
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="0.5"
+        stroke-width="1.6"
+        x1="65"
+        x2="135"
+        y1="50"
+        y2="50"
+      />
+      <line
+        fill="none"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="0.5"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="15"
+        y2="85"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#2980b9"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      12
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Hanged Man
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Water
+    </text>
+  </g>
+  <rect
+    fill="#2980b9"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 13 (Death) 1`] = `
+<svg
+  aria-label="Arcanum 13, Death — Hebrew letter Nun, attribution Scorpio"
+  data-arcanum="13"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 13, Death — Hebrew letter Nun, attribution Scorpio
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1t:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1t:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#5e2a4a"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      נ
+    </text>
+  </g>
+  <line
+    stroke="#5e2a4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <path
+      d="M 100.00,50.00 L 100.49,50.12 L 100.88,50.47 L 101.11,51.01 L 101.11,51.66 L 100.84,52.35 L 100.29,52.99 L 99.49,53.46 L 98.47,53.70 L 97.32,53.61 L 96.13,53.17 L 95.03,52.35 L 94.12,51.17 L 93.51,49.68 L 93.30,47.97 L 93.57,46.14 L 94.34,44.34 L 95.63,42.71 L 97.39,41.39 L 99.53,40.51 L 101.95,40.19 L 104.49,40.51 L 106.98,41.50 L 109.24,43.15 L 111.09,45.41 L 112.36,48.17 L 112.94,51.27 L 112.71,54.55 L 111.64,57.78 L 109.74,60.74 L 107.07,63.23 L 103.77,65.04 L 100.00,66.00 L 95.99,66.01 L 91.99,64.99 L 88.25,62.97 L 85.03,60.00 L 82.58,56.23 L 81.09,51.86 L 80.71,47.14 L 81.52,42.35 L 83.53,37.79 L 86.68,33.77 L 90.81,30.56 L 95.71,28.42 L 101.10,27.53 L 106.68,27.99 L 112.08,29.84 L 116.97,33.03 L 121.01,37.40 L 123.92,42.74 L 125.47,48.75 L 125.50,55.07 L 123.96,61.33 L 120.87,67.13 L 116.38,72.09 L 110.72,75.87 L 104.18,78.19 L 97.16,78.86 L 90.06,77.78 L 83.33,74.94 L 77.40,70.48 L 72.66,64.61 L 69.44,57.65 L 68.00,50.00"
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#5e2a4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      13
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      Death
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Scorpio
+    </text>
+  </g>
+  <rect
+    fill="#5e2a4a"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 14 (Temperance) 1`] = `
+<svg
+  aria-label="Arcanum 14, Temperance — Hebrew letter Samekh, attribution Sagittarius"
+  data-arcanum="14"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 14, Temperance — Hebrew letter Samekh, attribution Sagittarius
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1u:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1u:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#b86e2a"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ס
+    </text>
+  </g>
+  <line
+    stroke="#b86e2a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <circle
+      cx="100"
+      cy="50"
+      fill="none"
+      r="35"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="0.5"
+      stroke-width="1.6"
+    />
+    <g>
+      <polygon
+        fill="none"
+        points="100,30.94744111674235 78,69.05255888325765 122,69.05255888325765"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <polygon
+        fill="none"
+        points="100,69.05255888325765 78,30.94744111674235 122,30.94744111674235"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#b86e2a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      14
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      Temperance
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Sagittarius
+    </text>
+  </g>
+  <rect
+    fill="#b86e2a"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 15 (The Devil) 1`] = `
+<svg
+  aria-label="Arcanum 15, The Devil — Hebrew letter Ayin, attribution Capricorn"
+  data-arcanum="15"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 15, The Devil — Hebrew letter Ayin, attribution Capricorn
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r1v:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r1v:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#2a3a4a"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ע
+    </text>
+  </g>
+  <line
+    stroke="#2a3a4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100.00,78.00 93.42,59.06 73.37,58.65 89.35,46.54 83.54,27.35 100.00,38.80 116.46,27.35 110.65,46.54 126.63,58.65 106.58,59.06"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#2a3a4a"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      15
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Devil
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Capricorn
+    </text>
+  </g>
+  <rect
+    fill="#2a3a4a"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 16 (The Tower) 1`] = `
+<svg
+  aria-label="Arcanum 16, The Tower — Hebrew letter Peh, attribution Mars"
+  data-arcanum="16"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 16, The Tower — Hebrew letter Peh, attribution Mars
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r20:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r20:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#a82323"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      פ
+    </text>
+  </g>
+  <line
+    stroke="#a82323"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <rect
+      fill="none"
+      height="52"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+      width="52"
+      x="74"
+      y="29"
+    />
+    <path
+      d="
+    M 90.4,18
+    L 106.4,43.6
+    L 96.8,48.4
+    L 109.6,82
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#a82323"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      16
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Tower
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Mars
+    </text>
+  </g>
+  <rect
+    fill="#a82323"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 17 (The Star) 1`] = `
+<svg
+  aria-label="Arcanum 17, The Star — Hebrew letter Tzaddi, attribution Aquarius"
+  data-arcanum="17"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 17, The Star — Hebrew letter Tzaddi, attribution Aquarius
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r21:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r21:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#5fb8c2"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      צ
+    </text>
+  </g>
+  <line
+    stroke="#5fb8c2"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100.00,20.00 104.59,38.91 121.21,28.79 111.09,45.41 130.00,50.00 111.09,54.59 121.21,71.21 104.59,61.09 100.00,80.00 95.41,61.09 78.79,71.21 88.91,54.59 70.00,50.00 88.91,45.41 78.79,28.79 95.41,38.91"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#5fb8c2"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      17
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Star
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Aquarius
+    </text>
+  </g>
+  <rect
+    fill="#5fb8c2"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 18 (The Moon) 1`] = `
+<svg
+  aria-label="Arcanum 18, The Moon — Hebrew letter Qoph, attribution Pisces"
+  data-arcanum="18"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 18, The Moon — Hebrew letter Qoph, attribution Pisces
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r22:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r22:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#5c7a9c"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ק
+    </text>
+  </g>
+  <line
+    stroke="#5c7a9c"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <path
+      d="
+    M 106,12
+    A 20,20 0 1 0 106,52
+    A 17,17 0 1 1 106,12
+    Z
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <path
+      d="
+    M 60,72
+    Q 80,58.666666666666664 100,72
+    T 140,72
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#5c7a9c"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      18
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Moon
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Pisces
+    </text>
+  </g>
+  <rect
+    fill="#5c7a9c"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 19 (The Sun) 1`] = `
+<svg
+  aria-label="Arcanum 19, The Sun — Hebrew letter Resh, attribution Sun"
+  data-arcanum="19"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 19, The Sun — Hebrew letter Resh, attribution Sun
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r23:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r23:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#d4af37"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ר
+    </text>
+  </g>
+  <line
+    stroke="#d4af37"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <g>
+      <circle
+        cx="100"
+        cy="50"
+        fill="none"
+        r="21.333333333333332"
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="123.33333333333333"
+        x2="132"
+        y1="50"
+        y2="50"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="116.49915822768611"
+        x2="122.62741699796952"
+        y1="66.49915822768611"
+        y2="72.62741699796952"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="73.33333333333333"
+        y2="82"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="83.50084177231389"
+        x2="77.37258300203048"
+        y1="66.49915822768611"
+        y2="72.62741699796952"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="76.66666666666667"
+        x2="68"
+        y1="50"
+        y2="50.00000000000001"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="83.50084177231389"
+        x2="77.37258300203047"
+        y1="33.50084177231389"
+        y2="27.37258300203048"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="100"
+        x2="100"
+        y1="26.666666666666668"
+        y2="18"
+      />
+      <line
+        stroke="#f8f8ff"
+        stroke-linecap="round"
+        stroke-opacity="1"
+        stroke-width="1.6"
+        x1="116.49915822768611"
+        x2="122.62741699796952"
+        y1="33.50084177231389"
+        y2="27.372583002030474"
+      />
+    </g>
+  </g>
+  <line
+    stroke="#d4af37"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      19
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The Sun
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Sun
+    </text>
+  </g>
+  <rect
+    fill="#d4af37"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 20 (Judgement) 1`] = `
+<svg
+  aria-label="Arcanum 20, Judgement — Hebrew letter Shin, attribution Fire"
+  data-arcanum="20"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 20, Judgement — Hebrew letter Shin, attribution Fire
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r24:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r24:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#c0392b"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ש
+    </text>
+  </g>
+  <line
+    stroke="#c0392b"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <polygon
+      fill="none"
+      points="100,30.75128869403572 72,79.24871130596428 128,79.24871130596428"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <path
+      d="
+    M 90.4,18
+    L 106.4,43.6
+    L 96.8,48.4
+    L 109.6,82
+  "
+      fill="none"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+  </g>
+  <line
+    stroke="#c0392b"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      20
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      Judgement
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Fire
+    </text>
+  </g>
+  <rect
+    fill="#c0392b"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
+
+exports[`ArcanumCard — snapshot per card > snapshot of arcanum 21 (The World) 1`] = `
+<svg
+  aria-label="Arcanum 21, The World — Hebrew letter Tav, attribution Saturn"
+  data-arcanum="21"
+  role="figure"
+  viewBox="0 0 200 320"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Arcanum 21, The World — Hebrew letter Tav, attribution Saturn
+  </title>
+  <defs>
+    <lineargradient
+      id="arcanum-bg-:r25:"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#arcanum-bg-:r25:)"
+    height="318"
+    rx="10"
+    ry="10"
+    stroke="#5c4a78"
+    stroke-opacity="0.7"
+    stroke-width="1.5"
+    width="198"
+    x="1"
+    y="1"
+  />
+  <g
+    data-zone="letter"
+  >
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-hebrew), serif"
+      font-size="64"
+      lang="he"
+      style="direction: rtl; unicode-bidi: isolate;"
+      text-anchor="middle"
+      x="100"
+      y="70"
+    >
+      ת
+    </text>
+  </g>
+  <line
+    stroke="#5c4a78"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="107"
+    y2="107"
+  />
+  <g
+    data-zone="glyphs"
+    transform="translate(0 107)"
+  >
+    <circle
+      cx="100"
+      cy="50"
+      fill="none"
+      r="35"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+    />
+    <rect
+      fill="none"
+      height="40"
+      stroke="#f8f8ff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-opacity="1"
+      stroke-width="1.6"
+      width="40"
+      x="80"
+      y="30"
+    />
+  </g>
+  <line
+    stroke="#5c4a78"
+    stroke-opacity="0.4"
+    stroke-width="0.8"
+    x1="20"
+    x2="180"
+    y1="213"
+    y2="213"
+  />
+  <g
+    data-zone="footer"
+  >
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      font-family="var(--font-sans), sans-serif"
+      font-size="11"
+      letter-spacing="2"
+      text-anchor="middle"
+      x="100"
+      y="245"
+    >
+      21
+    </text>
+    <text
+      fill="#f8f8ff"
+      font-family="var(--font-display), serif"
+      font-size="14"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="272"
+    >
+      The World
+    </text>
+    <text
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      font-family="var(--font-sans), sans-serif"
+      font-size="9"
+      letter-spacing="1.5"
+      style="text-transform: uppercase;"
+      text-anchor="middle"
+      x="100"
+      y="293"
+    >
+      Saturn
+    </text>
+  </g>
+  <rect
+    fill="#5c4a78"
+    height="3"
+    rx="1.5"
+    width="160"
+    x="20"
+    y="306"
+  />
+</svg>
+`;
