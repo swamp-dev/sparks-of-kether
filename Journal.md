@@ -1557,3 +1557,39 @@ a turn. `activeStat` will tie this panel to the challenge modal (#24).
 - Gates green: typecheck ✓, lint ✓, test ✓ (354/354), build ✓.
 
 **Commit(s):** `452c195`, `526e00a`
+
+---
+
+## 2026-04-25T17:57:01-04:00 — #24: challenge modal + animated d20
+
+**Pushed:** Modal-style UI for resolving a d20 stat-check. State
+machine: committing → rolling → reveal (with retry/accept fork on
+fail).
+
+- ChallengeModal: takes a `context` (sefirah + stat + ally pool +
+  burn limits), a seeded `Rng`, and an `onResolved` callback. Pure
+  presentation — never mutates GameState; the orchestrator applies
+  the resolution.
+- D20Roll: thin animated wrapper around the existing `D20` token.
+  Cycles random faces for 800ms via requestAnimationFrame, then
+  settles on the final value. Honors `prefers-reduced-motion`.
+- Tests use `seededRng` + fake timers so the dice and the
+  animation are deterministic.
+
+**Why:** The check modal is the moment-of-truth UX for the entire
+game — every Sefirah arrival flows through it.
+
+**Reviewer findings addressed in fix push:**
+- Significant: silent DC=0 fallback when context.sefirah was
+  non-check (Malkuth/Kether). Now throws.
+- Significant: `handleRoll` had no double-click guard. Added
+  phase check; new test covers it.
+- Documented the rng contract on the props interface (each Roll
+  consumes one value).
+- Fixed a misleading test comment about "1+20=21 fails" (it
+  doesn't — corrected).
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (353/353), build ✓.
+
+**Commit(s):** `dc4be3e`, `6a0f610`
