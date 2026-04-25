@@ -1,0 +1,983 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
+<svg
+  role="figure"
+  viewBox="0 0 400 620"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>
+    Tree of Life — ten Sefirot connected by twenty-two paths
+  </title>
+  <defs>
+    <radialgradient
+      cx="50%"
+      cy="40%"
+      id="tree-bg-:r4:"
+      r="70%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#1a1542"
+      />
+      <stop
+        offset="100%"
+        stop-color="#0e0a1f"
+      />
+    </radialgradient>
+  </defs>
+  <rect
+    fill="url(#tree-bg-:r4:)"
+    height="620"
+    width="400"
+  />
+  <g
+    aria-hidden="true"
+  >
+    <circle
+      cx="40"
+      cy="80"
+      fill="#f8f8ff"
+      fill-opacity="0.6"
+      r="0.8"
+    />
+    <circle
+      cx="340"
+      cy="50"
+      fill="#f8f8ff"
+      fill-opacity="0.4"
+      r="0.8"
+    />
+    <circle
+      cx="120"
+      cy="30"
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      r="0.8"
+    />
+    <circle
+      cx="260"
+      cy="110"
+      fill="#f8f8ff"
+      fill-opacity="0.3"
+      r="0.8"
+    />
+    <circle
+      cx="60"
+      cy="220"
+      fill="#f8f8ff"
+      fill-opacity="0.4"
+      r="0.8"
+    />
+    <circle
+      cx="355"
+      cy="350"
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      r="0.8"
+    />
+    <circle
+      cx="30"
+      cy="380"
+      fill="#f8f8ff"
+      fill-opacity="0.3"
+      r="0.8"
+    />
+    <circle
+      cx="380"
+      cy="220"
+      fill="#f8f8ff"
+      fill-opacity="0.4"
+      r="0.8"
+    />
+    <circle
+      cx="180"
+      cy="600"
+      fill="#f8f8ff"
+      fill-opacity="0.3"
+      r="0.8"
+    />
+    <circle
+      cx="10"
+      cy="540"
+      fill="#f8f8ff"
+      fill-opacity="0.4"
+      r="0.8"
+    />
+    <circle
+      cx="390"
+      cy="510"
+      fill="#f8f8ff"
+      fill-opacity="0.5"
+      r="0.8"
+    />
+    <circle
+      cx="140"
+      cy="380"
+      fill="#f8f8ff"
+      fill-opacity="0.3"
+      r="0.8"
+    />
+  </g>
+  <g
+    data-layer="paths"
+  >
+    <line
+      aria-label="Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom"
+      data-path="11"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="320"
+      y1="60"
+      y2="150"
+    >
+      <title>
+        Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom
+      </title>
+    </line>
+    <line
+      aria-label="Path 12 (Beth) — Arcanum 1, between Crown and Understanding"
+      data-path="12"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="80"
+      y1="60"
+      y2="150"
+    >
+      <title>
+        Path 12 (Beth) — Arcanum 1, between Crown and Understanding
+      </title>
+    </line>
+    <line
+      aria-label="Path 13 (Gimel) — Arcanum 2, between Crown and Beauty"
+      data-path="13"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="200"
+      y1="60"
+      y2="340"
+    >
+      <title>
+        Path 13 (Gimel) — Arcanum 2, between Crown and Beauty
+      </title>
+    </line>
+    <line
+      aria-label="Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding"
+      data-path="14"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="80"
+      y1="150"
+      y2="150"
+    >
+      <title>
+        Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding
+      </title>
+    </line>
+    <line
+      aria-label="Path 15 (He) — Arcanum 4, between Wisdom and Beauty"
+      data-path="15"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="200"
+      y1="150"
+      y2="340"
+    >
+      <title>
+        Path 15 (He) — Arcanum 4, between Wisdom and Beauty
+      </title>
+    </line>
+    <line
+      aria-label="Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy"
+      data-path="16"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="320"
+      y1="150"
+      y2="280"
+    >
+      <title>
+        Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy
+      </title>
+    </line>
+    <line
+      aria-label="Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty"
+      data-path="17"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="80"
+      x2="200"
+      y1="150"
+      y2="340"
+    >
+      <title>
+        Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty
+      </title>
+    </line>
+    <line
+      aria-label="Path 18 (Cheth) — Arcanum 7, between Understanding and Severity"
+      data-path="18"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="80"
+      x2="80"
+      y1="150"
+      y2="280"
+    >
+      <title>
+        Path 18 (Cheth) — Arcanum 7, between Understanding and Severity
+      </title>
+    </line>
+    <line
+      aria-label="Path 19 (Teth) — Arcanum 8, between Mercy and Severity"
+      data-path="19"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="80"
+      y1="280"
+      y2="280"
+    >
+      <title>
+        Path 19 (Teth) — Arcanum 8, between Mercy and Severity
+      </title>
+    </line>
+    <line
+      aria-label="Path 20 (Yod) — Arcanum 9, between Mercy and Beauty"
+      data-path="20"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="200"
+      y1="280"
+      y2="340"
+    >
+      <title>
+        Path 20 (Yod) — Arcanum 9, between Mercy and Beauty
+      </title>
+    </line>
+    <line
+      aria-label="Path 21 (Kaph) — Arcanum 10, between Mercy and Victory"
+      data-path="21"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="320"
+      y1="280"
+      y2="430"
+    >
+      <title>
+        Path 21 (Kaph) — Arcanum 10, between Mercy and Victory
+      </title>
+    </line>
+    <line
+      aria-label="Path 22 (Lamed) — Arcanum 11, between Severity and Beauty"
+      data-path="22"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="80"
+      x2="200"
+      y1="280"
+      y2="340"
+    >
+      <title>
+        Path 22 (Lamed) — Arcanum 11, between Severity and Beauty
+      </title>
+    </line>
+    <line
+      aria-label="Path 23 (Mem) — Arcanum 12, between Severity and Splendor"
+      data-path="23"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="80"
+      x2="80"
+      y1="280"
+      y2="430"
+    >
+      <title>
+        Path 23 (Mem) — Arcanum 12, between Severity and Splendor
+      </title>
+    </line>
+    <line
+      aria-label="Path 24 (Nun) — Arcanum 13, between Beauty and Victory"
+      data-path="24"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="320"
+      y1="340"
+      y2="430"
+    >
+      <title>
+        Path 24 (Nun) — Arcanum 13, between Beauty and Victory
+      </title>
+    </line>
+    <line
+      aria-label="Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation"
+      data-path="25"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="200"
+      y1="340"
+      y2="490"
+    >
+      <title>
+        Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation
+      </title>
+    </line>
+    <line
+      aria-label="Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor"
+      data-path="26"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="80"
+      y1="340"
+      y2="430"
+    >
+      <title>
+        Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor
+      </title>
+    </line>
+    <line
+      aria-label="Path 27 (Peh) — Arcanum 16, between Victory and Splendor"
+      data-path="27"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="80"
+      y1="430"
+      y2="430"
+    >
+      <title>
+        Path 27 (Peh) — Arcanum 16, between Victory and Splendor
+      </title>
+    </line>
+    <line
+      aria-label="Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation"
+      data-path="28"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="200"
+      y1="430"
+      y2="490"
+    >
+      <title>
+        Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation
+      </title>
+    </line>
+    <line
+      aria-label="Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom"
+      data-path="29"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="320"
+      x2="200"
+      y1="430"
+      y2="560"
+    >
+      <title>
+        Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom
+      </title>
+    </line>
+    <line
+      aria-label="Path 30 (Resh) — Arcanum 19, between Splendor and Foundation"
+      data-path="30"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="80"
+      x2="200"
+      y1="430"
+      y2="490"
+    >
+      <title>
+        Path 30 (Resh) — Arcanum 19, between Splendor and Foundation
+      </title>
+    </line>
+    <line
+      aria-label="Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom"
+      data-path="31"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="80"
+      x2="200"
+      y1="430"
+      y2="560"
+    >
+      <title>
+        Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom
+      </title>
+    </line>
+    <line
+      aria-label="Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom"
+      data-path="32"
+      role="img"
+      stroke="#f8f8ff"
+      stroke-opacity="0.35"
+      stroke-width="1.5"
+      x1="200"
+      x2="200"
+      y1="490"
+      y2="560"
+    >
+      <title>
+        Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom
+      </title>
+    </line>
+  </g>
+  <g
+    data-layer="nodes"
+  >
+    <g
+      aria-label="Crown (כתר), Sefirah 1"
+      data-sefirah="kether"
+      role="img"
+    >
+      <circle
+        cx="200"
+        cy="60"
+        fill="#ffffff"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#1a1a1a"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="200"
+        y="66"
+      >
+        כתר
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="200"
+        y="102"
+      >
+        Crown
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="170"
+        y="30"
+      >
+        1
+      </text>
+    </g>
+    <g
+      aria-label="Wisdom (חכמה), Sefirah 2"
+      data-sefirah="chokmah"
+      role="img"
+    >
+      <circle
+        cx="320"
+        cy="150"
+        fill="#c0c0c0"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#1a1a1a"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="320"
+        y="156"
+      >
+        חכמה
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="320"
+        y="192"
+      >
+        Wisdom
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="290"
+        y="120"
+      >
+        2
+      </text>
+    </g>
+    <g
+      aria-label="Understanding (בינה), Sefirah 3"
+      data-sefirah="binah"
+      role="img"
+    >
+      <circle
+        cx="80"
+        cy="150"
+        fill="#1a1a1a"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="80"
+        y="156"
+      >
+        בינה
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="80"
+        y="192"
+      >
+        Understanding
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="50"
+        y="120"
+      >
+        3
+      </text>
+    </g>
+    <g
+      aria-label="Mercy (חסד), Sefirah 4"
+      data-sefirah="chesed"
+      role="img"
+    >
+      <circle
+        cx="320"
+        cy="280"
+        fill="#4169e1"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="320"
+        y="286"
+      >
+        חסד
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="320"
+        y="322"
+      >
+        Mercy
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="290"
+        y="250"
+      >
+        4
+      </text>
+    </g>
+    <g
+      aria-label="Severity (גבורה), Sefirah 5"
+      data-sefirah="gevurah"
+      role="img"
+    >
+      <circle
+        cx="80"
+        cy="280"
+        fill="#dc143c"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="80"
+        y="286"
+      >
+        גבורה
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="80"
+        y="322"
+      >
+        Severity
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="50"
+        y="250"
+      >
+        5
+      </text>
+    </g>
+    <g
+      aria-label="Beauty (תפארת), Sefirah 6"
+      data-sefirah="tiferet"
+      role="img"
+    >
+      <circle
+        cx="200"
+        cy="340"
+        fill="#ffd700"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#1a1a1a"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="200"
+        y="346"
+      >
+        תפארת
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="200"
+        y="382"
+      >
+        Beauty
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="170"
+        y="310"
+      >
+        6
+      </text>
+    </g>
+    <g
+      aria-label="Victory (נצח), Sefirah 7"
+      data-sefirah="netzach"
+      role="img"
+    >
+      <circle
+        cx="320"
+        cy="430"
+        fill="#228b22"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="320"
+        y="436"
+      >
+        נצח
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="320"
+        y="472"
+      >
+        Victory
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="290"
+        y="400"
+      >
+        7
+      </text>
+    </g>
+    <g
+      aria-label="Splendor (הוד), Sefirah 8"
+      data-sefirah="hod"
+      role="img"
+    >
+      <circle
+        cx="80"
+        cy="430"
+        fill="#ff8c00"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#1a1a1a"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="80"
+        y="436"
+      >
+        הוד
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="80"
+        y="472"
+      >
+        Splendor
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="50"
+        y="400"
+      >
+        8
+      </text>
+    </g>
+    <g
+      aria-label="Foundation (יסוד), Sefirah 9"
+      data-sefirah="yesod"
+      role="img"
+    >
+      <circle
+        cx="200"
+        cy="490"
+        fill="#9370db"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="200"
+        y="496"
+      >
+        יסוד
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="200"
+        y="532"
+      >
+        Foundation
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="170"
+        y="460"
+      >
+        9
+      </text>
+    </g>
+    <g
+      aria-label="Kingdom (מלכות), Sefirah 10"
+      data-sefirah="malkuth"
+      role="img"
+    >
+      <circle
+        cx="200"
+        cy="560"
+        fill="#8b4513"
+        r="28"
+        stroke="#f8f8ff"
+        stroke-opacity="0.6"
+        stroke-width="1.5"
+      />
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-hebrew), serif"
+        font-size="20"
+        lang="he"
+        style="direction: rtl; unicode-bidi: isolate;"
+        text-anchor="middle"
+        x="200"
+        y="566"
+      >
+        מלכות
+      </text>
+      <text
+        fill="#f8f8ff"
+        font-family="var(--font-display), serif"
+        font-size="11"
+        letter-spacing="1.5"
+        style="text-transform: uppercase;"
+        text-anchor="middle"
+        x="200"
+        y="602"
+      >
+        Kingdom
+      </text>
+      <text
+        fill="#f8f8ff"
+        fill-opacity="0.5"
+        font-family="var(--font-sans), sans-serif"
+        font-size="10"
+        text-anchor="end"
+        x="170"
+        y="530"
+      >
+        10
+      </text>
+    </g>
+  </g>
+</svg>
+`;

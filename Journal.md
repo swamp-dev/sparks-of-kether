@@ -1254,3 +1254,48 @@ rule that affects the outcome is in code, and the orchestrator
 
 **Commit(s):** `6f0935e`, `1b9c186`
 
+---
+
+## 2026-04-25T01:40:42-04:00 — #17: Tree of Life board SVG (first Phase 2 ticket)
+
+**Pushed:** Static SVG component for the centerpiece visual. 10
+Sefirot in three-pillar geometry, 22 paths between them, accessible
+labeling, and a `/demo/tree` dev-only render route.
+
+- `components/tree/TreeBoard.tsx` — viewBox 400×620, pillars at
+  x=80/200/320, vertical positions tuned for legibility. Each
+  Sefirah node = colored circle + Hebrew glyph + English name +
+  number. Each path = labeled line with `<title>` tooltip.
+- Pillar orientation: Mercy on viewer's right (matches the project's
+  reference convention); other Tree diagrams mirror this — choice
+  is now consistent within this codebase.
+- Hebrew glyph color hardcoded per Sefirah for known-good contrast
+  rather than computed from luminance — borderline cases (Yesod's
+  violet, Malkuth's russet) get hand-tuned values.
+
+**Why:** First piece of art tooling. The board is the visual
+identity of the game; everything else (cards, tokens, meters)
+will be designed to live alongside it.
+
+**Reviewer findings addressed in fix push:**
+- Significant: Malkuth label clipped at viewBox bottom — extended
+  to 620.
+- Significant: outer `role="img"` was masking per-node/per-path
+  `aria-label`s. Switched to `role="figure"` + child `<title>`.
+  Phase 3 needs per-node AT focus.
+- Significant: `↔` in path labels reads as "left right arrow" in
+  every screen reader. Replaced with prose ("between X and Y").
+- Improvement: gradient ID scoped via `useId()` so two TreeBoards
+  in one DOM can coexist.
+- Improvement: `renderStarfield` → proper `Starfield` component.
+- Improvement: path-label test now asserts letter, arcanum, and
+  both endpoint names appear in the aria-label, not just the path
+  number.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (171/171), build ✓.
+- Started this ticket while #58 was still awaiting merge — Phase 2
+  art is independent of the engine work, no shared file conflicts.
+
+**Commit(s):** `180feda`, `bd55a9b`
+
