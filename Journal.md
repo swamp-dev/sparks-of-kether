@@ -1723,3 +1723,44 @@ identity on top.
 - Gates green: typecheck ✓, lint ✓, test ✓ (413/413), build ✓.
 
 **Commit(s):** `324ca6f`, `785b32c`
+
+---
+
+## 2026-04-25T19:22:12-04:00 — #29: lobby + initializeGame engine deal
+
+**Pushed:** First Phase 4 ticket that touches both engine and UI.
+
+- `engine/setup.ts` — pure `initializeGame(input)` builds a fresh
+  GameState. Deck = N copies of arcana 0..21 (N from
+  `deckCountFor(playerCount)` per design doc: 2p→1, 3-4p→2).
+  Fisher-Yates shuffle driven by seeded Rng, deal
+  STARTING_HAND_SIZE=4 to each player from the top, place every
+  player at Malkuth, fold Soul Aspect +2 into the matching stat,
+  init counters/shells/streak to empty.
+- `components/setup/Lobby.tsx` — between-setup-and-play screen.
+  Per-player readiness rows, host-only Begin button enabled when
+  2-4 players are all ready and have aspects chosen. Pure
+  presentation; orchestrator calls `initializeGame` on Begin.
+
+Yesod's "start one Sefirah below Malkuth" weakness is currently
+flavor — the engine has no sub-Malkuth waypoint. Documented at
+the call site so the future ticket that adds it has clear pickup.
+
+**Why:** Closes the setup → play boundary. Combined with #27 + #28,
+the full setup pipeline (ritual → aspect → lobby → deal) now exists.
+
+**Reviewer findings addressed in fix push:**
+- Significant: removed `soulAspectBonusStat` parameter that was
+  built via a cast and would silently NaN stats on unknown keys.
+  Replaced with `soulAspectByKey().bonusStat` (throws on miss).
+- Significant: same hazard in Lobby's `ASPECT_TITLE`. Replaced
+  with `aspectTitleFor(key)` helper using the same throwing lookup.
+- Significant: removed dead `continue` in shuffle that would have
+  masked a broken Rng. Now throws explicitly.
+- Removed redundant player-count throw — `deckCountFor` is
+  authoritative.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (425/425), build ✓.
+
+**Commit(s):** `6966833`, `843c356`

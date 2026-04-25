@@ -1,0 +1,136 @@
+import { describe, expect, it } from 'vitest';
+import { deckCountFor, initializeGame, STARTING_HAND_SIZE } from '../setup';
+import { seededRng } from '../rng';
+import type { PlayerSetup } from '../setup';
+import type { SoulAspectKey } from '@/data';
+import { DEFAULT_STATS } from '@/test/fixtures';
+
+function setup(count: number): PlayerSetup[] {
+  const aspects: SoulAspectKey[] = ['chesed', 'gevurah', 'tiferet', 'hod'];
+  return Array.from({ length: count }, (_, i) => ({
+    id: `p${i + 1}`,
+    name: `Player ${i + 1}`,
+    soulAspect: aspects[i] ?? 'tiferet',
+    stats: DEFAULT_STATS,
+  }));
+}
+
+describe('deckCountFor', () => {
+  it('returns 1 for 2 players, 2 for 3 or 4 players', () => {
+    expect(deckCountFor(2)).toBe(1);
+    expect(deckCountFor(3)).toBe(2);
+    expect(deckCountFor(4)).toBe(2);
+  });
+
+  it('throws on out-of-range counts', () => {
+    expect(() => deckCountFor(1)).toThrow();
+    expect(() => deckCountFor(5)).toThrow();
+    expect(() => deckCountFor(0)).toThrow();
+  });
+});
+
+describe('initializeGame — hand sizes', () => {
+  it.each([
+    [2, 1, 22],
+    [3, 2, 44],
+    [4, 2, 44],
+  ])(
+    '%i players → %i deck(s) → %i total cards in circulation',
+    (count, decks, totalCards) => {
+      const state = initializeGame({
+        players: setup(count),
+        rng: seededRng(1),
+      });
+      // Every player has the starting hand size.
+      for (const p of state.players) {
+        expect(p.hand.length).toBe(STARTING_HAND_SIZE);
+      }
+      // Sum of in-hand + draw = total cards.
+      const inHands = state.players.length * STARTING_HAND_SIZE;
+      expect(state.deck.length + inHands).toBe(totalCards);
+      expect(state.deck.length).toBe(totalCards - inHands);
+      // Sanity: number of decks scales as expected.
+      expect(decks).toBe(deckCountFor(count));
+    },
+  );
+});
+
+describe('initializeGame — starting state', () => {
+  it('places every player at Malkuth', () => {
+    const state = initializeGame({
+      players: setup(3),
+      rng: seededRng(1),
+    });
+    for (const p of state.players) {
+      expect(p.position).toBe('malkuth');
+    }
+  });
+
+  it('initializes counters to zero and empty collections', () => {
+    const state = initializeGame({
+      players: setup(2),
+      rng: seededRng(1),
+    });
+    expect(state.illumination).toBe(0);
+    expect(state.separation).toBe(0);
+    expect(state.discardPile).toEqual([]);
+    expect(state.spentSparks).toEqual([]);
+    expect(state.shellCancellationsAvailable).toBe(0);
+    expect(state.shellsDeflected).toBe(0);
+    expect(state.pillarStreak.currentPillar).toBeNull();
+    expect(state.pillarStreak.sameCount).toBe(0);
+    for (const p of state.players) {
+      expect(p.clearedSefirot.size).toBe(0);
+      expect(p.sparksHeld.size).toBe(0);
+    }
+  });
+
+  it('applies the Soul Aspect +2 bonus to the matching stat', () => {
+    // Tiferet bonus = harmony. Chesed bonus = lovingkindness.
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'tiferet',
+          stats: { ...DEFAULT_STATS, harmony: 12 },
+        },
+        {
+          id: 'p2',
+          name: 'B',
+          soulAspect: 'chesed',
+          stats: { ...DEFAULT_STATS, lovingkindness: 11 },
+        },
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.harmony).toBe(14);
+    expect(state.players[1]?.stats.lovingkindness).toBe(13);
+    // Other stats are untouched.
+    expect(state.players[0]?.stats.unity).toBe(DEFAULT_STATS.unity);
+  });
+});
+
+describe('initializeGame — determinism', () => {
+  it('same seed produces same deal', () => {
+    const a = initializeGame({
+      players: setup(3),
+      rng: seededRng(42),
+    });
+    const b = initializeGame({
+      players: setup(3),
+      rng: seededRng(42),
+    });
+    expect(a.players.map((p) => p.hand)).toEqual(b.players.map((p) => p.hand));
+    expect(a.deck).toEqual(b.deck);
+  });
+
+  it('throws on out-of-range player count', () => {
+    expect(() =>
+      initializeGame({
+        players: setup(1),
+        rng: seededRng(1),
+      }),
+    ).toThrow();
+  });
+});
