@@ -1167,3 +1167,43 @@ future ticket can clarify.
 
 **Commit(s):** `42a66c5`
 
+---
+
+## 2026-04-25T00:28:16-04:00 — design clarifications: hand cap, deck scaling, gift handling
+
+**Pushed:** Design-doc changes only (no code). Three rule
+clarifications worked out in conversation:
+
+- **Hybrid deck scaling.** A 2-player game uses 1 deck (22 cards);
+  3- or 4-player uses 2 decks (44 cards). Two decks lets multiple
+  players hold the same path-key — coordination still matters but
+  isn't choked by a single rare card.
+- **Hand-size cap = 6.** Starting hand uniformly 4, leaving a
+  2-card buffer for early gifts/draws before the cap binds.
+- **Discard recycle.** When draw pile empties, shuffle discard
+  face-down into a new draw pile. Game runs as long as cards
+  exist anywhere in the system.
+- **Gift-at-cap handling.** A gift offered to a player at the cap
+  forces a choice: refuse (+1 Separation) or immediately discard
+  one card (no Separation cost) and accept.
+- **Gevurah's "Sacred No."** Gevurah may refuse gifts without the
+  +1 Separation cost. New strength paired with the existing
+  "cannot initiate gifts" weakness.
+- **"Gift for free" → "gift outside your turn."** Chesed Spark
+  and Soul Aspect copy was misleading — there's no card cost on
+  a normal gift; the cost is the timing restriction (gifts
+  normally only happen during your own turn). Cleaned up.
+
+**Why:** User flagged two real holes — the "for free" wording
+implied a card cost that doesn't exist, and the 22-card deck
+math obviously couldn't support a 4-player session.
+
+**Notes:**
+- Files changed: `design/mechanics.md` only.
+- Engine consequences tracked in #56 (hand-cap enforcement,
+  deck-scaling deal, discard recycle reducer).
+- Tests/typecheck/lint still green (no code changed).
+- Build not re-run (no runtime change).
+
+**Commit(s):** `ae703df`
+

@@ -37,7 +37,7 @@ is an implementation choice.
 | Element | Count | Purpose |
 |---|---|---|
 | Tree board | 1 | 10 Sefirot as nodes, 22 paths as edges |
-| Major Arcana deck | 22 cards | One card per path; each is also a path-key |
+| Major Arcana decks | **1 deck (2 players) or 2 decks (3–4 players)** | One card per path. Each is also a path-key. With two decks, two players can hold the same Arcanum. |
 | Player tokens | 1 per player | Current position on the Tree |
 | Stat sheet | 1 per player | 10 stats (one per Sefirah) + Soul Aspect |
 | Spark tokens | 10 types | One per Sefirah; earned and spent |
@@ -45,6 +45,20 @@ is an implementation choice.
 | Separation tracker | 1 shared | Counter, 0–∞ |
 | Shell markers | 10 | One per Sefirah, dormant/active |
 | d20 | 1 | Stat-check rolls |
+
+**Deck scaling rule.** A 2-player game uses one Major Arcana deck (22
+cards). A 3- or 4-player game uses two shuffled Major Arcana decks
+together (44 cards). Two decks lets multiple players potentially hold
+the same path-key — coordination still matters, but the team isn't
+choked by a single rare card.
+
+**Hand-size cap.** Each player's hand is capped at **6 cards**. See
+[Drawing & Gift handling](#drawing--gift-handling) below for what
+happens when a draw or gift would exceed it.
+
+**Discard recycle.** When the draw pile empties, shuffle the discard
+pile face-down to form a new draw pile. The game runs as long as
+there are cards anywhere in the system.
 
 ---
 
@@ -84,10 +98,17 @@ Soul Aspects may not duplicate across players.
 
 ### 3. Starting hand
 
-Shuffle the 22 Major Arcana. Deal:
-- **2 players:** 7 cards each (8 in draw pile)
-- **3 players:** 5 cards each (7 in draw pile)
-- **4 players:** 4 cards each (6 in draw pile)
+Pick the right deck count and shuffle, then deal **4 cards** to each
+player. The remaining cards form the face-down draw pile.
+
+| Players | Decks | Total cards | In hands | In draw pile |
+|---|---|---|---|---|
+| 2 | 1 | 22 | 8 | 14 |
+| 3 | 2 | 44 | 12 | 32 |
+| 4 | 2 | 44 | 16 | 28 |
+
+Hand-size cap is **6**; starting at 4 leaves a 2-card buffer for early
+gifts and draws before the cap starts to bite.
 
 ### 4. Starting state
 
@@ -95,6 +116,37 @@ Shuffle the 22 Major Arcana. Deal:
 - **Illumination = 0, Separation = 0.**
 - All **Shell markers dormant**.
 - First player is whoever rolled highest on their Malkuth (Body) stat.
+
+---
+
+## Drawing & gift handling
+
+The hand-size cap is **6**.
+
+### Drawing
+- End-of-turn draw replenishes hand toward the starting size of 4 — but
+  never above the cap of 6 (a player who has been gifted up to 6 skips
+  the draw entirely).
+- Meditate (the alternative to a move) draws 2 cards, but stops at 6.
+- If the draw pile is empty when a card is needed, the discard pile is
+  reshuffled face-down to become the new draw pile. The game runs as
+  long as cards exist anywhere in the system.
+
+### Gifts
+- Gifts during your own turn are free in card cost — circulation is
+  the point.
+- Sparks and Soul Aspect abilities (Chesed, in particular) extend
+  *when* you can gift, not the cost itself.
+- **Refusing a gift** raises **Separation +1**. Refusing kindness is
+  the cardinal anti-cooperative act.
+- **Receiving a gift while at the hand-size cap** forces a choice: the
+  receiver may *refuse* (+1 Separation) or *immediately discard one
+  card* from their hand to make room and accept the gift (no
+  Separation cost; the discarded card goes face-up to the discard
+  pile and is eligible for future Yesod Spark recovery / discard
+  recycle).
+- **Gevurah** — and only Gevurah — may refuse a gift without the
+  +1 Separation cost. Saying "no" is part of Gevurah's domain.
 
 ---
 
@@ -118,9 +170,12 @@ On your turn, in order:
 
 1. **Move or Meditate.** Either play an Arcanum to travel its path to an
    adjacent Sefirah, OR skip movement to draw 2 cards (*Meditate*).
+   Drawing stops at the hand-size cap of 6.
 2. **Challenge** (if you arrived at an uncleared Sefirah). See below.
 3. **Assist** (optional). Use Soul Aspect gifting abilities or spend Sparks.
-4. **Draw** (if below starting hand size).
+4. **Draw** to refill toward the starting hand size of 4 — capped at 6.
+   If the draw pile is empty when you'd draw, the discard pile is
+   reshuffled face-down to form a new draw pile first.
 
 Malkuth has no challenge. Kether has the **Final Threshold** (collective,
 endgame only).
@@ -264,13 +319,17 @@ ground).
 
 ### Chesed — The Giver
 - **+2 Lovingkindness.**
-- *Overflow:* Once per round, gift any card to any player for free.
-- *Weakness:* You cannot refuse gifts.
+- *Overflow:* Once per round, gift any card to any player **outside**
+  your normal turn (the timing is the gift, not a card cost).
+- *Weakness:* You cannot refuse gifts. If a gift would push your hand
+  past the cap, you must discard to make room.
 
 ### Gevurah — The Boundary-Keeper
 - **+2 Strength.**
 - *Discipline:* Once per game, pass one challenge without rolling. Describe
   what you're sacrificing internally.
+- *Strength: Sacred No.* Gevurah may refuse a gift without the
+  +1 Separation cost. The art of the sacred no is the player's domain.
 - *Weakness:* You cannot initiate gifts — only accept requests.
 
 ### Tiferet — The Heart
