@@ -1887,3 +1887,45 @@ the gap. Single-player hot-seat now plays end-to-end.
 - Single-screen hot-seat: only the active player's hand renders.
 
 **Commit(s):** `eb73412`, `b97d6bf`
+
+---
+
+## 2026-04-26T00:19:01-04:00 — challenge wiring + acceptSetback race fix
+
+**Pushed:** Closes the two integration gaps documented in #74.
+
+- `ChallengeResolution` widened to carry the committed
+  `CheckModifiers`. Modal stores them in `committedModifiers`
+  state at roll time; `handleFailChoice` includes them.
+- `PlayScreen.handleChallengeResolved` forwards the modifiers to
+  `submitChallenge` — the engine now applies the same
+  assist + burn picture the player saw.
+- Failure-accept path applies the engine's separation cost (+1
+  normally, +2 on shortcut arrivals) via a new atomic
+  `acceptChallengeSetback` action on `useTurn`.
+- Failure-retry forces a fresh modal mount via a `retryNonce`
+  keyed into the React `key`. Resets on pass / accept so it
+  doesn't leak across challenges.
+
+**Reviewer caught a critical bug — fixed in second commit:**
+The first commit's accept path called
+`turn.setState(acceptSetback(...))` then
+`turn.submitChallenge(failed-outcome)`. Both schedule setState
+in the same React batch; submitChallenge's internal
+`setState(unchanged-on-fail)` ran last and silently overwrote
+the setback. The fix adds an atomic `acceptChallengeSetback`
+action to useTurn that does both updates in one setState call.
+
+**Why:** The /play flow now applies the player's choices end to
+end. Visible roll = engine roll. Visible modifiers = engine
+modifiers. Visible setback cost = engine separation tick. Three
+classes of integration desync are now closed.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (460/460), build ✓,
+  e2e ✓ (2/2 in real browser).
+- Single-screen hot-seat (only active player's hand) remains a
+  future-ticket gap — multiplayer (Phase 5) is the natural place
+  to address that.
+
+**Commit(s):** `c053871`, `46f9d40`

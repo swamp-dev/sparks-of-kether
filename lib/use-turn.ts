@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
-import { resolveChallenge } from '@/engine/checks';
+import { acceptSetback, resolveChallenge } from '@/engine/checks';
 import type {
   CheckModifiers,
   CheckOutcome,
@@ -67,6 +67,19 @@ export interface UseTurnReturn {
      */
     outcome?: CheckOutcome,
   ) => Result<ChallengeSuccess, ChallengeRejection>;
+  /**
+   * Apply the engine's failure-acceptance cost (Separation +1, or
+   * +2 on shortcut arrivals) and advance the phase to 'draw'
+   * atomically. Replaces the prior pattern of the orchestrator
+   * calling `setState(acceptSetback(...))` then `submitChallenge` —
+   * those two calls landed in the same React batch, and
+   * `submitChallenge`'s internal `setState(unchanged)` overwrote
+   * the setback. One atomic action removes that race.
+   */
+  readonly acceptChallengeSetback: (input: {
+    readonly sefirah: SefirahKey;
+    readonly shortcut?: boolean;
+  }) => GameState;
   readonly draw: () => GameState;
   readonly endTurn: () => void;
   /** Force a state replacement — used when an external action mutates state out-of-band. */
@@ -150,13 +163,31 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       });
       if (!result.ok) return result;
       setState(result.value.newState);
-      // Advance regardless of pass/fail — the orchestrator UI
-      // applies failure-acceptance via a separate engine call
-      // (`acceptSetback`) before the player ends the turn.
+      // On pass: state changed, advance to draw. On fail: state
+      // unchanged; the caller should NOT use submitChallenge for
+      // the accept path — use `acceptChallengeSetback` instead so
+      // the setback's separation tick lands atomically with the
+      // phase advance. Calling submitChallenge after acceptSetback
+      // would overwrite the setback in the same React batch.
       setPhase('draw');
       return result;
     },
     [phase, state, activePlayer, opts.rng],
+  );
+
+  const acceptChallengeSetbackFn = useCallback(
+    (input: { readonly sefirah: SefirahKey; readonly shortcut?: boolean }): GameState => {
+      if (phase !== 'challenge' || !activePlayer) return state;
+      const next = acceptSetback(state, {
+        playerId: activePlayer.id,
+        sefirah: input.sefirah,
+        shortcut: input.shortcut ?? false,
+      });
+      setState(next);
+      setPhase('draw');
+      return next;
+    },
+    [phase, state, activePlayer],
   );
 
   const draw = useCallback((): GameState => {
@@ -221,6 +252,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       move,
       meditate,
       submitChallenge,
+      acceptChallengeSetback: acceptChallengeSetbackFn,
       draw,
       endTurn,
       setState: replaceState,
@@ -231,6 +263,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       phase,
       isActive,
       move,
+      acceptChallengeSetbackFn,
       meditate,
       submitChallenge,
       draw,

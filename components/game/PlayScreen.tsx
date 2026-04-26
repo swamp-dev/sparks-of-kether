@@ -57,6 +57,10 @@ export function PlayScreen({
   const [thresholdResult, setThresholdResult] =
     useState<FinalThresholdResult | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
+  // Bumped on every retry choice from the challenge modal — keyed
+  // into the modal's React `key` so the modal remounts with a clean
+  // committing/rolling/reveal state machine.
+  const [retryNonce, setRetryNonce] = useState(0);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
@@ -125,39 +129,40 @@ export function PlayScreen({
     if (!activePlayer) return;
     const ctx = challengeContext;
     if (!ctx) return;
-    // The modal already ran the d20 via the engine's `rollCheck` and
-    // animated the result. We pass that outcome back to
-    // `submitChallenge` so the engine applies the player's seen
-    // result rather than rolling a second time. Modifiers come from
-    // the modal's reveal (zeroed here means the modal didn't expose
-    // the chosen modifiers — that's a separate gap to fill when the
-    // modal's onResolved payload is widened).
-    const modifiers = {
-      assistStats: [] as readonly number[],
-      cardBurns: 0,
-      sparkBurns: 0,
-      shortcutPenalty: ctx.shortcut ?? false,
-    };
+    // The modal animated the d20 and committed the modifiers the
+    // player chose; both come back in the resolution. Forward them
+    // so the engine applies the same outcome the player saw.
     if (resolution.pass) {
-      turn.submitChallenge(ctx.sefirah, modifiers, resolution.outcome);
+      turn.submitChallenge(
+        ctx.sefirah,
+        resolution.modifiers,
+        resolution.outcome,
+      );
+      // Reset retry counter so the next challenge starts at 0.
+      setRetryNonce(0);
       return;
     }
     if (resolution.choice === 'retry') {
-      // Retry: don't advance phase. The player will commit
-      // additional modifiers (card burn, spark burn) and roll again
-      // on the next modal cycle. For now the modal closes itself
-      // and the orchestrator re-opens it on the next render —
-      // since `phase` is still 'challenge', the modal stays.
+      // Retry: don't advance the phase. The player commits another
+      // round of modifiers (typically a card or spark burn) and
+      // rolls again. We force a fresh modal mount by bumping a
+      // local key so the previous outcome state doesn't bleed in.
+      setRetryNonce((n) => n + 1);
       return;
     }
-    // 'accept': apply the failed-roll consequence (separation tick),
-    // then advance the phase. submitChallenge with the outcome runs
-    // the engine's no-op-on-fail path; the separation cost lives
-    // in `acceptSetback`, which a later integration pass will wire
-    // explicitly. For now we advance the phase so the flow doesn't
-    // wedge — separation cost is a known gap tracked in the
-    // integration journal entry.
-    turn.submitChallenge(ctx.sefirah, modifiers, resolution.outcome);
+    // 'accept': apply the engine's failure consequence — Separation
+    // ticks up by 1 (or +2 on shortcut arrivals) — and advance the
+    // phase to 'draw'. ATOMICALLY via `acceptChallengeSetback`. The
+    // earlier pattern (setState(acceptSetback(...)) +
+    // submitChallenge(failed-outcome)) lost the setback to a React
+    // batching race: submitChallenge's internal `setState(unchanged)`
+    // overwrote the setback in the same flush. The dedicated action
+    // collapses both updates into one setState call.
+    turn.acceptChallengeSetback({
+      sefirah: ctx.sefirah,
+      shortcut: ctx.shortcut ?? false,
+    });
+    setRetryNonce(0);
   };
 
   return (
@@ -252,6 +257,12 @@ export function PlayScreen({
       {challengeContext ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ground/80 p-4">
           <ChallengeModal
+            // Bumping retryNonce remounts the modal so the
+            // committing/rolling/reveal state machine starts fresh
+            // for the next roll. Reset on pass/accept so a future
+            // challenge at the same Sefirah doesn't start at a
+            // stale nonce.
+            key={`challenge-${retryNonce}`}
             context={challengeContext}
             rng={rng}
             onResolved={handleChallengeResolved}

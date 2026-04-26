@@ -233,6 +233,42 @@ describe('ChallengeModal — rolling and reveal', () => {
     }
   });
 
+  it('onResolved carries the committed modifiers — orchestrator forwards them to engine', () => {
+    // The orchestrator needs the modal's chosen modifiers so the
+    // engine's `submitChallenge` applies the same outcome the player
+    // saw. Earlier the resolution payload omitted modifiers and the
+    // orchestrator zeroed them when calling the engine, producing a
+    // divergent re-roll.
+    vi.useFakeTimers();
+    const onResolved = vi.fn();
+    const { container } = render(
+      <ChallengeModal
+        context={{ ...baseContext, stat: 18 }}
+        rng={seededRng(1)}
+        onResolved={onResolved}
+      />,
+    );
+    const allyCheckbox = container.querySelector(
+      '[data-ally="a1"] input',
+    ) as HTMLInputElement;
+    fireEvent.click(allyCheckbox);
+    const inc = container.querySelector(
+      '[data-stepper="cardBurns"] button:last-of-type',
+    ) as HTMLButtonElement;
+    fireEvent.click(inc);
+    fireEvent.click(inc);
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    const arg = onResolved.mock.calls[0]?.[0];
+    expect(arg?.modifiers).toBeDefined();
+    expect(arg?.modifiers.cardBurns).toBe(2);
+    expect(arg?.modifiers.sparkBurns).toBe(0);
+    expect(arg?.modifiers.assistStats).toEqual([10]); // Bea's stat
+    vi.useRealTimers();
+  });
+
   it('reveal phase shows the breakdown total', () => {
     vi.useFakeTimers();
     render(

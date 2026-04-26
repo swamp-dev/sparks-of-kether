@@ -7,6 +7,7 @@ import {
   SHORTCUT_DC_PENALTY,
   SPARK_BURN_BONUS,
   rollCheck,
+  type CheckModifiers,
   type CheckOutcome,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
@@ -51,11 +52,24 @@ export interface ChallengeContext {
   readonly availableSparkBurns?: number;
 }
 
+/**
+ * What the modal reports to the orchestrator after a roll. Always
+ * carries the `CheckModifiers` that produced the outcome — the
+ * orchestrator forwards them to the engine so the state mutation
+ * matches what the player committed (assist allies, cards burned,
+ * sparks burned). Without this, the engine has to roll again with
+ * no modifiers and produces a different result.
+ */
 export type ChallengeResolution =
-  | { readonly pass: true; readonly outcome: CheckOutcome }
+  | {
+      readonly pass: true;
+      readonly outcome: CheckOutcome;
+      readonly modifiers: CheckModifiers;
+    }
   | {
       readonly pass: false;
       readonly outcome: CheckOutcome;
+      readonly modifiers: CheckModifiers;
       readonly choice: 'retry' | 'accept';
     };
 
@@ -105,6 +119,8 @@ export function ChallengeModal({
   const [cardBurns, setCardBurns] = useState(0);
   const [sparkBurns, setSparkBurns] = useState(0);
   const [outcome, setOutcome] = useState<CheckOutcome | null>(null);
+  const [committedModifiers, setCommittedModifiers] =
+    useState<CheckModifiers | null>(null);
   const [phase, setPhase] = useState<'committing' | 'rolling' | 'reveal'>(
     'committing',
   );
@@ -138,20 +154,22 @@ export function ChallengeModal({
     // prevents a double-roll that would consume two values from the
     // shared `rng` and fire `onResolved` twice.
     if (phase !== 'committing') return;
+    const modifiers: CheckModifiers = {
+      assistStats: allies
+        .filter((a) => assistIds.has(a.id))
+        .map((a) => a.stat),
+      cardBurns,
+      sparkBurns,
+      shortcutPenalty: context.shortcut ?? false,
+    };
     const result = rollCheck({
       stat: context.stat,
       dc: baseDC,
-      modifiers: {
-        assistStats: allies
-          .filter((a) => assistIds.has(a.id))
-          .map((a) => a.stat),
-        cardBurns,
-        sparkBurns,
-        shortcutPenalty: context.shortcut ?? false,
-      },
+      modifiers,
       rng,
     });
     setOutcome(result);
+    setCommittedModifiers(modifiers);
     setPhase('rolling');
     // The animation is purely presentational; report the result
     // immediately on pass so the orchestrator can advance state.
@@ -160,7 +178,7 @@ export function ChallengeModal({
       // reveal lands at the same time as the state transition.
       window.setTimeout(() => {
         setPhase('reveal');
-        onResolved({ pass: true, outcome: result });
+        onResolved({ pass: true, outcome: result, modifiers });
       }, 800);
     } else {
       window.setTimeout(() => setPhase('reveal'), 800);
@@ -168,8 +186,13 @@ export function ChallengeModal({
   };
 
   const handleFailChoice = (choice: 'retry' | 'accept'): void => {
-    if (outcome === null) return;
-    onResolved({ pass: false, outcome, choice });
+    if (outcome === null || committedModifiers === null) return;
+    onResolved({
+      pass: false,
+      outcome,
+      modifiers: committedModifiers,
+      choice,
+    });
   };
 
   const toggleAssist = (id: string): void => {
