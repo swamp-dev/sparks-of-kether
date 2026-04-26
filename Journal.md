@@ -1795,3 +1795,36 @@ the component will follow as a thin shell.
 - Gates green: typecheck ✓, lint ✓, test ✓ (412/412), build ✓.
 
 **Commit(s):** `507c090`
+
+---
+
+## 2026-04-25T19:34:31-04:00 — #31: Final Threshold UI (Phase 4 complete)
+
+**Pushed:** Endgame screen wrapping the engine's pure
+`resolveFinalThreshold`. Each player can play remaining cards
+(no path travel — Kether is the end), burn Sparks (+1 Illumination
+each), and write an optional one-sentence reflection.
+
+- Live progress: current Illumination, projected after burns,
+  target (separation + 5), gap closure status.
+- Resolve calls the engine reducer once and emits the
+  win/loss/rejection result via `onResolved`.
+- JourneySummary post-resolution view: win/loss copy + final
+  counters + per-player reflections (display-only; persistence
+  is a future feature).
+
+**Why:** Completes Phase 4. Combined with #27/#28 (setup) +
+#29 (lobby/deal) + #30 (turn loop), the full game flow exists
+end-to-end on the UI side.
+
+**Reviewer findings addressed in fix push:**
+- Significant: handleResolve double-fire guard.
+- Significant: aria-label said "gap -2" on a cleared threshold;
+  switched to prose ("threshold cleared" / "N more needed").
+- Memo'd `allAtKether` for parity with other derived values;
+  moved above early-return so rules-of-hooks holds.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (413/413), build ✓.
+
+**Commit(s):** `1f79850`, `e754405`
