@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { HomeRoomForms } from '@/components/setup/HomeRoomForms';
 
 export default function HomePage() {
   return (
@@ -7,11 +8,19 @@ export default function HomePage() {
       <p className="mt-4 max-w-lg text-lg opacity-70">
         A cooperative ascent up the Kabbalistic Tree of Life.
       </p>
+
+      <section className="mt-12 w-full max-w-md">
+        <HomeRoomForms />
+      </section>
+
+      <p className="mt-8 text-xs uppercase tracking-widest opacity-40">
+        or play solo against the engine
+      </p>
       <Link
         href="/play"
-        className="mt-8 rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground"
+        className="mt-2 rounded border border-veil/30 px-6 py-2 font-display tracking-widest"
       >
-        Begin the ascent
+        Hot-seat / single-machine
       </Link>
     </main>
   );

@@ -49,38 +49,60 @@ export interface GameEventRow {
   readonly created_at: string;
 }
 
+// Strip `readonly` from a row type for use in Insert/Update slots.
+// Supabase's generic types expect mutable shapes; carrying readonly
+// from the Row would collapse the inferred parameter to `never` at
+// the `from(...).insert(...)` call site.
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
+interface RoomInsert
+  extends Omit<
+    Mutable<RoomRow>,
+    'id' | 'created_at' | 'started_at' | 'finished_at' | 'state'
+  > {
+  id?: string;
+  state?: RoomRow['state'];
+}
+
+type PlayerInsert = Omit<Mutable<PlayerRow>, 'joined_at'>;
+
+interface GameStateInsert
+  extends Omit<Mutable<GameStateRow>, 'id' | 'updated_at'> {
+  id?: string;
+}
+
+type GameEventInsert = Omit<Mutable<GameEventRow>, 'id' | 'created_at'>;
+
 /**
  * Database type passed to `createClient` so its `from()` calls return
  * the right row shape. This is the canonical place to wire new tables
  * into the typed client.
+ *
+ * Mutable on purpose: Supabase's generics infer `never` for readonly
+ * Insert types at the `from(...).insert(...)` call site.
  */
 export interface Database {
-  readonly public: {
-    readonly Tables: {
-      readonly rooms: {
-        readonly Row: RoomRow;
-        readonly Insert: Omit<RoomRow, 'id' | 'created_at' | 'started_at' | 'finished_at' | 'state'> &
-          Partial<Pick<RoomRow, 'id' | 'state'>>;
-        readonly Update: Partial<RoomRow>;
+  public: {
+    Tables: {
+      rooms: {
+        Row: RoomRow;
+        Insert: RoomInsert;
+        Update: Partial<Mutable<RoomRow>>;
       };
-      readonly players: {
-        readonly Row: PlayerRow;
-        // `id` is required on insert (no DB default) — the client
-        // must supply `auth.uid()` per the RLS contract.
-        readonly Insert: Omit<PlayerRow, 'joined_at'>;
-        readonly Update: Partial<PlayerRow>;
+      players: {
+        Row: PlayerRow;
+        Insert: PlayerInsert;
+        Update: Partial<Mutable<PlayerRow>>;
       };
-      readonly game_states: {
-        readonly Row: GameStateRow;
-        readonly Insert: Omit<GameStateRow, 'id' | 'updated_at'> & {
-          readonly id?: string;
-        };
-        readonly Update: Partial<GameStateRow>;
+      game_states: {
+        Row: GameStateRow;
+        Insert: GameStateInsert;
+        Update: Partial<Mutable<GameStateRow>>;
       };
-      readonly game_events: {
-        readonly Row: GameEventRow;
-        readonly Insert: Omit<GameEventRow, 'id' | 'created_at'>;
-        readonly Update: Partial<GameEventRow>;
+      game_events: {
+        Row: GameEventRow;
+        Insert: GameEventInsert;
+        Update: Partial<Mutable<GameEventRow>>;
       };
     };
   };

@@ -1981,3 +1981,52 @@ server component called it. Split into
   scalar preservation.
 
 **Commit(s):** `4079cd6`, `4575cf3`
+
+---
+
+## 2026-04-26T13:32:26-04:00 — #33: room create + join flow
+
+**Pushed:** Second Phase 5 ticket. Home page now offers New
+game / Join game; lobby route fetches and renders the joined
+players. Hot-seat / single-machine link is preserved as the
+solo entry point.
+
+- `lib/room-code.ts` — pure 6-char generator + validator
+  (confusable-free alphabet, no I/O/0/1).
+- `lib/rooms.ts` — `createRoom` / `joinRoom` client helpers.
+  Both ensure an anonymous Supabase session (auth.uid becomes
+  the players.id per the RLS contract from #32). createRoom
+  retries on code collision and rolls back the orphan room if
+  the player insert fails. joinRoom is idempotent for callers
+  already in the room.
+- `components/setup/HomeRoomForms.tsx` — client-component
+  forms with nickname + create / join inputs. Routes to
+  `/rooms/[code]/lobby` on success.
+- `app/rooms/[code]/lobby/page.tsx` — fetches room + players,
+  renders the existing `Lobby` component. Manual refresh
+  button until #34 wires Realtime.
+
+The Supabase `Database` typing relaxed `readonly` modifiers
+but still collapsed Insert overloads to `never` in v2.104. The
+client surface in `lib/rooms.ts` uses an unparameterized
+`SupabaseClient` and types reads explicitly via `.single<T>()`
+as a pragmatic workaround.
+
+**Reviewer caught three blockers — all fixed in second commit:**
+- The `rooms_member_select` RLS made `joinRoom` unreachable for
+  any new user (chicken-and-egg: read denied because not yet a
+  member). Added `rooms_find_by_code` policy: any authenticated
+  user can resolve a code → room id.
+- `createRoom`'s rollback `delete` would silently fail because
+  no DELETE policy existed. Added `rooms_host_delete_lobby`
+  scoped to host + lobby state.
+- Lobby page used `use(params)` which is Next 15; project is on
+  Next 14. Switched to plain object params.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (488/488), build ✓,
+  e2e ✓ (2/2 in real browser).
+- 18 new unit tests for room-code generation/validation +
+  joinRoom/createRoom (mocked Supabase).
+
+**Commit(s):** `2406972`, `6bdd3dc`

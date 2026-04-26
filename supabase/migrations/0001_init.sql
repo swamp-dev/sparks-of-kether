@@ -107,6 +107,12 @@ alter table public.game_events enable row level security;
 -- A player is in a room iff they have a row in `players` for it. We
 -- key all read policies off membership. UUID compares are native (no
 -- ::text casts) so the `players_pkey` index can be used.
+--
+-- Two SELECT policies on `rooms` so they OR together:
+--   1. Members can read full room rows.
+--   2. Anyone authenticated can find a room by code so they can
+--      join. Without this, a new user could never resolve a code
+--      to a room id (membership gate = chicken-and-egg).
 create policy rooms_member_select on public.rooms
   for select
   using (
@@ -115,6 +121,10 @@ create policy rooms_member_select on public.rooms
       where p.room_id = id and p.id = auth.uid()
     )
   );
+
+create policy rooms_find_by_code on public.rooms
+  for select
+  using (auth.uid() is not null);
 
 create policy players_member_select on public.players
   for select
@@ -172,6 +182,15 @@ create policy players_self_update on public.players
 create policy rooms_create on public.rooms
   for insert
   with check (host_id = auth.uid());
+
+-- Host can delete their own lobby room. This exists specifically for
+-- the createRoom rollback path: if the host insert succeeds but the
+-- accompanying player insert fails, the orphan room must be cleaned
+-- up so its code doesn't permanently occupy the namespace. Scoped to
+-- `state = 'lobby'` so a host can't drop a room mid-game.
+create policy rooms_host_delete_lobby on public.rooms
+  for delete
+  using (host_id = auth.uid() and state = 'lobby');
 
 -- Player join: a player can insert themselves into any room (lobby).
 -- The `id = auth.uid()` check is THE enforcement that the player

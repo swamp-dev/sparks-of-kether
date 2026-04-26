@@ -29,7 +29,9 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: /sparks of kether/i }),
   ).toBeVisible();
-  await page.getByRole('link', { name: /Begin the ascent/i }).click();
+  // Use the hot-seat / single-machine link, not the new
+  // multiplayer "New game" button (which depends on Supabase).
+  await page.getByRole('link', { name: /Hot-seat/i }).click();
 
   // Walk both players through the blessing ritual + aspect pick.
   for (let player = 1; player <= 2; player++) {
