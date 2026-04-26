@@ -4,7 +4,12 @@ import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
 import { resolveChallenge } from '@/engine/checks';
-import type { CheckModifiers, ChallengeRejection, ChallengeSuccess } from '@/engine/checks';
+import type {
+  CheckModifiers,
+  CheckOutcome,
+  ChallengeRejection,
+  ChallengeSuccess,
+} from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
 import type { GameState, MoveRejection, Result } from '@/engine/types';
 
@@ -54,6 +59,13 @@ export interface UseTurnReturn {
   readonly submitChallenge: (
     sefirah: SefirahKey,
     modifiers: CheckModifiers,
+    /**
+     * UI-supplied pre-rolled outcome. Passed through to
+     * `resolveChallenge`; the engine uses it instead of rolling
+     * again so the outcome the player saw IS the outcome applied
+     * to state.
+     */
+    outcome?: CheckOutcome,
   ) => Result<ChallengeSuccess, ChallengeRejection>;
   readonly draw: () => GameState;
   readonly endTurn: () => void;
@@ -120,6 +132,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     (
       sefirah: SefirahKey,
       modifiers: CheckModifiers,
+      outcome?: CheckOutcome,
     ): Result<ChallengeSuccess, ChallengeRejection> => {
       if (phase !== 'challenge' || !activePlayer) {
         return {
@@ -133,6 +146,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
         sefirah,
         modifiers,
         rng: opts.rng,
+        ...(outcome !== undefined ? { outcome } : {}),
       });
       if (!result.ok) return result;
       setState(result.value.newState);

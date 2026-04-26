@@ -52,7 +52,11 @@ export default defineConfig({
           reuseExistingServer: !process.env['CI'],
           stdout: 'ignore' as const,
           stderr: 'pipe' as const,
-          timeout: 60_000,
+          // Dev-server first-compile can be slow when the bundler has
+          // never seen the play route — Tree SVG, all the icons, every
+          // arcanum component. 60s is too tight; 180s gives headroom
+          // without making CI hang on a real wedge.
+          timeout: 180_000,
         },
       }
     : {}),

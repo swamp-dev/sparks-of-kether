@@ -13,8 +13,10 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { name: /sparks of kether/i })).toBeInTheDocument();
   });
 
-  it('renders the coming-soon line', () => {
+  it('renders the Begin link to /play', () => {
     render(<HomePage />);
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /Begin the ascent/i });
+    expect(link).toBeInTheDocument();
+    expect(link.getAttribute('href')).toBe('/play');
   });
 });

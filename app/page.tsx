@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-ground p-8 text-center text-veil">
@@ -5,7 +7,12 @@ export default function HomePage() {
       <p className="mt-4 max-w-lg text-lg opacity-70">
         A cooperative ascent up the Kabbalistic Tree of Life.
       </p>
-      <p className="mt-8 text-sm opacity-40">coming soon</p>
+      <Link
+        href="/play"
+        className="mt-8 rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground"
+      >
+        Begin the ascent
+      </Link>
     </main>
   );
 }

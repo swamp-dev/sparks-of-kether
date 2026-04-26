@@ -114,6 +114,19 @@ export interface ResolveChallengeInput {
   readonly sefirah: SefirahKey;
   readonly modifiers: CheckModifiers;
   readonly rng: Rng;
+  /**
+   * UI-supplied pre-rolled outcome. When the challenge modal animates
+   * the d20 it consumes one value from `rng` to produce a
+   * `CheckOutcome`. Passing it back here keeps the engine's state
+   * mutation in sync with what the player saw — without this, a
+   * second `rollCheck` call would consume the next rng value and
+   * produce a different result, so the engine and the UI would
+   * disagree.
+   *
+   * Optional so engine-only call sites (tests, future bots) can keep
+   * the existing roll-here behavior unchanged.
+   */
+  readonly outcome?: CheckOutcome;
 }
 
 /**
@@ -153,12 +166,14 @@ export function resolveChallenge(
   }
 
   const stat = player.stats[sefirahRecord.stat];
-  const outcome = rollCheck({
-    stat,
-    dc: sefirahRecord.challenge.dc,
-    modifiers,
-    rng,
-  });
+  const outcome =
+    input.outcome ??
+    rollCheck({
+      stat,
+      dc: sefirahRecord.challenge.dc,
+      modifiers,
+      rng,
+    });
 
   if (!outcome.pass) {
     return { ok: true, value: { newState: state, outcome } };

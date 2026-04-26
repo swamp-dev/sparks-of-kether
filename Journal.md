@@ -1828,3 +1828,62 @@ end-to-end on the UI side.
 - Gates green: typecheck ✓, lint ✓, test ✓ (413/413), build ✓.
 
 **Commit(s):** `1f79850`, `e754405`
+
+---
+
+## 2026-04-25T20:27:11-04:00 — integration: /play page + Playwright e2e
+
+**Pushed:** The missing top-level page that turns the engine + UI
+library into a real game. After Phase 4 merged, every component
+existed in isolation but `app/page.tsx` still said "coming soon"
+and the `useTurn` hook had no consumer.
+
+- `app/page.tsx` now links to `/play`.
+- `app/play/page.tsx` is a phase state machine: ritual(p1) →
+  aspect(p1) → ritual(p2) → aspect(p2) → lobby → play. Hot-seat
+  for now; Phase 5 swaps the local state for room-based state.
+- `components/game/PlayScreen.tsx` composes TreeBoard + Hand +
+  StatSheet + TeamMeters + ShellPanel + ChallengeModal +
+  FinalThreshold around the `useTurn` hook from #30. Wires
+  card-select → path-click → engine.applyMove. Opens the
+  challenge modal automatically when arriving at an uncleared
+  check Sefirah. Hands off to FinalThreshold when all at Kether.
+- `e2e/play-flow.spec.ts` walks the full setup → lobby → play
+  flow in a real browser (via Playwright). This is the test the
+  "are tests good and meaningful" assessment specifically
+  requested — integration coverage no unit test can produce.
+
+**Why:** The user asked "how close to playable" and the honest
+answer was "components done; integration missing." This closes
+the gap. Single-player hot-seat now plays end-to-end.
+
+**Reviewer findings — all addressed in fix push:**
+- CRITICAL: `initializeGame` was being called in render body of
+  PlayPage, burning rng values on every re-render. Extracted into
+  a `<PlaySession>` child component with useMemo so it runs once.
+- SIGNIFICANT: ChallengeModal and engine's `submitChallenge` both
+  ran `rollCheck` independently, producing divergent outcomes —
+  the player's visible roll was not the roll applied to state.
+  Added optional `outcome` field to `ResolveChallengeInput` (and
+  threaded through useTurn) so the modal's pre-rolled outcome is
+  authoritative. Engine applies it directly; no second roll.
+- SIGNIFICANT: ritualRng was shared across both players, making
+  P2's stats determined by P1's rolls. Per-player seeds now.
+- Plus retry/accept fork in handleChallengeResolved correctly
+  honors the player's choice.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (457/457), build ✓,
+  e2e ✓ (2/2 passing in real browser).
+- Playwright `webServer.timeout` bumped 60s → 180s — first-compile
+  of the play route is heavy (Tree SVG + 22 arcana + every icon).
+
+**Documented integration gaps for follow-up tickets:**
+- `acceptSetback` wiring on challenge fail → 'accept' (Separation
+  cost not yet applied; phase advances cleanly though).
+- ChallengeModal modifiers aren't surfaced to the orchestrator
+  (zeroed in submitChallenge call). Fix when modal's `onResolved`
+  payload widens to carry committed modifiers.
+- Single-screen hot-seat: only the active player's hand renders.
+
+**Commit(s):** `eb73412`, `b97d6bf`
