@@ -1929,3 +1929,55 @@ classes of integration desync are now closed.
   to address that.
 
 **Commit(s):** `c053871`, `46f9d40`
+
+---
+
+## 2026-04-26T01:20:48-04:00 — #32: Supabase schema + typed client (Phase 5 begins)
+
+**Pushed:** First Phase 5 ticket. Lays the multiplayer persistence
+layer that subsequent tickets (#33–#36) will build on. The schema
+draws a clear line between client writes (game_events append-only
++ self-update on players) and server-authoritative writes
+(game_states snapshot, rooms.state transitions).
+
+- `supabase/migrations/0001_init.sql` — rooms / players /
+  game_states / game_events with RLS. Membership-based reads;
+  client-side appends to events; service-role-only writes to
+  game_states.
+- `lib/supabase.ts` — typed client wrapper. Browser singleton +
+  fresh server-per-call. Round-trippable serialization for the
+  engine's Set-typed fields.
+- `.env.example` — public anon key vars; service role key
+  excluded by design.
+- `README.md` — multiplayer setup section.
+
+The actual Supabase project creation is the user's task — that
+needs a dashboard. The PR lands the SQL, types, and docs.
+
+**Reviewer found two SQL blockers + a security-comment lie. Fix
+push addressed all:**
+- Constraint syntax error on `players_seat_range_chk` would have
+  prevented the migration from applying.
+- `players.id default gen_random_uuid()` would have broken the
+  RLS model — every read policy keys on `id = auth.uid()`. Now
+  the client must supply `auth.uid()` (enforced at insert
+  policy).
+- `nickname_hash` column claimed a `crypt()` security check that
+  was never implemented. Dropped the column entirely rather than
+  leave a misleading "this does X" comment.
+- UUID-to-text casts in RLS → native UUID compares (planner can
+  use the pkey index).
+- Documented that `rooms`/`game_states` have no client INSERT
+  policies on purpose (service-role-only writes).
+
+Plus a latent client/server bug: the singleton with
+`persistSession: true` would have silently misbehaved if a
+server component called it. Split into
+`getSupabaseBrowserClient` and `createSupabaseServerClient`.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (468/468), build ✓.
+- Tests cover client factory pair + Set-field round-trip +
+  scalar preservation.
+
+**Commit(s):** `4079cd6`, `4575cf3`

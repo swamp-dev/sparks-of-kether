@@ -70,3 +70,31 @@ Directory layout:
 See [`CLAUDE.md`](CLAUDE.md) for the working agreement, and the
 [Epic issue](https://github.com/swamp-dev/sparks-of-kether/issues/1) for
 implementation tracking.
+
+## Multiplayer setup (Supabase)
+
+Real-time multiplayer rooms run on Supabase (Postgres + Realtime + anonymous
+auth). Single-player / hot-seat play does NOT need this; only set this up
+when you want online rooms.
+
+1. **Create a Supabase project.** Free tier is fine. Note the project URL and
+   the **anon (public)** API key from `Project Settings → API`.
+2. **Apply the migration.** From the project root:
+   ```sh
+   # Option A: Supabase CLI (recommended)
+   supabase link --project-ref <your-ref>
+   supabase db push
+   # Option B: paste supabase/migrations/0001_init.sql into the SQL editor
+   ```
+3. **Wire env vars.** Copy `.env.example` to `.env.local` and fill in:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   ```
+   `.env.local` is gitignored. Never commit real keys.
+4. **Verify.** `pnpm dev` should start without env errors. The lobby UI
+   (next ticket) will use these to create and join rooms.
+
+The schema's RLS policies enforce "you can only read/write rooms you've
+joined." Server-side validation (turn ownership, action authorization) lives
+in edge functions in a later ticket.
