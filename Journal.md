@@ -1764,3 +1764,34 @@ the full setup pipeline (ritual → aspect → lobby → deal) now exists.
 - Gates green: typecheck ✓, lint ✓, test ✓ (425/425), build ✓.
 
 **Commit(s):** `6966833`, `843c356`
+
+---
+
+## 2026-04-25T19:26:48-04:00 — #30: useTurn hook (turn orchestration core)
+
+**Pushed:** Turn-loop state machine implemented as a React hook
+that wraps existing engine reducers. Four phases per turn:
+  1. move — applyMove or meditate (skip)
+  2. challenge — entered on arrival at uncleared check-kind Sefirah
+  3. draw — refill toward 4, cap 6, recycle discard if deck empties
+  4. end — endTurn rotates active player, phase resets
+
+- `isActive(playerId)` gates UI per turn ownership. Out-of-turn
+  Soul Aspect abilities can bypass via direct engine calls.
+- Hook owns phase + active-player index; `state: GameState` is
+  settable from outside via `setState(s)`. That keeps it
+  composable with Supabase Realtime in Phase 5 (server-push →
+  setState → next render).
+- Tests cover the phase machine, draw refill, hand cap, and the
+  discard-recycle path.
+
+**Why:** The actual TurnOrchestrator React component (composing
+Tree + Hand + ChallengeModal + StatSheet + meters around this
+hook) is straightforward wiring once those Phase 3 components
+hit main. The state-machine contract is the meaningful piece;
+the component will follow as a thin shell.
+
+**Notes:**
+- Gates green: typecheck ✓, lint ✓, test ✓ (412/412), build ✓.
+
+**Commit(s):** `507c090`
