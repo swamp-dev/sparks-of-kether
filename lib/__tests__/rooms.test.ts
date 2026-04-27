@@ -3,6 +3,7 @@ import {
   MAX_PLAYERS_PER_ROOM,
   createRoom,
   joinRoom,
+  kickPlayer,
 } from '../rooms';
 import type { PlayerRow, RoomRow } from '../supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -437,5 +438,92 @@ describe('joinRoom', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.seat).toBe(0);
+  });
+});
+
+describe('kickPlayer', () => {
+  function makeKickClient(deleteResult: {
+    data: unknown;
+    error: { message: string } | null;
+  }): SupabaseClient {
+    return {
+      from: () => ({
+        delete: () => ({
+          eq: () => ({
+            eq: () => ({
+              select: async () => deleteResult,
+            }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient;
+  }
+
+  it('refuses self-kick before touching the database', async () => {
+    let deleteCalled = false;
+    const client = {
+      from: () => ({
+        delete: () => {
+          deleteCalled = true;
+          return { eq: () => ({ eq: () => ({ select: async () => ({ data: [], error: null }) }) }) };
+        },
+      }),
+    } as unknown as SupabaseClient;
+
+    const result = await kickPlayer(client, {
+      roomId: 'room-1',
+      targetPlayerId: 'host-uid',
+      callerId: 'host-uid',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('self-kick-forbidden');
+    expect(deleteCalled).toBe(false);
+  });
+
+  it('returns the deleted player id on success', async () => {
+    const client = makeKickClient({
+      data: [{ id: 'target-uid' }],
+      error: null,
+    });
+    const result = await kickPlayer(client, {
+      roomId: 'room-1',
+      targetPlayerId: 'target-uid',
+      callerId: 'host-uid',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.playerId).toBe('target-uid');
+  });
+
+  it('surfaces a transient delete-failed error on DB error', async () => {
+    const client = makeKickClient({
+      data: null,
+      error: { message: 'connection reset' },
+    });
+    const result = await kickPlayer(client, {
+      roomId: 'room-1',
+      targetPlayerId: 'target-uid',
+      callerId: 'host-uid',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('delete-failed');
+  });
+
+  it('returns no-row-deleted when RLS silently denies (empty result)', async () => {
+    // The `players_host_delete` RLS policy returns success-with-empty
+    // when the caller isn't the host — Supabase doesn't raise an
+    // error in that case. We surface it as a distinct failure mode
+    // so callers can show a useful message.
+    const client = makeKickClient({ data: [], error: null });
+    const result = await kickPlayer(client, {
+      roomId: 'room-1',
+      targetPlayerId: 'target-uid',
+      callerId: 'not-the-host-uid',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('no-row-deleted');
   });
 });

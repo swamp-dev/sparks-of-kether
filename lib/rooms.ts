@@ -236,3 +236,56 @@ export async function joinRoom(
     },
   };
 }
+
+export type KickPlayerError =
+  | { readonly kind: 'self-kick-forbidden' }
+  | { readonly kind: 'delete-failed'; readonly cause: string }
+  | { readonly kind: 'no-row-deleted' };
+
+/**
+ * Remove a player from a room. The DB-side `players_host_delete` RLS
+ * policy enforces both "caller is the room's host" and "target is
+ * not the caller themselves". We pre-check the self-kick case for a
+ * faster, more informative client error.
+ *
+ * Used by ticket #36's grace-timer flow: after the active player has
+ * been disconnected past the grace window, the host can kick them.
+ *
+ * Note: kicking does NOT advance the engine's `activePlayerId` — the
+ * snapshot still names the kicked player as active. The next normal
+ * `end-turn` event rotates past them. A future ticket may add a
+ * dedicated `kick-and-rotate` server action; for now the simpler
+ * primitive is enough.
+ */
+export async function kickPlayer(
+  client: Client,
+  input: {
+    readonly roomId: string;
+    readonly targetPlayerId: string;
+    readonly callerId: string;
+  },
+): Promise<Result<{ readonly playerId: string }, KickPlayerError>> {
+  if (input.callerId === input.targetPlayerId) {
+    return { ok: false, error: { kind: 'self-kick-forbidden' } };
+  }
+  const del = await client
+    .from('players')
+    .delete()
+    .eq('room_id', input.roomId)
+    .eq('id', input.targetPlayerId)
+    .select('id');
+  if (del.error) {
+    return {
+      ok: false,
+      error: { kind: 'delete-failed', cause: del.error.message },
+    };
+  }
+  // RLS denial returns success-with-empty-result rather than an
+  // error — surface that as a distinct case so callers can tell
+  // "the host policy didn't match" apart from a transient failure.
+  const rows = (del.data ?? []) as readonly { id: string }[];
+  if (rows.length === 0) {
+    return { ok: false, error: { kind: 'no-row-deleted' } };
+  }
+  return { ok: true, value: { playerId: input.targetPlayerId } };
+}

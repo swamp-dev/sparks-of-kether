@@ -2163,3 +2163,66 @@ remain supportable for later tickets.
   gate + engine-error path.
 
 **Commit(s):** `b912089`, `1db6681`, `61a768e`, `df4cd6a`, `3a9d9e2`, `cbe9761`
+
+## 2026-04-27T01:20:49-04:00 — #36: Presence & disconnect handling — draft 1
+
+**Pushed:**
+- `lib/grace.ts` (NEW) + tests — pure `computeGraceState` returning
+  `{ phase: 'connected' | 'grace' | 'expired', remainingMs }`. Plus
+  React `useDisconnectGrace` hook that owns the offline-since
+  timestamp and a 1s tick. 60s grace window per AC.
+- `lib/presence.ts` (NEW) + tests — `usePresence(roomId, selfPlayerId)`
+  Supabase Presence wrapper. Channel keyed on `playerId` so two tabs
+  from one player collapse to one online entry. Returns
+  `{ onlinePlayerIds: ReadonlySet<string>, connected, error }`.
+- `supabase/migrations/0002_player_kick.sql` (NEW) — `players_host_delete`
+  RLS policy: host can DELETE non-self players from their own room.
+- `lib/rooms.ts` — `kickPlayer` helper. Pre-checks self-kick;
+  surfaces RLS-deny (empty result) as `no-row-deleted` so the UI
+  can distinguish from a transient error.
+- `components/game/PresenceIndicator.tsx` (NEW) + tests — pure
+  presentational. Online dot, "(disconnected)" label, grace
+  countdown for the active player, host-only Kick button after
+  grace expires.
+
+**Why:** #34 + #35 wired the multiplayer state pipeline; this closes
+the last Phase-5 ticket by handling the network failure mode that
+breaks all multiplayer games — someone drops mid-turn. Per AC:
+presence reflects status within 2s, 60s grace timer on active-player
+disconnect, host can kick after grace.
+
+**Reviewer caught three significants — fixed in `e585236`:**
+- The grace-tick interval kept firing forever past the window. The
+  effect's setup-time guard couldn't catch the expiry boundary
+  because `setNow` doesn't change deps. Self-clearing in the
+  callback now stops the interval at the right moment.
+- `PresenceIndicator` hid "(disconnected)" whenever Kick was shown.
+  Non-host viewers (no Kick + no countdown) saw only a grey dot.
+  Label now always appears for offline players.
+- `usePresence` ignored the `CLOSED` channel status; a
+  server-initiated close left the hook stuck `connected: true` with
+  a stale online set. Now treated like CHANNEL_ERROR / TIMED_OUT.
+
+Plus aria fix: dot spans got `role="img"` so screen readers
+announce the online/offline label.
+
+**Notes:**
+- `kickPlayer` does NOT advance the engine's `activePlayerId`. The
+  snapshot still names the kicked player as active; the next normal
+  `end-turn` rotates past them. Soft hang risk if the kicked player
+  WAS the active player and no `end-turn` button is reachable —
+  flagged for the multiplayer game UI ticket.
+- Presence key tab-collapse: closing the second tab does NOT flash
+  "offline" because Supabase's per-meta cleanup leaves the surviving
+  tab's meta under the same key. Verified.
+- "Host leaves the room" is not handled anywhere in the codebase
+  (`players_host_delete` blocks self-kick by design). Out of scope
+  for #36; worth a follow-up.
+- Migrations are non-idempotent (`CREATE POLICY` without IF NOT
+  EXISTS), but this matches `0001_init.sql`'s style and Supabase's
+  migration tracker handles already-applied skips in production.
+- Gates green: typecheck ✓, lint ✓, test ✓ (545/545), build ✓,
+  e2e ✓ (2/2). 24 new unit tests across grace, presence, kick, and
+  PresenceIndicator.
+
+**Commit(s):** `8a49cd2`, `e4d0ef0`, `edaf357`, `c214286`, `e585236`
