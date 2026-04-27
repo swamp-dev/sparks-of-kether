@@ -24,6 +24,7 @@ playwright-report/
 test-results/
 blob-report/
 playwright/.cache/
+e2e/__screenshots__/
 
 # Mutation testing artifacts (Stryker)
 reports/mutation/
