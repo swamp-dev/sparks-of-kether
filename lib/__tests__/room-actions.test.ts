@@ -120,3 +120,21 @@ describe('applyClientAction — accept-setback', () => {
     expect(result.newState.separation).toBe(2);
   });
 });
+
+describe('applyClientAction — end-turn', () => {
+  it('advances activePlayerId to the next seat', () => {
+    const players = [
+      makePlayer({ id: 'p1' }),
+      makePlayer({ id: 'p2' }),
+    ];
+    const state = makeState({}, { players, activePlayerId: 'p1' });
+    const result = applyClientAction(
+      state,
+      { kind: 'end-turn', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.activePlayerId).toBe('p2');
+  });
+});

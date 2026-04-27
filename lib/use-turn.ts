@@ -11,6 +11,7 @@ import type {
   ChallengeSuccess,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
+import { endTurn as endTurnReducer } from '@/engine/turn';
 import type { GameState, MoveRejection, Result } from '@/engine/types';
 
 /**
@@ -44,8 +45,6 @@ export const HAND_CAP = 6;
 
 interface UseTurnOptions {
   readonly initialState: GameState;
-  /** Index into `state.players`; defaults to 0. */
-  readonly initialActiveIndex?: number;
   readonly rng: Rng;
 }
 
@@ -88,15 +87,19 @@ export interface UseTurnReturn {
 
 export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const [state, setState] = useState<GameState>(opts.initialState);
-  const [activePlayerIndex, setActivePlayerIndex] = useState(
-    opts.initialActiveIndex ?? 0,
-  );
   const [phase, setPhase] = useState<TurnPhase>('move');
 
+  // Active player is now derived from `state.activePlayerId` so the
+  // hook and the server agree on a single source of truth. Local
+  // `activePlayerIndex` state is gone — `endTurn` mutates the state
+  // through the engine's reducer instead.
+  const activePlayerIndex = state.players.findIndex(
+    (p) => p.id === state.activePlayerId,
+  );
+
   const isActive = useCallback(
-    (playerId: string) =>
-      state.players[activePlayerIndex]?.id === playerId,
-    [state.players, activePlayerIndex],
+    (playerId: string) => state.activePlayerId === playerId,
+    [state.activePlayerId],
   );
 
   const activePlayer = state.players[activePlayerIndex];
@@ -235,9 +238,9 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
 
   const endTurn = useCallback((): void => {
     if (phase !== 'end') return;
-    setActivePlayerIndex((i) => (i + 1) % state.players.length);
+    setState((s) => endTurnReducer(s));
     setPhase('move');
-  }, [phase, state.players.length]);
+  }, [phase]);
 
   const replaceState = useCallback((s: GameState): void => {
     setState(s);

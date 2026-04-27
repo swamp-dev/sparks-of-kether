@@ -7,6 +7,7 @@ import {
   type CheckOutcome,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
+import { endTurn } from '@/engine/turn';
 import type { GameState, MoveRejection } from '@/engine/types';
 
 /**
@@ -15,10 +16,8 @@ import type { GameState, MoveRejection } from '@/engine/types';
  * engine reducers; the same action shape is sent over the
  * `game_events` table so other clients see it via Realtime.
  *
- * Intentionally narrow for now: the moves the integration page
- * already exercises in single-player. Sparks, meditate, draw, and
- * end-turn coordination land in the next ticket alongside
- * server-side turn-ownership enforcement (#35).
+ * Sparks, meditate, draw, and full assist coordination are still TBD
+ * — they'll arrive when the multiplayer game UI starts using them.
  */
 export type ClientAction =
   | {
@@ -43,6 +42,10 @@ export type ClientAction =
       readonly playerId: string;
       readonly sefirah: SefirahKey;
       readonly shortcut?: boolean;
+    }
+  | {
+      readonly kind: 'end-turn';
+      readonly playerId: string;
     };
 
 export type ApplyActionRejection =
@@ -97,6 +100,9 @@ export function applyClientAction(
         shortcut: action.shortcut ?? false,
       });
       return { ok: true, newState };
+    }
+    case 'end-turn': {
+      return { ok: true, newState: endTurn(state) };
     }
   }
 }

@@ -2088,3 +2088,78 @@ screen. Turn-ownership enforcement is #35; presence/disconnect is #36.
   the events route.
 
 **Commit(s):** `7936db6`, `5e6cb18`, `230896b`
+
+## 2026-04-26T22:55:35-04:00 — #35: Turn ownership & action authorization — draft 1
+
+**Pushed:**
+- `engine/types.ts` — `activePlayerId: string` added to `GameState`.
+  Server-authoritative turn pointer; the events route checks the
+  caller's `auth.uid()` against this field.
+- `engine/turn.ts` (NEW) + tests — pure `endTurn(state)` reducer
+  that advances `activePlayerId` to the next seat in `state.players`
+  order. Wraps last → first; throws if the active id has fallen out
+  of the player list (corruption guard).
+- `engine/setup.ts` — `initializeGame` defaults
+  `activePlayerId = players[0].id`. Empty-players guard added.
+- `test/fixtures.ts` — `makeState` defaults `activePlayerId` to the
+  first player so existing single-player tests keep working without
+  enumerating it.
+- `lib/use-turn.ts` — drops local `activePlayerIndex` React state;
+  derives the index from `state.activePlayerId`. `endTurn` folds
+  through the engine reducer so single-player and multiplayer share
+  one advancement rule. Unused `initialActiveIndex` option removed.
+- `lib/room-actions.ts` — adds `'end-turn'` ClientAction; dispatcher
+  folds via `endTurn`.
+- `lib/authorize.ts` (NEW) + tests — pure
+  `authorize(action, state, callerId)`. Today's rules: identity
+  binding (action.playerId === callerId) and turn-locked (caller
+  must equal state.activePlayerId) for every current ClientAction.
+  Docstring sketches the forward-compat shape for out-of-turn
+  abilities (Spark spends, Soul-Aspect gifts, ally assists).
+- `app/api/rooms/[code]/events/route.ts` — wires `authorize` after
+  snapshot load, before engine fold. On reject: inserts a
+  `rejected:<kind>` audit row into `game_events`, returns 403 with
+  the structured rejection reason, and never constructs the
+  service-role client (AC #3: rejected events never mutate state).
+
+**Why:** The events route from #34 accepted any authenticated player's
+action regardless of whose turn it was. AC for #35: only the active
+player can submit move/challenge/setback/end-turn; rejected events
+never mutate state; out-of-turn abilities (Sparks, gifts, etc.)
+remain supportable for later tickets.
+
+**Reviewer caught two significants — fixed in `cbe9761`:**
+- `applyClientAction` could throw (engine corruption guard in
+  `endTurn`); the route had no try/catch, surfacing as a raw 500
+  stack trace. Wrapped in try/catch returning structured
+  `{ error: 'engine-error', cause }`. New test exercises the throw
+  via a ghost-active-player snapshot.
+- The route's early identity-mismatch check returned a different
+  JSON shape than `authorize`'s identity-mismatch rejection. The
+  two are defense-in-depth duplicates; aligned both to the same
+  `{ error: 'unauthorized', reason: { kind, callerId, claimedPlayerId } }`
+  envelope so the contract stays stable if the duplicate is ever
+  collapsed.
+
+**Notes:**
+- Turn-state field lives in `GameState` (not on the rooms table) so
+  the engine and the route share one source of truth. No production
+  serialized snapshots exist yet (no INSERT site for `game_states`
+  anywhere), so backfilling deserialize was unnecessary.
+- The audit log reuses `game_events` with an
+  `event_type: 'rejected:<kind>'` prefix. RLS is satisfied (caller
+  is auth.uid() + room member). If a client ever subscribes to
+  `game_events` directly (replay log), it'll need a
+  `WHERE event_type NOT LIKE 'rejected:%'` filter. Latent; deferred.
+- Server-side phase tracking (move/challenge/draw) is NOT in this
+  ticket. Today the route only checks turn ownership, not phase
+  ordering. Future-ticket concern.
+- Multiplayer game UI doesn't exist yet, so the ticket's "client UI
+  mirrors server rules (grey-out controls)" item has no surface to
+  apply to. Will land alongside the multiplayer game page.
+- Gates green: typecheck ✓, lint ✓, test ✓ (521/521), build ✓,
+  e2e ✓ (2/2). 13 new unit tests across endTurn, room-actions
+  (end-turn variant), authorize, and the route's authorization
+  gate + engine-error path.
+
+**Commit(s):** `b912089`, `1db6681`, `61a768e`, `df4cd6a`, `3a9d9e2`, `cbe9761`

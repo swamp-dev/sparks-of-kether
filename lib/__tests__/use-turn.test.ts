@@ -64,6 +64,9 @@ describe('useTurn — phase machine', () => {
     expect(result.current.activePlayerIndex).toBe(1);
     expect(result.current.phase).toBe('move');
     expect(result.current.isActive('p2')).toBe(true);
+    // The active id now lives in GameState — confirm it's not just
+    // local hook state. Server snapshots can be diff'd against this.
+    expect(result.current.state.activePlayerId).toBe('p2');
   });
 });
 

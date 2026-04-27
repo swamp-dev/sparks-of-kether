@@ -140,8 +140,18 @@ export function initializeGame(input: InitializeGameInput): GameState {
   const dealtCount = playerStates.length * STARTING_HAND_SIZE;
   const drawPile = shuffled.slice(dealtCount);
 
+  // Seat 0 acts first; `endTurn` advances seat order. The lobby
+  // already orders `players` by seat before calling here.
+  const firstPlayer = playerStates[0];
+  if (!firstPlayer) {
+    throw new Error(
+      'initializeGame: cannot initialize a game with zero players',
+    );
+  }
+
   return {
     players: playerStates,
+    activePlayerId: firstPlayer.id,
     deck: drawPile,
     discardPile: [],
     illumination: 0,

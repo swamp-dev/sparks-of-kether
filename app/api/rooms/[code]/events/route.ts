@@ -11,6 +11,7 @@ import {
   type RoomRow,
 } from '@/lib/supabase';
 import { applyClientAction, type ClientAction } from '@/lib/room-actions';
+import { authorize } from '@/lib/authorize';
 import { seededRng } from '@/engine/rng';
 
 /**
@@ -18,8 +19,10 @@ import { seededRng } from '@/engine/rng';
  * server:
  *   1. Authenticates via the bearer token (Supabase anon JWT).
  *   2. Loads the current room snapshot.
- *   3. Folds the action through the engine reducer.
- *   4. Writes the new snapshot + appends to `game_events`.
+ *   3. Authorizes the action against turn state (only the active
+ *      player can submit turn-locked actions).
+ *   4. Folds the action through the engine reducer.
+ *   5. Writes the new snapshot + appends to `game_events`.
  *
  * Realtime broadcasts the `game_states` UPDATE to all subscribed
  * clients, who deserialize and re-render. Optimistic local updates on
@@ -27,8 +30,9 @@ import { seededRng } from '@/engine/rng';
  * are deterministic given the same `outcome` payload, so the client's
  * pre-applied state will match what the server broadcasts.
  *
- * Turn-ownership enforcement is the next ticket (#35). For now any
- * authenticated player in the room can submit any action.
+ * Rejected actions are logged to `game_events` with an event_type
+ * prefix of `rejected:` so dev tooling can audit attempts. Rejected
+ * actions never mutate the snapshot.
  */
 
 interface RouteParams {
@@ -71,7 +75,24 @@ export async function POST(
   }
   const callerId = userResult.data.user.id;
   if (action.playerId !== callerId) {
-    return NextResponse.json({ error: 'identity-mismatch' }, { status: 403 });
+    // Same response shape as `authorize`'s `identity-mismatch`
+    // rejection (see `lib/authorize.ts`). The two checks are
+    // defense-in-depth: this one short-circuits before the snapshot
+    // load to avoid a wasted DB roundtrip; `authorize` is the
+    // authoritative rule for any future caller that bypasses this
+    // route. They MUST stay shape-compatible — JSON consumers don't
+    // distinguish.
+    return NextResponse.json(
+      {
+        error: 'unauthorized',
+        reason: {
+          kind: 'identity-mismatch',
+          callerId,
+          claimedPlayerId: action.playerId,
+        },
+      },
+      { status: 403 },
+    );
   }
 
   // Apply the caller's auth so RLS reads scope to their membership.
@@ -117,13 +138,48 @@ export async function POST(
 
   const currentState = deserializeGameState(snapshotLookup.data.snapshot);
 
+  // Authorize: turn-locked actions require the caller to be the
+  // active player. On reject we log an audit row (best effort — if
+  // the audit insert fails we still send 403; the snapshot is never
+  // mutated) and bail before the engine sees the action. AC #3:
+  // rejected events never mutate state.
+  const authResult = authorize(action, currentState, callerId);
+  if (!authResult.ok) {
+    await writeClient.from('game_events').insert({
+      room_id: room.id,
+      player_id: callerId,
+      event_type: `rejected:${action.kind}`,
+      payload: { action, reason: authResult.reason },
+    });
+    return NextResponse.json(
+      { error: 'unauthorized', reason: authResult.reason },
+      { status: 403 },
+    );
+  }
+
   // Fold the action. RNG is seeded from the row's last_event_id so
   // re-applying the same action against the same snapshot produces
   // the same outcome — handy for any future "verify client outcome"
   // checks. The action's `outcome` field still wins for challenge
   // rolls (the player saw it; we honor it).
+  //
+  // Engine reducers (e.g. `endTurn`) throw on corrupted snapshots —
+  // an `activePlayerId` that's not in `state.players`, etc. We catch
+  // and surface as a structured 500 rather than a raw stack trace,
+  // since a corrupted snapshot is a real-but-rare ops case.
   const rng = seededRng(snapshotLookup.data.last_event_id + 1);
-  const apply = applyClientAction(currentState, action, rng);
+  let apply;
+  try {
+    apply = applyClientAction(currentState, action, rng);
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: 'engine-error',
+        cause: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 },
+    );
+  }
   if (!apply.ok) {
     return NextResponse.json(
       { error: 'action-rejected', detail: apply.error },

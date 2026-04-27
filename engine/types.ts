@@ -93,6 +93,13 @@ export const EMPTY_ABILITY_FLAGS: PlayerAbilityFlags = {
  */
 export interface GameState {
   readonly players: readonly PlayerState[];
+  /**
+   * Whose turn it is. Server-authoritative — the events route uses
+   * this to authorize incoming actions by comparing the caller's
+   * `auth.uid()` against it. Advances on `end-turn` events.
+   * `initializeGame` defaults to `players[0].id`.
+   */
+  readonly activePlayerId: string;
   /** Face-down draw pile. Top of the deck is index 0. */
   readonly deck: readonly number[];
   readonly discardPile: readonly number[];

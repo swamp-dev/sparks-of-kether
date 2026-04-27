@@ -43,15 +43,25 @@ export function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
 }
 
 /**
- * Minimal game state with one default player. Pass `players` to override
- * or supply multiple; other fields default to sane zero/empty values.
+ * Minimal game state with one default player. Pass `stateOverrides.players`
+ * for multi-seat tests; other fields default to sane zero/empty values.
+ *
+ * `activePlayerId` defaults to the first player's id so existing
+ * single-player tests keep working without enumerating it. Override via
+ * `stateOverrides.activePlayerId` to test multi-seat turn rotation.
  */
 export function makeState(
   playerOverrides: Partial<PlayerState> = {},
   stateOverrides: Partial<GameState> = {},
 ): GameState {
+  const players = stateOverrides.players ?? [makePlayer(playerOverrides)];
+  const firstPlayer = players[0];
+  if (!firstPlayer) {
+    throw new Error('makeState: at least one player is required');
+  }
   return {
-    players: [makePlayer(playerOverrides)],
+    players,
+    activePlayerId: firstPlayer.id,
     deck: [],
     discardPile: [],
     illumination: 0,
