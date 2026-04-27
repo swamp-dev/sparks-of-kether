@@ -125,12 +125,42 @@ describe('initializeGame — determinism', () => {
     expect(a.deck).toEqual(b.deck);
   });
 
-  it('throws on out-of-range player count', () => {
+  it('throws on out-of-range player count (1 player)', () => {
     expect(() =>
       initializeGame({
         players: setup(1),
         rng: seededRng(1),
       }),
-    ).toThrow();
+    ).toThrow('Unsupported player count: 1 (must be 2..4)');
+  });
+
+  it('throws on empty player list (0 players)', () => {
+    // The empty-players input is gated by `deckCountFor(0)` at the
+    // top of `initializeGame` — that throw fires before the
+    // downstream `firstPlayer` guard would. The guard remains as
+    // defense-in-depth in case `deckCountFor`'s range is ever
+    // widened. This test pins the public-API behavior so a future
+    // change that allowed `deckCountFor(0)` would surface here
+    // before the guard's message reached production.
+    //
+    // Full-string match (not substring) so a suffix change in the
+    // error message does not silently invalidate the assertion.
+    expect(() =>
+      initializeGame({
+        players: setup(0),
+        rng: seededRng(1),
+      }),
+    ).toThrow('Unsupported player count: 0 (must be 2..4)');
+  });
+
+  it('throws on out-of-range player count (5 players)', () => {
+    // Companion to the 1-player and 0-player cases: pin the upper
+    // bound so a regression that loosened `deckCountFor` is caught.
+    expect(() =>
+      initializeGame({
+        players: setup(5),
+        rng: seededRng(1),
+      }),
+    ).toThrow('Unsupported player count: 5 (must be 2..4)');
   });
 });
