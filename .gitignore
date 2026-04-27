@@ -25,6 +25,10 @@ test-results/
 blob-report/
 playwright/.cache/
 
+# Mutation testing artifacts (Stryker)
+reports/mutation/
+.stryker-tmp/
+
 # Logs
 *.log
 npm-debug.log*

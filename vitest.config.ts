@@ -13,7 +13,16 @@ export default defineConfig({
     // Playwright owns e2e/; that single glob is sufficient. Do NOT add
     // `**/*.spec.ts` here — it would silently swallow any future unit
     // test named `*.spec.ts` under engine/ or lib/.
-    exclude: ['**/node_modules/**', '**/.next/**', '**/e2e/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/e2e/**',
+      // Stryker copies the source tree into `.stryker-tmp/sandbox-*/`
+      // when running mutation tests. Without this exclude, vitest
+      // discovers the duplicated test files and reports double the
+      // expected test count.
+      '**/.stryker-tmp/**',
+    ],
     include: ['**/__tests__/**/*.{test,spec}.{ts,tsx}', '**/*.{test,spec}.{ts,tsx}'],
     css: false,
     coverage: {

@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "reporters": ["html", "clear-text", "progress"],
+  "coverageAnalysis": "perTest",
+  "_mutate_comment": "Pilot scope: 8 engine/ modules. engine/events.ts is omitted (pure discriminated-union types — no executable branches to mutate). engine/rng.ts is omitted (PRNG algorithm correctness is not game-logic; mutating it would mostly produce false survivors).",
+  "mutate": [
+    "engine/turn.ts",
+    "engine/movement.ts",
+    "engine/checks.ts",
+    "engine/endgame.ts",
+    "engine/setup.ts",
+    "engine/sparks.ts",
+    "engine/shells.ts",
+    "engine/counters.ts"
+  ],
+  "ignoreStatic": true,
+  "thresholds": {
+    "high": 85,
+    "low": 60,
+    "break": null
+  },
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation.html"
+  },
+  "timeoutMS": 60000,
+  "concurrency": 4,
+  "tempDirName": ".stryker-tmp"
+}
