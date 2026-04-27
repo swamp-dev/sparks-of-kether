@@ -78,3 +78,52 @@ jobs:
 
       - name: Next.js build
         run: pnpm build
+
+  e2e:
+    name: end-to-end (playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: verify
+    # Without this env var, every spec self-skips (see
+    # `playwright.config.ts`). The runner installs chromium below so
+    # the suite actually executes; previously CI ran no e2e at all
+    # and `pnpm e2e` exited green with "2 skipped" — a silent gap
+    # that masked PR breakage in the integration layer.
+    env:
+      PLAYWRIGHT_BROWSERS_INSTALLED: '1'
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        # `--with-deps` pulls the system libs chromium needs on the
+        # ubuntu-latest runner. Without it, the browser launch fails
+        # with a libnss/libdrm error.
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: pnpm e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -1,32 +1,36 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright configuration skeleton.
+ * Playwright configuration.
  *
- * Browsers are NOT installed by default, and the dev-server webServer
- * is only launched when the user opts in. This keeps `pnpm e2e` cheap
- * in CI and local gate runs until end-to-end tests actually matter.
+ * Browsers are not installed by default. CI installs them in the e2e
+ * job (see `.github/workflows/ci.yml`). The
+ * `PLAYWRIGHT_BROWSERS_INSTALLED=1` env var must be set when actually
+ * running — without it the spec-level `test.skip(...)` opts every
+ * test out so the command exits 0 even with nothing executed.
  *
  * To run e2e tests locally:
  *   pnpm exec playwright install chromium
  *   PLAYWRIGHT_BROWSERS_INSTALLED=1 pnpm e2e
  *
- * Individual specs use `test.skip(!PLAYWRIGHT_BROWSERS_INSTALLED, …)` so
- * the command still exits 0 when the flag is unset — the runner simply
- * reports all tests as skipped.
+ * In CI, this config will throw if the env var is missing — see the
+ * guard below — so the green-wash mode (everything skipped, exit 0)
+ * is impossible to reach by accident.
  */
 const browsersEnabled = Boolean(process.env['PLAYWRIGHT_BROWSERS_INSTALLED']);
 
-// Loud guard for CI: if e2e runs with browsers disabled, every test skips
-// and the run exits 0 — easy to mistake for a passing e2e suite. Print a
-// warning so the CI log makes the green-wash explicit.
+// Loud guard for CI: if e2e runs in CI without browsers installed,
+// every test skips and the run exits 0 — easy to mistake for a
+// passing e2e suite. (We hit this exact gap for #34/#35/#36/#81.)
+// Hard-fail in CI rather than warn: a green-wash is worse than a
+// loud red.
 if (process.env['CI'] && !browsersEnabled) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[playwright] CI is set but PLAYWRIGHT_BROWSERS_INSTALLED is not — ' +
-      'all e2e tests will skip. To actually run them, the workflow must ' +
-      'run `pnpm exec playwright install chromium` AND export ' +
-      'PLAYWRIGHT_BROWSERS_INSTALLED=1 before `pnpm e2e`.',
+  throw new Error(
+    '[playwright] CI is set but PLAYWRIGHT_BROWSERS_INSTALLED is not. ' +
+      'The e2e suite would silently skip — refusing to run. The CI ' +
+      'workflow must run `pnpm exec playwright install --with-deps ' +
+      'chromium` AND export PLAYWRIGHT_BROWSERS_INSTALLED=1 before ' +
+      '`pnpm e2e`.',
   );
 }
 
