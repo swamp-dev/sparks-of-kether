@@ -29,6 +29,33 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'engine/**/*.ts', 'lib/**/*.ts'],
       exclude: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/__tests__/**'],
+      // Global aggregate thresholds across ALL included files
+      // (vitest's default mode — `perFile: false`). Set slightly
+      // below the current baseline so normal variance does not
+      // trip CI but a real regression does.
+      //
+      // Baseline at the time of writing (post-#86):
+      //   Statements 77.14% · Branches 70.47% · Functions 76.16% · Lines 78.20%
+      //
+      // Why not glob-keyed thresholds (e.g. `'engine/**'`)? Those
+      // enforce PER-FILE in vitest 4.x — every file matching the
+      // glob must individually clear the floor. A few load-bearing
+      // files (`lib/use-turn.ts` at 67%/41%, `lib/supabase.ts` at
+      // 79%/60%) trip any meaningful per-directory floor. The
+      // testability audit (T8 / #94) + the test additions that
+      // follow it are the path to tighter per-directory thresholds.
+      // A follow-up ticket will ratchet these up once T8 lands.
+      //
+      // The branches floor (68%) is intentionally a wider margin
+      // than the others — branches are the most volatile metric as
+      // conditional logic is added, and `lib/use-turn.ts` /
+      // `lib/presence.ts` (47% branches each) drag the aggregate.
+      thresholds: {
+        lines: 75,
+        branches: 68,
+        functions: 74,
+        statements: 75,
+      },
     },
   },
   resolve: {

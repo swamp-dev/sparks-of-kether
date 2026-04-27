@@ -47,8 +47,21 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test (vitest)
-        run: pnpm test
+      - name: Test + coverage (vitest --coverage)
+        # `vitest run --coverage` is a superset of `vitest run` — it
+        # executes the full suite AND collects coverage in a single
+        # pass. Threshold values live in `vitest.config.ts`. A
+        # regression below the global baseline trips this step.
+        # The HTML report is uploaded as an artifact below.
+        run: pnpm test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
 
   build:
     name: production build
