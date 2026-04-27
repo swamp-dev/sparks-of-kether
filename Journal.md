@@ -2226,3 +2226,62 @@ announce the online/offline label.
   PresenceIndicator.
 
 **Commit(s):** `8a49cd2`, `e4d0ef0`, `edaf357`, `c214286`, `e585236`
+
+## 2026-04-27T09:42:09-04:00 — #81: Start-game flow — draft 1
+
+**Pushed:**
+- `lib/start-game.ts` (NEW) + tests — pure
+  `validateAndBuildSetup({ room, players, callerId })`. Caller must
+  be host; room must be in lobby; 2..4 players; every player has a
+  soul_aspect; aspects unique across players. Sorts setups by seat
+  so seat 0 (the host) is the starting active player.
+- `app/api/rooms/[code]/start/route.ts` (NEW) + tests — bearer auth
+  → getUser → caller-session reads → validate → `initializeGame` →
+  service-role INSERT `game_states` + UPDATE `rooms.state` to
+  'playing'. Catches 23505 unique violation as 409
+  `already-started`. On `roomUpdate.error` rolls back the orphan
+  game_states row so the host can retry.
+- `app/rooms/[code]/lobby/page.tsx` — `onBegin` POSTs to the new
+  route; `beginning` flag disables the Begin button while in-flight.
+- `components/setup/Lobby.tsx` — `beginning` prop drives
+  button-disabled + "Beginning…" label.
+
+**Why:** With #34/#35/#36 the multiplayer pipeline shipped but no
+code path created the initial `game_states` row, so every events
+call against a brand-new room returned 404 `snapshot-missing`. The
+Lobby's `onBegin` was a placeholder. This closes that gap so the
+multiplayer flow is end-to-end runnable for the first time —
+modulo the multiplayer game page (separate ticket).
+
+**Reviewer caught three significants — fixed in `07a2029`:**
+- Orphan recovery: snapshot-insert-success + room-update-fail used
+  to trap the host (next /start hit 23505). Route now rolls back
+  the game_states row in the error branch; response carries
+  `recovered: bool` so ops/UI can distinguish "we cleaned up" from
+  "manual intervention needed."
+- Double-click race: Begin button now disables itself via a new
+  `beginning` prop on the Lobby component. Without it, fast
+  double-clicks fired two POSTs and the second 409'd into a
+  confusing error.
+- Route-level coverage gap: `too-few-players` and
+  `duplicate-soul-aspects` had no route-level tests asserting 422.
+  Added both, plus tests for the rollback paths (recovered: true
+  on success, false when rollback DELETE itself fails).
+
+**Notes:**
+- Stats default to 10-across-the-board for MP players + Soul
+  Aspect's +2 bonus. Per-Sefirah blessing UI for MP is a follow-up;
+  reviewer confirmed 10+2 is enough to attempt every challenge DC
+  without soft-lock risk.
+- Soul-aspect uniqueness is server-enforced; the lobby UI doesn't
+  currently prevent picks (separate ticket).
+- Atomicity: snapshot-insert + room-update aren't transactional;
+  rollback covers the documented failure mode but a true two-phase
+  fix lives in an edge function down the road. Same trap class as
+  #34's event/snapshot writes.
+- Error messages in the lobby surface the route's machine-readable
+  rejection `kind` directly. Worth humanizing — flagged for QA.
+- Gates green: typecheck ✓, lint ✓, test ✓ (564/564), build ✓,
+  e2e ✓ (2/2). 19 new unit + route tests.
+
+**Commit(s):** `c09dab8`, `42e2406`, `1d733da`, `07a2029`

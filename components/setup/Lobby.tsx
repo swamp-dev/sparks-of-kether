@@ -26,6 +26,14 @@ interface LobbyProps {
   readonly onBegin?: () => void;
   readonly onToggleReady?: (playerId: string) => void;
   readonly currentPlayerId?: string;
+  /**
+   * When true, the Begin button is disabled and shows an in-flight
+   * label. The orchestrator sets this between calling `onBegin` and
+   * the server response landing — without it a host can double-click
+   * and the second POST returns 409 `already-started`, surfacing as a
+   * confusing error. Defaults to false.
+   */
+  readonly beginning?: boolean;
   readonly className?: string;
 }
 
@@ -43,13 +51,15 @@ export function Lobby({
   onBegin,
   onToggleReady,
   currentPlayerId,
+  beginning = false,
   className,
 }: LobbyProps): JSX.Element {
   const allReady =
     players.length >= 2 &&
     players.length <= 4 &&
     players.every((p) => p.ready && p.soulAspect !== null);
-  const canBegin = isHost && allReady && onBegin !== undefined;
+  const canBegin =
+    isHost && allReady && onBegin !== undefined && !beginning;
 
   return (
     <section
@@ -113,7 +123,7 @@ export function Lobby({
             data-action="begin"
             className="rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground disabled:cursor-not-allowed disabled:opacity-30"
           >
-            Begin
+            {beginning ? 'Beginning…' : 'Begin'}
           </button>
         </div>
       ) : null}

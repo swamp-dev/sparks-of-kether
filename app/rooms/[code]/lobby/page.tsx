@@ -32,6 +32,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [beginning, setBeginning] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,8 +121,46 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
         players={lobbyPlayers}
         isHost={room?.host_id === currentPlayerId}
         {...(currentPlayerId !== null ? { currentPlayerId } : {})}
+        beginning={beginning}
         onBegin={() => {
-          setError('Multiplayer game start not yet wired (next ticket).');
+          // Fire-and-forget: the route is host-only and validates
+          // server-side. `beginning` flag disables the button until
+          // the response lands so a double-click can't fire two
+          // POSTs (the second would 409 `already-started`). On
+          // success we trigger a re-fetch so the page picks up the
+          // new `state: 'playing'`.
+          if (beginning) return;
+          setBeginning(true);
+          void (async () => {
+            try {
+              const client = getSupabaseBrowserClient();
+              const { data: session } = await client.auth.getSession();
+              const token = session.session?.access_token;
+              if (!token) {
+                setError('Not signed in. Please refresh.');
+                return;
+              }
+              const res = await fetch(`/api/rooms/${code}/start`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${token}` },
+              });
+              if (res.ok) {
+                setRefresh((n) => n + 1);
+                return;
+              }
+              const body = (await res.json().catch(() => ({}))) as {
+                error?: string;
+                reason?: { kind?: string };
+              };
+              setError(
+                `Could not start game: ${
+                  body.reason?.kind ?? body.error ?? `HTTP ${res.status}`
+                }`,
+              );
+            } finally {
+              setBeginning(false);
+            }
+          })();
         }}
       />
 
