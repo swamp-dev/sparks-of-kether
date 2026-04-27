@@ -2030,3 +2030,61 @@ as a pragmatic workaround.
   joinRoom/createRoom (mocked Supabase).
 
 **Commit(s):** `2406972`, `6bdd3dc`
+
+## 2026-04-26T20:55:00-04:00 — #34: Realtime state sync — draft 1
+
+**Pushed:**
+- `lib/room-actions.ts` — `applyClientAction(state, action, rng)`
+  pure dispatcher over the `move | submit-challenge | accept-setback`
+  ClientAction union. Submit-challenge accepts an optional pre-rolled
+  `outcome` so the modal d20 stays the single source of truth and
+  client/server don't double-roll.
+- `lib/realtime.ts` — `useRoomState(roomId)` hook. Initial snapshot
+  via `.maybeSingle<GameStateRow>()`, then a per-room `postgres_changes`
+  UPDATE channel. Strict-mode-safe via cancelled-flag cleanup.
+  Returns `{state, connected, error, lastEventId}`.
+- `app/api/rooms/[code]/events/route.ts` — POST endpoint. Bearer auth +
+  `auth.getUser(token)` identity verification, then loads snapshot,
+  folds via `applyClientAction`, appends to `game_events`, writes the
+  `game_states` snapshot via the service-role client. RNG seeded from
+  `last_event_id + 1`.
+- `lib/supabase.ts` — new `createSupabaseServiceClient` helper.
+- `app/api/rooms/[code]/events/__tests__/route.test.ts` — 5 tests
+  covering the auth gate (missing-bearer, invalid-token,
+  identity-mismatch, invalid-json, invalid-action-shape).
+
+**Why:** wires the multiplayer pipeline end-to-end. With #32/#33
+shipping the schema and lobby join/create, this is the round-trip
+that makes a remote player's action visible on every other client's
+screen. Turn-ownership enforcement is #35; presence/disconnect is #36.
+
+**Reviewer caught two blockers — fixed in third commit:**
+- The snapshot write went through the caller's anon JWT, but
+  `game_states` has no UPDATE RLS policy by design (engine-only
+  writer). Postgres would deny the UPDATE — every action would 500
+  in production. Switched to the service-role client; added
+  `SUPABASE_SERVICE_ROLE_KEY` to `.env.example` with a server-only
+  warning.
+- `action.playerId` was trusted from the request body. The engine
+  would have folded state under a forged identity before the
+  `game_events` RLS rejected the insert (after-the-fact, leaking
+  implementation detail as 500). Now `auth.getUser(token)` runs
+  before any engine work; mismatch returns 403 `identity-mismatch`.
+
+**Notes:**
+- The event-insert and snapshot-update are NOT atomic. If the
+  snapshot write fails after the event is appended, the event log
+  remains the source of truth on restart. Documented in the route
+  file; transactional fix likely lands as an edge function in a
+  follow-up.
+- Hit the same `Database`-generic-collapses-Insert-to-`never` trap
+  that `lib/rooms.ts` already documented; aliased the typed client
+  to plain `SupabaseClient` for the writes inside the route.
+- `vi.mock` callback can't take a `typeof import(...)` annotation
+  under the project's eslint config — switched to a static
+  `import type * as SupabaseModule from '../supabase'`.
+- Gates green: typecheck ✓, lint ✓, test ✓ (503/503), build ✓,
+  e2e ✓ (2/2). 15 new unit tests across room-actions, realtime, and
+  the events route.
+
+**Commit(s):** `7936db6`, `5e6cb18`, `230896b`

@@ -220,6 +220,33 @@ export function createSupabaseServerClient(): SupabaseClient<Database> {
 }
 
 /**
+ * Server-only client authenticated with the service role key. Bypasses
+ * RLS — used for the authoritative `game_states` snapshot write inside
+ * the events route, since the table intentionally has no UPDATE policy
+ * (the engine is the only legitimate writer).
+ *
+ * Throws if `SUPABASE_SERVICE_ROLE_KEY` is missing. The variable is
+ * deliberately unprefixed so Next won't bundle it into client code.
+ * NEVER call this from a Client Component or any code that ships to
+ * the browser.
+ */
+export function createSupabaseServiceClient(): SupabaseClient<Database> {
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL'];
+  const serviceKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+  if (!url || !serviceKey) {
+    throw new Error(
+      'Service-role Supabase env vars missing. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local. See .env.example.',
+    );
+  }
+  return createClient<Database>(url, serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+/**
  * Back-compat alias for the browser client. New code should call
  * `getSupabaseBrowserClient` explicitly so the surface name reflects
  * the intent (browser-only).
