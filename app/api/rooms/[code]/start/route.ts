@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   createSupabaseServerClient,
   createSupabaseServiceClient,
@@ -7,6 +6,7 @@ import {
   type PlayerRow,
   type RoomRow,
 } from '@/lib/supabase';
+import { query } from '@/lib/supabase-query';
 import { validateAndBuildSetup } from '@/lib/start-game';
 import { initializeGame } from '@/engine/setup';
 import { seededRng } from '@/engine/rng';
@@ -117,18 +117,16 @@ export async function POST(
 
   // Service-role writes: game_states INSERT + rooms.state UPDATE.
   // Both tables are intentionally service-role-only for these
-  // operations. Untyped surface so the Database generic doesn't
-  // collapse Insert/Update overloads to `never` (same trap as
-  // lib/rooms.ts).
-  const serviceClient: SupabaseClient = createSupabaseServiceClient();
+  // operations. The `query()` helper centralizes the cast that
+  // bypasses the Insert-overload-collapses-to-`never` issue
+  // (see lib/supabase-query.ts).
+  const serviceClient = createSupabaseServiceClient();
 
-  const snapshotInsert = await serviceClient
-    .from('game_states')
-    .insert({
-      room_id: room.id,
-      snapshot: serializeGameState(initialState),
-      last_event_id: 0,
-    });
+  const snapshotInsert = await query(serviceClient, 'game_states').insert({
+    room_id: room.id,
+    snapshot: serializeGameState(initialState),
+    last_event_id: 0,
+  });
   if (snapshotInsert.error) {
     // 23505 = unique_violation. game_states.room_id is UNIQUE; if a
     // row already exists this is a re-start race. Surface idempotent
@@ -150,8 +148,7 @@ export async function POST(
     );
   }
 
-  const roomUpdate = await serviceClient
-    .from('rooms')
+  const roomUpdate = await query(serviceClient, 'rooms')
     .update({
       state: 'playing',
       started_at: new Date().toISOString(),
@@ -167,8 +164,7 @@ export async function POST(
     // if THIS delete also fails the host hits the dead-end, but
     // we surface that distinction so future ops tooling can see
     // the partial state.
-    const cleanup = await serviceClient
-      .from('game_states')
+    const cleanup = await query(serviceClient, 'game_states')
       .delete()
       .eq('room_id', room.id);
     return NextResponse.json(

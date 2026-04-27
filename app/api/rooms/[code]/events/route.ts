@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   createSupabaseServerClient,
   createSupabaseServiceClient,
@@ -10,6 +9,7 @@ import {
   type GameStateRow,
   type RoomRow,
 } from '@/lib/supabase';
+import { query } from '@/lib/supabase-query';
 import { applyClientAction, type ClientAction } from '@/lib/room-actions';
 import { authorize } from '@/lib/authorize';
 import { seededRng } from '@/engine/rng';
@@ -97,12 +97,11 @@ export async function POST(
 
   // Apply the caller's auth so RLS reads scope to their membership.
   await client.auth.setSession({ access_token: token, refresh_token: '' });
-  // Untyped surface for inserts/updates — Supabase 2.x's overload
-  // resolution collapses Insert types to `never` when the Database
-  // generic carries readonly Row shapes through Omit/Pick. Reads
-  // still get explicit row types via `.maybeSingle<RowType>()` /
-  // `.single<RowType>()`. Same workaround as `lib/rooms.ts`.
-  const writeClient: SupabaseClient = client;
+  // Writes go via `query(client, table)` from `lib/supabase-query`,
+  // which centralizes the SupabaseClient<Database> → SupabaseClient
+  // cast needed to bypass the Insert-overload-collapses-to-`never`
+  // issue. Reads use the typed client directly with explicit
+  // `.maybeSingle<RowType>()` / `.single<RowType>()`.
 
   // Resolve the room by its code.
   const roomLookup = await client
@@ -145,7 +144,7 @@ export async function POST(
   // rejected events never mutate state.
   const authResult = authorize(action, currentState, callerId);
   if (!authResult.ok) {
-    await writeClient.from('game_events').insert({
+    await query(client, 'game_events').insert({
       room_id: room.id,
       player_id: callerId,
       event_type: `rejected:${action.kind}`,
@@ -193,8 +192,7 @@ export async function POST(
   // procedure; for now an event-without-snapshot or vice-versa is
   // a known recovery case (event log is the source of truth on
   // restart). Documented in the README's multiplayer section.
-  const eventInsert = await writeClient
-    .from('game_events')
+  const eventInsert = await query(client, 'game_events')
     .insert({
       room_id: room.id,
       player_id: action.playerId,
@@ -216,9 +214,8 @@ export async function POST(
   // engine is the only legitimate writer, and it lives here on the
   // server. Using the caller's anon JWT for this UPDATE would be
   // denied by Postgres (RLS enabled + no matching policy = deny).
-  const serviceClient: SupabaseClient = createSupabaseServiceClient();
-  const snapshotUpdate = await serviceClient
-    .from('game_states')
+  const serviceClient = createSupabaseServiceClient();
+  const snapshotUpdate = await query(serviceClient, 'game_states')
     .update({
       snapshot: serializeGameState(apply.newState),
       last_event_id: newEventId,

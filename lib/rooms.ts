@@ -1,16 +1,17 @@
 'use client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PlayerRow, RoomRow } from './supabase';
+import type { Database, PlayerRow, RoomRow } from './supabase';
 import { generateRoomCode } from './room-code';
+import { query } from './supabase-query';
 
 /**
- * Local type alias for the Supabase client. We don't pass the
- * `Database` generic through here — Supabase 2.x's overload
- * resolution collapses Insert types to `never` when readonly Row
- * shapes feed Insert via Omit/Pick, even with `Mutable<>` strip.
- * Routes that need typed reads explicitly call `.single<RowType>()`.
+ * Local type alias for the Supabase client. The Database generic IS
+ * carried through so callers get typed `auth.*` etc., but writes go
+ * via `query(client, table)` from `./supabase-query` — that helper
+ * centralizes the cast to plain `SupabaseClient` needed to bypass
+ * the Insert-overload-collapses-to-`never` issue documented there.
  */
-type Client = SupabaseClient;
+type Client = SupabaseClient<Database>;
 
 /**
  * Maximum players per room. Mirrors the design ceiling
@@ -97,8 +98,7 @@ export async function createRoom(
   // Try a few times in case of a code collision.
   for (let attempt = 0; attempt < CODE_GEN_MAX_RETRIES; attempt++) {
     const code = generateRoomCode();
-    const roomInsert = await client
-      .from('rooms')
+    const roomInsert = await query(client, 'rooms')
       .insert({ code, host_id: userId })
       .select()
       .single<RoomRow>();
@@ -111,8 +111,7 @@ export async function createRoom(
       };
     }
     const room = roomInsert.data;
-    const playerInsert = await client
-      .from('players')
+    const playerInsert = await query(client, 'players')
       .insert({
         id: userId,
         room_id: room.id,
@@ -125,7 +124,7 @@ export async function createRoom(
       .single<PlayerRow>();
     if (playerInsert.error) {
       // Roll back the orphan room so a stuck code doesn't persist.
-      await client.from('rooms').delete().eq('id', room.id);
+      await query(client, 'rooms').delete().eq('id', room.id);
       return {
         ok: false,
         error: { kind: 'insert-failed', cause: playerInsert.error.message },
@@ -168,6 +167,10 @@ export async function joinRoom(
   }
   const userId = auth.value.userId;
 
+  // Reads use the typed client directly — the Insert-overload-
+  // collapse issue that `query()` works around only affects writes.
+  // Mixing query() into reads creates two patterns in this file
+  // (reviewer flagged on #114).
   const roomLookup = await client
     .from('rooms')
     .select('id, code, host_id, state, created_at, started_at, finished_at')
@@ -209,8 +212,7 @@ export async function joinRoom(
   const nextSeat =
     existing.reduce((max, p) => Math.max(max, p.seat), -1) + 1;
 
-  const playerInsert = await client
-    .from('players')
+  const playerInsert = await query(client, 'players')
     .insert({
       id: userId,
       room_id: room.id,
@@ -268,8 +270,7 @@ export async function kickPlayer(
   if (input.callerId === input.targetPlayerId) {
     return { ok: false, error: { kind: 'self-kick-forbidden' } };
   }
-  const del = await client
-    .from('players')
+  const del = await query(client, 'players')
     .delete()
     .eq('room_id', input.roomId)
     .eq('id', input.targetPlayerId)
