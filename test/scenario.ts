@@ -31,16 +31,26 @@ import {
  */
 
 export class ScenarioFailedError extends Error {
+  /**
+   * Snapshot of the state at the moment of rejection. This is a
+   * `structuredClone` of the engine's state — NOT a live reference —
+   * so a caller introspecting `e.stateAtFailure` cannot accidentally
+   * mutate the engine's working state. Sets/Maps in `GameState` are
+   * cloned correctly by `structuredClone`.
+   */
+  public readonly stateAtFailure: GameState;
+
   constructor(
     public readonly stepIndex: number,
     public readonly action: ClientAction,
     public readonly rejection: unknown,
-    public readonly stateAtFailure: GameState,
+    stateAtFailure: GameState,
   ) {
     super(
       `scenario step ${stepIndex} failed: ${action.kind} → ${JSON.stringify(rejection)}`,
     );
     this.name = 'ScenarioFailedError';
+    this.stateAtFailure = structuredClone(stateAtFailure);
   }
 }
 
@@ -72,6 +82,15 @@ export interface ScenarioBuilder {
  *
  * `.run()` uses a deterministic seeded RNG (seed 0) so scenarios are
  * repeatable. `.runWith(rng)` lets a test inject a different RNG.
+ *
+ * Caveat: every call to `.run()` constructs a fresh RNG at seed 0,
+ * so any scenario that relies on RNG rolls (e.g. `submitChallenge`
+ * without an explicit `outcome`) will produce the same outcome every
+ * time. That is good for repeatability but bad for branch coverage —
+ * a single seed exercises one path through the random surface. Use
+ * `.runWith(seededRng(n))` with varied seeds for property-style
+ * coverage, or pass an explicit `outcome` on each challenge to make
+ * the test deterministic on intent rather than RNG.
  */
 export function scenario(initialState: GameState): ScenarioBuilder {
   const queue: ClientAction[] = [];

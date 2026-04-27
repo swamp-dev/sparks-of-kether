@@ -120,6 +120,44 @@ describe('scenario', () => {
     );
   });
 
+  it('snapshots stateAtFailure (the snapshot is decoupled from the live state object)', () => {
+    // Reviewer flagged on #97: stateAtFailure was a live reference; a
+    // caller could mutate it and corrupt the engine's working state.
+    // The fix is structuredClone in the constructor.
+    //
+    // To prove the invariant we need a handle on the *live* state
+    // object stored as stateAtFailure. We get one by running a
+    // scenario that successfully ends a turn first (producing a
+    // new state via the engine reducer), then feeding that returned
+    // state into a new scenario whose first step fails. The failing
+    // scenario's stateAtFailure should be a CLONE of the handle we
+    // already have — so mutating the clone must not change the
+    // original.
+    const initial = makeFullGame({ playerCount: 2, seed: 11 });
+    const p0 = initial.players[0]!.id;
+    const after = scenario(initial).endTurn(p0).run();
+    // `after` is a fresh state produced by the engine reducer. If
+    // structuredClone is missing in the error constructor, this
+    // exact object would be aliased as err.stateAtFailure.
+    expect(after).not.toBe(initial); // sanity: engine returned a new object
+    try {
+      // Path 99 is invalid → scenario rejects on the first step,
+      // throwing with stateAtFailure capturing `after`.
+      scenario(after).move(p0, 99).run();
+      throw new Error('expected scenario to fail');
+    } catch (err) {
+      if (!(err instanceof ScenarioFailedError)) throw err;
+      // The clone has the same value as `after`...
+      expect(err.stateAtFailure.activePlayerId).toBe(after.activePlayerId);
+      // ...but is a different object. Cast through `unknown` to
+      // bypass readonly and prove the field is independent.
+      (err.stateAtFailure as unknown as { separation: number }).separation =
+        9999;
+      // Without structuredClone, this would now also be 9999.
+      expect(after.separation).not.toBe(9999);
+    }
+  });
+
   it('exposes the rejection error kind on failure', () => {
     const initial = makeFullGame({ playerCount: 2, seed: 11 });
     const p0 = initial.players[0]!.id;
