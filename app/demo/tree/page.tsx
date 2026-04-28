@@ -13,7 +13,7 @@ export default function TreeDemoPage(): JSX.Element {
     notFound();
   }
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Tree of Life</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Static board. Interactivity (move highlighting, click handlers) lands in Phase 3.

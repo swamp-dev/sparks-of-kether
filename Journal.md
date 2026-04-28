@@ -2957,3 +2957,15 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
 
 **Commit(s):** `e96b125`
+
+## 2026-04-28T11:06:19-04:00 — #163: demo-page chrome polish (Epic #118 wave 3)
+
+**Pushed:** Tighten outer padding on every `app/demo/*/page.tsx`. Eleven files, identical change: `min-h-screen bg-ground p-8 text-veil` → `min-h-screen bg-ground p-4 text-veil sm:p-8`. Mobile gets 16 px instead of 32 px on every side; `sm` breakpoint and up restore the original 32 px.
+**Why:** #154 ui-review flagged `/demo/challenge` "Challenge Modal" wrapping to two lines on the 375 px capture — symptom of the demo wrapper's padding starving the embedded component. Same pattern bites every demo at mobile width. Wave-3 fan-out from Epic #118.
+**Notes:**
+- Mechanical bulk edit; no embedded component touched (out-of-scope per ticket).
+- Reviewer flagged `sm` vs `md` breakpoint as worth scrutiny. Verified: `/demo/tree` and `/demo/challenge` use `max-w-md` (448 px cap, comfortably under 576 px usable at sm); `/demo/cards` is 3-col at sm with ~181 px cells. `sm:p-8` is the right restore threshold.
+- Prettier `--check` flagged eight files for unrelated JSX reflow drift (project has no prettier CI gate). Reverted prettier-induced changes; kept only the className edit so the diff stays scoped to "tighten outer padding."
+- Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
+
+**Commit(s):** _filled in after push_

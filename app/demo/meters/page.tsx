@@ -10,7 +10,7 @@ export default function MetersDemoPage(): JSX.Element {
   const [illum, setIllum] = useState(5);
   const [sep, setSep] = useState(3);
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Team Meters</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Illumination + Separation. Bump values to see CSS-transition fill plus

@@ -19,7 +19,7 @@ export default function ShellPanelDemoPage(): JSX.Element {
     malkuth: 'active' as const,
   };
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Shell Panel</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Per-Sefirah Shell pressure. Dormant placeholders, active glyphs with

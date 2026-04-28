@@ -17,7 +17,7 @@ export default function HandDemoPage(): JSX.Element {
   const otherHandUpper: readonly number[] = [1, 4, 9, 18];
   const [selected, setSelected] = useState<number | undefined>(undefined);
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Hand</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Fan layout. Own hand always face-up; other hands flip face-up only when

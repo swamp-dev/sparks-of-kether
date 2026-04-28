@@ -29,7 +29,7 @@ export default function StatSheetDemoPage(): JSX.Element {
     pendingAbilities: EMPTY_ABILITY_FLAGS,
   };
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Stat Sheet</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Character panel — 10 stats, Soul Aspect bonus, Sparks held. The

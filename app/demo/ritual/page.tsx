@@ -13,7 +13,7 @@ export default function RitualDemoPage(): JSX.Element {
   const [completed, setCompleted] = useState<StatSheet | null>(null);
 
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Blessing Ritual</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Walk through Kether to Malkuth. 3d6 per stat. Seeded RNG so reloads
