@@ -3090,3 +3090,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (incl. 42 visual-regression assertions from #175), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T14:23:30-04:00 — #178: refresh CLAUDE.md (Epic #119 sub-ticket 2)
+
+**Pushed:** Two scoped edits to project CLAUDE.md. (1) Working agreement step 5 — replaced the bare `pnpm typecheck && pnpm lint && pnpm test` triple with a `pnpm ci:local` (full) and `pnpm ci:local:fast` (pre-push) section. Points at `~/.claude/rules/local-ci-and-admin-merge.md` for the per-PR checklist + admin-merge policy and notes the auto-installed pre-push git hook. (2) Test commands section — expanded from 8 commands to all 16 in `package.json` (every `scripts:` entry), each with a one-line purpose. Added a "skip flags for ci:local" subsection.
+**Why:** Highest-leverage of the top-3 drift findings from the #176 audit. CLAUDE.md is auto-loaded into every Claude session — agents follow what it says verbatim. Without this refresh, future sessions skip the `pnpm ci:local` gate that we just codified as mandatory.
+**Notes:**
+- Code reviewer mistakenly flagged `e2e` and `e2e:screenshots` as phantom scripts; verified they DO exist in `package.json` (lines 17, 18) and the doc is correct.
+- Reviewer correctly caught the "before review" → "before merge" wording regression in step 5. Restored to "before review (and again after any review-driven fix, before merge)" so the gate runs at both points.
+- Pre-scaffold note (about pre-#6 tickets without `package.json`) dropped — ancient history; git log carries it for any agent who needs the context.
+- Skip-flag info now lives in two places (CLAUDE.md + `scripts/ci-local.sh`); accepted the trade-off because CLAUDE.md is the discoverability surface and the script is the implementation. Drift risk is low (env-var rename would break CI loudly).
+- Stay-scoped: only step 5 + Test commands section touched. Other doc-audit findings (playability-priorities.md, ui-review.md, etc.) are separate fan-out tickets.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_

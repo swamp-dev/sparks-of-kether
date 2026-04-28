@@ -69,14 +69,24 @@ Every ticket follows this loop. There are no shortcuts.
    test commit from the implementation commit so the history tells the
    story. For non-TDD work (most UI, docs), one commit per logical unit
    is fine.
-5. **Local gate must be green** before review:
+5. **Local CI must be green** before review (and again after any
+   review-driven fix, before merge). The canonical command is:
    ```bash
-   pnpm typecheck && pnpm lint && pnpm test
+   pnpm ci:local         # full: verify + build + e2e + integration
+   pnpm ci:local:fast    # verify + build only (used by the pre-push hook)
    ```
-   > **Pre-scaffold note:** `package.json` is created by ticket #6.
-   > While working on tickets #2–#5 (workflow infra) the `pnpm` scripts
-   > don't exist yet — skip the gate. From ticket #6 onward the gate is
-   > mandatory. Always check `package.json` scripts before running.
+   For dev iteration `pnpm typecheck && pnpm lint && pnpm test` is fine.
+   `pnpm ci:local` mirrors every job in `.github/workflows/ci.yml`
+   exactly; pushing without it green is the move that gets caught later
+   by hosted CI (when it works) or by the per-PR checklist (always).
+   See `~/.claude/rules/local-ci-and-admin-merge.md` for the full
+   per-PR checklist and the narrow conditions under which an admin
+   merge bypassing hosted CI is allowed.
+
+   A native git pre-push hook is auto-installed by `pnpm install`
+   (via `scripts/install-git-hooks.mjs` from the `prepare` lifecycle
+   script). It runs `pnpm ci:local:fast` on every push so obvious
+   failures never reach GitHub.
 6. **Code review before PR.** Invoke the `code-reviewer` subagent on the
    diff. Fix all critical and significant findings. Minor findings can
    be deferred (note them in the PR description).
@@ -156,17 +166,40 @@ the problem is upstream — fix it there.
 ## Test commands
 
 ```bash
-pnpm install            # one-time
+pnpm install            # one-time. Also installs the pre-push git
+                        # hook via the `prepare` lifecycle script.
 pnpm dev                # run the Next.js dev server
-pnpm build              # production build
+pnpm build              # production build (mirrors CI build job)
 pnpm typecheck          # tsc --noEmit
 pnpm lint               # eslint
 pnpm test               # vitest run
 pnpm test:watch         # vitest watch
-pnpm e2e                # playwright test
+pnpm test:coverage      # vitest run --coverage (mirrors CI verify)
+pnpm test:integration   # real-Supabase via local stack (mirrors CI integration)
+pnpm e2e                # playwright test (mirrors CI e2e)
+pnpm e2e:screenshots    # capture-only screenshots spec
+pnpm screenshots        # multi-viewport review captures (PLAYWRIGHT_RUN_REVIEW=1)
+pnpm mutation           # stryker mutation testing pilot
+pnpm format             # prettier --write
+pnpm format:check       # prettier --check (no fixing)
+
+# Aggregates that mirror the full CI workflow locally:
+pnpm ci:local           # verify + build + e2e + integration. Fail-fast.
+pnpm ci:local:fast      # verify + build only. Run by the pre-push hook.
 ```
 
-CI runs `pnpm typecheck && pnpm lint && pnpm test` on every PR to `main`.
+CI runs the four jobs in `.github/workflows/ci.yml` (verify, build,
+e2e, real-Supabase integration) on every PR to `main`. The `pnpm
+ci:local` aggregate mirrors all four — running it locally before a
+merge is mandatory per `~/.claude/rules/local-ci-and-admin-merge.md`.
+
+Skip flags for `ci:local` (use sparingly, never on the actual
+PR-merge run):
+
+```bash
+SKIP_E2E=1 pnpm ci:local           # skip Playwright (saves ~15s)
+SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot (saves ~70s)
+```
 
 ---
 
