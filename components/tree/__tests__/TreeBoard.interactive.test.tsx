@@ -296,3 +296,40 @@ describe('TreeBoard — path hit-target widening (#130)', () => {
     expect(labelsLayer?.getAttribute('pointer-events')).toBe('none');
   });
 });
+
+describe('TreeBoard — sefirah-clear animation (#37)', () => {
+  it('marks cleared Sefirot with data-cleared="true" + animation class', () => {
+    const player = makePlayer({
+      id: 'p1',
+      clearedSefirot: new Set(['gevurah']),
+    });
+    const state = makeState({}, { players: [player] });
+    const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
+    const cleared = container.querySelector('[data-sefirah="gevurah"]');
+    expect(cleared?.getAttribute('data-cleared')).toBe('true');
+    const circle = cleared?.querySelector('circle');
+    expect(circle?.getAttribute('class')).toMatch(/animate-sefirah-clear-pulse/);
+    expect(circle?.getAttribute('class')).toMatch(/motion-reduce:animate-none/);
+  });
+
+  it('non-cleared Sefirot have data-cleared="false" and no animation class', () => {
+    const player = makePlayer({
+      id: 'p1',
+      clearedSefirot: new Set(['gevurah']),
+    });
+    const state = makeState({}, { players: [player] });
+    const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
+    const uncleared = container.querySelector('[data-sefirah="hod"]');
+    expect(uncleared?.getAttribute('data-cleared')).toBe('false');
+    const circle = uncleared?.querySelector('circle');
+    expect(circle?.getAttribute('class')).not.toMatch(/animate-sefirah-clear-pulse/);
+  });
+
+  it('static render (no state) leaves all Sefirot data-cleared="false"', () => {
+    const { container } = render(<TreeBoard />);
+    const all = container.querySelectorAll('[data-sefirah]');
+    for (const node of all) {
+      expect(node.getAttribute('data-cleared')).toBe('false');
+    }
+  });
+});

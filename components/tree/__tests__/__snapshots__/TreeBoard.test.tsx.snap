@@ -1278,10 +1278,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
   >
     <g
       aria-label="Crown (כתר), Sefirah 1"
+      data-cleared="false"
       data-sefirah="kether"
       role="img"
     >
       <circle
+        class=""
         cx="200"
         cy="60"
         fill="#ffffff"
@@ -1289,6 +1291,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#1a1a1a"
@@ -1328,10 +1331,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Wisdom (חכמה), Sefirah 2"
+      data-cleared="false"
       data-sefirah="chokmah"
       role="img"
     >
       <circle
+        class=""
         cx="320"
         cy="150"
         fill="#c0c0c0"
@@ -1339,6 +1344,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#1a1a1a"
@@ -1378,10 +1384,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Understanding (בינה), Sefirah 3"
+      data-cleared="false"
       data-sefirah="binah"
       role="img"
     >
       <circle
+        class=""
         cx="80"
         cy="150"
         fill="#1a1a1a"
@@ -1389,6 +1397,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#f8f8ff"
@@ -1428,10 +1437,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Mercy (חסד), Sefirah 4"
+      data-cleared="false"
       data-sefirah="chesed"
       role="img"
     >
       <circle
+        class=""
         cx="320"
         cy="280"
         fill="#4169e1"
@@ -1439,6 +1450,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#f8f8ff"
@@ -1478,10 +1490,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Severity (גבורה), Sefirah 5"
+      data-cleared="false"
       data-sefirah="gevurah"
       role="img"
     >
       <circle
+        class=""
         cx="80"
         cy="280"
         fill="#dc143c"
@@ -1489,6 +1503,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#f8f8ff"
@@ -1528,10 +1543,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Beauty (תפארת), Sefirah 6"
+      data-cleared="false"
       data-sefirah="tiferet"
       role="img"
     >
       <circle
+        class=""
         cx="200"
         cy="340"
         fill="#ffd700"
@@ -1539,6 +1556,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#1a1a1a"
@@ -1578,10 +1596,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Victory (נצח), Sefirah 7"
+      data-cleared="false"
       data-sefirah="netzach"
       role="img"
     >
       <circle
+        class=""
         cx="320"
         cy="430"
         fill="#228b22"
@@ -1589,6 +1609,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#f8f8ff"
@@ -1628,10 +1649,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Splendor (הוד), Sefirah 8"
+      data-cleared="false"
       data-sefirah="hod"
       role="img"
     >
       <circle
+        class=""
         cx="80"
         cy="430"
         fill="#ff8c00"
@@ -1639,6 +1662,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#1a1a1a"
@@ -1678,10 +1702,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Foundation (יסוד), Sefirah 9"
+      data-cleared="false"
       data-sefirah="yesod"
       role="img"
     >
       <circle
+        class=""
         cx="200"
         cy="490"
         fill="#9370db"
@@ -1689,6 +1715,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#f8f8ff"
@@ -1728,10 +1755,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </g>
     <g
       aria-label="Kingdom (מלכות), Sefirah 10"
+      data-cleared="false"
       data-sefirah="malkuth"
       role="img"
     >
       <circle
+        class=""
         cx="200"
         cy="560"
         fill="#8b4513"
@@ -1739,6 +1768,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         stroke="#f8f8ff"
         stroke-opacity="0.6"
         stroke-width="1.5"
+        style="transform-box: fill-box; transform-origin: center;"
       />
       <text
         fill="#f8f8ff"

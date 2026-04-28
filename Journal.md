@@ -2806,3 +2806,42 @@ about the limit.
 - Gate green: typecheck ✓, lint ✓, test ✓ (667 + 1 todo / 668).
 
 **Commit(s):** `d6c5b0a`
+
+## 2026-04-28T02:27:59-04:00 — #37: minimal CSS-keyframe animations (sefirah-clear pulse)
+
+**Pushed:** Tier-4 lowest-risk-cut animation foundation from the
+playability priorities. The ticket asked for framer-motion path /
+card / sefirah animations; this PR ships CSS-only keyframes —
+visually similar without committing to a new dep.
+
+- New Tailwind keyframes: `path-travel-pulse`, `sefirah-clear-pulse`
+  (plus existing `hand-fade-in`).
+- TreeBoard wires `animate-sefirah-clear-pulse` on cleared
+  Sefirah circles. `data-cleared="true|false"` exposed for tests.
+- `motion-reduce:animate-none` on every animation per
+  `prefers-reduced-motion`.
+
+**Why:** Playtest finding — actions feel inert. The sefirah-clear
+pulse gives positive visual feedback at the moment a check passes.
+Path-travel and card-discard keyframes are defined but unwired
+(call out below) so the orchestrator can opt in later.
+
+**Notes:**
+- Reviewer caught a real Firefox bug: CSS `transform-origin` in
+  px on raw SVG elements is computed differently across browsers.
+  Fixed via `transform-box: fill-box` + `transform-origin: center`.
+- Reviewer also caught: `path-travel-pulse` keyframe used the
+  camelCased `strokeOpacity` property, which Chrome accepts but
+  Firefox / Safari drop. Switched to the spec-correct
+  `stroke-opacity`.
+- **Path-travel + card-discard animations are NOT shipped here.**
+  The keyframes are defined and ready; wiring them needs an
+  orchestrator-side data-attribute that toggles for ~600ms after
+  a successful move / play. Belongs in a follow-up.
+- CSS animations only run on initial paint of the class; once a
+  Sefirah is cleared the pulse fires once and stays bright. On a
+  page reload mid-game with already-cleared Sefirot, the pulse
+  re-fires — acceptable per reviewer.
+- Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
+
+**Commit(s):** `1b0d648`

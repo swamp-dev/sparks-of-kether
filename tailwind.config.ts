@@ -58,14 +58,40 @@ const config: Config = {
       // #132: gentle fade-in for newly-mounted Hand contents (the
       // open/close toggle swaps subtrees, so opacity transitions on
       // the existing element are no-ops; a keyframe runs on mount).
+      // #37 adds a parallel set for engine-state transitions —
+      // path travel and sefirah-clear feedback. CSS-only by design;
+      // framer-motion stays a follow-up if this proves insufficient.
       keyframes: {
         'hand-fade-in': {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // #37: path-travel pulse. The path stroke briefly brightens
+        // (and gets a gold drop-shadow) when a player traverses it,
+        // then settles back to its baseline opacity. Triggered by
+        // a `data-traveling` attribute that the orchestrator toggles
+        // for ~600ms on a successful move. The hyphenated
+        // `stroke-opacity` is the spec-correct CSS property name —
+        // camelCased `strokeOpacity` works in Chrome but is dropped
+        // by Firefox / Safari.
+        'path-travel-pulse': {
+          '0%': { 'stroke-opacity': '0.35' },
+          '50%': { 'stroke-opacity': '1', filter: 'drop-shadow(0 0 6px #ffd700)' },
+          '100%': { 'stroke-opacity': '0.35' },
+        },
+        // #37: sefirah clear pulse. Scale + glow on the node when
+        // its challenge is passed. Triggered by the same data-attribute
+        // pattern as path travel.
+        'sefirah-clear-pulse': {
+          '0%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 transparent)' },
+          '50%': { transform: 'scale(1.08)', filter: 'drop-shadow(0 0 8px #ffd700)' },
+          '100%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 transparent)' },
+        },
       },
       animation: {
         'hand-fade-in': 'hand-fade-in 180ms ease-out',
+        'path-travel-pulse': 'path-travel-pulse 600ms ease-out',
+        'sefirah-clear-pulse': 'sefirah-clear-pulse 700ms ease-out',
       },
     },
   },

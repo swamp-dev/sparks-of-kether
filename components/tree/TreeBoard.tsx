@@ -309,10 +309,21 @@ export function TreeBoard({
           const pos = nodeLayout[sefirah.key];
           const fg = glyphForeground[sefirah.key];
           const label = `${sefirah.englishName} (${sefirah.hebrewName}), Sefirah ${sefirah.number}`;
+          // #37: a Sefirah is "cleared" if any current player has it
+          // in their `clearedSefirot` set. The wrapping `<g>` carries
+          // `data-cleared` so the visible circle can run the
+          // `sefirah-clear-pulse` keyframe (Tailwind config).
+          // `transformOrigin` is the node centre so the scale pulses
+          // outward symmetrically. `motion-reduce:animate-none`
+          // honours the user's preference.
+          const cleared = state
+            ? state.players.some((p) => p.clearedSefirot.has(sefirah.key))
+            : false;
           return (
             <g
               key={sefirah.key}
               data-sefirah={sefirah.key}
+              data-cleared={cleared ? 'true' : 'false'}
               role="img"
               aria-label={label}
             >
@@ -324,6 +335,14 @@ export function TreeBoard({
                 stroke="#f8f8ff"
                 strokeOpacity={0.6}
                 strokeWidth={1.5}
+                className={cleared ? 'animate-sefirah-clear-pulse motion-reduce:animate-none' : ''}
+                // `transform-box: fill-box` + `transform-origin: center`
+                // anchors the scale at the circle's geometric centre
+                // cross-browser. CSS px transform-origins on raw SVG
+                // elements are interpreted differently by Chrome vs
+                // Firefox — fill-box normalizes to the element's own
+                // bounding box.
+                style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
               />
               <text
                 x={pos.x}
