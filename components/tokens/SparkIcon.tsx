@@ -1,4 +1,5 @@
 import { sefirahByKey, sefirahMarkLetter } from '@/data';
+import { VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 
 /**
@@ -22,18 +23,24 @@ interface SparkIconProps {
 /**
  * Hand-tuned glyph foreground color per Sefirah. White-ish for dark
  * backgrounds (Binah's black, Saturn-ish), dark for light ones.
+ *
+ * The `'#1a1a1a'` entries are deliberately NOT pulled from
+ * `@/data/colors:GROUND` (`#0e0a1f`) — they're a contrast colour
+ * for glyphs sitting on a light Sefirah disc, not the app
+ * background. They could diverge if the chrome theme ever shifts
+ * without also changing glyph contrast.
  */
 const SPARK_FOREGROUND: Readonly<Record<SefirahKey, string>> = {
   kether: '#1a1a1a',
   chokmah: '#1a1a1a',
-  binah: '#f8f8ff',
-  chesed: '#f8f8ff',
-  gevurah: '#f8f8ff',
+  binah: VEIL,
+  chesed: VEIL,
+  gevurah: VEIL,
   tiferet: '#1a1a1a',
-  netzach: '#f8f8ff',
+  netzach: VEIL,
   hod: '#1a1a1a',
-  yesod: '#f8f8ff',
-  malkuth: '#f8f8ff',
+  yesod: VEIL,
+  malkuth: VEIL,
 };
 
 export function SparkIcon({ sefirah, className }: SparkIconProps): JSX.Element {
@@ -68,7 +75,7 @@ export function SparkIcon({ sefirah, className }: SparkIconProps): JSX.Element {
         cy={VIEW / 2}
         r={VIEW / 2 - 5}
         fill={data.color}
-        stroke="#f8f8ff"
+        stroke={VEIL}
         strokeOpacity={0.6}
         strokeWidth={0.8}
       />

@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { GROUND, VEIL } from '@/data/colors';
 
 /**
  * Face-down card. Same 200×320 footprint as `ArcanumCard` so the two
@@ -36,7 +37,7 @@ export function CardBack({ className, ariaLabel }: CardBackProps): JSX.Element {
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#1a1542" />
-          <stop offset="100%" stopColor="#0e0a1f" />
+          <stop offset="100%" stopColor={GROUND} />
         </linearGradient>
         <pattern
           id={patternId}
@@ -45,7 +46,7 @@ export function CardBack({ className, ariaLabel }: CardBackProps): JSX.Element {
           height={20}
           patternTransform="rotate(45)"
         >
-          <line x1={0} y1={0} x2={0} y2={20} stroke="#f8f8ff" strokeOpacity={0.08} />
+          <line x1={0} y1={0} x2={0} y2={20} stroke={VEIL} strokeOpacity={0.08} />
         </pattern>
       </defs>
       <rect

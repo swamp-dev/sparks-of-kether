@@ -1,3 +1,5 @@
+import { GROUND, VEIL } from '@/data/colors';
+
 /**
  * d20 icon — the icosahedron silhouette used in the roll UI. Renders
  * a hexagonal outline with internal triangulation that suggests the
@@ -17,7 +19,7 @@ interface D20Props {
   readonly className?: string;
 }
 
-export function D20({ value, color = '#f8f8ff', className }: D20Props): JSX.Element {
+export function D20({ value, color = VEIL, className }: D20Props): JSX.Element {
   const cx = VIEW / 2;
   const cy = VIEW / 2;
   const r = VIEW / 2 - 2;
@@ -54,7 +56,7 @@ export function D20({ value, color = '#f8f8ff', className }: D20Props): JSX.Elem
       <title>{label}</title>
       <polygon
         points={hex}
-        fill="#0e0a1f"
+        fill={GROUND}
         stroke={color}
         strokeOpacity={0.85}
         strokeWidth={1.5}

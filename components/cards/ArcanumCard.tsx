@@ -4,6 +4,7 @@ import type { Arcanum } from '@/data';
 import { GLYPHS } from './glyphs';
 import { ARCANUM_GLYPHS } from './glyph-mapping';
 import { attributionColor, attributionLabel } from './attribution-colors';
+import { GROUND, VEIL } from '@/data/colors';
 
 /**
  * Single Arcanum card, symbolic-minimalist style.
@@ -55,7 +56,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#1a1542" />
-          <stop offset="100%" stopColor="#0e0a1f" />
+          <stop offset="100%" stopColor={GROUND} />
         </linearGradient>
       </defs>
 
@@ -81,7 +82,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
           textAnchor="middle"
           fontSize={64}
           fontFamily="var(--font-hebrew), serif"
-          fill="#f8f8ff"
+          fill={VEIL}
           lang="he"
           style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
         >
@@ -114,7 +115,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
               cx={p.cx}
               cy={p.cy}
               size={p.size}
-              color="#f8f8ff"
+              color={VEIL}
               opacity={p.opacity ?? 1}
               {...(p.points !== undefined ? { points: p.points } : {})}
               {...(p.rotation !== undefined ? { rotation: p.rotation } : {})}
@@ -142,7 +143,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
           textAnchor="middle"
           fontSize={11}
           fontFamily="var(--font-sans), sans-serif"
-          fill="#f8f8ff"
+          fill={VEIL}
           fillOpacity={0.6}
           letterSpacing={2}
         >
@@ -154,7 +155,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
           textAnchor="middle"
           fontSize={14}
           fontFamily="var(--font-display), serif"
-          fill="#f8f8ff"
+          fill={VEIL}
           letterSpacing={1.5}
           style={{ textTransform: 'uppercase' }}
         >
@@ -166,7 +167,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
           textAnchor="middle"
           fontSize={9}
           fontFamily="var(--font-sans), sans-serif"
-          fill="#f8f8ff"
+          fill={VEIL}
           fillOpacity={0.5}
           letterSpacing={1.5}
           style={{ textTransform: 'uppercase' }}

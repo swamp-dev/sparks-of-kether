@@ -1,3 +1,5 @@
+import { GROUND } from '@/data/colors';
+
 /**
  * Player token — colored circle with the player's initial, drawn on
  * top of a Sefirah node on the Tree board. Four canonical color
@@ -47,7 +49,7 @@ export function PlayerToken({
         cy={VIEW / 2}
         r={VIEW / 2 - 2}
         fill={color}
-        stroke="#0e0a1f"
+        stroke={GROUND}
         strokeWidth={2}
       />
       <text
@@ -56,7 +58,7 @@ export function PlayerToken({
         textAnchor="middle"
         fontSize={18}
         fontFamily="var(--font-display), serif"
-        fill="#0e0a1f"
+        fill={GROUND}
         fontWeight={600}
       >
         {glyph}

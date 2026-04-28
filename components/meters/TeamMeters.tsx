@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Meter } from '@/components/icons/Meter';
+import { TIFERET_GOLD } from '@/data/colors';
 import { MAX_ACTIVATIONS, SHELL_THRESHOLD_STEP } from '@/engine/shells';
 import { SEPARATION_LOSS_THRESHOLD } from '@/engine/endgame';
 import type { PillarStreakState } from '@/engine/types';
@@ -83,7 +84,7 @@ export function TeamMeters({
           <Meter
             value={illumination}
             max={max}
-            color="#ffd700"
+            color={TIFERET_GOLD}
             label="Illumination"
             orientation="vertical"
             className="h-32 w-4"

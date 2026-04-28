@@ -2924,3 +2924,36 @@ ranked, scoped, fan-out-ready audit.
   Doc-only PR; gate is vacuous.
 
 **Commit(s):** `4ad4be7`
+
+## 2026-04-28T10:39:14-04:00 — #162 (Epic #118 wave 3): SVG token audit
+
+**Pushed:** New `data/colors.ts` exporting `GROUND`, `VEIL`,
+`TIFERET_GOLD` constants. 10 SVG-rendering components updated to
+import from `@/data/colors` and reference the constants instead of
+literals: TreeBoard, SparkIcon, PlayerToken, D20, ShellIcon,
+CardBack, Meter, ArcanumCard, TeamMeters, PillarMarker.
+
+**Why:** Wave-3 ticket 7 of Epic #118. UI review token-consistency
+scores were 4–5 across the board, but the remaining hand-coded
+hex values lived inside SVG components where Tailwind classes
+don't reach naturally. Centralised them.
+
+**Notes:**
+- `data/colors.ts` lives next to `data/sefirot.ts` (per-Sefirah
+  colours). Keeping the split: structural / chrome here,
+  per-Sefirah game data there.
+- Reviewer caught two real misses I'd undercounted: `TeamMeters.tsx`
+  passed a literal `'#ffd700'` to its Meter; `PillarMarker.tsx`
+  had `balance: '#ffd700'` in its colour table. Both fixed.
+- Reviewer also flagged: `'#1a1a1a'` glyph foreground in SparkIcon
+  / TreeBoard is a separate token (dark contrast on light Sefirah)
+  not the app background. Added explanatory JSDoc so a well-meaning
+  future editor doesn't collapse them.
+- Sync risk between `tailwind.config.ts` and `data/colors.ts`
+  remains process-only (no test). Drift would require both files
+  to change. Documented in PR; promoting to a structural sync
+  (single source) is a follow-up if drift ever happens.
+- Snapshots unchanged — same hex values reach the DOM.
+- Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
+
+**Commit(s):** `e96b125`

@@ -1,5 +1,6 @@
 import { sefirahByKey, sefirahMarkLetter } from '@/data';
 import type { SefirahKey } from '@/data';
+import { GROUND, VEIL } from '@/data/colors';
 
 /**
  * Shell icon — visual inverse of `SparkIcon`. Same Hebrew first-letter,
@@ -97,7 +98,7 @@ export function ShellIcon({
         <polygon
           points={jaggedRing(cx, cy, VIEW / 2 - 1, VIEW / 2 - 4)}
           fill={dark}
-          stroke="#f8f8ff"
+          stroke={VEIL}
           strokeOpacity={0.3}
           strokeWidth={0.8}
         />
@@ -106,7 +107,7 @@ export function ShellIcon({
           cx={cx}
           cy={cy}
           r={VIEW / 2 - 7}
-          fill="#0e0a1f"
+          fill={GROUND}
           stroke={dark}
           strokeWidth={0.8}
         />
@@ -118,7 +119,7 @@ export function ShellIcon({
         textAnchor="middle"
         fontSize={13}
         fontFamily="var(--font-hebrew), serif"
-        fill="#f8f8ff"
+        fill={VEIL}
         fillOpacity={status === 'dormant' ? 0.2 : 0.7}
         lang="he"
         style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
@@ -131,7 +132,7 @@ export function ShellIcon({
           y1={4}
           x2={VIEW - 4}
           y2={VIEW - 4}
-          stroke="#f8f8ff"
+          stroke={VEIL}
           strokeOpacity={0.7}
           strokeWidth={1.5}
           strokeLinecap="round"

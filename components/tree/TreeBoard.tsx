@@ -1,5 +1,6 @@
 import { useId, type KeyboardEvent } from 'react';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
+import { GROUND, TIFERET_GOLD, VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 import type { GameState } from '@/engine/types';
 import { validPathsForPlayer } from './valid-paths';
@@ -96,14 +97,14 @@ const PATH_HIT_WIDTH = 28;
 const glyphForeground: Readonly<Record<SefirahKey, string>> = {
   kether: '#1a1a1a',
   chokmah: '#1a1a1a',
-  binah: '#f8f8ff',
-  chesed: '#f8f8ff',
-  gevurah: '#f8f8ff',
+  binah: VEIL,
+  chesed: VEIL,
+  gevurah: VEIL,
   tiferet: '#1a1a1a',
-  netzach: '#f8f8ff',
+  netzach: VEIL,
   hod: '#1a1a1a',
-  yesod: '#f8f8ff',
-  malkuth: '#f8f8ff',
+  yesod: VEIL,
+  malkuth: VEIL,
 };
 
 interface TreeBoardProps {
@@ -167,7 +168,7 @@ export function TreeBoard({
       <defs>
         <radialGradient id={gradientId} cx="50%" cy="40%" r="70%">
           <stop offset="0%" stopColor="#1a1542" />
-          <stop offset="100%" stopColor="#0e0a1f" />
+          <stop offset="100%" stopColor={GROUND} />
         </radialGradient>
       </defs>
 
@@ -244,7 +245,7 @@ export function TreeBoard({
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                stroke={isValid ? '#ffd700' : '#f8f8ff'}
+                stroke={isValid ? TIFERET_GOLD : VEIL}
                 strokeOpacity={isValid ? 0.95 : 0.35}
                 strokeWidth={isValid ? 3 : 1.5}
                 pointerEvents="none"
@@ -282,8 +283,8 @@ export function TreeBoard({
             >
               <circle
                 r={9}
-                fill="#0e0a1f"
-                stroke="#f8f8ff"
+                fill={GROUND}
+                stroke={VEIL}
                 strokeOpacity={0.7}
                 strokeWidth={0.75}
               />
@@ -293,7 +294,7 @@ export function TreeBoard({
                 fontSize={10}
                 fontFamily="var(--font-display), serif"
                 fontWeight={600}
-                fill="#f8f8ff"
+                fill={VEIL}
               >
                 {path.number}
               </text>
@@ -332,7 +333,7 @@ export function TreeBoard({
                 cy={pos.y}
                 r={NODE_RADIUS}
                 fill={sefirah.color}
-                stroke="#f8f8ff"
+                stroke={VEIL}
                 strokeOpacity={0.6}
                 strokeWidth={1.5}
                 className={cleared ? 'animate-sefirah-clear-pulse motion-reduce:animate-none' : ''}
@@ -362,7 +363,7 @@ export function TreeBoard({
                 textAnchor="middle"
                 fontSize={11}
                 fontFamily="var(--font-display), serif"
-                fill="#f8f8ff"
+                fill={VEIL}
                 letterSpacing={1.5}
                 style={{ textTransform: 'uppercase' }}
               >
@@ -374,7 +375,7 @@ export function TreeBoard({
                 textAnchor="end"
                 fontSize={10}
                 fontFamily="var(--font-sans), sans-serif"
-                fill="#f8f8ff"
+                fill={VEIL}
                 fillOpacity={0.5}
               >
                 {sefirah.number}
@@ -411,7 +412,7 @@ function Starfield(): JSX.Element {
   return (
     <g aria-hidden="true">
       {STARS.map(([cx, cy, opacity], i) => (
-        <circle key={i} cx={cx} cy={cy} r={0.8} fill="#f8f8ff" fillOpacity={opacity} />
+        <circle key={i} cx={cx} cy={cy} r={0.8} fill={VEIL} fillOpacity={opacity} />
       ))}
     </g>
   );
@@ -441,7 +442,7 @@ function tokenColorForId(playerId: string): string {
     hash = (hash * 33) ^ playerId.charCodeAt(i);
   }
   const idx = Math.abs(hash) % PLAYER_TOKEN_COLORS.length;
-  return PLAYER_TOKEN_COLORS[idx] ?? '#f8f8ff';
+  return PLAYER_TOKEN_COLORS[idx] ?? VEIL;
 }
 
 /**
@@ -499,7 +500,7 @@ function PlayerTokens({
             cy={tokenY}
             r={TOKEN_RADIUS + 3}
             fill="none"
-            stroke="#f8f8ff"
+            stroke={VEIL}
             strokeOpacity={0.9}
             strokeWidth={1.5}
           />
@@ -509,7 +510,7 @@ function PlayerTokens({
           cy={tokenY}
           r={TOKEN_RADIUS}
           fill={color}
-          stroke="#0e0a1f"
+          stroke={GROUND}
           strokeWidth={1.5}
         />
         <text
@@ -519,7 +520,7 @@ function PlayerTokens({
           fontSize={11}
           fontFamily="var(--font-display), serif"
           fontWeight={600}
-          fill="#0e0a1f"
+          fill={GROUND}
         >
           {initial}
         </text>

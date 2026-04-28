@@ -1,3 +1,5 @@
+import { GROUND } from '@/data/colors';
+
 /**
  * Meter — vertical or horizontal bar that animates its fill from 0 to
  * `value`. Used for the team Illumination and Separation counters.
@@ -74,7 +76,7 @@ export function Meter({
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundColor: '#0e0a1f',
+          backgroundColor: GROUND,
           border: '1px solid rgba(248, 248, 255, 0.25)',
           borderRadius: 4,
         }}

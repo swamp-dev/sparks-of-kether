@@ -1,3 +1,4 @@
+import { TIFERET_GOLD } from '@/data/colors';
 import type { Pillar } from '@/data';
 
 /**
@@ -23,7 +24,7 @@ interface PillarMarkerProps {
 const PILLAR_COLOR: Readonly<Record<Pillar, string>> = {
   mercy: '#4169e1',
   severity: '#dc143c',
-  balance: '#ffd700',
+  balance: TIFERET_GOLD,
 };
 
 const PILLAR_LABEL: Readonly<Record<Pillar, string>> = {
