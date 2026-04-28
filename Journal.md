@@ -2410,3 +2410,38 @@ read; gating dismissal on a click matches the design.
   re-run (no UI flow changed at the screenshot level).
 
 **Commit(s):** `4df102d`
+
+## 2026-04-28T00:01:53-04:00 — #136: visible path numbers on the Tree of Life
+
+**Pushed:** `components/tree/TreeBoard.tsx` — new
+`<g data-layer="path-labels">` group renders a small dark disc with
+the path number at each path's midpoint. Z-order:
+paths < path-labels < players < nodes (so labels paint above
+the path lines but cleanly below the Sefirah circles). Two
+central-pillar paths get LABEL_OFFSETS to avoid colliding with
+each other (paths 25/27) or sliding under Yesod's player tokens
+(path 32).
+
+**Why:** Playtest finding — path numbers were not visibly rendered,
+only available via tooltip / `aria-label`. The contract from
+`reference/paths.md` is that the 22 paths are identified by their
+numeric index; the board needs to communicate that without a hover.
+
+**Notes:**
+- `aria-hidden="true"` on the labels group: each path's `<line>`
+  element already carries the full aria-label (path number + Hebrew
+  letter name + arcanum + endpoints). Duplicating on the `<text>`
+  would double-announce.
+- Reviewer caught two real geometric problems: paths 25 and 27
+  share the central-pillar midpoint zone (collision), and path 32
+  sits under both the Yesod node ring and any player token parked
+  there. LABEL_OFFSETS (dx +22, dy 0) on those two paths nudges
+  them off-pillar to clear both.
+- Disc stroke opacity bumped from 0.5 → 0.7 per reviewer — disc
+  fill is darker than the gradient backdrop in places, so the
+  ring is the only thing defining the boundary.
+- Z-order test now asserts paths < labels < nodes so a future
+  refactor of layer order surfaces as a regression.
+- Gate green: typecheck ✓, lint ✓, test ✓ (634 + 1 todo / 635).
+
+**Commit(s):** `223d75b`

@@ -59,6 +59,43 @@ describe('TreeBoard', () => {
     }
   });
 
+  // #136: playtest finding — path numbers were not visibly rendered
+  // on the board; players could only see them via tooltip/AT. The
+  // contract is that EVERY path's number text is in the DOM at the
+  // path's midpoint and is legible (carries a halo/stroke + sits
+  // ABOVE the line in render order).
+  it('renders a visible number label at the midpoint of every path', () => {
+    const { container } = render(<TreeBoard />);
+    for (const path of paths) {
+      const label = container.querySelector(
+        `[data-path-label="${path.number}"]`,
+      );
+      expect(label, `visible label for path ${path.number}`).not.toBeNull();
+      // The label's text must be the number itself.
+      expect(label?.textContent).toContain(String(path.number));
+    }
+  });
+
+  it('renders path-number labels above paths but below nodes (z-order)', () => {
+    // SVG render order is document order. Labels must paint AFTER
+    // paths (so path lines don't clip them) but BEFORE nodes (so
+    // Sefirah circles cleanly cover any label that geometrically
+    // sits inside a node — e.g. the central-pillar paths between
+    // Tiferet and Malkuth). The `LABEL_OFFSETS` table nudges those
+    // labels off-pillar; this z-order is the second line of defense.
+    const { container } = render(<TreeBoard />);
+    const svg = container.querySelector('svg');
+    const layerOrder = Array.from(svg?.children ?? [])
+      .map((child) => child.getAttribute('data-layer'))
+      .filter((l): l is string => l !== null);
+    const pathsIdx = layerOrder.indexOf('paths');
+    const labelsIdx = layerOrder.indexOf('path-labels');
+    const nodesIdx = layerOrder.indexOf('nodes');
+    expect(pathsIdx).toBeGreaterThanOrEqual(0);
+    expect(labelsIdx).toBeGreaterThan(pathsIdx);
+    expect(nodesIdx).toBeGreaterThan(labelsIdx);
+  });
+
   it('matches snapshot (geometry stability guard)', () => {
     const { container } = render(<TreeBoard />);
     expect(container.firstChild).toMatchSnapshot();

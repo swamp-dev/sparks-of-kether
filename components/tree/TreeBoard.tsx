@@ -52,6 +52,24 @@ const nodeLayout: Readonly<Record<SefirahKey, NodeLayout>> = {
 };
 
 /**
+ * Per-path label offset from the geometric midpoint, used by the
+ * `path-labels` layer (#136). Three central-pillar paths cluster
+ * inside a 75px vertical band between Tiferet and Malkuth; their
+ * raw midpoints either collide with each other (paths 25 + 27) or
+ * sit inside a Sefirah node / under a player token (path 32). The
+ * offsets nudge those discs perpendicular to each path so every
+ * label is legible regardless of game state.
+ *
+ * Defaults to `{ dx: 0, dy: 0 }` for paths not listed (the vast
+ * majority — most paths run between distinct pillars and have
+ * uncrowded midpoints).
+ */
+const LABEL_OFFSETS: Readonly<Record<number, { dx: number; dy: number }>> = {
+  25: { dx: 22, dy: 0 }, // Tiferet↔Yesod — slide right to clear path 27.
+  32: { dx: 22, dy: 0 }, // Yesod↔Malkuth — slide right to clear Yesod node + tokens.
+};
+
+/**
  * Per-Sefirah glyph foreground color. Hardcoded rather than derived
  * from luminance so contrast can be hand-tuned where the math is
  * borderline (Yesod's violet / Malkuth's russet).
@@ -176,6 +194,54 @@ export function TreeBoard({
             >
               <title>{label}</title>
             </line>
+          );
+        })}
+      </g>
+
+      <g data-layer="path-labels" aria-hidden="true">
+        {/*
+          #136: playtest finding — path numbers were not visibly
+          rendered, only available via aria-label/tooltip. Render
+          each as a small disc at the line midpoint to maximise
+          legibility against the dark background AND against any
+          path line that crosses underneath. The disc-+-text combo
+          is the same trick the Sefirah nodes use; here it's tuned
+          smaller so the path identity is visible without crowding.
+
+          aria-hidden because the path's own <line> element already
+          carries the full label; duplicating it on the text would
+          double-announce in screen readers.
+        */}
+        {paths.map((path) => {
+          const a = nodeLayout[path.from];
+          const b = nodeLayout[path.to];
+          const offset = LABEL_OFFSETS[path.number] ?? { dx: 0, dy: 0 };
+          const mx = (a.x + b.x) / 2 + offset.dx;
+          const my = (a.y + b.y) / 2 + offset.dy;
+          return (
+            <g
+              key={path.number}
+              data-path-label={path.number}
+              transform={`translate(${mx}, ${my})`}
+            >
+              <circle
+                r={9}
+                fill="#0e0a1f"
+                stroke="#f8f8ff"
+                strokeOpacity={0.7}
+                strokeWidth={0.75}
+              />
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={10}
+                fontFamily="var(--font-display), serif"
+                fontWeight={600}
+                fill="#f8f8ff"
+              >
+                {path.number}
+              </text>
+            </g>
           );
         })}
       </g>
