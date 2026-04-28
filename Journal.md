@@ -2759,3 +2759,50 @@ hands. The desktop-only layout doesn't fit a 320 px viewport.
   e2e not re-run (no new screenshot-relevant routes).
 
 **Commit(s):** `d18e8e5`
+
+## 2026-04-28T02:12:31-04:00 — #39: a11y foundation — axe-core static checks
+
+**Pushed:** Tier-4 accessibility-foundation pass from the playability
+priorities. Adds `vitest-axe` + `axe-core` as dev deps and a new
+`components/__tests__/a11y.test.tsx` running axe on the major UI
+surfaces:
+- TreeBoard (static + interactive)
+- Hand (open / collapsed / face-down)
+- StatSheet (compact + expanded as separate tests per code-reviewer)
+- TeamMeters
+- ShellPanel
+- ChallengeModal (with embedded StatSheet)
+- BlessingRitual
+- SoulAspectPicker (added per code-reviewer — critical setup flow)
+- Lobby (added per code-reviewer — critical setup flow)
+
+13 axe tests, all green. The components were already built with
+`aria-label` / `role` / `tabIndex` from earlier tickets, so static
+axe finds no violations on initial render.
+
+**Why:** Playtest `phase:6-polish` ticket calls for keyboard nav +
+ARIA roles + axe-core in CI. This PR is explicitly the FOUNDATION:
+static axe baseline. Full keyboard / focus-order / live-region
+sweep remains a follow-up — the JSDoc on the test file is clear
+about the limit.
+
+**Notes:**
+- `vitest-axe` 0.1.0's `extend-expect` entrypoint is empty; the
+  matcher pattern fights vitest 4's expect-context lifecycle. Used
+  a private `expectNoViolations` helper that reads
+  `axe(container).violations` directly. One-line migration if/when
+  the upstream package ships a working extend-expect.
+- Reviewer caught a real issue: the StatSheet test ran two
+  consecutive `render()` calls without unmounting between, leaving
+  duplicate ARIA landmarks in the DOM. Split into separate `it`
+  blocks (RTL's `cleanup()` runs between tests).
+- jsdom can't compute styles, so axe's color-contrast rules are
+  effectively suppressed in this run. The keyboard-walkthrough
+  follow-up belongs in a real browser via Playwright + axe-playwright.
+- Out of scope (filed separately): `FinalThreshold`, `D20Roll`
+  reveal phase, `ArcanumCard` standalone — the first needs a fuller
+  fixture, the second needs the modal in a different state, the
+  third is purely presentational with indirect coverage via Hand.
+- Gate green: typecheck ✓, lint ✓, test ✓ (667 + 1 todo / 668).
+
+**Commit(s):** `d6c5b0a`
