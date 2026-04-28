@@ -1,21 +1,13 @@
 'use client';
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { Lobby, type LobbyPlayer } from '@/components/setup/Lobby';
-import type { PlayerRow, RoomRow } from '@/lib/supabase';
+import { useLobby } from '@/lib/use-lobby';
 import type { SoulAspectKey } from '@/data';
 
 /**
- * Room lobby page. Reads players + room from Supabase and renders the
- * existing Lobby component. Live updates (Supabase Realtime) come in
- * the next ticket (#34); for now we re-fetch on a manual refresh
- * button so the page is at least demo-able once the user wires a
- * real Supabase project.
- *
- * Without env vars (`.env.local` not configured) the page surfaces a
- * clear error rather than crashing — the multiplayer flow is
- * gated on user setup.
+ * Room lobby page. Thin renderer over `useLobby(code)` — the hook
+ * owns data fetching, the begin-game POST, and the in-flight flag
+ * that prevents double-click 409s. See `lib/use-lobby.ts`.
  */
 
 interface LobbyPageProps {
@@ -27,55 +19,15 @@ interface LobbyPageProps {
 
 export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   const { code } = params;
-  const [room, setRoom] = useState<RoomRow | null>(null);
-  const [players, setPlayers] = useState<readonly PlayerRow[]>([]);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [refresh, setRefresh] = useState(0);
-  const [beginning, setBeginning] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const client = getSupabaseBrowserClient();
-        const { data: user } = await client.auth.getUser();
-        if (!cancelled) {
-          setCurrentPlayerId(user.user?.id ?? null);
-        }
-        const roomLookup = await client
-          .from('rooms')
-          .select()
-          .eq('code', code)
-          .maybeSingle<RoomRow>();
-        if (cancelled) return;
-        if (roomLookup.error || !roomLookup.data) {
-          setError(`No room with code ${code}.`);
-          return;
-        }
-        setRoom(roomLookup.data);
-        const playersLookup = await client
-          .from('players')
-          .select()
-          .eq('room_id', roomLookup.data.id)
-          .order('seat', { ascending: true });
-        if (cancelled) return;
-        if (playersLookup.error) {
-          setError(`Could not load players: ${playersLookup.error.message}`);
-          return;
-        }
-        setPlayers((playersLookup.data ?? []) as PlayerRow[]);
-        setError(null);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Unknown error.');
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [code, refresh]);
+  const {
+    room,
+    players,
+    currentPlayerId,
+    error,
+    beginning,
+    refresh,
+    beginGame,
+  } = useLobby(code);
 
   if (error !== null) {
     return (
@@ -122,52 +74,13 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
         isHost={room?.host_id === currentPlayerId}
         {...(currentPlayerId !== null ? { currentPlayerId } : {})}
         beginning={beginning}
-        onBegin={() => {
-          // Fire-and-forget: the route is host-only and validates
-          // server-side. `beginning` flag disables the button until
-          // the response lands so a double-click can't fire two
-          // POSTs (the second would 409 `already-started`). On
-          // success we trigger a re-fetch so the page picks up the
-          // new `state: 'playing'`.
-          if (beginning) return;
-          setBeginning(true);
-          void (async () => {
-            try {
-              const client = getSupabaseBrowserClient();
-              const { data: session } = await client.auth.getSession();
-              const token = session.session?.access_token;
-              if (!token) {
-                setError('Not signed in. Please refresh.');
-                return;
-              }
-              const res = await fetch(`/api/rooms/${code}/start`, {
-                method: 'POST',
-                headers: { authorization: `Bearer ${token}` },
-              });
-              if (res.ok) {
-                setRefresh((n) => n + 1);
-                return;
-              }
-              const body = (await res.json().catch(() => ({}))) as {
-                error?: string;
-                reason?: { kind?: string };
-              };
-              setError(
-                `Could not start game: ${
-                  body.reason?.kind ?? body.error ?? `HTTP ${res.status}`
-                }`,
-              );
-            } finally {
-              setBeginning(false);
-            }
-          })();
-        }}
+        onBegin={beginGame}
       />
 
       <div className="mt-6 text-center">
         <button
           type="button"
-          onClick={() => setRefresh((n) => n + 1)}
+          onClick={refresh}
           className="rounded border border-veil/30 px-4 py-1 text-xs uppercase tracking-widest"
           data-action="refresh"
         >
