@@ -2445,3 +2445,51 @@ numeric index; the board needs to communicate that without a hover.
 - Gate green: typecheck ✓, lint ✓, test ✓ (634 + 1 todo / 635).
 
 **Commit(s):** `223d75b`
+
+## 2026-04-28T00:22:02-04:00 — #56: hand-cap enforcement + shuffled discard recycle
+
+**Pushed:** Engine-correctness Tier-1 ticket from the playability
+priorities doc. Three behaviour fixes, all rooted in
+`design/mechanics.md` § Drawing & gift handling:
+
+- **Chesed-Grace** rejects with new `gift-rejected-cap-full` variant
+  when the receiver is at HAND_CAP. Distinct from `payload-invalid`
+  so an orchestrator can re-prompt the giver to pick a different
+  recipient instead of treating it as a logic error.
+- **Kether-Unity** skips at-cap players (their slot doesn't burn a
+  card; the next under-cap player gets the top of the deck) AND
+  recycles the discard pile if the deck empties mid-distribution.
+- **Discard recycle is now SHUFFLED** in both Kether-Unity and the
+  turn-machine's draw paths. New shared helper
+  `engine/draws.ts:recycleDiscardIntoDeck(deck, discard, rng)` —
+  Fisher-Yates via the seeded `Rng`. Pre-fix the recycle was
+  order-preserving, which (per code-reviewer) let any player who
+  memorised the discard predict every subsequent draw.
+
+**Why:** `design/mechanics.md` calls for HAND_CAP=6 enforcement and
+explicitly says the discard "shuffles face-down to form a new draw
+pile." The engine had the cap as a constant in `lib/turn-machine.ts`
+but didn't enforce it at gift sites; Kether-Unity blindly appended;
+both recycle call sites copied verbatim with a `// TODO shuffle`
+comment that had been there since first ship. With the playability
+push moving toward 4-player games, exhaust-the-deck scenarios are
+now reachable in a real session.
+
+**Notes:**
+- `HAND_CAP` and `STARTING_HAND_SIZE` are now exported from
+  `engine/setup.ts` as the single source of truth. `lib/turn-machine.ts`
+  re-exports for backward compat.
+- `useSpark` signature gained a required `rng: Rng` argument. No
+  production callers exist yet, so this is internal-only churn. 27
+  test call sites updated mechanically with a node script that
+  walked balanced parens.
+- Two engine-internal `shuffle` implementations now exist —
+  `engine/setup.ts:shuffle<T>` (private, used at game-init) and
+  `engine/draws.ts:shuffleArray` (used at recycle). Reviewer flagged
+  the duplication; consolidation is a follow-up, not a blocker.
+- Stale JSDoc on `drawToHand` (saying recycle is order-preserving)
+  fixed per reviewer.
+- Gate green: typecheck ✓, lint ✓, test ✓ (636 passing + 1 todo /
+  637), e2e not re-run (no UI flow changed).
+
+**Commit(s):** `b3d372d`

@@ -30,6 +30,18 @@ export interface PlayerSetup {
 export const STARTING_HAND_SIZE = 4;
 
 /**
+ * Hand-size hard cap. Per `design/mechanics.md` § Drawing & gift
+ * handling: "Hand-size cap is 6; starting at 4 leaves a 2-card buffer
+ * for early gifts and draws before the cap starts to bite."
+ *
+ * Enforced at gift / spark-ability sites (Chesed-Grace rejects with
+ * `gift-rejected-cap-full`; Kether-Unity skips at-cap players). The
+ * end-of-turn replenish target is `STARTING_HAND_SIZE`, which is
+ * already below the cap so no clamp is needed there.
+ */
+export const HAND_CAP = 6;
+
+/**
  * Number of full Major-Arcana decks (22 cards each) shuffled into
  * the draw pile. Per `design/mechanics.md`:
  *   - 2 players → 1 deck (22 cards)

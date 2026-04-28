@@ -1,5 +1,8 @@
 import type { SefirahKey } from '@/data';
 import { applyEvent } from './counters';
+import { recycleDiscardIntoDeck } from './draws';
+import type { Rng } from './rng';
+import { HAND_CAP } from './setup';
 import type { GameState, PlayerAbilityFlags, PlayerState, Result, SpentSpark } from './types';
 
 // ──────────────── Public types ────────────────
@@ -24,7 +27,12 @@ export type SparkAbility =
 export type SparkRejection =
   | { readonly kind: 'unknown-player'; readonly playerId: string }
   | { readonly kind: 'spark-not-held'; readonly sefirah: SefirahKey }
-  | { readonly kind: 'payload-invalid'; readonly detail: string };
+  | { readonly kind: 'payload-invalid'; readonly detail: string }
+  // #56: Chesed-Grace gift would push the receiver past HAND_CAP.
+  // Distinct from `payload-invalid` so the orchestrator can offer
+  // the giver a different recipient instead of treating it as a
+  // logic error.
+  | { readonly kind: 'gift-rejected-cap-full'; readonly toPlayerId: string };
 
 // ──────────────── Helpers ────────────────
 
@@ -110,6 +118,7 @@ export function useSpark(
   state: GameState,
   playerId: string,
   ability: SparkAbility,
+  rng: Rng,
 ): Result<GameState, SparkRejection> {
   const player = findPlayer(state, playerId);
   if (!player) {
@@ -121,7 +130,7 @@ export function useSpark(
     return { ok: false, reason: { kind: 'spark-not-held', sefirah: requiredSefirah } };
   }
 
-  const applied = applyAbility(state, player, ability);
+  const applied = applyAbility(state, player, ability, rng);
   if (!applied.ok) return applied;
 
   // Spend the Spark on the post-apply state. The acting player must
@@ -153,6 +162,7 @@ function applyAbility(
   state: GameState,
   player: PlayerState,
   ability: SparkAbility,
+  rng: Rng,
 ): Result<GameState, SparkRejection> {
   switch (ability.kind) {
     case 'chesed-grace':
@@ -175,7 +185,7 @@ function applyAbility(
         value: replacePlayer(state, setFlags(player, { flashExtraMoves: player.pendingAbilities.flashExtraMoves + 1 })),
       };
     case 'kether-unity':
-      return applyKetherUnity(state);
+      return applyKetherUnity(state, rng);
     case 'malkuth-grounding':
       return {
         ok: true,
@@ -207,6 +217,15 @@ function applyChesedGrace(
     return {
       ok: false,
       reason: { kind: 'payload-invalid', detail: 'cannot gift to self' },
+    };
+  }
+  // #56: HAND_CAP — receiver at cap rejects with a distinct kind so
+  // the orchestrator can re-prompt the giver to pick a different
+  // target rather than treating it as an invalid payload.
+  if (receiver.hand.length >= HAND_CAP) {
+    return {
+      ok: false,
+      reason: { kind: 'gift-rejected-cap-full', toPlayerId: receiver.id },
     };
   }
   const handIndex = giver.hand.indexOf(arcanumNumber);
@@ -279,22 +298,33 @@ function applyYesodIntuition(
   return { ok: true, value: { ...state, deck: nextDeck } };
 }
 
-function applyKetherUnity(state: GameState): Result<GameState, SparkRejection> {
-  // Draw one card for each player, in order, from the top of the deck.
-  // If the deck runs out mid-distribution, later players get nothing —
-  // the ability doesn't fail, it just distributes what's available.
+function applyKetherUnity(state: GameState, rng: Rng): Result<GameState, SparkRejection> {
+  // Draw one card for each player from the top of the deck. Players
+  // already at HAND_CAP are skipped — their slot doesn't burn a card,
+  // it just rolls forward to the next under-cap player (#56). If the
+  // deck empties mid-distribution AND the discard pile has cards, the
+  // discard pile is shuffled (via `recycleDiscardIntoDeck`) and
+  // becomes the new deck. Shuffle is required: an order-preserving
+  // recycle would let any player who memorised the discard predict
+  // every subsequent draw.
   //
   // IMPORTANT: arcanum 0 (The Fool) is a valid card. We use `??`/explicit
   // null checks rather than truthiness, otherwise a Fool draw would be
   // silently discarded. Do NOT refactor to `card || undefined` or `!card`.
-  const consumed = Math.min(state.deck.length, state.players.length);
-  const nextPlayers = state.players.map((p, idx) => {
-    const card = state.deck[idx];
+  let deck: readonly number[] = state.deck;
+  let discard: readonly number[] = state.discardPile;
+  const nextPlayers = state.players.map((p) => {
+    if (p.hand.length >= HAND_CAP) return p;
+    const recycled = recycleDiscardIntoDeck(deck, discard, rng);
+    deck = recycled.deck;
+    discard = recycled.discard;
+    const card = deck[0];
     if (card === undefined) return p;
+    deck = deck.slice(1);
     return { ...p, hand: [...p.hand, card] };
   });
   return {
     ok: true,
-    value: { ...state, players: nextPlayers, deck: state.deck.slice(consumed) },
+    value: { ...state, players: nextPlayers, deck, discardPile: discard },
   };
 }
