@@ -245,3 +245,54 @@ describe('TreeBoard — interactive', () => {
     expect(path13?.getAttribute('tabindex')).toBeNull();
   });
 });
+
+describe('TreeBoard — path hit-target widening (#130)', () => {
+  // Playtest finding: path edges (especially Yesod↔Malkuth) are too
+  // thin to click reliably. Each path now renders an invisible
+  // wide-stroke hit-line on top of the visible line; that's the
+  // element receiving clicks. Visible stroke is unchanged.
+  it('renders an invisible hit-line for every path', () => {
+    const { container } = render(<TreeBoard />);
+    const hitLines = container.querySelectorAll('[data-path-hit]');
+    // 22 paths × 1 hit-line each.
+    expect(hitLines.length).toBe(22);
+    for (const line of hitLines) {
+      // The hit-line is invisible (transparent stroke) but interactive.
+      expect(line.getAttribute('stroke')).toBe('transparent');
+      const sw = Number(line.getAttribute('stroke-width'));
+      // ≥ 24 is the desktop minimum (WCAG mobile is 44; we widen
+      // toward 44 but the SVG is responsive so the visible width
+      // depends on viewBox ↔ rendered-px mapping).
+      expect(sw).toBeGreaterThanOrEqual(24);
+    }
+  });
+
+  it('clicking the hit-line for a valid path fires onPathClick', () => {
+    const onPathClick = vi.fn();
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const state = makeState({}, { players: [player] });
+    const { container } = render(
+      <TreeBoard state={state} activePlayerId="p1" onPathClick={onPathClick} />,
+    );
+    const hit13 = container.querySelector('[data-path-hit="13"]');
+    expect(hit13).not.toBeNull();
+    if (hit13) fireEvent.click(hit13);
+    expect(onPathClick).toHaveBeenCalledExactlyOnceWith(13);
+  });
+
+  it('path-labels layer is pointer-events:none so it does not steal clicks from the hit-lines', () => {
+    // Reviewer caught: several path-label discs (paths 13/14/19/25/
+    // 27/29/32) sit on or near a path's hit centerline. Without
+    // `pointer-events: none` on the labels group, those discs absorb
+    // clicks meant for the wider hit-lines. This test pins the
+    // contract.
+    const { container } = render(<TreeBoard />);
+    const labelsLayer = container.querySelector('[data-layer="path-labels"]');
+    expect(labelsLayer).not.toBeNull();
+    expect(labelsLayer?.getAttribute('pointer-events')).toBe('none');
+  });
+});

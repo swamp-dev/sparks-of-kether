@@ -77,6 +77,18 @@ const LABEL_OFFSETS: Readonly<Record<number, { dx: number; dy: number }>> = {
 const EMPTY_VALID_PATHS: ReadonlySet<number> = Object.freeze(new Set<number>());
 
 /**
+ * Hit-area stroke width (#130). The visible path stroke is 1.5–3 px
+ * which is too thin to tap reliably; this widens the invisible
+ * click target to 28 viewBox-units. At a 400-wide viewBox rendered
+ * 320 px wide on mobile, that maps to 22.4 px (passes WCAG 2.5.8
+ * 24-px target spacing once the board renders ≥ 343 px wide; reaches
+ * 44 px target dimension at ≥ 630 px wide). 28 is also the maximum
+ * value that doesn't cause adjacent non-shared-endpoint paths to
+ * overlap their hit areas.
+ */
+const PATH_HIT_WIDTH = 28;
+
+/**
  * Per-Sefirah glyph foreground color. Hardcoded rather than derived
  * from luminance so contrast can be hand-tuned where the math is
  * borderline (Yesod's violet / Malkuth's russet).
@@ -187,7 +199,7 @@ export function TreeBoard({
               : undefined;
           const handleKey =
             clickable && onClickHandler
-              ? (e: KeyboardEvent<SVGLineElement>): void => {
+              ? (e: KeyboardEvent<SVGGElement>): void => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     onClickHandler(path.number);
@@ -195,17 +207,10 @@ export function TreeBoard({
                 }
               : undefined;
           return (
-            <line
+            <g
               key={path.number}
               data-path={path.number}
               data-valid={isValid ? 'true' : 'false'}
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={isValid ? '#ffd700' : '#f8f8ff'}
-              strokeOpacity={isValid ? 0.95 : 0.35}
-              strokeWidth={isValid ? 3 : 1.5}
               role={clickable ? 'button' : 'img'}
               aria-label={label}
               tabIndex={clickable ? 0 : undefined}
@@ -214,12 +219,42 @@ export function TreeBoard({
               onKeyDown={handleKey}
             >
               <title>{label}</title>
-            </line>
+              {/*
+                #130: invisible wide-stroke hit-line so the path is
+                tappable on a finger-sized target, not just the
+                visible 1.5–3px stroke. PATH_HIT_WIDTH widens the
+                invisible target toward the WCAG 2.5.5 mobile minimum
+                (44px on a 320px viewport renders this 28px viewBox-
+                unit stroke at ~22.4px — close enough; the visible
+                board scales up beyond that on desktop). The visible
+                line and label disc paint over the top.
+              */}
+              <line
+                data-path-hit={path.number}
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke="transparent"
+                strokeWidth={PATH_HIT_WIDTH}
+                strokeLinecap="round"
+              />
+              <line
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke={isValid ? '#ffd700' : '#f8f8ff'}
+                strokeOpacity={isValid ? 0.95 : 0.35}
+                strokeWidth={isValid ? 3 : 1.5}
+                pointerEvents="none"
+              />
+            </g>
           );
         })}
       </g>
 
-      <g data-layer="path-labels" aria-hidden="true">
+      <g data-layer="path-labels" aria-hidden="true" pointerEvents="none">
         {/*
           #136: playtest finding — path numbers were not visibly
           rendered, only available via aria-label/tooltip. Render

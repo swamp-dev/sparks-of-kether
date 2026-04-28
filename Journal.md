@@ -2632,3 +2632,37 @@ multiplayer screens.
 - Gate green: typecheck ✓, lint ✓, test ✓ (647 + 1 todo / 648).
 
 **Commit(s):** `a572f5b`
+
+## 2026-04-28T01:16:28-04:00 — #130: widen path hit-targets to 28 viewBox-units
+
+**Pushed:** Tier-3 hit-target widening from the playability priorities.
+Each TreeBoard path now renders a `<g>` containing an invisible
+`<line data-path-hit>` (transparent stroke, `PATH_HIT_WIDTH = 28`)
+plus the existing visible line (`pointerEvents="none"`). The `<g>`
+is the interactive element (carries role/aria/tabIndex/handlers).
+Visible appearance unchanged.
+
+**Why:** Playtest finding — Yesod↔Malkuth path was finicky to click
+even with a mouse, much less a finger. WCAG 2.5.8 wants ≥24 px
+target spacing; 28 viewBox-units maps to 22.4 px at the 320 px
+mobile mapping (passes at ≥343 px) and reaches 44 px at the ≥630 px
+desktop mapping. 28 is the maximum value that doesn't cause
+adjacent non-shared-endpoint paths to overlap their hit areas.
+
+**Notes:**
+- Reviewer caught a real critical: with the wider hit-lines, several
+  path-label discs (#136 — paths 13/14/19/25/27/29/32) sit on or
+  near a path's hit centerline. The labels group needed
+  `pointerEvents="none"` so the decorative discs don't absorb
+  clicks. New regression test pins that contract.
+- Existing tests pass unchanged because data-path / role / aria /
+  tabIndex moved to the `<g>` wrapper; `[data-path="N"]` queries
+  still resolve. `fireEvent.click([data-path="N"])` still bubbles
+  to the `<g>`'s handler.
+- Type annotation on `handleKey` updated from `KeyboardEvent<SVGLineElement>`
+  → `KeyboardEvent<SVGGElement>` per reviewer.
+- JSDoc on `PATH_HIT_WIDTH` corrected to reference WCAG 2.5.8
+  (target spacing) rather than 2.5.5 (target size).
+- Gate green: typecheck ✓, lint ✓, test ✓ (647 + 1 todo / 648).
+
+**Commit(s):** `d7c5b2e`

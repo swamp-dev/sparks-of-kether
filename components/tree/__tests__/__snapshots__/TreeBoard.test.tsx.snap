@@ -122,384 +122,671 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
   <g
     data-layer="paths"
   >
-    <line
+    <g
       aria-label="Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom"
       data-path="11"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="320"
-      y1="60"
-      y2="150"
     >
       <title>
         Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="11"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="320"
+        y1="60"
+        y2="150"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="320"
+        y1="60"
+        y2="150"
+      />
+    </g>
+    <g
       aria-label="Path 12 (Beth) — Arcanum 1, between Crown and Understanding"
       data-path="12"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="80"
-      y1="60"
-      y2="150"
     >
       <title>
         Path 12 (Beth) — Arcanum 1, between Crown and Understanding
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="12"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="80"
+        y1="60"
+        y2="150"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="80"
+        y1="60"
+        y2="150"
+      />
+    </g>
+    <g
       aria-label="Path 13 (Gimel) — Arcanum 2, between Crown and Beauty"
       data-path="13"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="200"
-      y1="60"
-      y2="340"
     >
       <title>
         Path 13 (Gimel) — Arcanum 2, between Crown and Beauty
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="13"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="200"
+        y1="60"
+        y2="340"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="200"
+        y1="60"
+        y2="340"
+      />
+    </g>
+    <g
       aria-label="Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding"
       data-path="14"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="80"
-      y1="150"
-      y2="150"
     >
       <title>
         Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="14"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="80"
+        y1="150"
+        y2="150"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="80"
+        y1="150"
+        y2="150"
+      />
+    </g>
+    <g
       aria-label="Path 15 (He) — Arcanum 4, between Wisdom and Beauty"
       data-path="15"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="200"
-      y1="150"
-      y2="340"
     >
       <title>
         Path 15 (He) — Arcanum 4, between Wisdom and Beauty
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="15"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="200"
+        y1="150"
+        y2="340"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="200"
+        y1="150"
+        y2="340"
+      />
+    </g>
+    <g
       aria-label="Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy"
       data-path="16"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="320"
-      y1="150"
-      y2="280"
     >
       <title>
         Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="16"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="320"
+        y1="150"
+        y2="280"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="320"
+        y1="150"
+        y2="280"
+      />
+    </g>
+    <g
       aria-label="Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty"
       data-path="17"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="80"
-      x2="200"
-      y1="150"
-      y2="340"
     >
       <title>
         Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="17"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="80"
+        x2="200"
+        y1="150"
+        y2="340"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="80"
+        x2="200"
+        y1="150"
+        y2="340"
+      />
+    </g>
+    <g
       aria-label="Path 18 (Cheth) — Arcanum 7, between Understanding and Severity"
       data-path="18"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="80"
-      x2="80"
-      y1="150"
-      y2="280"
     >
       <title>
         Path 18 (Cheth) — Arcanum 7, between Understanding and Severity
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="18"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="80"
+        x2="80"
+        y1="150"
+        y2="280"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="80"
+        x2="80"
+        y1="150"
+        y2="280"
+      />
+    </g>
+    <g
       aria-label="Path 19 (Teth) — Arcanum 8, between Mercy and Severity"
       data-path="19"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="80"
-      y1="280"
-      y2="280"
     >
       <title>
         Path 19 (Teth) — Arcanum 8, between Mercy and Severity
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="19"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="80"
+        y1="280"
+        y2="280"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="80"
+        y1="280"
+        y2="280"
+      />
+    </g>
+    <g
       aria-label="Path 20 (Yod) — Arcanum 9, between Mercy and Beauty"
       data-path="20"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="200"
-      y1="280"
-      y2="340"
     >
       <title>
         Path 20 (Yod) — Arcanum 9, between Mercy and Beauty
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="20"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="200"
+        y1="280"
+        y2="340"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="200"
+        y1="280"
+        y2="340"
+      />
+    </g>
+    <g
       aria-label="Path 21 (Kaph) — Arcanum 10, between Mercy and Victory"
       data-path="21"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="320"
-      y1="280"
-      y2="430"
     >
       <title>
         Path 21 (Kaph) — Arcanum 10, between Mercy and Victory
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="21"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="320"
+        y1="280"
+        y2="430"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="320"
+        y1="280"
+        y2="430"
+      />
+    </g>
+    <g
       aria-label="Path 22 (Lamed) — Arcanum 11, between Severity and Beauty"
       data-path="22"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="80"
-      x2="200"
-      y1="280"
-      y2="340"
     >
       <title>
         Path 22 (Lamed) — Arcanum 11, between Severity and Beauty
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="22"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="80"
+        x2="200"
+        y1="280"
+        y2="340"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="80"
+        x2="200"
+        y1="280"
+        y2="340"
+      />
+    </g>
+    <g
       aria-label="Path 23 (Mem) — Arcanum 12, between Severity and Splendor"
       data-path="23"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="80"
-      x2="80"
-      y1="280"
-      y2="430"
     >
       <title>
         Path 23 (Mem) — Arcanum 12, between Severity and Splendor
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="23"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="80"
+        x2="80"
+        y1="280"
+        y2="430"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="80"
+        x2="80"
+        y1="280"
+        y2="430"
+      />
+    </g>
+    <g
       aria-label="Path 24 (Nun) — Arcanum 13, between Beauty and Victory"
       data-path="24"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="320"
-      y1="340"
-      y2="430"
     >
       <title>
         Path 24 (Nun) — Arcanum 13, between Beauty and Victory
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="24"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="320"
+        y1="340"
+        y2="430"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="320"
+        y1="340"
+        y2="430"
+      />
+    </g>
+    <g
       aria-label="Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation"
       data-path="25"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="200"
-      y1="340"
-      y2="490"
     >
       <title>
         Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="25"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="200"
+        y1="340"
+        y2="490"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="200"
+        y1="340"
+        y2="490"
+      />
+    </g>
+    <g
       aria-label="Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor"
       data-path="26"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="80"
-      y1="340"
-      y2="430"
     >
       <title>
         Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="26"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="80"
+        y1="340"
+        y2="430"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="80"
+        y1="340"
+        y2="430"
+      />
+    </g>
+    <g
       aria-label="Path 27 (Peh) — Arcanum 16, between Victory and Splendor"
       data-path="27"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="80"
-      y1="430"
-      y2="430"
     >
       <title>
         Path 27 (Peh) — Arcanum 16, between Victory and Splendor
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="27"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="80"
+        y1="430"
+        y2="430"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="80"
+        y1="430"
+        y2="430"
+      />
+    </g>
+    <g
       aria-label="Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation"
       data-path="28"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="200"
-      y1="430"
-      y2="490"
     >
       <title>
         Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="28"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="200"
+        y1="430"
+        y2="490"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="200"
+        y1="430"
+        y2="490"
+      />
+    </g>
+    <g
       aria-label="Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom"
       data-path="29"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="320"
-      x2="200"
-      y1="430"
-      y2="560"
     >
       <title>
         Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="29"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="320"
+        x2="200"
+        y1="430"
+        y2="560"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="320"
+        x2="200"
+        y1="430"
+        y2="560"
+      />
+    </g>
+    <g
       aria-label="Path 30 (Resh) — Arcanum 19, between Splendor and Foundation"
       data-path="30"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="80"
-      x2="200"
-      y1="430"
-      y2="490"
     >
       <title>
         Path 30 (Resh) — Arcanum 19, between Splendor and Foundation
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="30"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="80"
+        x2="200"
+        y1="430"
+        y2="490"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="80"
+        x2="200"
+        y1="430"
+        y2="490"
+      />
+    </g>
+    <g
       aria-label="Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom"
       data-path="31"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="80"
-      x2="200"
-      y1="430"
-      y2="560"
     >
       <title>
         Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom
       </title>
-    </line>
-    <line
+      <line
+        data-path-hit="31"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="80"
+        x2="200"
+        y1="430"
+        y2="560"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="80"
+        x2="200"
+        y1="430"
+        y2="560"
+      />
+    </g>
+    <g
       aria-label="Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom"
       data-path="32"
       data-valid="false"
       role="img"
-      stroke="#f8f8ff"
-      stroke-opacity="0.35"
-      stroke-width="1.5"
-      x1="200"
-      x2="200"
-      y1="490"
-      y2="560"
     >
       <title>
         Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom
       </title>
-    </line>
+      <line
+        data-path-hit="32"
+        stroke="transparent"
+        stroke-linecap="round"
+        stroke-width="28"
+        x1="200"
+        x2="200"
+        y1="490"
+        y2="560"
+      />
+      <line
+        pointer-events="none"
+        stroke="#f8f8ff"
+        stroke-opacity="0.35"
+        stroke-width="1.5"
+        x1="200"
+        x2="200"
+        y1="490"
+        y2="560"
+      />
+    </g>
   </g>
   <g
     aria-hidden="true"
     data-layer="path-labels"
+    pointer-events="none"
   >
     <g
       data-path-label="11"
