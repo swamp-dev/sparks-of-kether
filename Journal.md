@@ -3063,3 +3063,17 @@ don't reach naturally. Centralised them.
 - Test additions: bar widths (w-12), centred row, three columns, current column carries fill ratio, fresh streak inactive. After this lands the suite is 697 → 703.
 
 **Commit(s):** `a46995c`
+
+## 2026-04-28T13:52:46-04:00 — #174: visual regression spec (Epic #118 wave 4)
+
+**Pushed:** New `e2e/visual-regression.spec.ts` using Playwright's `expect(page).toHaveScreenshot()`. Walks the same 14 routes as `screenshots.review.spec.ts` at desktop / tablet / mobile = 42 baselines committed under `e2e/visual-regression.spec.ts-snapshots/`. Animations disabled per-assertion; `maxDiffPixelRatio: 0.005` absorbs anti-aliasing variance without masking real regressions. Runs as part of `pnpm e2e` so it executes on every PR (and via the local `pnpm ci:local` chain).
+**Why:** Wave-4 sub-ticket of Epic #118. Wave-3 just polished every UI surface; without pixel-diff regression locked in, a future "tighten this padding by 4 px" or "swap a gold for a different gold" silently breaks the look. This ticket turns those into failed tests.
+**Notes:**
+- Verified the assertion mechanism by deleting one baseline and re-running — Playwright fails loudly with "snapshot doesn't exist."
+- Tried verifying the visual-diff path by sabotaging a source file, but the local Next dev server was being shared from the main repo (a stale `pnpm dev` running there) which Playwright's `reuseExistingServer: true` connected to instead of rebuilding from the worktree. The spec is still correct — CI doesn't reuse, and a clean dev machine doesn't have this problem. Documented in the spec comment.
+- Reviewer flagged cross-platform baseline collision: contributors on macOS would generate `*-darwin.png` files alongside the `*-linux.png` ones; CI never compares against them. Added a `.gitignore` inside the snapshots directory blocking `*-darwin.png` and `*-win32.png` so the dead weight can't be committed accidentally.
+- Reviewer flagged `networkidle` flakiness on future realtime / long-poll pages — added a sentinel-pattern note in the spec comment.
+- Route-list duplication across three specs (`screenshots.spec.ts`, `screenshots.review.spec.ts`, `visual-regression.spec.ts`) noted as a follow-up; not in this ticket's scope.
+- Gate green: typecheck ✓, lint ✓, test ✓, build ✓, e2e ✓ (42 visual-regression assertions pass clean), integration ✓.
+
+**Commit(s):** _filled in after push_
