@@ -3008,4 +3008,17 @@ don't reach naturally. Centralised them.
 - 5 new tests (decorative semantics, 11 circles = 10 sefirot + 1 halo, 22 paths, pointer-events-none, responsive heights). 686 → 691 tests.
 - Gate green: typecheck ✓, lint ✓, test ✓ (691 + 1 todo / 692).
 
+**Commit(s):** `1093ae7`
+
+## 2026-04-28T12:20:10-04:00 — #160: card-back motif (Epic #118 wave 3)
+
+**Pushed:** Replace the single-Tav-letter card back with a layered occult-bookbinding pattern: indigo gradient + outer/inner gold borders + four corner flourishes (90° arcs with short ticks) + concentric circles framing a central hexagram (Magen David, two overlaid triangles) + four Tetragrammaton letters (יהוה) at the cardinal points just outside the seal + faint diagonal lattice background. Same 200×320 viewBox so the Hand layout is unchanged. Eight new tests (aria pattern, viewBox, hexagram, corners, Tetragrammaton order, per-instance ID isolation).
+**Why:** Wave-3 fan-out from Epic #118; #154 ui-review noted the prior card back read as "placeholder back" rather than "occult bookbinding" — a single repeated glyph in a void.
+**Notes:**
+- The illustration is intentionally data-only (no per-instance state) so a deck of face-downs reads as identical artefacts, not distinct cards.
+- Reviewer's optional refinements applied: combined `useId()` calls under one prefix so two instances can never collide on `<defs>` ids; bumped Tetragrammaton font from 18→22 px and opacity 0.65→0.8 so the letters stay legible at the mobile floor (`w-24` ≈ 96 px screen width).
+- Symbolic / cultural sanity check: Magen David and Tetragrammaton are on-brand for a Kabbalah-themed game — consistent with `design/`'s established vocabulary. Reviewer concurred.
+- 8 new tests, total 686 → 694.
+- Gate green: typecheck ✓, lint ✓, test ✓ (694 + 1 todo / 695).
+
 **Commit(s):** _filled in after push_
