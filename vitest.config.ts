@@ -22,6 +22,11 @@ export default defineConfig({
       // discovers the duplicated test files and reports double the
       // expected test count.
       '**/.stryker-tmp/**',
+      // Integration tests run against a real Supabase stack via
+      // their own config (`vitest.integration.config.ts`). The
+      // standard `pnpm test` must NOT pick them up — they would
+      // either fail-on-missing-env or silently hit a real DB.
+      '**/tests/integration/**',
     ],
     include: ['**/__tests__/**/*.{test,spec}.{ts,tsx}', '**/*.{test,spec}.{ts,tsx}'],
     css: false,

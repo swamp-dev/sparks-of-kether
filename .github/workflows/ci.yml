@@ -140,3 +140,64 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  integration:
+    name: real-Supabase integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: verify
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Supabase CLI
+        # Pinned to a specific minor for reproducibility — bump only
+        # alongside a verified-green local-test pass.
+        uses: supabase/setup-cli@v1
+        with:
+          version: 1.226.4
+
+      - name: Start Supabase Local
+        # `supabase start` boots the full local stack: Postgres +
+        # GoTrue (auth) + PostgREST + Realtime — all in Docker.
+        # Migrations from `supabase/migrations/` apply automatically.
+        # `supabase db start` (just Postgres) is NOT enough; the
+        # integration tests use `signInAnonymously` which needs
+        # GoTrue.
+        run: supabase start
+
+      - name: Export Supabase env vars
+        # `supabase status -o env` prints API_URL, ANON_KEY, and
+        # SERVICE_ROLE_KEY in `KEY=value` form. Re-export under the
+        # names the test setup expects.
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          set -a; source /tmp/supabase.env; set +a
+          {
+            echo "SUPABASE_URL=${API_URL}"
+            echo "SUPABASE_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+          } >> "$GITHUB_ENV"
+
+      - name: Run integration tests
+        run: pnpm test:integration
+
+      - name: Stop Supabase Local
+        if: always()
+        run: supabase stop --no-backup

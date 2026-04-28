@@ -1,0 +1,60 @@
+# Supabase Local CLI configuration. Used by `supabase start` to spin
+# up the full local stack (Postgres + GoTrue + PostgREST + Realtime)
+# in Docker. Migrations under `./migrations/` are applied automatically
+# on `supabase db reset`.
+#
+# This file is consumed by:
+#   - Developers running `supabase start` locally (requires `supabase`
+#     CLI + Docker installed).
+#   - The `integration` CI job (`.github/workflows/ci.yml`) which uses
+#     the `supabase/setup-cli` GitHub Action.
+
+project_id = "sparks-of-kether"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = false
+
+[auth]
+enabled = true
+# Anonymous-only: the production app uses Supabase's anonymous-session
+# auth, no email/password or OAuth. Local should match.
+#
+# `enable_signup = true` is required even though we don't expose any
+# signup UI — `signInAnonymously` is internally a signup that creates
+# a fresh user row. With `enable_signup = false` the auth API rejects
+# anon sign-ins with "Signups not allowed for this instance" (caught
+# by the first CI run on PR #127). The non-anon paths are blocked by
+# omitting an email_provider config; signup is gated by code, not
+# config.
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_anonymous_sign_ins = true
+enable_signup = true
+
+[edge_runtime]
+enabled = false
+
+[storage]
+enabled = false
+
+[inbucket]
+enabled = false

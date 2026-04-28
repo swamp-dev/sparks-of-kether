@@ -2285,3 +2285,42 @@ modulo the multiplayer game page (separate ticket).
   e2e ✓ (2/2). 19 new unit + route tests.
 
 **Commit(s):** `c09dab8`, `42e2406`, `1d733da`, `07a2029`
+
+## 2026-04-27T22:45:52-04:00 — #89: T3 root-cause + fix for players RLS false-positive
+
+**Pushed:** lib/rooms.ts patch (drop `.select()` chain on players
+insert paths in createRoom + joinRoom); rooms.test.ts mock surface
+updated to allow a thenable insert; test/integration/createRoom.test.ts
+restored to its clean shape (the diagnostic probes from earlier
+pushes are gone); migration 0004_debug_whoami.sql removed.
+
+**Why:** the integration test in CI kept failing with `42501 — new
+row violates row-level security policy for table "players"` even
+though `auth.uid()` proven equal to `id` in every probe (server-side
+RPC, BEFORE INSERT trigger, equality-check function). Root cause:
+PostgREST 12.2 + RLS policy `id = auth.uid()` + client-supplied PK
++ `Prefer: return=representation` (the header supabase-js sets when
+you chain `.select()` on an insert) trips a false-positive WITH
+CHECK rejection. The same code path against `rooms` works because
+`rooms.id` has `default gen_random_uuid()` and the request shape
+PostgREST emits is different. Curl probes with `Prefer: return=minimal`
+or `return=headers-only` confirm: minimal succeeds, the other two
+fail. The fix is to issue plain inserts on `players` and rely on
+the values we already have client-side (we set `id = userId` and
+know the seat).
+
+**Notes:**
+- Local stack iteration pace: ~5s vs ~3min via CI. After three CI
+  iterations on the diagnostic probe migration I switched to
+  `pnpm dlx supabase@1.226.4 start` and `db reset` locally, which
+  is what unlocked the SQL-level traces (BEFORE INSERT trigger,
+  pg_stat_statements dump). Keeping that in mind for the next
+  Supabase-shaped ticket.
+- The fix narrows the surface: createRoom + joinRoom now return
+  `playerId: userId` and `seat: nextSeat` directly, skipping the
+  RETURNING round-trip. `joined_at` was the only field that came
+  back from the RETURNING and we never used it.
+- pnpm typecheck ✓, lint ✓, test ✓ (628/628), test:integration ✓
+  (1/1) all green locally.
+
+**Commit(s):** `b586a91`

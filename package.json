@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "mutation": "stryker run",
     "e2e": "playwright test",
     "e2e:screenshots": "playwright test screenshots.spec.ts",

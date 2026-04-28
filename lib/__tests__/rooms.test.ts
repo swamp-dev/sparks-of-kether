@@ -27,16 +27,34 @@ interface SupabaseStubs {
 }
 
 interface TableHandler {
-  readonly insert?: (row: unknown) => InsertChain;
+  // Two shapes the production code uses:
+  //   1. `client.from('rooms').insert(...).select().single<RoomRow>()`
+  //      — chains `.select().single()`, used for rooms (server-default
+  //      id makes us need the returned row).
+  //   2. `client.from('players').insert(...)` — awaited directly. The
+  //      players insert path was rewritten to NOT chain `.select()`
+  //      because PostgREST 12 + RLS + client-supplied PK + Prefer:
+  //      return=representation produces a 42501 false-positive (see
+  //      `lib/rooms.ts`). The stub's `insert()` therefore needs to
+  //      return either an InsertChain (rooms) or a thenable resolving
+  //      to `{data,error}` (players).
+  readonly insert?: (row: unknown) => InsertChain | InsertThenable;
   readonly select?: (cols: string) => SelectChain;
   readonly delete?: () => { eq: (col: string, val: string) => Promise<unknown> };
 }
 
 interface InsertChain {
-  readonly select: (cols: string) => {
+  // Production callers pass no args (`.select().single<RoomRow>()`),
+  // so the `cols` arg is optional in the stub.
+  readonly select: (cols?: string) => {
     readonly single: () => Promise<{ data: unknown; error: { message?: string; code?: string } | null }>;
   };
 }
+
+type InsertThenable = PromiseLike<{
+  data: unknown;
+  error: { message?: string; code?: string } | null;
+}>;
 
 interface SelectChain {
   readonly eq: (col: string, val: string) => SelectFilterChain;
@@ -89,22 +107,7 @@ describe('createRoom', () => {
           }),
         },
         players: {
-          insert: () => ({
-            select: () => ({
-              single: async () => ({
-                data: {
-                  id: 'auth-user-1',
-                  room_id: 'room-1',
-                  nickname: 'Andy',
-                  soul_aspect: null,
-                  ready: false,
-                  seat: 0,
-                  joined_at: 'now',
-                } as PlayerRow,
-                error: null,
-              }),
-            }),
-          }),
+          insert: () => Promise.resolve({ data: null, error: null }),
         },
       },
     });
@@ -148,22 +151,7 @@ describe('createRoom', () => {
           }),
         },
         players: {
-          insert: () => ({
-            select: () => ({
-              single: async () => ({
-                data: {
-                  id: 'auth-user-1',
-                  room_id: 'room-2',
-                  nickname: 'A',
-                  soul_aspect: null,
-                  ready: false,
-                  seat: 0,
-                  joined_at: 'now',
-                } as PlayerRow,
-                error: null,
-              }),
-            }),
-          }),
+          insert: () => Promise.resolve({ data: null, error: null }),
         },
       },
     });
@@ -213,14 +201,11 @@ describe('createRoom', () => {
           delete: () => ({ eq: deleteChainEq }),
         },
         players: {
-          insert: () => ({
-            select: () => ({
-              single: async () => ({
-                data: null,
-                error: { message: 'permission denied' },
-              }),
+          insert: () =>
+            Promise.resolve({
+              data: null,
+              error: { message: 'permission denied' },
             }),
-          }),
         },
       },
     });
@@ -269,22 +254,7 @@ describe('joinRoom', () => {
               error: null,
             }),
           }),
-          insert: () => ({
-            select: () => ({
-              single: async () => ({
-                data: {
-                  id: 'auth-user-1',
-                  room_id: 'room-1',
-                  nickname: 'Bea',
-                  soul_aspect: null,
-                  ready: false,
-                  seat: 1,
-                  joined_at: 'now',
-                } as PlayerRow,
-                error: null,
-              }),
-            }),
-          }),
+          insert: () => Promise.resolve({ data: null, error: null }),
         },
       },
     });
@@ -292,6 +262,7 @@ describe('joinRoom', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.seat).toBe(1);
+    expect(result.value.playerId).toBe('auth-user-1');
   });
 
   it('returns room-not-found when the code does not exist', async () => {

@@ -98,6 +98,11 @@ export async function createRoom(
   // Try a few times in case of a code collision.
   for (let attempt = 0; attempt < CODE_GEN_MAX_RETRIES; attempt++) {
     const code = generateRoomCode();
+    // `.select().single()` here is safe because `rooms.id` has a
+    // server-side default (`gen_random_uuid()`), so we genuinely need
+    // the RETURNING payload. The same pattern on `players` triggers
+    // a PostgREST 12 RLS false-positive — see the comment on the
+    // players insert below.
     const roomInsert = await query(client, 'rooms')
       .insert({ code, host_id: userId })
       .select()
@@ -111,17 +116,23 @@ export async function createRoom(
       };
     }
     const room = roomInsert.data;
-    const playerInsert = await query(client, 'players')
-      .insert({
-        id: userId,
-        room_id: room.id,
-        nickname,
-        soul_aspect: null,
-        ready: false,
-        seat: 0,
-      })
-      .select()
-      .single<PlayerRow>();
+    // Plain insert (no `.select()` chain) on purpose. Chaining
+    // `.select()` makes supabase-js send `Prefer: return=representation`,
+    // and PostgREST 12.2 rejects that combination against the
+    // `players_join` RLS policy (`WITH CHECK (id = auth.uid())`) with
+    // a 42501 RLS error — even though every input matches and the
+    // identical pattern works for `rooms` (where `id` has a server
+    // default). Investigation log: T3 (#89) PR #127. The inserted
+    // row's id is `userId` by construction, so we can return it
+    // without needing the RETURNING payload.
+    const playerInsert = await query(client, 'players').insert({
+      id: userId,
+      room_id: room.id,
+      nickname,
+      soul_aspect: null,
+      ready: false,
+      seat: 0,
+    });
     if (playerInsert.error) {
       // Roll back the orphan room so a stuck code doesn't persist.
       await query(client, 'rooms').delete().eq('id', room.id);
@@ -132,7 +143,7 @@ export async function createRoom(
     }
     return {
       ok: true,
-      value: { code: room.code, roomId: room.id, playerId: playerInsert.data.id },
+      value: { code: room.code, roomId: room.id, playerId: userId },
     };
   }
   return { ok: false, error: { kind: 'code-generation-exhausted' } };
@@ -212,17 +223,17 @@ export async function joinRoom(
   const nextSeat =
     existing.reduce((max, p) => Math.max(max, p.seat), -1) + 1;
 
-  const playerInsert = await query(client, 'players')
-    .insert({
-      id: userId,
-      room_id: room.id,
-      nickname,
-      soul_aspect: null,
-      ready: false,
-      seat: nextSeat,
-    })
-    .select('id, room_id, nickname, soul_aspect, ready, seat, joined_at')
-    .single();
+  // Plain insert (no `.select()` chain). See createRoom for the
+  // PostgREST 12 + RLS interaction that motivates this — same fix.
+  // Inserted row's id and seat are known client-side.
+  const playerInsert = await query(client, 'players').insert({
+    id: userId,
+    room_id: room.id,
+    nickname,
+    soul_aspect: null,
+    ready: false,
+    seat: nextSeat,
+  });
   if (playerInsert.error) {
     return {
       ok: false,
@@ -231,11 +242,7 @@ export async function joinRoom(
   }
   return {
     ok: true,
-    value: {
-      roomId: room.id,
-      playerId: playerInsert.data.id,
-      seat: playerInsert.data.seat,
-    },
+    value: { roomId: room.id, playerId: userId, seat: nextSeat },
   };
 }
 

@@ -43,3 +43,7 @@ yarn-error.log*
 
 # Misc
 .DS_Store
+
+# Supabase Local CLI workspace state
+supabase/.branches/
+supabase/.temp/
