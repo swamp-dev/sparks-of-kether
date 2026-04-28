@@ -15,7 +15,7 @@ import type {
 import { FinalThreshold } from '@/components/game/FinalThreshold';
 import type { FinalThresholdResult } from '@/engine/endgame';
 import { isHandVisible } from '@/components/hand/visibility';
-import { useTurn } from '@/lib/use-turn';
+import { useTurn, type TurnPhase } from '@/lib/use-turn';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -177,11 +177,19 @@ export function PlayScreen({
           state={turn.state}
           {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
           onPathClick={handlePathClick}
+          // #129: only highlight paths during the move phase. Once
+          // the player has moved, the board is decorative until the
+          // next turn begins; the action panel below carries the
+          // available affordances (Draw, End Turn, etc.).
+          movesEnabled={turn.phase === 'move'}
           className="w-full max-w-xl"
         />
         <div className="flex w-full max-w-xl items-center justify-between rounded border border-veil/20 bg-ground/40 px-4 py-2 text-sm">
-          <span className="text-xs uppercase tracking-widest opacity-60">
-            Phase: {turn.phase}
+          <span
+            className="text-xs uppercase tracking-widest opacity-60"
+            data-phase-hint
+          >
+            {phaseHint(turn.phase)}
           </span>
           <span className="font-display tracking-widest">
             {activePlayer?.name ?? '—'}&apos;s turn
@@ -306,4 +314,23 @@ function buildChallengeContext(
     availableCardBurns: player.hand.length,
     availableSparkBurns: player.sparksHeld.size,
   };
+}
+
+/**
+ * Plain-English phase hint shown next to the active player's name.
+ * Replaces the raw enum value (`Phase: draw`) so a first-time player
+ * can read the panel and know what they're allowed to do without
+ * knowing the engine's vocabulary (#129).
+ */
+function phaseHint(phase: TurnPhase): string {
+  switch (phase) {
+    case 'move':
+      return 'Pick a card and a path, or meditate';
+    case 'challenge':
+      return 'Resolve the challenge';
+    case 'draw':
+      return 'Draw to refill your hand';
+    case 'end':
+      return 'Move complete — end turn';
+  }
 }

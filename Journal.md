@@ -2493,3 +2493,37 @@ now reachable in a real session.
   637), e2e not re-run (no UI flow changed).
 
 **Commit(s):** `b3d372d`
+
+## 2026-04-28T00:32:07-04:00 — #129: gate path highlights to move phase + plain-English phase hint
+
+**Pushed:** Tier-2 UX clarity from the playability priorities.
+`TreeBoard` gains `movesEnabled?: boolean` (defaults true for the
+demo route's no-arg call); when false, all paths render
+`data-valid="false"` and don't accept clicks. `PlayScreen` wires
+`movesEnabled={turn.phase === 'move'}` so the board is only inviting
+when moves are actually accepted. The phase-status panel now reads
+"Pick a card and a path, or meditate" / "Resolve the challenge" /
+"Draw to refill your hand" / "Move complete — end turn" instead of
+the raw enum value.
+
+**Why:** Playtest finding — after a player moved, paths still
+LOOKED clickable and the player wasn't sure what to do next. With
+`movesEnabled` off-during-non-move and a friendlier hint, the
+panel below the board now answers "what should I click?" without
+requiring engine-vocabulary knowledge.
+
+**Notes:**
+- `EMPTY_VALID_PATHS` uses `Object.freeze(new Set())` per code-
+  reviewer — `ReadonlySet` is TS-only, freeze makes it actually
+  immutable at runtime.
+- Hand card-selection stays active across all phases on purpose:
+  the player can preview which card unlocks which path on their
+  next turn. The engine rejects out-of-phase moves at the reducer.
+- Follow-up (NOT in this PR): `draw` phase shows "Draw to refill
+  your hand" even when the hand is at HAND_CAP and the click is a
+  no-op. Per reviewer, file a small ticket to add a "Hand full —
+  end turn" branch in the hint when applicable.
+- Gate green: typecheck ✓, lint ✓, test ✓ (636 passing + 1 todo /
+  637), e2e not re-run (no new screenshot-relevant routes).
+
+**Commit(s):** `d52a50c`

@@ -70,6 +70,13 @@ const LABEL_OFFSETS: Readonly<Record<number, { dx: number; dy: number }>> = {
 };
 
 /**
+ * Frozen empty valid-paths set, returned when `movesEnabled` is false
+ * (#129). `Object.freeze` makes the immutability runtime-enforced —
+ * `ReadonlySet` is a TS-only constraint and can be defeated by a cast.
+ */
+const EMPTY_VALID_PATHS: ReadonlySet<number> = Object.freeze(new Set<number>());
+
+/**
  * Per-Sefirah glyph foreground color. Hardcoded rather than derived
  * from luminance so contrast can be hand-tuned where the math is
  * borderline (Yesod's violet / Malkuth's russet).
@@ -106,6 +113,14 @@ interface TreeBoardProps {
    * moves shouldn't cost a click.
    */
   readonly onPathClick?: (pathNumber: number) => void;
+  /**
+   * When false, no paths render as valid (no highlight, no click
+   * handler) regardless of the player's hand. The orchestrator wires
+   * this from its phase machine: paths should only invite a click
+   * during `'move'` phase. Defaults to `true` for backward compat
+   * (#129).
+   */
+  readonly movesEnabled?: boolean;
 }
 
 export function TreeBoard({
@@ -113,11 +128,17 @@ export function TreeBoard({
   state,
   activePlayerId,
   onPathClick,
+  movesEnabled = true,
 }: TreeBoardProps): JSX.Element {
   // Scope the gradient ID per render so two TreeBoards in the same DOM
   // don't fight over a global #treeBackground reference.
   const gradientId = `tree-bg-${useId()}`;
-  const validPaths = computeValidPaths(state, activePlayerId);
+  // #129: respect `movesEnabled`. When the orchestrator's phase has
+  // advanced past `'move'`, no path should highlight or accept
+  // clicks — even if the player still holds the right card.
+  const validPaths = movesEnabled
+    ? computeValidPaths(state, activePlayerId)
+    : EMPTY_VALID_PATHS;
   const interactive = onPathClick !== undefined;
   // Map-style accessibility: the SVG carries `role="figure"` with a
   // `<title>` describing the whole. Each Sefirah and path then exposes

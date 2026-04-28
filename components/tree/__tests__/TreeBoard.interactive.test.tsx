@@ -71,6 +71,53 @@ describe('TreeBoard — interactive', () => {
     expect(onPathClick).not.toHaveBeenCalled();
   });
 
+  // #129: when `movesEnabled` is false (e.g. phase has moved past
+  // `'move'` in the orchestrator), no paths render as valid even
+  // when the player has the right cards. The playtest finding was
+  // that paths still LOOKED clickable after the player moved, leaving
+  // them unsure what to do next.
+  it('renders no paths as valid when movesEnabled=false', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2, 13, 0],
+    });
+    const state = makeState({}, { players: [player] });
+    const { container } = render(
+      <TreeBoard
+        state={state}
+        activePlayerId="p1"
+        onPathClick={vi.fn()}
+        movesEnabled={false}
+      />,
+    );
+    const allPathEdges = container.querySelectorAll('[data-path]');
+    for (const edge of allPathEdges) {
+      expect(edge.getAttribute('data-valid')).toBe('false');
+    }
+  });
+
+  it('does not fire onPathClick when movesEnabled=false', () => {
+    const onPathClick = vi.fn();
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const state = makeState({}, { players: [player] });
+    const { container } = render(
+      <TreeBoard
+        state={state}
+        activePlayerId="p1"
+        onPathClick={onPathClick}
+        movesEnabled={false}
+      />,
+    );
+    const path13 = container.querySelector('[data-path="13"]');
+    if (path13) fireEvent.click(path13);
+    expect(onPathClick).not.toHaveBeenCalled();
+  });
+
   it('fires onPathClick on Enter / Space keypress for keyboard accessibility', () => {
     const onPathClick = vi.fn();
     const player = makePlayer({
