@@ -2357,3 +2357,28 @@ matches the design and fixes the visible bug.
   633), e2e ✓ (16/16).
 
 **Commit(s):** `11fb9ef`
+
+## 2026-04-27T22:57:08-04:00 — docs: playability prioritization
+
+**Pushed:** new `design/playability-priorities.md` capturing the
+playable-MVP punch list. Sequenced as: Tier 1 bugs (#128, #135, #136,
+#56) → Tier 2 UX clarity (#129, #131, #134) → Tier 3 readability /
+pacing (#132, #130, #133) → Tier 4 phased polish (#38, #39, #37, #99).
+Defers Epics #117 / #118 / #119 / #125 explicitly until the gating
+items merge.
+
+**Why:** the user asked for a prioritization doc to make the path
+to first-shippable MVP concrete. After they ran a 2-player hot-seat
+playtest the same evening, nine new tickets (#128–#136) landed and
+the doc was reordered to put bugs ahead of polish, which is its
+v2 form.
+
+**Notes:**
+- Living doc — this is `docs/playability-priorities` not `design/v1`
+  on purpose. Edit in place rather than appending.
+- The 9 new tickets all carry the milestone "MVP: Playable web
+  version" so the milestone view doubles as a prioritized list.
+- Gate is vacuous (docs only): pnpm typecheck / lint / test all
+  unchanged, no code touched.
+
+**Commit(s):** `3bec6a9`
