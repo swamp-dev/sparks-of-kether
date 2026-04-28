@@ -2994,3 +2994,18 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓ (686 + 1 todo / 687).
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T12:11:59-04:00 — #157: home hero illustration band (Epic #118 wave 3)
+
+**Pushed:** New `components/home/Hero.tsx` — a faint Tree of Life silhouette (10 sefirot circles + 22 paths in the canonical Hermetic-Qabalah arrangement, with a soft tiferet halo). Wired into `app/page.tsx` between the title block and the room-forms section, plus a tiferet-gold `<ColorBloom>` from the top for a warm halo. Promoted Hot-seat from a small inline link beneath the forms to a full-width CTA visually equivalent to the form's buttons; replaced the demoting "or play solo against the engine" caption with a horizontal "or" divider that mirrors the multi-option form idiom.
+**Why:** Wave-3 fan-out from Epic #118; #154 ui-review marked the home page at 10/20 — striking title, then a CRUD form on a void. Hero fills the gap; promoted Hot-seat means the fastest path to actually playing isn't visually demoted under the room CTAs.
+**Notes:**
+- Hero is a still illustration (not interactive), distinct from `components/tree/TreeBoard.tsx`. Aria-hidden because the title + sub-copy already name the Tree; the Hero adds visual texture, not text.
+- Layout is responsive: `h-48 sm:h-56 md:h-64` for the SVG so the Tree fills the gap at 375 / 768 / 1280 viewports.
+- First reviewer pass caught spurious 23rd path (a chokmah→gevurah diagonal that's not part of the canonical 22). Fixed; the `expect(lines.length).toBe(22)` test now passes.
+- ESLint flagged non-null assertions; rewrote with explicit narrowing (the SVG won't render orphan elements if NODES is unexpectedly empty).
+- Reviewer noted the halo IIFE was unnecessary ceremony; replaced with a ternary.
+- 5 new tests (decorative semantics, 11 circles = 10 sefirot + 1 halo, 22 paths, pointer-events-none, responsive heights). 686 → 691 tests.
+- Gate green: typecheck ✓, lint ✓, test ✓ (691 + 1 todo / 692).
+
+**Commit(s):** _filled in after push_
