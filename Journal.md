@@ -2666,3 +2666,34 @@ adjacent non-shared-endpoint paths to overlap their hit areas.
 - Gate green: typecheck ✓, lint ✓, test ✓ (647 + 1 todo / 648).
 
 **Commit(s):** `d7c5b2e`
+
+## 2026-04-28T01:23:19-04:00 — #133: skip-to-summary affordance for blessing ceremony
+
+**Pushed:** Tier-3 pacing fix from the playability priorities.
+`BlessingRitual` gains a small "Skip — roll all remaining" button
+visible at every step. Click rolls fresh 3d6 for any unrolled
+Sefirot, preserves stats already received, and jumps straight to
+the summary panel.
+
+**Why:** Playtest finding — the slow per-Sefirah ritual loses its
+first-time wonder on repeat plays. The skip is additive and
+visually de-emphasised so first-time players don't see it as the
+primary path.
+
+**Notes:**
+- Per code-reviewer: RNG calls now live OUTSIDE the `setStats`
+  functional updater. React StrictMode double-invokes updaters in
+  dev, so RNG-inside-updater would advance the shared session RNG
+  by 2× the expected number of rolls and silently desynchronize
+  the engine. Fix: compute fresh rolls into a local map first,
+  then `setStats(prev => ({ ...prev, ...computed }))`.
+- The currently-displayed roll, if any, is already committed to
+  `stats` at roll-time — the `!== undefined` guard preserves it.
+  Comment updated accordingly per reviewer.
+- Considered "parallel reveal" and "3-stats-per-tap" alternatives
+  (per ticket Option A/B). Skip-button is the right tier-3
+  primitive: additive, invisible to first-time players, minimal
+  surface area. Cinematic fast-forward stays a follow-up.
+- Gate green: typecheck ✓, lint ✓, test ✓ (651 + 1 todo / 652).
+
+**Commit(s):** `63288ba`

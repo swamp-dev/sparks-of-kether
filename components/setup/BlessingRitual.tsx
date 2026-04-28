@@ -75,6 +75,32 @@ export function BlessingRitual({
     setLastRoll(null);
   };
 
+  // #133: skip-to-summary — roll all remaining Sefirot in one click,
+  // preserve any stats already rolled, and jump to the summary
+  // screen. Useful on repeat plays where the slow per-Sefirah
+  // ceremony loses its first-time wonder.
+  //
+  // RNG calls live OUTSIDE the `setStats` updater (per code-reviewer)
+  // because React StrictMode double-invokes functional updaters in
+  // dev — that would advance the shared session RNG by 2× the
+  // expected number of rolls and silently desynchronize the engine.
+  // The current-step roll, if any, is already committed to `stats`
+  // at roll-time (line ~61), so the `!== undefined` guard preserves
+  // it without needing to consult `lastRoll` here.
+  const handleSkipCeremony = (): void => {
+    const fresh: Partial<Record<StatKey, number>> = {};
+    for (let i = stepIndex; i < sefirot.length; i++) {
+      const s = sefirot[i];
+      if (!s) continue;
+      if (stats[s.stat] !== undefined) continue;
+      fresh[s.stat] = rng.int(1, 6) + rng.int(1, 6) + rng.int(1, 6);
+    }
+    setStats((prev) => ({ ...prev, ...fresh }));
+    setStepIndex(sefirot.length);
+    setStepStatus('awaiting');
+    setLastRoll(null);
+  };
+
   // Fire onComplete exactly once when the ritual finishes. Validates
   // that every stat is present before casting — the type system can't
   // prove it, but this throws loudly if a future regression skips a
@@ -169,6 +195,22 @@ export function BlessingRitual({
             onAdvance={handleAdvance}
           />
         ) : null}
+
+        {/*
+          #133: skip-to-summary affordance. Available at any step so
+          a returning player can bypass the slow per-Sefirah cadence
+          and jump to the summary in one click. Visually de-emphasised
+          (small text-only link) so first-time players don't see it
+          as the primary path.
+        */}
+        <button
+          type="button"
+          onClick={handleSkipCeremony}
+          data-action="skip-ceremony"
+          className="mt-4 text-xs uppercase tracking-widest opacity-50 hover:opacity-80"
+        >
+          Skip — roll all remaining
+        </button>
       </div>
     </section>
   );

@@ -152,3 +152,55 @@ describe('BlessingRitual — summary', () => {
     }
   });
 });
+
+describe('BlessingRitual — skip-to-summary (#133)', () => {
+  // Playtest finding: the 10-step sequential ceremony is slow on
+  // repeat plays. Provide a "Skip — roll all" affordance that fills
+  // the remaining stats in one click and advances to the summary.
+  it('renders a Skip button that rolls all remaining stats at once', () => {
+    let result: StatSheet | null = null;
+    const { container } = render(
+      <BlessingRitual
+        rng={seededRng(7)}
+        onComplete={(s) => {
+          result = s;
+        }}
+      />,
+    );
+    const skip = screen.getByRole('button', { name: /Skip/i });
+    fireEvent.click(skip);
+    // Should land on the summary panel.
+    expect(
+      container.querySelector('[data-blessing-ritual][data-status="complete"]'),
+    ).not.toBeNull();
+    // All 10 stats present.
+    for (const stat of STAT_KEYS) {
+      expect(result?.[stat]).toBeGreaterThanOrEqual(3);
+      expect(result?.[stat]).toBeLessThanOrEqual(18);
+    }
+  });
+
+  it('Skip works mid-ceremony — partial stats are preserved, the rest are rolled', () => {
+    let result: StatSheet | null = null;
+    render(
+      <BlessingRitual
+        rng={seededRng(7)}
+        onComplete={(s) => {
+          result = s;
+        }}
+      />,
+    );
+    // Roll + receive the first two Sefirot manually.
+    for (let i = 0; i < 2; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+    }
+    // Skip from the third step onward.
+    fireEvent.click(screen.getByRole('button', { name: /Skip/i }));
+    // All 10 still present in the result.
+    for (const stat of STAT_KEYS) {
+      expect(result?.[stat]).toBeGreaterThanOrEqual(3);
+      expect(result?.[stat]).toBeLessThanOrEqual(18);
+    }
+  });
+});
