@@ -34,10 +34,22 @@ interface HandProps {
   readonly selectedArcanum?: number;
   /** Aria label for the whole hand region (e.g. "Andy's hand, 4 cards"). */
   readonly ariaLabel?: string;
+  /**
+   * Initial open/closed state. Defaults to true (cards visible). When
+   * false, the hand renders a compact stack badge that the player taps
+   * to expand. (#132)
+   */
+  readonly defaultOpen?: boolean;
   readonly className?: string;
 }
 
 const MAX_FAN_DEG = 12;
+/**
+ * Card overlap when the hand is open. Cards render at `w-36` (144px);
+ * a -56px overlap leaves ~88px of each card visible at the centre and
+ * the full face exposed at the edges of the fan.
+ */
+const CARD_OVERLAP_PX = 56;
 
 export function Hand({
   hand,
@@ -45,9 +57,11 @@ export function Hand({
   onCardSelect,
   selectedArcanum,
   ariaLabel,
+  defaultOpen = true,
   className,
 }: HandProps): JSX.Element {
   const [focusIndex, setFocusIndex] = useState(0);
+  const [open, setOpen] = useState(defaultOpen);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Clamp focus index when the hand shrinks (cards played). Use a
@@ -88,15 +102,62 @@ export function Hand({
   const computedLabel =
     ariaLabel ?? `Hand of ${hand.length} card${hand.length === 1 ? '' : 's'}`;
 
+  // #132: collapsed state — render a small badge with the card count
+  // instead of the full fan. A tap on the badge reopens the hand.
+  // The mount runs the `hand-fade-in` keyframe (Tailwind config) so
+  // the badge eases in rather than snapping. `motion-reduce:animate-none`
+  // honours the user's reduced-motion preference.
+  if (!open) {
+    return (
+      <div
+        role="group"
+        aria-label={computedLabel}
+        data-hand
+        data-hand-state="closed"
+        data-visible={visible ? 'true' : 'false'}
+        className={`animate-hand-fade-in motion-reduce:animate-none ${className ?? ''}`}
+        style={{ display: 'flex', justifyContent: 'center' }}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          data-action="open-hand"
+          className="rounded border border-veil/30 px-4 py-2 text-sm"
+          aria-expanded="false"
+        >
+          {hand.length} card{hand.length === 1 ? '' : 's'} — tap to open
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       role="group"
       aria-label={computedLabel}
       data-hand
+      data-hand-state="open"
       data-visible={visible ? 'true' : 'false'}
-      className={className}
-      style={{ display: 'flex', justifyContent: 'center', gap: 0 }}
+      className={`animate-hand-fade-in motion-reduce:animate-none ${className ?? ''}`}
+      style={{ display: 'flex', justifyContent: 'center', gap: 0, position: 'relative' }}
     >
+      {/*
+        Always render the close button so the hand can be collapsed
+        even when empty — earlier the gating on `hand.length > 0` left
+        the open hand stuck if a player drew zero cards (#132 reviewer).
+        `z-10` keeps it above the rotated card edges in a full 6-card
+        fan, where the rightmost card's corner can otherwise overlap.
+      */}
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        data-action="close-hand"
+        aria-expanded="true"
+        aria-label="Collapse hand"
+        className="absolute right-0 top-0 z-10 rounded border border-veil/20 bg-ground/80 px-2 py-1 text-xs opacity-60 hover:opacity-100"
+      >
+        ×
+      </button>
       {hand.map((arcanum, i) => {
         const offsetFromCenter = i - (hand.length - 1) / 2;
         const fanDeg =
@@ -139,7 +200,7 @@ export function Hand({
             style={{
               transform: `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`,
               transformOrigin: 'bottom center',
-              marginLeft: i === 0 ? 0 : -36,
+              marginLeft: i === 0 ? 0 : -CARD_OVERLAP_PX,
               padding: 0,
               border: isSelected ? '2px solid #d4af37' : 'none',
               borderRadius: 12,
@@ -148,9 +209,12 @@ export function Hand({
             }}
           >
             {visible ? (
-              <ArcanumCard number={arcanum} className="w-24" />
+              // #132: bumped from `w-24` (96px) → `w-36` (144px) so
+              // the Hebrew letter, arcanum name, and number are
+              // readable at arm's length on a 13" laptop.
+              <ArcanumCard number={arcanum} className="w-36" />
             ) : (
-              <CardBack className="w-24" />
+              <CardBack className="w-36" />
             )}
           </button>
         );

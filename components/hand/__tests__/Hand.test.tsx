@@ -184,3 +184,67 @@ describe('isHandVisible', () => {
     expect(isHandVisible(state, 'p1', 'ghost')).toBe(false);
   });
 });
+
+describe('Hand — open / close toggle (#132)', () => {
+  it('renders the fan in open state by default', () => {
+    const { container } = render(<Hand hand={[1, 2, 3]} visible={true} />);
+    expect(
+      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
+    ).toBe('open');
+    expect(container.querySelectorAll('[data-card-slot]').length).toBe(3);
+  });
+
+  it('renders a compact badge when defaultOpen=false; tap opens the fan', () => {
+    const { container } = render(
+      <Hand hand={[1, 2, 3]} visible={true} defaultOpen={false} />,
+    );
+    expect(
+      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
+    ).toBe('closed');
+    // No card slots visible while collapsed.
+    expect(container.querySelectorAll('[data-card-slot]').length).toBe(0);
+    // The badge advertises the count.
+    const openBtn = container.querySelector(
+      '[data-action="open-hand"]',
+    ) as HTMLButtonElement;
+    expect(openBtn.textContent).toContain('3 cards');
+    fireEvent.click(openBtn);
+    expect(
+      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
+    ).toBe('open');
+    expect(container.querySelectorAll('[data-card-slot]').length).toBe(3);
+  });
+
+  it('clicking the close affordance collapses the hand again', () => {
+    const { container } = render(<Hand hand={[1, 2]} visible={true} />);
+    const close = container.querySelector(
+      '[data-action="close-hand"]',
+    ) as HTMLButtonElement;
+    expect(close).not.toBeNull();
+    fireEvent.click(close);
+    expect(
+      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
+    ).toBe('closed');
+  });
+
+  it('round-trips open → close → open via the toggle buttons', () => {
+    const { container } = render(<Hand hand={[1, 2]} visible={true} />);
+    fireEvent.click(
+      container.querySelector('[data-action="close-hand"]') as HTMLButtonElement,
+    );
+    fireEvent.click(
+      container.querySelector('[data-action="open-hand"]') as HTMLButtonElement,
+    );
+    expect(
+      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
+    ).toBe('open');
+    expect(container.querySelectorAll('[data-card-slot]').length).toBe(2);
+  });
+
+  it('still renders the close button on an empty hand (so it can be collapsed)', () => {
+    // Reviewer caught the regression: gating the close button on
+    // `hand.length > 0` left an empty open hand un-collapsible.
+    const { container } = render(<Hand hand={[]} visible={true} />);
+    expect(container.querySelector('[data-action="close-hand"]')).not.toBeNull();
+  });
+});

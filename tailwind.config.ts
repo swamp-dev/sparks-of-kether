@@ -55,6 +55,18 @@ const config: Config = {
         sans: ['var(--font-sans)', 'sans-serif'],
         hebrew: ['var(--font-hebrew)', 'serif'],
       },
+      // #132: gentle fade-in for newly-mounted Hand contents (the
+      // open/close toggle swaps subtrees, so opacity transitions on
+      // the existing element are no-ops; a keyframe runs on mount).
+      keyframes: {
+        'hand-fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'hand-fade-in': 'hand-fade-in 180ms ease-out',
+      },
     },
   },
   plugins: [],

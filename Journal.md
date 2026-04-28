@@ -2595,3 +2595,40 @@ enough not to feel like a stall.
 - Gate green: typecheck ✓, lint ✓, test ✓ (642 + 1 todo / 643).
 
 **Commit(s):** `7910ccd`
+
+## 2026-04-28T01:04:33-04:00 — #132: bigger cards + open/close hand toggle
+
+**Pushed:** Tier-3 readability from the playability priorities. Card
+width bumped from `w-24` (96px) → `w-36` (144px) per ticket — 1.5x
+scale so the Hebrew letter / arcanum number / suggested action are
+readable at arm's length on a 13" laptop. Hand also gains an
+open/close toggle: a "×" close button in the open state, a
+"N cards — tap to open" badge in the closed state. Mount runs a
+`hand-fade-in` keyframe (Tailwind config) which `motion-reduce`
+short-circuits.
+
+**Why:** Playtest finding — players hesitate before each action
+because they're squinting at tiny cards. The toggle gives them
+control over the hand's screen real estate for downstream
+multiplayer screens.
+
+**Notes:**
+- `defaultOpen` prop defaults true. PlayScreen currently doesn't
+  override (so the hand renders open by default in production),
+  matching existing tests + #128's PlayScreen integration test.
+  Switching production to default-closed is a one-line follow-up
+  if playtest confirms the tap-to-open UX is preferred.
+- Reviewer found a real bug: keyframe-on-mount is the only way to
+  animate a swap-rendered subtree; the previous `transition-opacity`
+  on a freshly-mounted element was a no-op. Fixed via Tailwind's
+  custom `keyframes` config + `animate-hand-fade-in` class.
+- Reviewer also caught: empty-hand close-button gating left the
+  open state stuck on a 0-card hand. Close button is now always
+  rendered.
+- Reviewer also caught: rotated rightmost card in a 6-card fan
+  could occlude the close button. Added `z-10` + `bg-ground/80`.
+- New `CARD_OVERLAP_PX = 56` constant replaces the magic `-36`
+  literal (tuned for the new card width).
+- Gate green: typecheck ✓, lint ✓, test ✓ (647 + 1 todo / 648).
+
+**Commit(s):** `a572f5b`
