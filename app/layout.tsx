@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Cinzel, Inter, Noto_Sans_Hebrew } from 'next/font/google';
+import { Starfield } from '@/components/atmosphere/Starfield';
 import './globals.css';
 
 const display = Cinzel({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
@@ -20,7 +21,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${hebrew.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <Starfield />
+        {children}
+      </body>
     </html>
   );
 }

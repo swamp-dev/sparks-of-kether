@@ -2980,3 +2980,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓ (674 + 1 todo / 675).
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T11:57:15-04:00 — #161: per-route ambient layer (Epic #118 wave 3, foundational)
+
+**Pushed:** New `components/atmosphere/` sub-tree — `Starfield`, `ColorBloom`, `GlyphWash`. All three render as fixed-position, `pointer-events-none`, `aria-hidden` decorative layers that paint between the body's `bg-ground` and main's content. Global `<Starfield />` mounted in `app/layout.tsx` so every route inherits a sparse star scattering for free; the three D-axis-weak routes (`/play`, `/demo/ritual`, `/demo/meters`) get additional `<ColorBloom>` (and a `<GlyphWash>` on `/demo/ritual`). New `atmosphere-twinkle` keyframe in `tailwind.config.ts` for opt-in star twinkle, gated on `motion-safe:` so `prefers-reduced-motion` is honoured automatically.
+**Why:** Foundational wave-3 ticket from Epic #118. UI review's #4 weakness: most routes have ⅔ of the viewport black-on-black. Atmosphere lets per-screen polish (#156, #157, #160) compose against a non-empty canvas instead of fighting flat indigo.
+**Notes:**
+- Reviewer caught a real rendering bug on the first pass: atmosphere components used `-z-10`, but with `<main>` carrying its own opaque `bg-ground`, the atmosphere painted *behind* main's bg and was invisible. Fix: removed redundant `bg-ground` from every `<main>` (body's globals.css already paints indigo) so the atmosphere shows through. Touches 15 page wrappers — purely additive (the visual is unchanged for routes without atmosphere; body provides the same indigo).
+- Reviewer also flagged a latent footgun: the original `alpha()` helper concatenated hex digits to the colour string, which would silently break for any non-hex input. Replaced with `color-mix(in srgb, …, transparent)` — colour-format-agnostic and modern-browser native (Chrome 111+, Firefox 113+, Safari 16.2+).
+- Twinkle uses `filter: brightness()` not `opacity` so each star's per-star inline opacity (the texture variation) is preserved. Updated JSDoc to reflect that — the original wording said "opacity" which was wrong.
+- jsdom's CSS engine drops the gradient string from `style.background`. ColorBloom mirrors the gradient on a `data-bloom-css` attribute so tests can assert resolution; the data attribute is on an `aria-hidden` div and doesn't leak into production semantics.
+- 12 new tests across the three components (decorative-layer semantics, density progression, twinkle gating, gradient resolution, opacity bounds, side mirroring). 670 → 686 tests.
+- Gate green: typecheck ✓, lint ✓, test ✓ (686 + 1 todo / 687).
+
+**Commit(s):** _filled in after push_

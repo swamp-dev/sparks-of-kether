@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { notFound } from 'next/navigation';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
+import { ColorBloom } from '@/components/atmosphere/ColorBloom';
+import { GlyphWash } from '@/components/atmosphere/GlyphWash';
 import { seededRng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 
@@ -13,7 +15,9 @@ export default function RitualDemoPage(): JSX.Element {
   const [completed, setCompleted] = useState<StatSheet | null>(null);
 
   return (
-    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
+    <main className="min-h-screen p-4 text-veil sm:p-8">
+      <ColorBloom color="#ffd700" position="bottom-right" intensity={0.14} />
+      <GlyphWash letter="א" side="left" />
       <h1 className="font-display text-3xl tracking-widest">Blessing Ritual</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Walk through Kether to Malkuth. 3d6 per stat. Seeded RNG so reloads

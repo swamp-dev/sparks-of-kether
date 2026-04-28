@@ -10,7 +10,7 @@ export default function SoulAspectDemoPage(): JSX.Element {
   }
   const [picked, setPicked] = useState<SoulAspectKey | null>(null);
   return (
-    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
+    <main className="min-h-screen p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Soul Aspect</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Tiferet and Gevurah are pre-claimed in this demo. Pick from the rest.

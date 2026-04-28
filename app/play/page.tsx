@@ -6,6 +6,7 @@ import { SoulAspectPicker } from '@/components/setup/SoulAspectPicker';
 import { Lobby } from '@/components/setup/Lobby';
 import type { LobbyPlayer } from '@/components/setup/Lobby';
 import { PlayScreen } from '@/components/game/PlayScreen';
+import { ColorBloom } from '@/components/atmosphere/ColorBloom';
 import { initializeGame } from '@/engine/setup';
 import type { PlayerSetup } from '@/engine/setup';
 import { seededRng } from '@/engine/rng';
@@ -89,7 +90,7 @@ export default function PlayPage(): JSX.Element {
 
   if (phase.kind === 'ritual') {
     return (
-      <main className="min-h-screen bg-ground p-8 text-veil">
+      <main className="min-h-screen p-8 text-veil">
         <PhaseHeader title={`${slots[phase.playerIndex].name} — Sefirot Blessing`} />
         <BlessingRitual
           key={`ritual-${phase.playerIndex}`}
@@ -106,7 +107,7 @@ export default function PlayPage(): JSX.Element {
       if (s.soulAspect) taken[s.soulAspect] = s.name;
     }
     return (
-      <main className="min-h-screen bg-ground p-8 text-veil">
+      <main className="min-h-screen p-8 text-veil">
         <PhaseHeader title={`${slots[phase.playerIndex].name} — Choose Soul Aspect`} />
         <SoulAspectPicker
           taken={taken}
@@ -124,7 +125,7 @@ export default function PlayPage(): JSX.Element {
       ready: s.stats !== undefined && s.soulAspect !== undefined,
     }));
     return (
-      <main className="min-h-screen bg-ground p-8 text-veil">
+      <main className="min-h-screen p-8 text-veil">
         <PhaseHeader title="Lobby — ready to begin" />
         <Lobby
           players={lobbyPlayers}
@@ -142,7 +143,8 @@ export default function PlayPage(): JSX.Element {
   // GameState that `useTurn` would never observe — the game state
   // is a useState initializer, not a prop the hook diff-checks.)
   return (
-    <main className="min-h-screen bg-ground text-veil">
+    <main className="min-h-screen text-veil">
+      <ColorBloom color="#ffd700" position="bottom" intensity={0.12} />
       <PlaySession setupComplete={phase.setupComplete} playRng={playRng} />
     </main>
   );

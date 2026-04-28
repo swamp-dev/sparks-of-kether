@@ -31,7 +31,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
 
   if (error !== null) {
     return (
-      <main className="min-h-screen bg-ground p-8 text-center text-veil">
+      <main className="min-h-screen p-8 text-center text-veil">
         <h1 className="font-display text-3xl tracking-widest">Lobby — {code}</h1>
         <p
           role="alert"
@@ -58,7 +58,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   }));
 
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen p-8 text-veil">
       <header className="mb-6 text-center">
         <h1 className="font-display text-3xl tracking-widest">Lobby</h1>
         <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">

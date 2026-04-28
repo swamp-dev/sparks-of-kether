@@ -63,7 +63,7 @@ export default function TokensPage() {
   }
 
   return (
-    <main className="min-h-screen bg-ground p-8 text-veil">
+    <main className="min-h-screen p-8 text-veil">
       <h1 className="mb-2 font-display text-4xl tracking-widest">Design Tokens</h1>
       <p className="mb-8 max-w-2xl text-sm opacity-60">
         Dev-only visual check for Tailwind color and typography tokens. Each Sefirah swatch pulls

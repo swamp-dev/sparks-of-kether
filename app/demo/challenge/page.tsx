@@ -17,7 +17,7 @@ export default function ChallengeDemoPage(): JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-ground p-4 text-veil sm:p-8">
+    <main className="min-h-screen p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Challenge Modal</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Click Roll to resolve a Gevurah challenge. Seeded RNG so the result

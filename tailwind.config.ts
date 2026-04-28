@@ -87,11 +87,20 @@ const config: Config = {
           '50%': { transform: 'scale(1.08)', filter: 'drop-shadow(0 0 8px #ffd700)' },
           '100%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 transparent)' },
         },
+        // #161: optional starfield twinkle. Stars pulse via filter
+        // brightness so their inline `opacity` (per-star variation)
+        // is preserved. Applied with the `motion-safe:` variant so
+        // it respects `prefers-reduced-motion: reduce` automatically.
+        'atmosphere-twinkle': {
+          '0%, 100%': { filter: 'brightness(0.85)' },
+          '50%': { filter: 'brightness(1.3)' },
+        },
       },
       animation: {
         'hand-fade-in': 'hand-fade-in 180ms ease-out',
         'path-travel-pulse': 'path-travel-pulse 600ms ease-out',
         'sefirah-clear-pulse': 'sefirah-clear-pulse 700ms ease-out',
+        'atmosphere-twinkle': 'atmosphere-twinkle 4s ease-in-out infinite',
       },
     },
   },
