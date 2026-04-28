@@ -53,6 +53,55 @@ describe('SoulAspectPicker — selection', () => {
   });
 });
 
+describe('SoulAspectPicker — Sefirah-keyed accent', () => {
+  it('tags each card with its Sefirah key for accent styling', () => {
+    const { container } = render(<SoulAspectPicker onPick={vi.fn()} />);
+    for (const aspect of soulAspects) {
+      const card = container.querySelector(`[data-aspect="${aspect.key}"]`);
+      expect(
+        card?.getAttribute('data-accent-sefirah'),
+        `accent for ${aspect.key}`,
+      ).toBe(aspect.sefirahKey);
+    }
+  });
+
+  it("idle cards carry their Sefirah's border accent class", () => {
+    const { container } = render(<SoulAspectPicker onPick={vi.fn()} />);
+    for (const aspect of soulAspects) {
+      const card = container.querySelector(`[data-aspect="${aspect.key}"]`);
+      const className = card?.getAttribute('class') ?? '';
+      expect(
+        className,
+        `idle accent class for ${aspect.key}`,
+      ).toMatch(new RegExp(`border-${aspect.sefirahKey}`));
+    }
+  });
+
+  it('selected card uses the saturated accent (no /40 dimming)', () => {
+    const { container } = render(<SoulAspectPicker onPick={vi.fn()} />);
+    const tiferet = container.querySelector('[data-aspect="tiferet"]') as HTMLButtonElement;
+    fireEvent.click(tiferet);
+    const className = tiferet.getAttribute('class') ?? '';
+    // The idle dimmed token (`border-tiferet/40`) must give way to a
+    // saturated `border-tiferet` once selected.
+    expect(className).toMatch(/border-tiferet(?!\/)/);
+    expect(className).toMatch(/bg-tiferet\/15/);
+  });
+
+  it('taken cards suppress the Sefirah accent so the disabled state stays distinct', () => {
+    const { container } = render(
+      <SoulAspectPicker
+        onPick={vi.fn()}
+        taken={{ tiferet: 'Andy' }}
+      />,
+    );
+    const tiferet = container.querySelector('[data-aspect="tiferet"]');
+    const className = tiferet?.getAttribute('class') ?? '';
+    expect(className).not.toMatch(/border-tiferet/);
+    expect(className).toMatch(/border-veil\/30/);
+  });
+});
+
 describe('SoulAspectPicker — taken aspects', () => {
   it('marks taken aspects aria-disabled and shows the taker name', () => {
     // aria-disabled (not the HTML `disabled` attr) keeps the card

@@ -2969,3 +2969,14 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T11:21:49-04:00 — #159: Sefirah-keyed Soul Aspect card accents (Epic #118 wave 3)
+
+**Pushed:** Per-card accent on `SoulAspectPicker` keyed to each Soul Aspect's `sefirahKey`. Idle cards carry a 40 %-opacity border in the Sefirah hue (Heart→tiferet gold, Boundary-Keeper→gevurah crimson, Giver→chesed blue, Mind→hod orange, Feeler→netzach green, Dreamer→yesod violet); selected cards saturate to full and add a 15 %-tint background. Disabled "Taken by X" cards drop the accent to `border-veil/30` so the dim-grey state stays unmistakably distinct from any active Sefirah colour. New `data-accent-sefirah` attribute makes the accent assertable from tests.
+**Why:** Wave-3 fan-out from Epic #118; #154 ui-review noted the picker's six cards were "the same dark-on-dark rectangle" with no Sefirah identity. Touching only the styling shells fits the ticket's narrow scope.
+**Notes:**
+- Static `ACCENT_BY_SEFIRAH` map with full Tailwind class literals (so the content scanner picks them up). Reviewer flagged that an unguarded indexed lookup would crash if data ever pointed at a non-personality Sefirah; added a `DEFAULT_ACCENT` fallback that mirrors the pre-#159 generic accent so the component degrades gracefully instead of throwing.
+- Test additions: card-tagging, idle border class present, selected saturated (no `/40` dim), disabled accent suppressed. Total tests 670 → 674.
+- Gate green: typecheck ✓, lint ✓, test ✓ (674 + 1 todo / 675).
+
+**Commit(s):** _filled in after push_

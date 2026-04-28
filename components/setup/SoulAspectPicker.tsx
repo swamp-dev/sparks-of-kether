@@ -107,6 +107,27 @@ interface AspectCardProps {
   readonly onSelect: () => void;
 }
 
+// Static accent classes per Sefirah. Written out as full literals so
+// Tailwind's content scanner picks them up (dynamic
+// `border-${sefirahKey}` strings would be tree-shaken). Only the six
+// "personality" Sefirot appear here — the other four (Kether, Chokmah,
+// Binah, Malkuth) are not playable Soul Aspects per `data/soul-aspects.ts`.
+const ACCENT_BY_SEFIRAH: Partial<Record<string, { idle: string; selected: string }>> = {
+  chesed: { idle: 'border-chesed/40 hover:border-chesed', selected: 'border-chesed bg-chesed/15' },
+  gevurah: { idle: 'border-gevurah/40 hover:border-gevurah', selected: 'border-gevurah bg-gevurah/15' },
+  tiferet: { idle: 'border-tiferet/40 hover:border-tiferet', selected: 'border-tiferet bg-tiferet/15' },
+  hod: { idle: 'border-hod/40 hover:border-hod', selected: 'border-hod bg-hod/15' },
+  netzach: { idle: 'border-netzach/40 hover:border-netzach', selected: 'border-netzach bg-netzach/15' },
+  yesod: { idle: 'border-yesod/40 hover:border-yesod', selected: 'border-yesod bg-yesod/15' },
+};
+// Neutral fallback if a future SoulAspect ever points at a Sefirah
+// outside the six personality Sefirot. Mirrors the pre-#159 generic
+// accent so the component degrades gracefully instead of crashing.
+const DEFAULT_ACCENT = {
+  idle: 'border-veil/30 hover:border-veil/60',
+  selected: 'border-illumination bg-illumination/10',
+} as const;
+
 function AspectCard({
   aspect,
   disabled,
@@ -114,6 +135,14 @@ function AspectCard({
   selected,
   onSelect,
 }: AspectCardProps): JSX.Element {
+  const accent = ACCENT_BY_SEFIRAH[aspect.sefirahKey] ?? DEFAULT_ACCENT;
+  // Disabled cards drop the Sefirah accent so the dim grey state
+  // stays unmistakably distinct from an active card.
+  const accentClass = disabled
+    ? 'border-veil/30'
+    : selected
+      ? accent.selected
+      : accent.idle;
   return (
     // aria-disabled (not `disabled`) keeps taken cards focusable so
     // AT users can read the "Taken by X" text. The `onSelect` body
@@ -123,14 +152,13 @@ function AspectCard({
       onClick={onSelect}
       aria-disabled={disabled}
       data-aspect={aspect.key}
+      data-accent-sefirah={aspect.sefirahKey}
       data-disabled={disabled ? 'true' : 'false'}
       data-selected={selected ? 'true' : 'false'}
       aria-pressed={selected}
-      className={`w-full rounded-lg border p-4 text-left transition-colors ${
-        selected
-          ? 'border-illumination bg-illumination/10'
-          : 'border-veil/30 hover:border-veil/60'
-      } ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
+      className={`w-full rounded-lg border p-4 text-left transition-colors ${accentClass} ${
+        disabled ? 'cursor-not-allowed opacity-40' : ''
+      }`}
     >
       <div className="flex items-baseline justify-between">
         <h3 className="font-display text-lg tracking-widest">{aspect.title}</h3>
