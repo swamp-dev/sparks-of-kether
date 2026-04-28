@@ -3046,6 +3046,20 @@ don't reach naturally. Centralised them.
 - Self-hosted GitHub Actions runner is the third leg (handles "the runner pool is down, but my push needs CI checks for the merge gate"). Deferring that to a follow-up — it's a one-time setup that touches system services, not a code change.
 - Husky was considered and rejected: native `core.hooksPath` is dependency-free and equally good for a single-repo single-developer workflow.
 - Verified `pnpm ci:local` end-to-end on this branch — all four jobs green. Supabase boot to teardown takes ~70 s on first run.
+- Hosted CI on PR #173 hit the same runner-startup-failure pattern as the rest of wave 3 (4-second job failure with no step output, BlobNotFound on logs). Per the new rule, admin-merged because local CI was fully green and the hosted-CI failure was plausibly infrastructure, not a regression.
 - Gate green: typecheck ✓, lint ✓, test ✓, build ✓, e2e ✓, integration ✓.
 
-**Commit(s):** _filled in after push_
+**Commit(s):** `6d72b7b`
+
+## 2026-04-28T12:35:00-04:00 — #158: TeamMeters polish (Epic #118 wave 3, retro-filed)
+
+**Pushed:** Replace TeamMeters' two thin (`w-4` = 16 px) flat-colour bars with `w-12` (48 px) gradient bars, centre the meters row (`flex justify-center gap-8`), and refactor PillarStreak from a body-text caption into three pillar columns (M/S/B) where the current pillar fills toward 3 in its pillar colour (mercy blue, severity crimson, balance gold). Illumination uses a tiferet-gold gradient (`#a87c00` → `#ffd700`); Separation uses a foggy-slate gradient (`#4a4a5a` → `#9a9aaa`) keyed to binah.
+**Why:** Wave-3 fan-out from Epic #118; #154 ui-review marked `/demo/meters` at 11/20 — "two skinny ~12 px bars parked at the left edge, pillar streak as flat caption." Spec from ticket #158: ≥40 px wide bars, gradient fills, centred layout, pillar streak as columns.
+**Notes:**
+- Originally cut as commit `f90ca00` on `feat/158-team-meters` (PR #167) at 2026-04-28T11:33. That branch hit a Journal merge conflict against `main` that needed a `git push --force-with-lease` to resolve, but the user's per-action policy denies that; this resubmits the same code via cherry-pick onto current `main` as branch `feat/158-team-meters-v2`. PR #167 will be closed and superseded.
+- Gradient backgrounds via inline `style.background` (CSS shorthand accepts gradient values; flat colour also works there). The shared `Meter` component is left untouched per ticket scope; TeamMeters carries its own `GradientMeterBar` helper to keep that boundary stable. Snapshot tests on `Meter` therefore unaffected.
+- First reviewer pass flagged the original Separation gradient (`#1a1a1a` → `#5a5a7a`, pure binah charcoal at the bottom) as ~1.12:1 contrast against the indigo ground — early Separation would be invisible. Lifted the floor to `#4a4a5a` so 1–2 Separation reads from frame one; top stop preserves the binah-charcoal identity.
+- Pillar streak column widget uses `data-pillar-column={pillar}`, `data-active`, `data-fill-ratio` attributes for tests; `aria-label` on the parent carries the full readout for screen readers. Letter labels (M/S/B) chosen over full names — full names won't fit at `w-3`.
+- Test additions: bar widths (w-12), centred row, three columns, current column carries fill ratio, fresh streak inactive. After this lands the suite is 697 → 703.
+
+**Commit(s):** `a46995c`

@@ -82,6 +82,72 @@ describe('TeamMeters — rendering', () => {
   });
 });
 
+describe('TeamMeters — bar dimensions and centering', () => {
+  it('Illumination bar is at least 40 px wide (Tailwind w-12 = 48 px)', () => {
+    const { container } = render(<TeamMeters illumination={5} separation={3} />);
+    const bar = container.querySelector('[data-meter-bar="illumination"]');
+    expect(bar).not.toBeNull();
+    expect(bar?.getAttribute('class') ?? '').toMatch(/\bw-12\b/);
+  });
+
+  it('Separation bar is at least 40 px wide (Tailwind w-12 = 48 px)', () => {
+    const { container } = render(<TeamMeters illumination={5} separation={3} />);
+    const bar = container.querySelector('[data-meter-bar="separation"]');
+    expect(bar).not.toBeNull();
+    expect(bar?.getAttribute('class') ?? '').toMatch(/\bw-12\b/);
+  });
+
+  it('the meters row centres its content (justify-center)', () => {
+    const { container } = render(<TeamMeters illumination={5} separation={3} />);
+    const row = container.querySelector('[data-meters-row]');
+    expect(row).not.toBeNull();
+    expect(row?.getAttribute('class') ?? '').toMatch(/\bjustify-center\b/);
+  });
+});
+
+describe('TeamMeters — pillar streak as three columns', () => {
+  it('renders one column per pillar (mercy / severity / balance)', () => {
+    const { container } = render(
+      <TeamMeters
+        illumination={0}
+        separation={0}
+        pillarStreak={{ currentPillar: 'mercy', sameCount: 2, alternationCount: 0 }}
+      />,
+    );
+    expect(container.querySelector('[data-pillar-column="mercy"]')).not.toBeNull();
+    expect(container.querySelector('[data-pillar-column="severity"]')).not.toBeNull();
+    expect(container.querySelector('[data-pillar-column="balance"]')).not.toBeNull();
+  });
+
+  it("the current pillar's column carries the streak fill ratio", () => {
+    const { container } = render(
+      <TeamMeters
+        illumination={0}
+        separation={0}
+        pillarStreak={{ currentPillar: 'severity', sameCount: 2, alternationCount: 0 }}
+      />,
+    );
+    const severity = container.querySelector('[data-pillar-column="severity"]');
+    expect(severity?.getAttribute('data-active')).toBe('true');
+    // Streak count 2 of 3 → 66.66% fill.
+    expect(severity?.getAttribute('data-fill-ratio')).toBe('0.67');
+    const mercy = container.querySelector('[data-pillar-column="mercy"]');
+    expect(mercy?.getAttribute('data-active')).toBe('false');
+    expect(mercy?.getAttribute('data-fill-ratio')).toBe('0.00');
+  });
+
+  it('a fresh streak (0/0, no current pillar) leaves all three columns inactive', () => {
+    const { container } = render(
+      <TeamMeters illumination={0} separation={0} pillarStreak={EMPTY_PILLAR_STREAK} />,
+    );
+    for (const p of ['mercy', 'severity', 'balance'] as const) {
+      const col = container.querySelector(`[data-pillar-column="${p}"]`);
+      expect(col?.getAttribute('data-active')).toBe('false');
+      expect(col?.getAttribute('data-fill-ratio')).toBe('0.00');
+    }
+  });
+});
+
 describe('TeamMeters — meter math', () => {
   it('value clamps at the loss threshold (15)', () => {
     const { container } = render(<TeamMeters illumination={20} separation={20} />);
