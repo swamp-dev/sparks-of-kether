@@ -81,18 +81,30 @@ export function makeState(
 
 /**
  * Default Soul Aspects assigned in seat order when callers of
- * `makeFullGame` don't specify their own. The 6-player MVP cap maps
- * cleanly to the 6 personality Sefirot — we enumerate seat 0 → 5 in
- * design's preferred reading order. Real games allow any arrangement;
- * this is just the deterministic test default.
+ * `makeFullGame` don't specify their own. The current MVP cap is
+ * 4 players, so we enumerate the first four Sefirot in design's
+ * preferred reading order. Real games allow any arrangement; this
+ * is just the deterministic test default.
+ *
+ * **Yesod intentionally excluded** (#99): per `design/mechanics.md`
+ * § Soul Aspects, Yesod's weakness is "you start one Sefirah below
+ * Malkuth" — but `engine/setup.ts:initializeGame` places every
+ * player at Malkuth regardless of Soul Aspect. Until the engine
+ * implements that offset, fixtures using Yesod would silently
+ * misrepresent the starting position. Tests that explicitly want
+ * Yesod can still opt in by passing `soulAspects: [..., 'yesod']`.
+ *
+ * **Netzach also excluded**: kept in line with the actual MVP cap.
+ * `playerCount` is typed `2 | 3 | 4` and the slice never reaches
+ * index 4. If the cap ever grows to 5+ players, extend this array
+ * alongside the type — phantom entries that never get selected
+ * are surface area without value.
  */
 const DEFAULT_SOUL_ASPECT_ORDER: readonly SoulAspectKey[] = [
   'chesed',
   'gevurah',
   'tiferet',
   'hod',
-  'netzach',
-  'yesod',
 ];
 
 export interface MakeRoomOverrides {

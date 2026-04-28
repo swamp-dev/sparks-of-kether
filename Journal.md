@@ -2697,3 +2697,28 @@ primary path.
 - Gate green: typecheck ✓, lint ✓, test ✓ (651 + 1 todo / 652).
 
 **Commit(s):** `63288ba`
+
+## 2026-04-28T01:35:02-04:00 — #99: exclude Yesod from default fixture order
+
+**Pushed:** Tier-4 small chore from the playability priorities.
+`DEFAULT_SOUL_ASPECT_ORDER` in `test/fixtures.ts` reduced from 6
+entries to 4 (`chesed`, `gevurah`, `tiferet`, `hod`). Yesod and
+Netzach removed; JSDoc explains both removals.
+
+**Why:** Per `design/mechanics.md` § Soul Aspects, Yesod's weakness
+is "you start one Sefirah below Malkuth" — but `initializeGame`
+places every player at Malkuth regardless. Until the engine
+implements that offset (separate ticket, Option A), fixtures using
+Yesod by default would silently misrepresent the starting state.
+Netzach also excluded because `playerCount` is capped at 4 and the
+5th/6th entries were never selected — phantom surface area.
+
+**Notes:**
+- Tests that explicitly want Yesod can still pass it via
+  `soulAspects: [..., 'yesod']`.
+- Reviewer flagged: ship as-is, the deferred Option A
+  (engine offset implementation) is correctly scoped to a
+  separate ticket.
+- Gate green: typecheck ✓, lint ✓, test ✓ (652 + 1 todo / 653).
+
+**Commit(s):** `238b659`
