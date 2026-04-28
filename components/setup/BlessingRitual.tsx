@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { sefirot } from '@/data';
-import type { StatKey } from '@/data';
+import type { Sefirah, StatKey } from '@/data';
 import type { Rng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 import { StatIcon } from '@/components/icons/StatIcon';
 import { RITUAL_COPY } from './ritual-copy';
+import { RitualScene } from './RitualScene';
+import { RitualLedger } from './RitualLedger';
 
 /**
  * Sefirot-blessing ritual — guided 10-step setup. Players pass
@@ -149,10 +151,15 @@ export function BlessingRitual({
       aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
       className={`mx-auto max-w-md text-center ${className ?? ''}`}
     >
+      <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
+
       <p className="text-xs uppercase tracking-widest opacity-60">
         Step {stepIndex + 1} of {sefirot.length}
       </p>
-      <h2 className="mt-2 font-display text-3xl tracking-widest" data-sefirah-name>
+
+      <SefirahHero sefirah={currentSefirah} />
+
+      <h2 className="mt-4 font-display text-3xl tracking-widest" data-sefirah-name>
         {currentSefirah.englishName}
       </h2>
       <p
@@ -170,9 +177,6 @@ export function BlessingRitual({
       </p>
 
       <div className="mt-6 flex flex-col items-center gap-3">
-        <span className="text-veil opacity-80">
-          <StatIcon stat={currentSefirah.stat} className="h-8 w-8" />
-        </span>
         <span className="text-xs uppercase tracking-widest opacity-70">
           Stat: {currentSefirah.stat}
         </span>
@@ -212,8 +216,69 @@ export function BlessingRitual({
           Skip — roll all remaining
         </button>
       </div>
+
+      <RitualLedger stats={stats} currentIndex={stepIndex} />
     </section>
   );
+}
+
+/**
+ * Hero badge for the current Sefirah — large circular medallion
+ * keyed to the Sefirah's colour with the Hebrew name inscribed.
+ * Diameter ≥ 80 px (the ticket's threshold).
+ *
+ * Glyph colour is picked from the badge's relative luminance so the
+ * letter stays legible across all 10 sefirah colours (Kether's white
+ * and Tiferet's gold need dark glyphs; Binah's charcoal needs a
+ * light one). Robust to future palette tweaks.
+ */
+function SefirahHero({ sefirah }: { sefirah: Sefirah }): JSX.Element {
+  const glyphColor = relativeLuminance(sefirah.color) > 0.4 ? '#1a1542' : '#f8f8ff';
+  return (
+    <div
+      data-sefirah-hero
+      data-sefirah={sefirah.key}
+      aria-hidden="true"
+      className="mx-auto mt-2 flex h-24 w-24 items-center justify-center rounded-full"
+      style={{
+        backgroundColor: sefirah.color,
+        boxShadow: `0 0 24px ${hexAlpha(sefirah.color, '66')}, 0 0 48px ${hexAlpha(sefirah.color, '33')}`,
+      }}
+    >
+      <span
+        className="font-hebrew text-4xl"
+        lang="he"
+        style={{
+          color: glyphColor,
+          direction: 'rtl',
+          unicodeBidi: 'isolate',
+        }}
+      >
+        {[...sefirah.hebrewName][0] ?? ''}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Append a 2-digit hex alpha to a 6-digit hex colour. Throws on
+ * non-conforming input so a future palette regression is loud
+ * instead of silently broken (e.g. `#fff` → `#fff66` would be
+ * invalid CSS that browsers ignore).
+ */
+function hexAlpha(hex: string, alpha: string): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
+    throw new Error(`hexAlpha: expected 6-digit hex, got ${hex}`);
+  }
+  return `${hex}${alpha}`;
+}
+
+/** WCAG-style relative luminance for a 6-digit hex colour, in [0, 1]. */
+function relativeLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 interface RollDisplayProps {

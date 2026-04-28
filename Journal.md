@@ -3022,3 +3022,18 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓ (694 + 1 todo / 695).
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T12:30:55-04:00 — #156: Blessing Ritual scene polish (Epic #118 wave 3)
+
+**Pushed:** Three things land together: (1) `<SefirahHero>` — a 96 px circular medallion keyed to the active Sefirah's hex with the first Hebrew letter inscribed at high contrast (luminance-derived glyph colour, robust to future palette tweaks); replaces the prior `h-8 w-8` StatIcon as the focal point. (2) `RitualScene` — an ambient `<ColorBloom>` keyed to the active Sefirah colour so the room shifts hue as the player descends Kether → Malkuth. (3) `RitualLedger` — a running list of all 10 Sefirot below the active step, three states per row (blessed / active / pending) with rolled values filling in as the ritual progresses; active row carries a glowing dot in the Sefirah colour.
+**Why:** Wave-3 fan-out from Epic #118; #154 ui-review marked the ritual at 9/20 — "cosmic content drowning in void." Hero badge addresses the V (visual identity) axis; ambient bloom + ledger fill the lower half so the page no longer reads as a CRUD form on darkness.
+**Notes:**
+- Reviewer's most useful catch: my first cut hardcoded a string-equality check on Kether's `#ffffff` and Chokmah's `#c0c0c0` to flip the glyph colour. Replaced with a relative-luminance threshold (>0.4 → dark glyph) so a palette tweak won't silently break legibility.
+- Same pattern bit me on #161: hex-alpha by string concatenation. Pulled out a `hexAlpha(hex, alpha)` helper that throws on non-conforming input — visible regression instead of silent CSS garbage.
+- `[...sefirah.hebrewName][0]` instead of `.charAt(0)` for the hero glyph: Hebrew is in the BMP so it's safe today, but Unicode-correct iteration is the right habit.
+- Reviewer flagged the Ledger's `<section aria-label="…">` as duplicate landmark (the parent ritual `<section>` already scopes it). Switched to `<div>` so AT users navigating by landmarks don't see redundant entries.
+- `RitualScene` returns `null` after the ritual completes — the per-route ambient layer from #161 paints the summary screen.
+- 5 new tests (hero presence + Sefirah-keyed colour, hero ≥80 px via h-24, ledger 10 rows with state, blessed values vs "—" pending, ambient scene keyed to active Sefirah). 691 → 696 tests.
+- Gate green: typecheck ✓, lint ✓, test ✓ (696 + 1 todo / 697).
+
+**Commit(s):** _filled in after push_

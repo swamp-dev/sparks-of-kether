@@ -204,3 +204,61 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
     }
   });
 });
+
+describe('BlessingRitual — scene polish (#156)', () => {
+  it('renders a Sefirah hero badge keyed to the active Sefirah', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
+    );
+    const hero = container.querySelector('[data-sefirah-hero]');
+    expect(hero).not.toBeNull();
+    expect(hero?.getAttribute('data-sefirah')).toBe('kether');
+    // Background colour mirrors the data-table colour for Kether.
+    expect((hero as HTMLElement).style.backgroundColor).toBeTruthy();
+  });
+
+  it('hero badge is at least the 80 px ticket threshold (Tailwind h-24 = 96 px)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
+    );
+    const hero = container.querySelector('[data-sefirah-hero]');
+    const className = hero?.getAttribute('class') ?? '';
+    expect(className).toMatch(/\bh-24\b/);
+    expect(className).toMatch(/\bw-24\b/);
+  });
+
+  it('the running ledger lists all 10 Sefirot with state per row', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
+    );
+    const rows = container.querySelectorAll('[data-ledger-row]');
+    expect(rows.length).toBe(10);
+    // At step 0, Kether is active; the rest are pending.
+    const kether = container.querySelector('[data-ledger-row="kether"]');
+    expect(kether?.getAttribute('data-ledger-state')).toBe('active');
+    const malkuth = container.querySelector('[data-ledger-row="malkuth"]');
+    expect(malkuth?.getAttribute('data-ledger-state')).toBe('pending');
+  });
+
+  it('blessed Sefirot show their rolled value in the ledger; pending show "—"', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
+    );
+    // Roll Kether and receive — the row should now report a value.
+    fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+    const ketherValue = container.querySelector('[data-ledger-value="unity"]');
+    expect(ketherValue?.textContent).toMatch(/^\d+$/);
+    const malkuthValue = container.querySelector('[data-ledger-value="body"]');
+    expect(malkuthValue?.textContent).toBe('—');
+  });
+
+  it('renders the ambient ritual scene keyed to the active Sefirah', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
+    );
+    const scene = container.querySelector('[data-ritual-scene]');
+    expect(scene).not.toBeNull();
+    expect(scene?.getAttribute('data-active-sefirah')).toBe('kether');
+  });
+});
