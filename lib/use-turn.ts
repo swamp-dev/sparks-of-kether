@@ -1,9 +1,6 @@
 'use client';
 import { useCallback, useMemo, useState } from 'react';
-import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
-import { applyMove } from '@/engine/movement';
-import { acceptSetback, resolveChallenge } from '@/engine/checks';
 import type {
   CheckModifiers,
   CheckOutcome,
@@ -11,37 +8,26 @@ import type {
   ChallengeSuccess,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
-import { endTurn as endTurnReducer } from '@/engine/turn';
 import type { GameState, MoveRejection, Result } from '@/engine/types';
+import {
+  HAND_CAP as MACHINE_HAND_CAP,
+  STARTING_HAND_SIZE as MACHINE_STARTING_HAND_SIZE,
+  turnReducer,
+  type TurnPhase,
+  type TurnSnapshot,
+} from './turn-machine';
 
 /**
- * Turn-loop state machine driver.
+ * Turn-loop state machine driver. Thin React adapter over the pure
+ * `turnReducer` in `./turn-machine.ts`. The reducer owns phase logic
+ * and engine reducer calls; this file owns the React state.
  *
- * Phases per turn:
- *   1. `move`      — active player moves (play arcanum to travel path)
- *                    or meditates (skip movement, draw 2 cards).
- *   2. `challenge` — only entered if the new position is an uncleared
- *                    Sefirah with a `'check'` challenge. Malkuth's
- *                    `'no-check'` and Kether's `'collective'` are
- *                    skipped. Cleared Sefirot are skipped.
- *   3. `draw`      — refill toward 4 cards (capped at 6). If the
- *                    deck is empty, recycle the discard pile.
- *   4. `end`       — advance to next player; phase resets to 'move'.
- *
- * The hook is a thin pure-state machine on top of the engine. It
- * does not own GameState — the orchestrator passes the latest
- * snapshot via `setState`. This keeps the hook composable with
- * server-pushed state in Phase 5 multiplayer.
- *
- * Ownership: only the active player may dispatch `move`, `meditate`,
- * `submitChallenge`, `draw`, `endTurn`. The hook surfaces an
- * `isActive(playerId)` helper so consumers can disable controls.
+ * See `./turn-machine.ts` for the phase contract and event semantics.
  */
 
-export type TurnPhase = 'move' | 'challenge' | 'draw' | 'end';
-
-export const STARTING_HAND_SIZE = 4;
-export const HAND_CAP = 6;
+export type { TurnPhase } from './turn-machine';
+export const STARTING_HAND_SIZE = MACHINE_STARTING_HAND_SIZE;
+export const HAND_CAP = MACHINE_HAND_CAP;
 
 interface UseTurnOptions {
   readonly initialState: GameState;
@@ -59,21 +45,17 @@ export interface UseTurnReturn {
     sefirah: SefirahKey,
     modifiers: CheckModifiers,
     /**
-     * UI-supplied pre-rolled outcome. Passed through to
-     * `resolveChallenge`; the engine uses it instead of rolling
-     * again so the outcome the player saw IS the outcome applied
-     * to state.
+     * UI-supplied pre-rolled outcome. Passed through to the reducer
+     * which forwards to `resolveChallenge`; the engine uses it
+     * instead of rolling again so the outcome the player saw IS the
+     * outcome applied to state.
      */
     outcome?: CheckOutcome,
   ) => Result<ChallengeSuccess, ChallengeRejection>;
   /**
    * Apply the engine's failure-acceptance cost (Separation +1, or
    * +2 on shortcut arrivals) and advance the phase to 'draw'
-   * atomically. Replaces the prior pattern of the orchestrator
-   * calling `setState(acceptSetback(...))` then `submitChallenge` —
-   * those two calls landed in the same React batch, and
-   * `submitChallenge`'s internal `setState(unchanged)` overwrote
-   * the setback. One atomic action removes that race.
+   * atomically. Wraps the reducer's `accept-setback` event.
    */
   readonly acceptChallengeSetback: (input: {
     readonly sefirah: SefirahKey;
@@ -85,14 +67,35 @@ export interface UseTurnReturn {
   readonly setState: (s: GameState) => void;
 }
 
-export function useTurn(opts: UseTurnOptions): UseTurnReturn {
-  const [state, setState] = useState<GameState>(opts.initialState);
-  const [phase, setPhase] = useState<TurnPhase>('move');
+/**
+ * Synthetic move-rejection used when the hook rejects an event for a
+ * non-engine reason (wrong phase, no active player). The original
+ * pre-#106 hook returned this exact shape on phase-guard failures;
+ * preserved here so the public `Result<GameState, MoveRejection>`
+ * contract is unchanged. `playerId: ''` is intentionally blank — the
+ * rejection isn't about a real player, it's a backward-compat shim
+ * over a `wrong-phase` reducer error. A future ticket can widen the
+ * caller-facing rejection type to surface the real reason cleanly.
+ */
+const SYNTHETIC_MOVE_REJECTION: MoveRejection = {
+  kind: 'unknown-player',
+  playerId: '',
+};
 
-  // Active player is now derived from `state.activePlayerId` so the
-  // hook and the server agree on a single source of truth. Local
-  // `activePlayerIndex` state is gone — `endTurn` mutates the state
-  // through the engine's reducer instead.
+/** Synthetic challenge-rejection — same backward-compat shim, parallel API. */
+const SYNTHETIC_CHALLENGE_REJECTION: ChallengeRejection = {
+  kind: 'unknown-player',
+  playerId: '',
+};
+
+export function useTurn(opts: UseTurnOptions): UseTurnReturn {
+  const [snapshot, setSnapshot] = useState<TurnSnapshot>(() => ({
+    state: opts.initialState,
+    phase: 'move',
+  }));
+
+  const { state, phase } = snapshot;
+
   const activePlayerIndex = state.players.findIndex(
     (p) => p.id === state.activePlayerId,
   );
@@ -102,47 +105,27 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [state.activePlayerId],
   );
 
-  const activePlayer = state.players[activePlayerIndex];
-
   const move = useCallback(
     (pathNumber: number): Result<GameState, MoveRejection> => {
-      if (phase !== 'move' || !activePlayer) {
-        return {
-          ok: false,
-          reason: { kind: 'unknown-player', playerId: activePlayer?.id ?? '' },
-        };
+      const result = turnReducer(snapshot, { kind: 'move', pathNumber }, opts.rng);
+      if (!result.ok) {
+        if (result.reason.kind === 'move-rejected') {
+          return { ok: false, reason: result.reason.cause };
+        }
+        return { ok: false, reason: SYNTHETIC_MOVE_REJECTION };
       }
-      const result = applyMove(state, activePlayer.id, pathNumber);
-      if (!result.ok) return result;
-      setState(result.value);
-      // After moving, decide whether to enter `challenge` or jump to
-      // `draw`. We re-read from the new state because `applyMove`
-      // updated the player's position.
-      const movedPlayer = result.value.players[activePlayerIndex];
-      if (!movedPlayer) {
-        setPhase('draw');
-        return result;
-      }
-      const arrival = sefirahByKey(movedPlayer.position);
-      const alreadyCleared = movedPlayer.clearedSefirot.has(movedPlayer.position);
-      if (arrival.challenge.kind === 'check' && !alreadyCleared) {
-        setPhase('challenge');
-      } else {
-        setPhase('draw');
-      }
-      return result;
+      setSnapshot(result.value.next);
+      return { ok: true, value: result.value.next.state };
     },
-    [phase, state, activePlayer, activePlayerIndex],
+    [snapshot, opts.rng],
   );
 
   const meditate = useCallback((): GameState => {
-    if (phase !== 'move' || !activePlayer) return state;
-    // Meditate: skip movement, take an extra draw boost. We jump
-    // straight to the `draw` phase; the actual extra cards are
-    // dispensed there with an inflated target.
-    setPhase('draw');
-    return state;
-  }, [phase, state, activePlayer]);
+    const result = turnReducer(snapshot, { kind: 'meditate' }, opts.rng);
+    if (!result.ok) return state;
+    setSnapshot(result.value.next);
+    return result.value.next.state;
+  }, [snapshot, state, opts.rng]);
 
   const submitChallenge = useCallback(
     (
@@ -150,101 +133,81 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       modifiers: CheckModifiers,
       outcome?: CheckOutcome,
     ): Result<ChallengeSuccess, ChallengeRejection> => {
-      if (phase !== 'challenge' || !activePlayer) {
-        return {
-          ok: false,
-          reason: { kind: 'unknown-player', playerId: activePlayer?.id ?? '' },
-        };
+      const result = turnReducer(
+        snapshot,
+        {
+          kind: 'submit-challenge',
+          sefirah,
+          modifiers,
+          ...(outcome !== undefined ? { outcome } : {}),
+        },
+        opts.rng,
+      );
+      if (!result.ok) {
+        if (result.reason.kind === 'challenge-rejected') {
+          return { ok: false, reason: result.reason.cause };
+        }
+        return { ok: false, reason: SYNTHETIC_CHALLENGE_REJECTION };
       }
-      const result = resolveChallenge({
-        state,
-        playerId: activePlayer.id,
-        sefirah,
-        modifiers,
-        rng: opts.rng,
-        ...(outcome !== undefined ? { outcome } : {}),
-      });
-      if (!result.ok) return result;
-      setState(result.value.newState);
-      // On pass: state changed, advance to draw. On fail: state
-      // unchanged; the caller should NOT use submitChallenge for
-      // the accept path — use `acceptChallengeSetback` instead so
-      // the setback's separation tick lands atomically with the
-      // phase advance. Calling submitChallenge after acceptSetback
-      // would overwrite the setback in the same React batch.
-      setPhase('draw');
-      return result;
+      // Validate the meta payload BEFORE committing snapshot. The
+      // reducer's contract guarantees `meta.challenge` on a successful
+      // submit-challenge (see turn-machine.ts:submit-challenge case);
+      // if it's ever missing the snapshot is in a half-applied state
+      // we shouldn't commit to React. Reviewer caught the original
+      // ordering on #106.
+      const challenge = result.value.meta?.challenge;
+      if (!challenge) {
+        return { ok: false, reason: SYNTHETIC_CHALLENGE_REJECTION };
+      }
+      setSnapshot(result.value.next);
+      return { ok: true, value: challenge };
     },
-    [phase, state, activePlayer, opts.rng],
+    [snapshot, opts.rng],
   );
 
-  const acceptChallengeSetbackFn = useCallback(
+  const acceptChallengeSetback = useCallback(
     (input: { readonly sefirah: SefirahKey; readonly shortcut?: boolean }): GameState => {
-      if (phase !== 'challenge' || !activePlayer) return state;
-      const next = acceptSetback(state, {
-        playerId: activePlayer.id,
-        sefirah: input.sefirah,
-        shortcut: input.shortcut ?? false,
-      });
-      setState(next);
-      setPhase('draw');
-      return next;
+      const result = turnReducer(
+        snapshot,
+        {
+          kind: 'accept-setback',
+          sefirah: input.sefirah,
+          ...(input.shortcut !== undefined ? { shortcut: input.shortcut } : {}),
+        },
+        opts.rng,
+      );
+      if (!result.ok) return state;
+      setSnapshot(result.value.next);
+      return result.value.next.state;
     },
-    [phase, state, activePlayer],
+    [snapshot, state, opts.rng],
   );
 
   const draw = useCallback((): GameState => {
-    if (phase !== 'draw' || !activePlayer) return state;
-    // Refill to STARTING_HAND_SIZE, capped at HAND_CAP. If draw
-    // pile empties mid-fill, recycle the discard pile face-down
-    // first.
-    let working = state;
-    const pIndex = activePlayerIndex;
-    let pHand = working.players[pIndex]?.hand ?? [];
-    let deck = working.deck;
-    let discard = working.discardPile;
-    while (pHand.length < STARTING_HAND_SIZE && pHand.length < HAND_CAP) {
-      if (deck.length === 0) {
-        if (discard.length === 0) break; // truly stranded
-        // Recycle: shuffle is irrelevant here for a deterministic
-        // single-player flow; engine-level reshuffle would call into
-        // a Fisher-Yates with the session Rng. For now, take the
-        // discard pile as-is so the tests are deterministic without
-        // a coupled shuffle dependency.
-        deck = [...discard];
-        discard = [];
-      }
-      const top = deck[0];
-      if (top === undefined) break;
-      pHand = [...pHand, top];
-      deck = deck.slice(1);
-    }
-    const updatedPlayer = working.players[pIndex];
-    if (updatedPlayer) {
-      const newPlayers = working.players.map((p, idx) =>
-        idx === pIndex ? { ...updatedPlayer, hand: pHand } : p,
-      );
-      working = {
-        ...working,
-        players: newPlayers,
-        deck,
-        discardPile: discard,
-      };
-    }
-    setState(working);
-    setPhase('end');
-    return working;
-  }, [phase, state, activePlayer, activePlayerIndex]);
+    const result = turnReducer(snapshot, { kind: 'draw' }, opts.rng);
+    if (!result.ok) return state;
+    setSnapshot(result.value.next);
+    return result.value.next.state;
+  }, [snapshot, state, opts.rng]);
 
   const endTurn = useCallback((): void => {
-    if (phase !== 'end') return;
-    setState((s) => endTurnReducer(s));
-    setPhase('move');
-  }, [phase]);
+    const result = turnReducer(snapshot, { kind: 'end-turn' }, opts.rng);
+    if (!result.ok) return;
+    setSnapshot(result.value.next);
+  }, [snapshot, opts.rng]);
 
-  const replaceState = useCallback((s: GameState): void => {
-    setState(s);
-  }, []);
+  const replaceState = useCallback(
+    (s: GameState): void => {
+      const result = turnReducer(
+        snapshot,
+        { kind: 'replace-state', state: s },
+        opts.rng,
+      );
+      if (!result.ok) return;
+      setSnapshot(result.value.next);
+    },
+    [snapshot, opts.rng],
+  );
 
   return useMemo(
     () => ({
@@ -255,7 +218,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       move,
       meditate,
       submitChallenge,
-      acceptChallengeSetback: acceptChallengeSetbackFn,
+      acceptChallengeSetback,
       draw,
       endTurn,
       setState: replaceState,
@@ -266,9 +229,9 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       phase,
       isActive,
       move,
-      acceptChallengeSetbackFn,
       meditate,
       submitChallenge,
+      acceptChallengeSetback,
       draw,
       endTurn,
       replaceState,
