@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, act } from '@testing-library/react';
 import { ChallengeModal, type ChallengeContext } from '../ChallengeModal';
 import { seededRng } from '@/engine/rng';
+import { makePlayer } from '@/test/fixtures';
 
 /**
  * Tests use a seeded RNG so dice rolls are deterministic. Animation
@@ -319,5 +320,39 @@ describe('ChallengeModal — accessibility', () => {
     if (titleId) {
       expect(document.getElementById(titleId)).not.toBeNull();
     }
+  });
+});
+
+describe('ChallengeModal — embedded stat sheet (#134)', () => {
+  // Playtest finding: when a challenge fires, the player can't see
+  // their stats without dismissing the modal. Embedding a compact
+  // stat sheet inside the modal lets them eyeball "do I burn a card
+  // here?" without leaving the dialog.
+  it('renders a compact stat sheet for the active player when `player` is supplied', () => {
+    const player = makePlayer({ id: 'p1', name: 'Andy' });
+    const { container } = render(
+      <ChallengeModal
+        context={baseContext}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+        player={player}
+      />,
+    );
+    const sheet = container.querySelector('[data-stat-sheet]');
+    expect(sheet).not.toBeNull();
+    // Compact mode keeps the sheet small so it fits in the modal.
+    expect(sheet?.getAttribute('data-mode')).toBe('compact');
+    expect(sheet?.getAttribute('data-player')).toBe('p1');
+  });
+
+  it('does not render a stat sheet when `player` is omitted (back-compat for the demo route)', () => {
+    const { container } = render(
+      <ChallengeModal
+        context={baseContext}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+      />,
+    );
+    expect(container.querySelector('[data-stat-sheet]')).toBeNull();
   });
 });

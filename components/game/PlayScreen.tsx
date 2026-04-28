@@ -262,7 +262,7 @@ export function PlayScreen({
         </div>
       </aside>
 
-      {challengeContext ? (
+      {challengeContext && activePlayer ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ground/80 p-4">
           <ChallengeModal
             // Bumping retryNonce remounts the modal so the
@@ -274,6 +274,15 @@ export function PlayScreen({
             context={challengeContext}
             rng={rng}
             onResolved={handleChallengeResolved}
+            // #134: embedded stat sheet inside the modal so players
+            // can see their full stat row without dismissing the
+            // dialog. `challengeContext` is only set when
+            // `activePlayer` is defined (see `showChallenge`), so the
+            // direct prop is safe here.
+            player={activePlayer}
+            {...(soulAspectByPlayer[activePlayer.id] !== undefined
+              ? { soulAspect: soulAspectByPlayer[activePlayer.id] }
+              : {})}
             className="w-full max-w-md"
           />
         </div>

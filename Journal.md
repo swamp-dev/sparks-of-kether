@@ -2527,3 +2527,35 @@ requiring engine-vocabulary knowledge.
   637), e2e not re-run (no new screenshot-relevant routes).
 
 **Commit(s):** `d52a50c`
+
+## 2026-04-28T00:42:05-04:00 — #134: embed player stat sheet inside the challenge modal
+
+**Pushed:** Tier-2 UX from the playability priorities. `ChallengeModal`
+gains optional `player` and `soulAspect` props. When `player` is
+supplied, a compact `StatSheet` renders at the top of the dialog
+with `activeStat` set to the challenged stat, so the player can
+read their full stat row + Soul Aspect bonus + Sparks held without
+dismissing the modal.
+
+**Why:** Playtest finding — players couldn't see their stats
+during a challenge, forcing them to dismiss the modal, glance at
+the panel, and re-open. With the embedded sheet, "do I burn a card
+or a spark here?" can be answered without leaving the dialog.
+
+**Notes:**
+- Both new props are optional; `/demo/challenge` keeps working
+  unchanged.
+- `activeStat` aligns at the type level (`Sefirah.stat: StatKey` →
+  `StatSheet.activeStat?: StatKey`). No casts.
+- `StatSheet` in compact mode adds zero tab stops (no interactive
+  elements), so the dialog's focus order is unchanged. Per code-
+  reviewer the implicit ARIA region landmark is fine inside a
+  `role=dialog`.
+- The redundant outer `activePlayer` guard in PlayScreen's modal
+  spread block was simplified per reviewer.
+- Follow-up (NOT in this PR): tests for `soulAspect` badge render
+  and `activeStat` highlight inside the modal — reviewer flagged
+  the gap. Belongs in a small follow-up.
+- Gate green: typecheck ✓, lint ✓, test ✓ (640 + 1 todo / 641).
+
+**Commit(s):** `bba8a1b`

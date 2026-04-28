@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { sefirahByKey } from '@/data';
-import type { SefirahKey } from '@/data';
+import type { SefirahKey, SoulAspectKey } from '@/data';
 import {
   CARD_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
@@ -11,7 +11,9 @@ import {
   type CheckOutcome,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
+import type { PlayerState } from '@/engine/types';
 import { StatIcon } from '@/components/icons/StatIcon';
+import { StatSheet } from '@/components/player/StatSheet';
 import { D20Roll } from './D20Roll';
 
 /**
@@ -92,6 +94,16 @@ interface ChallengeModalProps {
    * (pass, retry, or accept).
    */
   readonly onCancel?: () => void;
+  /**
+   * The active player. When supplied, a compact `StatSheet` is
+   * rendered at the top of the modal so the player can see their
+   * full stat picture without dismissing the dialog. The challenged
+   * stat is highlighted via `activeStat`. Optional for backward
+   * compat with `/demo/challenge` (#134).
+   */
+  readonly player?: PlayerState;
+  /** Soul Aspect for the embedded `StatSheet`'s +2 bonus row (#134). */
+  readonly soulAspect?: SoulAspectKey;
   readonly className?: string;
 }
 
@@ -100,6 +112,8 @@ export function ChallengeModal({
   rng,
   onResolved,
   onCancel,
+  player,
+  soulAspect,
   className,
 }: ChallengeModalProps): JSX.Element {
   const sefirahData = useMemo(() => sefirahByKey(context.sefirah), [context.sefirah]);
@@ -230,6 +244,20 @@ export function ChallengeModal({
         {sefirahData.hebrewName} · DC {effectiveDC}
         {context.shortcut ? ` (shortcut +${SHORTCUT_DC_PENALTY})` : ''}
       </p>
+
+      {player ? (
+        // #134: compact stat sheet embedded inside the modal so the
+        // player can read their full stat row without dismissing the
+        // dialog. `activeStat` highlights the challenge stat.
+        <div className="mt-3 rounded border border-veil/15 bg-ground/60 p-2">
+          <StatSheet
+            player={player}
+            mode="compact"
+            activeStat={sefirahData.stat}
+            {...(soulAspect !== undefined ? { soulAspect } : {})}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-4 flex items-center gap-2 rounded bg-illumination/10 px-3 py-2 ring-1 ring-illumination">
         <StatIcon stat={sefirahData.stat} className="h-5 w-5" />
