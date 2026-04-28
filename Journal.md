@@ -3037,3 +3037,15 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓ (696 + 1 todo / 697).
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T13:18:20-04:00 — local-CI tooling: pnpm ci:local + supabase devDep + pre-push hook
+
+**Pushed:** Three pieces of dev-loop infrastructure: (1) `supabase` added as a project devDep with `pnpm.onlyBuiltDependencies` allowlist so the postinstall actually runs and lays down the binary at `node_modules/.bin/supabase` — the canonical Linux install path that doesn't need sudo or a global npm install (which the package explicitly refuses). (2) `scripts/ci-local.sh` mirrors the four CI jobs from `.github/workflows/ci.yml` (verify → build → e2e → integration) with fail-fast and skip-flag escape hatches; wired up as `pnpm ci:local` and `pnpm ci:local:fast`. (3) Native git hooks via `core.hooksPath = .githooks/`, installed idempotently by `scripts/install-git-hooks.mjs` from the standard `prepare` lifecycle script. The pre-push hook runs `pnpm ci:local:fast` (verify + build) so the obvious failures never reach GitHub.
+**Why:** Codified `~/.claude/rules/local-ci-and-admin-merge.md` requires "all CI jobs run locally" before any merge — including admin merges when hosted CI is broken. Without `pnpm ci:local` the checklist is a copy-paste of four separate commands; with it, it's one command. The pre-push hook is the upstream-side version: a broken commit can't even reach GitHub. Together they make the rule tractable per-PR rather than a heroic effort.
+**Notes:**
+- Self-hosted GitHub Actions runner is the third leg (handles "the runner pool is down, but my push needs CI checks for the merge gate"). Deferring that to a follow-up — it's a one-time setup that touches system services, not a code change.
+- Husky was considered and rejected: native `core.hooksPath` is dependency-free and equally good for a single-repo single-developer workflow.
+- Verified `pnpm ci:local` end-to-end on this branch — all four jobs green. Supabase boot to teardown takes ~70 s on first run.
+- Gate green: typecheck ✓, lint ✓, test ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
