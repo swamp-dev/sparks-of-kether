@@ -2882,3 +2882,45 @@ spot screens that work at one size and break at another.
   produced 42/42 captures in 20s.
 
 **Commit(s):** `188f8b4`
+
+## 2026-04-28T10:18:19-04:00 — #154 (Epic #118 wave 2): UI review doc
+
+**Pushed:** New `design/ui-review.md`. 14 routes scored on four
+axes (Visual / Fun / Token consistency / Information density).
+Ranked weakness list at the top. Per-route observations sorted
+worst-first. Eight fan-out tickets named for Epic #118 wave 3.
+
+**Why:** Sub-ticket 2 of Epic #118 — wave 1 (#152) captured the
+multi-viewport baselines; wave 2 turns those captures into a
+ranked, scoped, fan-out-ready audit.
+
+**Notes:**
+- Snapshot review against `pnpm screenshots` baselines from #152;
+  not speculation. Each route observed at desktop / tablet /
+  mobile.
+- Strongest screen: `/demo/cards` (19/20). Weakest:
+  `/play` + `/demo/ritual` (9/20 — the cosmic content drowning
+  in void). The fan-out's #1 priority is the Blessing Ritual
+  scene polish.
+- Cross-cutting weakness — most pages have a "void below the
+  fold" pattern. Filed as fan-out ticket 6 rather than as a
+  per-screen item.
+- Reviewer caught: D-axis ambiguity (1 = either too sparse OR
+  too crowded) — disambiguated with a 1–5 scale per density
+  level. Home title was misdescribed as gold; corrected to
+  off-white. Tree layout was misdescribed as centred-square;
+  corrected to left-55%-of-viewport. `/demo/soul-aspect` D5 → D4
+  for consistency with how the same void pattern was scored
+  elsewhere. `/demo/cards` D5 → D4 (8-wide grid leaves a ragged
+  last row at 22 cards).
+- `/rooms/[code]/lobby` not reviewed (requires live multiplayer
+  session); explicit "not reviewed" section calls it out for
+  follow-up once integration scaffolding supports a baseline
+  fixture.
+- Fan-out tickets carry explicit component-file references and
+  scope boundaries so a future filer doesn't have to re-derive
+  intent.
+- Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
+  Doc-only PR; gate is vacuous.
+
+**Commit(s):** `4ad4be7`
