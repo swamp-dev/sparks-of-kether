@@ -45,11 +45,15 @@ interface HandProps {
 
 const MAX_FAN_DEG = 12;
 /**
- * Card overlap when the hand is open. Cards render at `w-36` (144px);
- * a -56px overlap leaves ~88px of each card visible at the centre and
- * the full face exposed at the edges of the fan.
+ * Card overlap when the hand is open. Cards render at `w-24` (96 px)
+ * on narrow viewports and `w-36` (144 px) on `sm:` and up (#38).
+ * Overlap is a percentage of card width so the fan stays proportional
+ * across breakpoints — `-55%` advances 45% of card width per card,
+ * which keeps a 6-card hand inside a 320 px viewport (96 + 5 × 43.2
+ * = 312 px) and inside a 576 px max-w-xl on desktop (144 + 5 × 64.8
+ * = 468 px).
  */
-const CARD_OVERLAP_PX = 56;
+const CARD_OVERLAP_PCT = '-55%';
 
 export function Hand({
   hand,
@@ -138,7 +142,11 @@ export function Hand({
       data-hand
       data-hand-state="open"
       data-visible={visible ? 'true' : 'false'}
-      className={`animate-hand-fade-in motion-reduce:animate-none ${className ?? ''}`}
+      // #38: `overflow-x-hidden` belt-and-braces — the fan fits in a
+      // 320 px viewport at the chosen card+overlap dimensions, but
+      // hiding overflow guarantees the page never gets a horizontal
+      // scrollbar even if a future change widens the fan.
+      className={`animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none ${className ?? ''}`}
       style={{ display: 'flex', justifyContent: 'center', gap: 0, position: 'relative' }}
     >
       {/*
@@ -147,6 +155,7 @@ export function Hand({
         the open hand stuck if a player drew zero cards (#132 reviewer).
         `z-10` keeps it above the rotated card edges in a full 6-card
         fan, where the rightmost card's corner can otherwise overlap.
+        `min-h-11 min-w-11` meets WCAG 2.5.5 tap-target on mobile (#38).
       */}
       <button
         type="button"
@@ -154,7 +163,7 @@ export function Hand({
         data-action="close-hand"
         aria-expanded="true"
         aria-label="Collapse hand"
-        className="absolute right-0 top-0 z-10 rounded border border-veil/20 bg-ground/80 px-2 py-1 text-xs opacity-60 hover:opacity-100"
+        className="absolute right-0 top-0 z-10 flex min-h-11 min-w-11 items-center justify-center rounded border border-veil/20 bg-ground/80 text-base opacity-70 hover:opacity-100"
       >
         ×
       </button>
@@ -200,7 +209,7 @@ export function Hand({
             style={{
               transform: `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`,
               transformOrigin: 'bottom center',
-              marginLeft: i === 0 ? 0 : -CARD_OVERLAP_PX,
+              marginLeft: i === 0 ? 0 : CARD_OVERLAP_PCT,
               padding: 0,
               border: isSelected ? '2px solid #d4af37' : 'none',
               borderRadius: 12,
@@ -209,12 +218,15 @@ export function Hand({
             }}
           >
             {visible ? (
-              // #132: bumped from `w-24` (96px) → `w-36` (144px) so
-              // the Hebrew letter, arcanum name, and number are
-              // readable at arm's length on a 13" laptop.
-              <ArcanumCard number={arcanum} className="w-36" />
+              // #38: responsive width — `w-24` on narrow (96 px),
+              // `w-36` on `sm:` and up (144 px). The 24/36 pair plus
+              // `CARD_OVERLAP_PCT = -55%` keeps a 6-card fan inside
+              // a 320 px viewport without horizontal scroll. #132's
+              // "1.5× scale for arm's length" still applies on
+              // desktop.
+              <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
             ) : (
-              <CardBack className="w-36" />
+              <CardBack className="w-24 sm:w-36" />
             )}
           </button>
         );

@@ -2722,3 +2722,40 @@ Netzach also excluded because `playerCount` is capped at 4 and the
 - Gate green: typecheck ✓, lint ✓, test ✓ (652 + 1 todo / 653).
 
 **Commit(s):** `238b659`
+
+## 2026-04-28T01:46:33-04:00 — #38: mobile-responsive Hand + ChallengeModal + action panel
+
+**Pushed:** Tier-4 mobile-responsive pass from the playability
+priorities. Three coordinated changes:
+
+- **Hand cards** are now `w-24 sm:w-36` (96 px / 144 px). Card
+  overlap is `'-55%'` so the fan stays proportional. A 6-card hand
+  fits inside a 320 px viewport (96 + 5 × 43.2 = 312 px) without
+  horizontal scroll. `overflow-x-hidden` belt-and-braces guarantees
+  no page-level scrollbar regardless of future card-size tweaks.
+  Hand close-button gets `min-h-11 min-w-11` for WCAG 2.5.5.
+- **ChallengeModal** goes full-screen on narrow viewports
+  (`min-h-screen w-full sm:min-h-fit sm:max-w-md`). Overlay
+  padding drops to `p-0 sm:p-4` so the dialog reaches screen edges.
+  `overflow-auto` on the backdrop catches any modal that exceeds
+  viewport height on a short phone.
+- **PlayScreen action panel** stacks vertically on narrow
+  (`flex-col items-stretch gap-2 sm:flex-row sm:items-center
+  sm:justify-between`). Meditate / Draw / End-Turn buttons bumped
+  to `min-h-11 px-3 py-2` (≥ 44 px tap target).
+
+**Why:** Playtest finding — family-game-night usage = phones in
+hands. The desktop-only layout doesn't fit a 320 px viewport.
+
+**Notes:**
+- Reviewer caught a real overflow at 5+ card hands on 320 px (the
+  initial `w-28` + `-44%` math was wrong by ~135 px). Tightened to
+  `w-24` + `-55%` and added overflow-x:hidden. Verified the math:
+  6 cards mobile = 312 px ≤ 320 px ✓.
+- Tap-target audit scoped to playtest-touched buttons (PlayScreen
+  actions + Hand close). Stepper / Roll / Continue / Retry / Accept
+  in ChallengeModal still small — file follow-up; out of scope here.
+- Gate green: typecheck ✓, lint ✓, test ✓ (654 + 1 todo / 655),
+  e2e not re-run (no new screenshot-relevant routes).
+
+**Commit(s):** `d18e8e5`

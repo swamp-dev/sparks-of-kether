@@ -222,7 +222,7 @@ export function PlayScreen({
           movesEnabled={turn.phase === 'move'}
           className="w-full max-w-xl"
         />
-        <div className="flex w-full max-w-xl items-center justify-between rounded border border-veil/20 bg-ground/40 px-4 py-2 text-sm">
+        <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
           <span
             className="text-xs uppercase tracking-widest opacity-60"
             data-phase-hint
@@ -238,7 +238,7 @@ export function PlayScreen({
                 type="button"
                 onClick={() => turn.meditate()}
                 data-action="meditate"
-                className="rounded border border-veil/30 px-2 py-1 text-xs"
+                className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs"
               >
                 Meditate
               </button>
@@ -248,7 +248,7 @@ export function PlayScreen({
                 type="button"
                 onClick={() => turn.draw()}
                 data-action="draw"
-                className="rounded border border-illumination/60 px-2 py-1 text-xs"
+                className="min-h-11 rounded border border-illumination/60 px-3 py-2 text-xs"
               >
                 Draw
               </button>
@@ -258,7 +258,7 @@ export function PlayScreen({
                 type="button"
                 onClick={() => turn.endTurn()}
                 data-action="end-turn"
-                className="rounded bg-illumination px-2 py-1 text-xs text-ground"
+                className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground"
               >
                 End turn
               </button>
@@ -301,7 +301,11 @@ export function PlayScreen({
       </aside>
 
       {challengeContext && activePlayer ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ground/80 p-4">
+        // #38: full-screen overlay on narrow viewports — the modal's
+        // 448 px max-width is wider than a 320 px phone. Drop the
+        // outer padding below `sm:` so the dialog reaches the edges,
+        // and let the modal itself shrink via its own className.
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-ground/80 p-0 sm:p-4">
           <ChallengeModal
             // Bumping retryNonce remounts the modal so the
             // committing/rolling/reveal state machine starts fresh
@@ -321,7 +325,10 @@ export function PlayScreen({
             {...(soulAspectByPlayer[activePlayer.id] !== undefined
               ? { soulAspect: soulAspectByPlayer[activePlayer.id] }
               : {})}
-            className="w-full max-w-md"
+            // #38: on `sm:` and up the modal stays centred at 28rem;
+            // below that it fills the screen so a 320 px viewport
+            // gets a usable dialog without horizontal scrolling.
+            className="min-h-screen w-full sm:min-h-fit sm:max-w-md"
           />
         </div>
       ) : null}
