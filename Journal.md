@@ -3077,3 +3077,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test ✓, build ✓, e2e ✓ (42 visual-regression assertions pass clean), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T14:14:41-04:00 — #176: doc-vs-code audit (Epic #119 sub-ticket 1)
+
+**Pushed:** New `design/doc-audit-2026-04.md` (501 lines). Walks every Markdown file in the repo (18 docs) and classifies each against code at HEAD (`0cb0141`, post-#175) as `current` / `partial` / `stale` / `missing`. Each per-doc entry carries evidence of drift (specific file:line citations) plus a one-sentence remediation suggestion that fan-out tickets can copy as their AC.
+**Why:** Keystone for Epic #119. Sub-ticket 2 (refresh fan-out) and sub-ticket 5 (anchor backfill) both depend on this audit existing. Without it, refresh tickets get filed by gut feel.
+**Notes:**
+- Top-3 drift findings (lead with these in the refresh PR): (1) `design/playability-priorities.md` is fully stale — every Tier 1–4 ticket it lists as in-flight is now CLOSED; (2) `CLAUDE.md` Test commands section omits the new `pnpm ci:local` and pre-push hook (added 2026-04-28 in #173) and step 5 of the Working agreement still hardcodes the old `typecheck && lint && test` triple; (3) `design/ui-review.md` is stale relative to the wave-3 polish merges it itself filed — every fan-out ticket #156–#163 shipped on 2026-04-28.
+- Cross-checks performed: CLAUDE.md test commands → `package.json`; README route list → `app/**/page.tsx`; reference/* counts and key fields → `data/*.ts`; mechanics.md rules → `engine/*.ts` constants (DC table, separation loss threshold, shell activation step); playability-priorities.md ticket statuses → `gh issue view`; recent merges (45 commits since 2026-04-27) for features that shipped without doc updates.
+- Reviewer caught three structural improvements: added `.claude/` to the audit's exclusion list with rationale; fixed the self-contradictory Chesed "no action needed but here's a caveat" in `reference/sefirot.md` entry (now `partial` with a concrete remediation); resolved the "or" ambiguity in `design/test-quality-baseline.md` remediation (picked the inline-update path).
+- Format chosen: per-doc sections rather than a table — sub-ticket-2 author can copy a remediation block directly into a new ticket's AC.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (incl. 42 visual-regression assertions from #175), integration ✓.
+
+**Commit(s):** _filled in after push_
