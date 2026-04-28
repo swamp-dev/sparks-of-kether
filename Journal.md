@@ -2559,3 +2559,39 @@ or a spark here?" can be answered without leaving the dialog.
 - Gate green: typecheck ✓, lint ✓, test ✓ (640 + 1 todo / 641).
 
 **Commit(s):** `bba8a1b`
+
+## 2026-04-28T00:53:40-04:00 — #131: auto-advance turn after end-phase delay
+
+**Pushed:** Tier-2 hot-seat cadence from the playability priorities.
+PlayScreen schedules `turn.endTurn()` automatically 1500ms after
+the active player lands in `'end'` phase (i.e., after meditate or
+post-draw). Manual End Turn click still works and cancels the
+pending timer.
+
+**Why:** Playtest finding — the screen sat idle waiting for an
+explicit End Turn click after the active player had already done
+their meaningful action. In single-device hot-seat play that's
+friction. 1500ms is long enough to read the result and short
+enough not to feel like a stall.
+
+**Notes:**
+- `AUTO_ADVANCE_DELAY_MS` exported so tests reference the canonical
+  value rather than hardcoding 1500.
+- Stable callback ref via `useRef` + `useLayoutEffect`. Per code-
+  reviewer: `turn.endTurn` is `useCallback` but its dep list
+  includes the engine snapshot, so the function reference changes
+  on every state update. Without the ref pattern the timer would
+  re-arm on every unrelated render — fine in test, but Phase-5
+  Supabase realtime pushes will trigger renders continuously and
+  reset the countdown. The ref locks the effect's only dep to
+  `turn.phase`.
+- Auto-advance only fires on the two transitions into `'end'`:
+  meditate (#128 made meditate → end direct) and post-draw click.
+  Other paths (move → draw → end, challenge → draw → end) all
+  pass through the user-input draw step before reaching `'end'`.
+- Follow-up (NOT in this PR): a brief "Player N's turn" overlay
+  during the 1500ms window. The current swap is abrupt; the
+  overlay belongs with #37 animations or similar polish.
+- Gate green: typecheck ✓, lint ✓, test ✓ (642 + 1 todo / 643).
+
+**Commit(s):** `7910ccd`

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { sefirahByKey, tryPathByNumber } from '@/data';
 import type { SoulAspectKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
@@ -47,6 +47,17 @@ interface PlayScreenProps {
   readonly className?: string;
 }
 
+/**
+ * Delay before the orchestrator auto-advances from `'end'` phase to
+ * the next player's turn (#131). 1500ms is long enough for a player
+ * to glance at the result and short enough that it doesn't feel
+ * like a stall. Manual End Turn clicks override / cancel the timer.
+ *
+ * Exported so tests can reference the canonical value rather than
+ * hardcoding `1500` in two places.
+ */
+export const AUTO_ADVANCE_DELAY_MS = 1500;
+
 export function PlayScreen({
   initialState,
   soulAspectByPlayer,
@@ -61,6 +72,33 @@ export function PlayScreen({
   // into the modal's React `key` so the modal remounts with a clean
   // committing/rolling/reveal state machine.
   const [retryNonce, setRetryNonce] = useState(0);
+
+  // #131: hot-seat cadence — once the active player lands in `'end'`
+  // phase, schedule an auto-advance to the next turn after a short
+  // delay. Without this the player has to click End Turn explicitly,
+  // which is friction in a single-device session. Manual click still
+  // works (the timer is cleared when the phase changes off `'end'`,
+  // including via the explicit endTurn). No auto-advance during
+  // `'challenge'` — that path requires player input by design.
+  //
+  // Stable callback ref: `turn.endTurn` is `useCallback` but its dep
+  // list includes the engine snapshot, so the function reference
+  // changes on every state update. If we depended on it directly the
+  // timer would re-arm on every unrelated render — fine in test but
+  // not under Phase-5 Supabase realtime pushes. Mirror the latest
+  // `endTurn` into a ref via `useLayoutEffect` and only depend on
+  // `turn.phase` so the timer arms once per `'end'` transition.
+  const endTurnRef = useRef(turn.endTurn);
+  useLayoutEffect(() => {
+    endTurnRef.current = turn.endTurn;
+  });
+  useEffect(() => {
+    if (turn.phase !== 'end') return undefined;
+    const handle = setTimeout(() => {
+      endTurnRef.current();
+    }, AUTO_ADVANCE_DELAY_MS);
+    return (): void => clearTimeout(handle);
+  }, [turn.phase]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
