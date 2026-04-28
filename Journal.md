@@ -2845,3 +2845,40 @@ Path-travel and card-discard keyframes are defined but unwired
 - Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671).
 
 **Commit(s):** `1b0d648`
+
+## 2026-04-28T09:58:14-04:00 — #152 (Epic #118 wave 1): multi-viewport screenshot baselines
+
+**Pushed:** New `e2e/screenshots.review.spec.ts` captures every
+route at desktop (1280×800), tablet (768×1024), and mobile
+(375×667) — 14 routes × 3 viewports = 42 PNGs under
+`e2e/__screenshots__/baselines/`. New `pnpm screenshots` script
+runs the sweep with both `PLAYWRIGHT_BROWSERS_INSTALLED=1` and
+`PLAYWRIGHT_RUN_REVIEW=1` set.
+
+**Why:** Sub-ticket 1 of Epic #118. The review doc (sub-ticket 2)
+needs three-viewport captures so it can score every screen on
+visual impact / fun / token consistency / information density and
+spot screens that work at one size and break at another.
+
+**Notes:**
+- Two skip gates in the spec. `PLAYWRIGHT_BROWSERS_INSTALLED` is
+  the global e2e gate; `PLAYWRIGHT_RUN_REVIEW` is local to this
+  file so CI's `pnpm e2e` skips the 42 review captures silently.
+  Tried `testIgnore` in `playwright.config.ts` first — it filters
+  even when the spec is named explicitly, defeating `pnpm screenshots`.
+- Mobile viewport is 375 × 667 (iPhone SE) per code-reviewer —
+  320 px is the pathological edge already covered by #38's unit
+  tests; review captures want a representative size.
+- `fullPage: true` to catch below-the-fold issues.
+- Baselines stay under the existing `e2e/__screenshots__/`
+  gitignore — regenerated on demand. The review doc will
+  reference observations rather than commit binaries.
+- Pre-existing concern: `waitForLoadState('networkidle')` on
+  `/play` may burn the timeout once Supabase Realtime is wired
+  in production; carried forward from `screenshots.spec.ts`.
+  Flagged for follow-up.
+- Gate green: typecheck ✓, lint ✓, test ✓ (670 + 1 todo / 671),
+  e2e ✓ (16 regular passed, 42 review skipped); local sweep
+  produced 42/42 captures in 20s.
+
+**Commit(s):** `188f8b4`

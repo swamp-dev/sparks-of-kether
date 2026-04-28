@@ -16,6 +16,7 @@
     "mutation": "stryker run",
     "e2e": "playwright test",
     "e2e:screenshots": "playwright test screenshots.spec.ts",
+    "screenshots": "PLAYWRIGHT_BROWSERS_INSTALLED=1 PLAYWRIGHT_RUN_REVIEW=1 playwright test screenshots.review.spec.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
