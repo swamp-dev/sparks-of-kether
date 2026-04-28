@@ -171,18 +171,25 @@ export function ChallengeModal({
     setOutcome(result);
     setCommittedModifiers(modifiers);
     setPhase('rolling');
-    // The animation is purely presentational; report the result
-    // immediately on pass so the orchestrator can advance state.
-    if (result.pass) {
-      // Wait for the animation to finish before reporting up so the
-      // reveal lands at the same time as the state transition.
-      window.setTimeout(() => {
-        setPhase('reveal');
-        onResolved({ pass: true, outcome: result, modifiers });
-      }, 800);
-    } else {
-      window.setTimeout(() => setPhase('reveal'), 800);
+    // After the roll animation, advance to the reveal phase. Both
+    // pass and fail paths now stay there until the player explicitly
+    // dismisses (Continue on pass, Retry/Accept on fail). Pre-#135
+    // the pass path called `onResolved` immediately on the timeout,
+    // hiding the result before players could read the d20 + math.
+    setTimeout(() => setPhase('reveal'), 800);
+  };
+
+  const handleContinue = (): void => {
+    if (outcome === null || committedModifiers === null) return;
+    if (!outcome.pass) {
+      // The Continue button is only rendered when `outcome.pass` is
+      // true. If we ever reach this branch, a future refactor has
+      // mis-wired the button — fail loud rather than silently no-op.
+      throw new Error(
+        'handleContinue invoked on a failed outcome — Continue button should be gated on outcome.pass',
+      );
     }
+    onResolved({ pass: true, outcome, modifiers: committedModifiers });
   };
 
   const handleFailChoice = (choice: 'retry' | 'accept'): void => {
@@ -259,6 +266,7 @@ export function ChallengeModal({
           outcome={outcome}
           phase={phase}
           onFailChoice={handleFailChoice}
+          onContinue={handleContinue}
         />
       ) : null}
     </div>
@@ -434,12 +442,14 @@ interface RollPanelProps {
   readonly outcome: CheckOutcome;
   readonly phase: 'rolling' | 'reveal';
   readonly onFailChoice: (choice: 'retry' | 'accept') => void;
+  readonly onContinue: () => void;
 }
 
 function RollPanel({
   outcome,
   phase,
   onFailChoice,
+  onContinue,
 }: RollPanelProps): JSX.Element {
   return (
     <div className="mt-6 flex flex-col items-center gap-3">
@@ -461,7 +471,20 @@ function RollPanel({
               {outcome.pass ? 'Pass' : 'Fail'}
             </p>
           </div>
-          {!outcome.pass ? (
+          {outcome.pass ? (
+            // #135: pass needs an explicit dismissal so the player
+            // can read the breakdown. Pre-fix, `handleRoll`'s
+            // setTimeout called `onResolved` directly and the modal
+            // unmounted before the reveal phase rendered.
+            <button
+              type="button"
+              onClick={onContinue}
+              data-action="continue"
+              className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+            >
+              Continue
+            </button>
+          ) : (
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
@@ -480,7 +503,7 @@ function RollPanel({
                 Accept setback
               </button>
             </div>
-          ) : null}
+          )}
         </>
       ) : null}
     </div>

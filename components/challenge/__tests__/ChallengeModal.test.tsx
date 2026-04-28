@@ -97,7 +97,7 @@ describe('ChallengeModal — committing modifiers', () => {
 });
 
 describe('ChallengeModal — rolling and reveal', () => {
-  it('full happy path: roll passes → onResolved with pass=true', async () => {
+  it('full happy path: roll passes → reveal shown → Continue fires onResolved', async () => {
     vi.useFakeTimers();
     const onResolved = vi.fn();
     // Stat 18 + a guaranteed-passing seed: even a 1 on the d20 gives
@@ -111,10 +111,17 @@ describe('ChallengeModal — rolling and reveal', () => {
     );
     const rollBtn = screen.getByRole('button', { name: /^Roll$/ });
     fireEvent.click(rollBtn);
-    // Animation is gated by setTimeout(800ms); advance.
+    // Animation is gated by setTimeout(800ms); advance into reveal.
     act(() => {
       vi.advanceTimersByTime(800);
     });
+    // #135: pre-fix the modal called `onResolved` immediately on
+    // pass, dismissing before the player saw the result. Post-fix
+    // the reveal panel renders the breakdown and a Continue button
+    // — only Continue fires `onResolved`.
+    expect(onResolved).not.toHaveBeenCalled();
+    expect(screen.getByText(/^Pass$/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Continue$/ }));
     expect(onResolved).toHaveBeenCalledTimes(1);
     const arg = onResolved.mock.calls[0]?.[0];
     expect(arg?.pass).toBe(true);
@@ -202,6 +209,8 @@ describe('ChallengeModal — rolling and reveal', () => {
     act(() => {
       vi.advanceTimersByTime(800);
     });
+    // Post-#135: pass path lands in reveal; click Continue to dismiss.
+    fireEvent.click(screen.getByRole('button', { name: /^Continue$/ }));
     expect(onResolved).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
@@ -261,6 +270,9 @@ describe('ChallengeModal — rolling and reveal', () => {
     act(() => {
       vi.advanceTimersByTime(800);
     });
+    // Post-#135: dismiss the reveal panel via Continue before
+    // assertions — onResolved isn't called automatically anymore.
+    fireEvent.click(screen.getByRole('button', { name: /^Continue$/ }));
     const arg = onResolved.mock.calls[0]?.[0];
     expect(arg?.modifiers).toBeDefined();
     expect(arg?.modifiers.cardBurns).toBe(2);

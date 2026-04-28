@@ -2382,3 +2382,31 @@ v2 form.
   unchanged, no code touched.
 
 **Commit(s):** `3bec6a9`
+
+## 2026-04-27T23:27:13-04:00 — #135: hold the challenge reveal until Continue
+
+**Pushed:** `components/challenge/ChallengeModal.tsx` — pass path
+no longer auto-fires `onResolved` after the 800ms roll animation.
+Both pass and fail land on the reveal panel; pass renders a
+Continue button which is the only path to dismiss. `RollPanel`
+gains an `onContinue` prop. Tests updated to drive Continue.
+
+**Why:** Playtest finding — players rolled, the screen advanced
+past the result, they couldn't tell what they rolled or by how
+much. Reveal phase needs to actually be visible long enough to
+read; gating dismissal on a click matches the design.
+
+**Notes:**
+- `handleContinue` throws (not silent return) if invoked on a
+  failed outcome — defense-in-depth per code-reviewer feedback.
+- Reverted `window.setTimeout` → `setTimeout` for idiomatic
+  client-component code.
+- Follow-up (NOT in this PR): focus management on reveal mount
+  — keyboard users currently lose focus to body when the Continue
+  button appears. Belongs in #39 a11y audit; the modal already
+  carries `role="dialog" aria-modal="true"` and that contract
+  needs honoring.
+- Gate green: typecheck ✓, lint ✓, test ✓ (628/628), e2e not
+  re-run (no UI flow changed at the screenshot level).
+
+**Commit(s):** `4df102d`
