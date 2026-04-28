@@ -2324,3 +2324,36 @@ know the seat).
   (1/1) all green locally.
 
 **Commit(s):** `b586a91`
+
+## 2026-04-27T23:18:36-04:00 — #128: meditate now actually draws cards
+
+**Pushed:** `lib/turn-machine.ts` — `meditate` event now draws
+`MEDITATE_DRAW` (2) cards capped at `HAND_CAP` (6) and advances to
+`'end'` phase, skipping the separate `'draw'` phase. The pre-fix
+contract — phase: `'draw'`, state unchanged — was the surface bug
+behind playtest finding #128. Reducer + hook + RTL tests updated
+to pin the new contract; new `PlayScreen.draw.test.tsx` integration
+test asserts the DOM grows by 2 card slots after a Meditate click.
+
+**Why:** `design/mechanics.md` § Drawing & gift handling — "Meditate
+(the alternative to a move) draws 2 cards, but stops at 6." The
+old reducer landed players in `'draw'` phase; `drawToHand` only
+refilled toward `STARTING_HAND_SIZE` (4); a player at 4 cards saw
+no change. Reframing meditate as a complete turn-action (draw+end)
+matches the design and fixes the visible bug.
+
+**Notes:**
+- Refactored `drawToHand` to delegate to a new `drawNCards` helper
+  so meditate's `drawCards(state, playerId, 2, HAND_CAP)` reuses
+  the deck-recycle logic.
+- Existing tests updated minimally to fit the new contract; one
+  long-stub `expect(true).toBe(true)` test in use-turn.test.ts
+  converted to `it.todo(...)` per code-reviewer guidance — pre-
+  existing dead weight surfaced incidentally.
+- `accept-setback → 'draw'` path still runs through the Draw
+  button — the player's hand was reduced by the preceding move, so
+  `drawToHand` has work to do there. Confirmed by reviewer.
+- Gate green: typecheck ✓, lint ✓, test ✓ (632 passing + 1 todo /
+  633), e2e ✓ (16/16).
+
+**Commit(s):** `11fb9ef`

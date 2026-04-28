@@ -65,13 +65,19 @@ describe('turnReducer — phase guards', () => {
 });
 
 describe('turnReducer — phase transitions', () => {
-  it('meditate from move → draw (state unchanged)', () => {
+  it('meditate from move → end (hand grows by up to MEDITATE_DRAW)', () => {
+    // #128 fix: meditate is a complete turn-action that draws 2 cards
+    // (capped at HAND_CAP) and skips the 'draw' phase. The previous
+    // contract — `phase: 'draw'`, state unchanged — was broken: the
+    // 'draw' handler only refilled toward STARTING_HAND_SIZE so a
+    // meditating player at 4 cards saw nothing happen.
     const before = snapshotAt('move');
     const result = turnReducer(before, { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('draw');
-    expect(result.value.next.state).toBe(before.state); // identity preserved
+    expect(result.value.next.phase).toBe('end');
+    // State changed (cards drew); not identity-preserved anymore.
+    expect(result.value.next.state).not.toBe(before.state);
   });
 
   it('move into uncleared check Sefirah → challenge phase', () => {
@@ -261,5 +267,99 @@ describe('turnReducer — no-active-player guard', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('no-active-player');
+  });
+});
+
+describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends the turn', () => {
+  // #128: design/mechanics.md § Drawing — "Meditate (the alternative
+  // to a move) draws 2 cards, but stops at 6." Pre-fix the reducer
+  // advanced to 'draw' phase without changing state; players who
+  // meditated then clicked Draw saw nothing because drawToHand only
+  // refills toward STARTING_HAND_SIZE (4) which they already had.
+  it('adds 2 cards from the deck and skips the draw phase', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4] });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13, 14],
+      discardPile: [],
+    });
+    const result = turnReducer({ state, phase: 'move' }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toEqual([1, 2, 3, 4, 11, 12]);
+    // Phase advances directly to 'end' — no separate Draw click.
+    expect(result.value.next.phase).toBe('end');
+  });
+
+  it('respects HAND_CAP (6) — never draws past it', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4, 5] });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    const result = turnReducer({ state, phase: 'move' }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players.find((p) => p.id === 'p1');
+    // Hand was 5, cap is 6: meditate draws exactly 1 (not 2).
+    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11]);
+  });
+});
+
+describe('turnReducer — draw event refills the active player\'s hand', () => {
+  // #128: playtest report — players clicked Draw and the hand did
+  // not visibly update. The reducer must (a) actually refill the
+  // hand toward STARTING_HAND_SIZE when the draw phase is hit and
+  // (b) return a NEW player object so React re-renders the Hand
+  // component (referential-equality contract).
+  it('fills hand from below STARTING_HAND_SIZE up to STARTING_HAND_SIZE', () => {
+    const partialHand = [1, 2, 3]; // 3 cards, < STARTING_HAND_SIZE (4)
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: partialHand });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13, 14],
+      discardPile: [],
+    });
+    const result = turnReducer({ state, phase: 'draw' }, { kind: 'draw' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const next = result.value.next.state;
+    const refilled = next.players.find((p) => p.id === 'p1');
+    expect(refilled?.hand).toHaveLength(4);
+    expect(refilled?.hand[3]).toBe(11); // top of deck appended
+  });
+
+  it('returns a fresh player object reference even when no card was drawn', () => {
+    // Hand is already at cap; draw is a no-op for cards. But the UI
+    // contract still needs a new player object so React notices the
+    // phase transition. Otherwise the Hand component never re-renders
+    // and the player thinks "I drew but nothing happened" (when in
+    // fact the engine correctly did nothing).
+    const fullHand = [1, 2, 3, 4];
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: fullHand });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11],
+      discardPile: [],
+    });
+    const result = turnReducer({ state, phase: 'draw' }, { kind: 'draw' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const next = result.value.next.state;
+    const after = next.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toHaveLength(4);
+    // Pin the player-object identity contract: even when no card was
+    // drawn, the reducer must return a fresh player reference so a
+    // future `React.memo(Hand)` (none today) would still re-render.
+    expect(after).not.toBe(player);
+    // Phase must advance off 'draw' regardless — that's the signal
+    // that "the click was processed."
+    expect(result.value.next.phase).toBe('end');
   });
 });

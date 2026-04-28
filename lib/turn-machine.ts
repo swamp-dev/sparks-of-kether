@@ -39,6 +39,8 @@ export type TurnPhase = 'move' | 'challenge' | 'draw' | 'end';
 
 export const STARTING_HAND_SIZE = 4;
 export const HAND_CAP = 6;
+/** Per `design/mechanics.md` § Drawing — meditate draws 2 (capped at HAND_CAP). */
+export const MEDITATE_DRAW = 2;
 
 export interface TurnSnapshot {
   readonly state: GameState;
@@ -142,9 +144,16 @@ export function turnReducer(
       if (phase !== 'move') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
       }
-      // Meditate skips movement; the extra-draw boost lands in the
-      // `draw` phase.
-      return { ok: true, value: { next: { state, phase: 'draw' } } };
+      // Meditate is a complete turn-action that draws 2 cards (capped
+      // at HAND_CAP) — see `design/mechanics.md` § Drawing & gift
+      // handling. Skips the 'draw' phase entirely: with no card
+      // played, there's nothing to replenish. Surfaced by the
+      // 2026-04-27 hot-seat playtest (#128) — players hit Meditate,
+      // landed in 'draw' phase, hit Draw, and saw no change because
+      // `drawToHand` only refilled toward STARTING_HAND_SIZE which
+      // they already had.
+      const nextState = drawCards(state, player.id, MEDITATE_DRAW, HAND_CAP);
+      return { ok: true, value: { next: { state: nextState, phase: 'end' } } };
     }
 
     case 'submit-challenge': {
@@ -226,12 +235,43 @@ export function turnReducer(
  * multiplayer route owns the shuffle if/when it cares.
  */
 function drawToHand(state: GameState, playerId: string): GameState {
+  // End-of-turn replenishment: refill toward STARTING_HAND_SIZE only.
+  // For the meditate-bonus case, see `drawCards`.
+  const target = STARTING_HAND_SIZE;
   const pIndex = state.players.findIndex((p) => p.id === playerId);
   if (pIndex === -1) return state;
+  const startHand = state.players[pIndex]?.hand ?? [];
+  return drawNCards(state, pIndex, Math.max(0, target - startHand.length), HAND_CAP);
+}
+
+/**
+ * Draw a fixed number of cards toward `hardCap`. Used by the
+ * meditate path (draw exactly `MEDITATE_DRAW` cards, capped at
+ * `HAND_CAP`). Differs from `drawToHand` (which targets
+ * `STARTING_HAND_SIZE`).
+ */
+function drawCards(
+  state: GameState,
+  playerId: string,
+  count: number,
+  hardCap: number,
+): GameState {
+  const pIndex = state.players.findIndex((p) => p.id === playerId);
+  if (pIndex === -1) return state;
+  return drawNCards(state, pIndex, count, hardCap);
+}
+
+function drawNCards(
+  state: GameState,
+  pIndex: number,
+  count: number,
+  hardCap: number,
+): GameState {
   let pHand = state.players[pIndex]?.hand ?? [];
   let deck = state.deck;
   let discard = state.discardPile;
-  while (pHand.length < STARTING_HAND_SIZE) {
+  let remaining = count;
+  while (remaining > 0 && pHand.length < hardCap) {
     if (deck.length === 0) {
       if (discard.length === 0) break;
       deck = [...discard];
@@ -241,6 +281,7 @@ function drawToHand(state: GameState, playerId: string): GameState {
     if (top === undefined) break;
     pHand = [...pHand, top];
     deck = deck.slice(1);
+    remaining -= 1;
   }
   const updated = state.players[pIndex];
   if (!updated) return state;

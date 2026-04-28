@@ -29,12 +29,21 @@ describe('useTurn — phase machine', () => {
     expect(result.current.isActive('p2')).toBe(false);
   });
 
-  it('meditate skips movement and jumps to draw phase', () => {
+  it('meditate skips movement, draws 2 cards (cap 6), and ends the turn', () => {
+    // #128: meditate is now a complete turn-action that draws 2 cards
+    // and skips the 'draw' phase. Was previously: state-unchanged
+    // jump to 'draw' phase, which left players at hand-size 4 with
+    // nothing to do.
     const { result } = freshHook();
+    const handBefore = result.current.state.players[0]?.hand.length ?? 0;
     act(() => {
       result.current.meditate();
     });
-    expect(result.current.phase).toBe('draw');
+    expect(result.current.phase).toBe('end');
+    const handAfter = result.current.state.players[0]?.hand.length ?? 0;
+    // Hand grew by up to 2, capped at 6.
+    expect(handAfter).toBeGreaterThan(handBefore);
+    expect(handAfter).toBeLessThanOrEqual(6);
   });
 
   it('rejects move when not in move phase', () => {
@@ -42,6 +51,7 @@ describe('useTurn — phase machine', () => {
     act(() => {
       result.current.meditate();
     });
+    // After meditate the phase is 'end'; move() rejects.
     let outcome: ReturnType<typeof result.current.move> | undefined;
     act(() => {
       outcome = result.current.move(31);
@@ -54,9 +64,7 @@ describe('useTurn — phase machine', () => {
     act(() => {
       result.current.meditate();
     });
-    act(() => {
-      result.current.draw();
-    });
+    // Meditate now ends the turn directly; no separate draw step.
     expect(result.current.phase).toBe('end');
     act(() => {
       result.current.endTurn();
@@ -70,8 +78,14 @@ describe('useTurn — phase machine', () => {
   });
 });
 
-describe('useTurn — draw phase', () => {
-  it('refills hand toward starting size of 4', () => {
+describe('useTurn — meditate draw mechanics', () => {
+  // Post-#128 these tests exercise meditate (which is the user-
+  // visible draw path). The post-move 'draw' reducer is covered
+  // directly by `turn-machine.test.ts`. The hand-cap, deck-recycle,
+  // and starting-target behaviors are now meditate's responsibility
+  // because meditate is the surface a 4-card-handed player would hit
+  // with "I want more cards."
+  it('meditate adds up to MEDITATE_DRAW (2) cards from the deck', () => {
     const { result } = freshHook();
     const initial = result.current.state;
     const trimmed = {
@@ -86,39 +100,35 @@ describe('useTurn — draw phase', () => {
     act(() => {
       result.current.meditate();
     });
-    act(() => {
-      result.current.draw();
-    });
+    // 2 cards drawn (well within the 6-card cap).
     expect(result.current.state.players[0]?.hand.length).toBe(4);
     expect(result.current.phase).toBe('end');
   });
 
-  it('caps the hand at HAND_CAP=6 even if hand is already over the starting size', () => {
+  it('meditate caps the hand at HAND_CAP=6', () => {
     const { result } = freshHook();
     const initial = result.current.state;
-    const seven = {
+    const six = {
       ...initial,
       players: initial.players.map((p, idx) =>
-        idx === 0 ? { ...p, hand: [0, 1, 2, 3, 4, 5, 6] } : p,
+        idx === 0 ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
       ),
     };
     act(() => {
-      result.current.setState(seven);
+      result.current.setState(six);
     });
     act(() => {
       result.current.meditate();
     });
-    act(() => {
-      result.current.draw();
-    });
-    // Already above the starting refill target; draw is a no-op.
-    expect(result.current.state.players[0]?.hand.length).toBe(7);
+    // Already at cap; meditate is a no-op for cards (state still
+    // transitions to 'end').
+    expect(result.current.state.players[0]?.hand.length).toBe(6);
+    expect(result.current.phase).toBe('end');
   });
 
-  it('recycles discard pile when deck empties mid-draw', () => {
+  it('recycles discard pile when deck empties mid-meditate', () => {
     const { result } = freshHook();
     const initial = result.current.state;
-    // Empty deck, populated discard, hand below starting size.
     const recyclable = {
       ...initial,
       deck: [],
@@ -133,10 +143,7 @@ describe('useTurn — draw phase', () => {
     act(() => {
       result.current.meditate();
     });
-    act(() => {
-      result.current.draw();
-    });
-    // Refilled to 4 by pulling from the recycled discard.
+    // Drew 2 from the recycled discard; discard now empty.
     expect(result.current.state.players[0]?.hand.length).toBe(4);
     expect(result.current.state.discardPile).toEqual([]);
   });
@@ -165,18 +172,7 @@ describe('useTurn — acceptChallengeSetback', () => {
     expect(result.current.phase).toBe('move');
   });
 
-  it('separation ticks +1 on a regular failure-accept', () => {
-    // Manufacture a state with a player at gevurah and the hook in
-    // challenge phase by directly setState-ing into a position where
-    // the engine considers the next move's arrival uncleared.
-    // Easier: bypass the public API and verify the engine behavior
-    // — useTurn is a thin wrapper, and the engine's acceptSetback
-    // is already covered by engine tests. The integration concern
-    // is that the hook's wrapper calls it AND advances phase in one
-    // setState batch — covered by the no-op test above and by the
-    // PR's e2e flow.
-    // (Placeholder for a phase-=challenge integration test once a
-    // helper that walks state into 'challenge' lands.)
-    expect(true).toBe(true);
-  });
+  it.todo(
+    'separation ticks +1 on a regular failure-accept (integration test stub; needs a state-into-challenge helper)',
+  );
 });
