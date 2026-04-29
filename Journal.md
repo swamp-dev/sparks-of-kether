@@ -3225,3 +3225,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (760 + 1 todo / 761), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T10:52:44-04:00 — #198: refresh CONTRIBUTING.md (Epic #119 sub-ticket 12)
+
+**Pushed:** Refresh of `CONTRIBUTING.md`. Drops the "once the scaffold exists" caveat in Quick start (the scaffold has shipped). Step 4 of "How to contribute" now references `pnpm ci:local` and folds in "read CLAUDE.md once before your first PR" as a parenthetical. New "Local CI" section explains the `ci:local` aggregate, the auto-installed pre-push hook (via `scripts/install-git-hooks.mjs`), and points at CLAUDE.md for the per-PR checklist + admin-merge policy. New "Doc drift-checks" section names the two test specs with the anchor pattern syntax so contributors leave new docs correctly instrumented. New "Marketing assets" section points at `assets/marketing/README.md`. Removed the redundant "Canonical workflow" section.
+**Why:** Sub-ticket 12 of Epic #119 Part 2. CONTRIBUTING.md was written pre-scaffold; the dev loop has acquired the per-PR checklist (#173), `pnpm ci:local` (#173), the doc drift-checks (#187, #189), the anchor backfill convention (#191), and the marketing pack (#193) since. The doc has been silently lying for the last 30+ merges.
+**Notes:**
+- Reviewer caught a real footgun: my first cut directly cited `~/.claude/rules/local-ci-and-admin-merge.md` from CONTRIBUTING.md — that's the agent's user-specific dotfile path, not something an external contributor will have. Replaced with a pointer to the in-repo `CLAUDE.md` (which itself references the global rule). External contributors can follow the in-repo doc; maintainers using Claude Code see the global rule via CLAUDE.md's link.
+- Reviewer also flagged the trailing "Canonical workflow" section as redundant (two sentences pointing at CLAUDE.md, which is already linked in step 4). Dropped; folded the "read it once before your first PR" nudge into step 4 as a parenthetical.
+- 4 new relative links added (assets/marketing/, tests/docs/anchors.test.ts, tests/docs/links.test.ts, assets/marketing/README.md). Drift-check verified all resolve.
+- Section ordering top-to-bottom now reflects what a new contributor needs in order: Quick start → How to contribute → Local CI → Doc drift-checks → Marketing → CoC → Questions.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (760 + 1 todo / 761), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
