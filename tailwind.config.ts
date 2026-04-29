@@ -95,12 +95,40 @@ const config: Config = {
           '0%, 100%': { filter: 'brightness(0.85)' },
           '50%': { filter: 'brightness(1.3)' },
         },
+        // #206: card leaves the hand (played, gifted, discarded). Mirrors
+        // hand-fade-in but in reverse. The compositing layer should be
+        // unmounted at the keyframe end via `onAnimationEnd`.
+        'hand-fade-out': {
+          '0%': { opacity: '1', transform: 'translateY(0)' },
+          '100%': { opacity: '0', transform: 'translateY(-4px)' },
+        },
+        // #206: D20 roll settle. Brief gold ring fade-in/fade-out around
+        // the rolled face. Triggered by toggling a `data-rolled`
+        // attribute the consumer flips on roll completion.
+        'd20-roll-settle': {
+          '0%': { filter: 'drop-shadow(0 0 0 transparent)' },
+          '40%': { filter: 'drop-shadow(0 0 8px #ffd700)' },
+          '100%': { filter: 'drop-shadow(0 0 0 transparent)' },
+        },
+        // #206: victory glow. The Final Threshold passes; the play
+        // surface gets a 2 s gold halo that fades to baseline. Triggered
+        // by a top-level `data-victory` attribute.
+        'victory-glow': {
+          '0%': { filter: 'brightness(1) drop-shadow(0 0 0 transparent)' },
+          '50%': {
+            filter: 'brightness(1.15) drop-shadow(0 0 24px #ffd700)',
+          },
+          '100%': { filter: 'brightness(1) drop-shadow(0 0 0 transparent)' },
+        },
       },
       animation: {
         'hand-fade-in': 'hand-fade-in 180ms ease-out',
+        'hand-fade-out': 'hand-fade-out 180ms ease-out forwards',
         'path-travel-pulse': 'path-travel-pulse 600ms ease-out',
         'sefirah-clear-pulse': 'sefirah-clear-pulse 700ms ease-out',
         'atmosphere-twinkle': 'atmosphere-twinkle 4s ease-in-out infinite',
+        'd20-roll-settle': 'd20-roll-settle 600ms ease-out',
+        'victory-glow': 'victory-glow 2000ms ease-out',
       },
     },
   },

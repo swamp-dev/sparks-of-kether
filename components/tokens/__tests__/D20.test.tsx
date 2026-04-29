@@ -34,3 +34,24 @@ describe('D20', () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 });
+
+describe('D20 — roll-settle motion (#206)', () => {
+  it('does not apply the settle animation when not rolled', () => {
+    const { container } = render(<D20 />);
+    const svg = container.querySelector('svg');
+    expect(svg?.getAttribute('data-rolled')).toBe('false');
+    expect(svg?.getAttribute('class') ?? '').not.toMatch(
+      /animate-d20-roll-settle/,
+    );
+  });
+
+  it('applies the settle animation when rolled=true', () => {
+    const { container } = render(<D20 value={17} rolled />);
+    const svg = container.querySelector('svg');
+    expect(svg?.getAttribute('data-rolled')).toBe('true');
+    const cls = svg?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/animate-d20-roll-settle/);
+    // Reduced-motion gate so the animation respects user preference.
+    expect(cls).toMatch(/motion-reduce:animate-none/);
+  });
+});

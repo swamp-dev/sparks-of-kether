@@ -3,6 +3,8 @@
 exports[`D20 > matches snapshot — die showing 20 1`] = `
 <svg
   aria-label="d20 showing 20"
+  class=""
+  data-rolled="false"
   data-token="d20"
   role="img"
   viewBox="0 0 40 40"
@@ -100,6 +102,8 @@ exports[`D20 > matches snapshot — die showing 20 1`] = `
 exports[`D20 > matches snapshot — empty die 1`] = `
 <svg
   aria-label="d20 die"
+  class=""
+  data-rolled="false"
   data-token="d20"
   role="img"
   viewBox="0 0 40 40"

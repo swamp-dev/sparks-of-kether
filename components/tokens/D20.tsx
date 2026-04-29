@@ -17,9 +17,21 @@ interface D20Props {
   /** Hex stroke color; defaults to a near-white. */
   readonly color?: string;
   readonly className?: string;
+  /**
+   * When `true`, plays the gold-ring `d20-roll-settle` keyframe once
+   * (≈600 ms) so a freshly-rolled face highlights itself. Caller
+   * toggles this to `true` on roll completion. Honours
+   * `prefers-reduced-motion: reduce` via `motion-reduce:animate-none`.
+   */
+  readonly rolled?: boolean;
 }
 
-export function D20({ value, color = VEIL, className }: D20Props): JSX.Element {
+export function D20({
+  value,
+  color = VEIL,
+  className,
+  rolled = false,
+}: D20Props): JSX.Element {
   const cx = VIEW / 2;
   const cy = VIEW / 2;
   const r = VIEW / 2 - 2;
@@ -44,13 +56,26 @@ export function D20({ value, color = VEIL, className }: D20Props): JSX.Element {
     return pts.join(' ');
   })();
   const label = value !== undefined ? `d20 showing ${value}` : 'd20 die';
+  // #206: roll-settle highlight. The keyframe is a one-shot
+  // gold-glow drop-shadow; toggling `rolled` true applies the class
+  // and the keyframe runs once. To re-trigger on consecutive identical
+  // results (the player rolls 17 twice in a row, both should glow),
+  // the wrapping <svg> carries a `key` derived from the value so React
+  // mounts a fresh element each roll. Without the key, the same class
+  // on the same element wouldn't re-run the keyframe.
+  const settleClass = rolled
+    ? 'animate-d20-roll-settle motion-reduce:animate-none'
+    : '';
+  const composedClassName = [className, settleClass].filter(Boolean).join(' ');
   return (
     <svg
+      key={rolled ? `rolled-${value ?? 'empty'}` : undefined}
       viewBox={`0 0 ${VIEW} ${VIEW}`}
       role="img"
       data-token="d20"
+      data-rolled={rolled ? 'true' : 'false'}
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
+      className={composedClassName}
       aria-label={label}
     >
       <title>{label}</title>

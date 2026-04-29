@@ -3278,3 +3278,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (45 visual regression assertions including 3 new for /about), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T12:43:22-04:00 — #206: motion pass (Epic #118 wave 4)
+
+**Pushed:** Three new keyframes registered in `tailwind.config.ts` — `hand-fade-out` (180 ms), `d20-roll-settle` (600 ms gold-glow drop-shadow), `victory-glow` (2 s gold halo). Two consumer wirings in this PR: TreeBoard nodes + paths get `transition: stroke / stroke-opacity / stroke-width / fill-opacity 200 ms ease-out` so validity flips and active-ring updates ease rather than snap; D20 grows a `rolled?: boolean` prop that applies the settle keyframe with `motion-reduce:animate-none` and a `key={rolled-${value}}` so consecutive distinct values remount and re-trigger the keyframe. The `hand-fade-out` and `victory-glow` keyframes are defined but not yet wired — wiring requires state-machine work that earns its own ticket.
+**Why:** Epic #118 wave 4 item 4 — cross-cutting motion polish. Existing keyframes (#37 path-travel, #37 sefirah-clear, #132 hand-fade-in, #161 atmosphere-twinkle) covered the highest-leverage events; this pass fills in the interactive feedback.
+**Notes:**
+- 200 ms with `ease-out` is the sweet spot: visible motion lands in the first ~100 ms (sub-perception-threshold), nothing feels sticky. SVG presentation attributes (`stroke-opacity`, `stroke-width`) aren't covered by Tailwind's `transition-colors` utility, so the transitions live in inline `style` props rather than utility classes.
+- Reviewer caught a real bug: the original D20 fix described re-triggering via `key` in the comment but didn't actually use one. Added `key={rolled ? \`rolled-${value ?? 'empty'}\` : undefined}` so a new value re-mounts the SVG and the keyframe runs again. The existing `rolled=false → true` flow always remounts (key goes undefined → string).
+- 3 snapshots updated for the intentional DOM changes (D20 default + value=20, TreeBoard geometry guard).
+- Hand-fade-out + victory-glow shipping unwired is deliberate: dead CSS in a config file carries zero runtime cost; wiring them needs state-machine work that risks scope creep on this ticket. Follow-ups can reach for them.
+- Visual regression baselines unchanged — `animations: 'disabled'` correctly suppresses the new motion at screenshot time.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (770 + 1 todo / 771), build ✓, e2e ✓ (45 visual regression assertions all match), integration ✓.
+
+**Commit(s):** _filled in after push_

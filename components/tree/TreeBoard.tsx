@@ -249,6 +249,14 @@ export function TreeBoard({
                 strokeOpacity={isValid ? 0.95 : 0.35}
                 strokeWidth={isValid ? 3 : 1.5}
                 pointerEvents="none"
+                // #206: smooth the stroke / opacity / width transition
+                // when validity flips (e.g. after a card play changes
+                // which paths are reachable). 200 ms sits below the
+                // perceived-delay threshold but above "snap."
+                style={{
+                  transition:
+                    'stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out',
+                }}
               />
             </g>
           );
@@ -343,7 +351,16 @@ export function TreeBoard({
                 // elements are interpreted differently by Chrome vs
                 // Firefox — fill-box normalizes to the element's own
                 // bounding box.
-                style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+                //
+                // #206: stroke / stroke-opacity transitions ease the
+                // visual change when a player crosses into a Sefirah
+                // (active-ring updates) so the highlight doesn't snap.
+                style={{
+                  transformBox: 'fill-box',
+                  transformOrigin: 'center',
+                  transition:
+                    'stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out',
+                }}
               />
               <text
                 x={pos.x}
