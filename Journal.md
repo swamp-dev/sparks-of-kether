@@ -3142,3 +3142,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T09:40:37-04:00 — #186: doc-anchor drift-check (Epic #119 sub-ticket 3)
+
+**Pushed:** New `tests/docs/anchors.test.ts`. Walks every `.md` file in the repo (skipping `node_modules`, `e2e`, `coverage`, `playwright-report`, `test-results`, `dist`, plus all dotfile dirs), parses `<!-- code-ref: path:symbol -->` HTML-comment anchors, and emits one `it()` per anchor that asserts the path exists and (when a symbol is given) that the file contains a top-level export of that symbol. Failure messages name the source `.md:line` plus the offending path / symbol so jumping to the bad anchor is one click.
+**Why:** Sub-ticket 3 of Epic #119. The recent doc refreshes (#179 CLAUDE.md, #181 playability, #185 ui-review) cite specific paths and symbols; without a drift-check those claims rot silently. Same pattern as #175 (visual regression locks the polish surface) but for code-doc claims.
+**Notes:**
+- Verified by seeding three deliberate anchors against a clean Journal.md: missing path → fail with clear message; missing symbol → fail with clear message; valid `lib/use-lobby.ts:useLobby` → pass. All restored cleanly.
+- Reviewer flagged a false-negative case in the `export { internalName as publicName }` regex — the inner name matches as a word and would silently pass. Documented as a known limitation in the JSDoc rather than complicated the regex; the failure mode is a doc-author misuse (anchoring the internal name) and the right fix would be adding a real named export.
+- Reviewer suggested adding `dist` to the dir exclusion list proactively — done.
+- `it.todo` shim for the "no anchors yet" case so the test file always has a passing assertion structure. Removed once sub-ticket 5 backfills anchors.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (711 + 2 todo / 713 incl. 1 new), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
