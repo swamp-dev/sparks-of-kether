@@ -3558,3 +3558,17 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓, build ✓, e2e ✓ (62 passed), integration ✓ (1/1).
 
 **Commit(s):** `f400730` (impl), `b60521e` (review fix)
+
+## 2026-04-29T19:49:48-04:00 — #243: T3 — engine soulDoorDcDelta pure fn
+
+**Pushed:** Engine helper for Epic #240 Soul Doors — `engine/soul-door-bonus.ts` exporting `SOUL_DOOR_DC_DELTA = -2` and `soulDoorDcDelta(sign, sefirah)` returning `-2 | 0`. Reads from #256's `soulDoorsForSign` lookup. Pure, no state.
+
+**Why:** Sub-ticket T3 of Epic #240. Unblocks T4 (#244) — challenge resolver integration.
+
+**Notes:**
+- TDD-first: failing-test commit (`cc472dc`) before implementation (`9f5a44f`). 74 tests covering the full 12 × 10 (sign, sefirah) grid plus invariants — Pisces single-Door, Tiferet's 7-class share, Hod's only Capricorn entry, and the 23-cell aggregate (11×2 + 1×1).
+- Code-reviewer caught one significant: declared return type was `number`, but `design/soul-doors.md` § 5 + § 8 specify `typeof SOUL_DOOR_DC_DELTA | 0`. Narrowed in `0c8bae5` — the literal `-2 | 0` gives T4's `effectiveDC` site a tighter type to compose with.
+- Re-review pass confirmed the narrowing is correct and tests still type-compatible (`.toBe(-2)` and `.toBe(0)` are both within the narrow union).
+- Full `pnpm ci:local`: verify ✓ (67 files / 965 passed / 1 todo), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** `9f5a44f` (impl), `0c8bae5` (review fix)
