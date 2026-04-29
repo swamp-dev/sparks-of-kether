@@ -428,3 +428,8 @@ filer doesn't have to re-derive scope.
 Tickets 1, 2, 6 are highest leverage (they touch the most
 first-impression surface). Ticket 7 is housekeeping. The rest are
 medium-impact polish.
+
+<!-- code-ref: components/setup/BlessingRitual.tsx -->
+<!-- code-ref: components/meters/TeamMeters.tsx -->
+<!-- code-ref: components/setup/SoulAspectPicker.tsx -->
+<!-- code-ref: components/hand/CardBack.tsx -->

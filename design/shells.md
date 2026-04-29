@@ -32,6 +32,10 @@ At Separation 15 the Tree destabilizes and the game ends — see the loss
 condition in `mechanics.md`. So the Shell awakenings happen at **3, 6, 9,
 and 12**. Four awakenings maximum in a losing trajectory.
 
+<!-- code-ref: engine/shells.ts:SHELL_THRESHOLD_STEP -->
+<!-- code-ref: engine/shells.ts:MAX_ACTIVATIONS -->
+<!-- code-ref: engine/endgame.ts:SEPARATION_LOSS_THRESHOLD -->
+
 ### Pressure
 
 An awakened Shell applies a thematic, ongoing effect — the inversion of

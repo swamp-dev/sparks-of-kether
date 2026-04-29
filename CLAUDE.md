@@ -201,6 +201,11 @@ SKIP_E2E=1 pnpm ci:local           # skip Playwright (saves ~15s)
 SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot (saves ~70s)
 ```
 
+<!-- code-ref: package.json -->
+<!-- code-ref: scripts/ci-local.sh -->
+<!-- code-ref: scripts/install-git-hooks.mjs -->
+<!-- code-ref: .githooks/pre-push -->
+
 ---
 
 ## Where to look

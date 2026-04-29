@@ -3170,3 +3170,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (736 + 2 todo / 738), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T10:09:08-04:00 — #190: backfill code-ref anchors (Epic #119 sub-ticket 5)
+
+**Pushed:** Seeded 17 `<!-- code-ref: -->` anchors into the recently-refreshed docs to activate the drift-check from #186/#187 on load-bearing claims. Coverage: `CLAUDE.md` anchors `package.json` + the local-CI tooling (`scripts/ci-local.sh`, `scripts/install-git-hooks.mjs`, `.githooks/pre-push`); `design/mechanics.md` anchors `HAND_CAP`, `STARTING_HAND_SIZE`, `REQUIRED_ILLUMINATION_MARGIN`, `SEPARATION_LOSS_THRESHOLD`; `design/shells.md` anchors `SHELL_THRESHOLD_STEP`, `MAX_ACTIVATIONS`, and (per reviewer) `SEPARATION_LOSS_THRESHOLD` since the doc cites the 15 directly; `reference/sefirot.md` anchors `data/sefirot.ts` and `data/types.ts:SefirahKey`; `design/ui-review.md` anchors four wave-3 component files. Replaced the `it.todo` "no anchors yet" branch in `tests/docs/anchors.test.ts` with a real `it()` that asserts `allAnchors.length > 0` so accidentally fencing all anchors no longer silently neuters the suite.
+**Why:** Sub-ticket 5 of Epic #119. Without seeded anchors, the drift-check from #186 ran but had nothing to verify. The next code rename / file move / constant change at any of these load-bearing claim sites now fails CI loud.
+**Notes:**
+- Reviewer spot-checked: `engine/setup.ts:HAND_CAP` line 42, `:STARTING_HAND_SIZE` line 30; `engine/endgame.ts:REQUIRED_ILLUMINATION_MARGIN` line 11, `:SEPARATION_LOSS_THRESHOLD` line 17; `engine/shells.ts:SHELL_THRESHOLD_STEP` line 11, `:MAX_ACTIVATIONS` line 14. All resolve. Component file paths exist on disk.
+- Anchors placed after the prose claim or at section anchors so they survive normal doc edits without getting swallowed by paragraph rewrites.
+- Reviewer flagged a meta-failure mode the new sanity gate now catches: if all anchors get accidentally fenced into code blocks, `allAnchors.length === 0` and the new `it()` fails loudly instead of passing.
+- Reviewer also caught a missing anchor: `shells.md` cited Separation 15 directly but had no `SEPARATION_LOSS_THRESHOLD` anchor — added.
+- Anchor count: 17 (up from 0). Test count: 18 = 17 anchor checks + 2 sanity gates (markdown-walker, anchor-count). 736 → 753 total tests.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_

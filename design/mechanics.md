@@ -56,6 +56,9 @@ choked by a single rare card.
 [Drawing & Gift handling](#drawing--gift-handling) below for what
 happens when a draw or gift would exceed it.
 
+<!-- code-ref: engine/setup.ts:HAND_CAP -->
+<!-- code-ref: engine/setup.ts:STARTING_HAND_SIZE -->
+
 **Discard recycle.** When the draw pile empties, shuffle the discard
 pile face-down to form a new draw pile. The game runs as long as
 there are cards anywhere in the system.
@@ -364,6 +367,8 @@ ground).
 **All players at Kether** *and* **Illumination ≥ Separation + 5** *and*
 **the Final Threshold passes.**
 
+<!-- code-ref: engine/endgame.ts:REQUIRED_ILLUMINATION_MARGIN -->
+
 ### Final Threshold (at Kether)
 
 The collective challenge.
@@ -385,6 +390,8 @@ the Illumination threshold; the storytelling is the game's heart.
 
 - **Separation reaches 15.** The Tree destabilizes. All players descend to
   Malkuth and the game ends.
+
+  <!-- code-ref: engine/endgame.ts:SEPARATION_LOSS_THRESHOLD -->
 - **Deck and hands exhausted with no path to Kether.** The team is stranded.
 - **Final Threshold fails** (Illumination gap can't be closed).
 

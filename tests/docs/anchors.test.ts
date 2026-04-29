@@ -150,13 +150,12 @@ describe('doc-anchor drift-check', () => {
     expect(allMarkdown.length).toBeGreaterThan(0);
   });
 
-  if (allAnchors.length === 0) {
-    // No anchors seeded yet — that's fine. Sub-ticket 5 will backfill
-    // them. Skip the per-anchor cases so the test file still has a
-    // valid `it` to anchor coverage.
-    it.todo('no `code-ref` anchors found yet (sub-ticket 5 backfill pending)');
-    return;
-  }
+  it('finds at least one code-ref anchor (suite is meaningful)', () => {
+    // Sanity gate: if the parser ever breaks or all anchors get
+    // moved into fenced code by accident, this guards against the
+    // suite passing silently.
+    expect(allAnchors.length).toBeGreaterThan(0);
+  });
 
   for (const a of allAnchors) {
     const name = a.symbol

@@ -3,6 +3,9 @@
 The ten nodes of the Tree of Life. Each is a mode of divine energy, a
 waypoint on the ascent, and (in-game) a stat, a challenge, and a Shell.
 
+<!-- code-ref: data/sefirot.ts -->
+<!-- code-ref: data/types.ts:SefirahKey -->
+
 ## Master table
 
 | # | Hebrew | English | Pillar | Planet | Color | Body | Quality |
