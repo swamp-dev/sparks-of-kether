@@ -3488,3 +3488,44 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (860 tests; +6 new), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T22:12:28+00:00 — #241: T1 — design/soul-doors.md keystone
+
+**Pushed:** the new `design/soul-doors.md` keystone doc, locking D1–D6 and the 12-class Door table. Mirrors the structure of `design/astrological-classes.md` (the #212 keystone). Names the constant `SOUL_DOOR_DC_DELTA = -2` and the pure function `soulDoorDcDelta(sign, sefirah) → -2 | 0`; specifies the data layer's `soulDoorsBySign` table (Pisces is `['netzach']`; the other 11 classes are 2-element tuples) and the `engine/checks.ts:rollCheck` integration site (a new optional `soulDoorDelta?: number` on `CheckModifiers`, composed into `effectiveDC` alongside `SHORTCUT_DC_PENALTY`).
+
+**Why:** draft 1 of T1 for the Soul Doors epic (#240). Unblocks T2 (data layer).
+
+**Notes:**
+- Sandbox had no network so `pnpm install` couldn't populate the worktree; symlinked `node_modules` from the parent `/workspace` checkout (already on the same lockfile commit as `origin/main`) and ran the gate from there. Typecheck ✓, lint ✓, docs/anchors + docs/links ✓ (73/73), full vitest suite ✓ (862 passed / 1 todo) when run with `--pool=forks`. Default `--pool=threads` had jsdom-environment startup contention in the sandbox and produced 5s timeouts on ~20 unrelated UI tests; running single-process cleared all of them — confirmed not a regression from this doc by re-running each affected file in isolation (39/39 pass).
+- Code-reviewer subagent (one round) caught three CRITICAL — "9 challenge-bearing Sefirot" should be 8 (Kether is collective, Malkuth has none); same off-by-one in the test-plan "12 × 9 = 108 cases" (corrected to 12 × 10 = 120 with explicit Kether/Malkuth coverage and a 23 / 97 invariant); and the UI-callout copy diverged from the AC verbatim string (corrected to `"Soul Door open here: DC X → X−2"` with colon, matching #240's spec). Two SIGNIFICANT — "six paths land at Tiferet" should be eight (corrected to "eight paths land at Tiferet — seven of those partner endpoints are zodiacal"), and the function-parameter rename from spec's `class` to `sign` is now called out as an intentional refinement (avoids TS reserved-word collision; matches `engine/zodiac-bonus.ts:zodiacBonus(sign:…)` convention) plus a note that T4 reads `player.sign` off `PlayerState`, a field added by Epic #212 sub-tickets 5/7. Three MINOR — typo "cardthat", trimmed an awkward parenthetical, corrected the path-class attribution for paths 11/12/13 (path 11 is the Mother *Aleph*, not a Double). All six addressed; no findings deferred.
+- Anchor sanity: three `<!-- code-ref: -->` anchors all resolve (`data/sefirot.ts:sefirot`, `data/types.ts:SefirahKey`, `engine/checks.ts:rollCheck`). All five relative markdown links resolve.
+- Door table cross-checked exhaustively against `reference/correspondences.md` § 3 + `reference/paths.md`; all 12 rows correct, distribution table sums to 23, Pisces↔Venus-exaltation tie verified against `design/astrological-classes.md` § 3.
+
+**Commit(s):** `4b228b8` *(was `035164e` pre-rebase onto 1d1c036)*
+
+## 2026-04-29T18:34:09-04:00 — #241: re-review fixes + full ci:local
+
+**Pushed:** two doc fixes from the orchestrator-side re-review pass mandated by CLAUDE.md per-PR checklist § 5.
+
+**Why:** the first review pass (inside the agentbox sandbox) caught the test-plan count error in § 5 (108 → 120) but missed a stale "108-cell field" claim in § 7 D4 — internally contradictory leftover. The independent re-review on the host caught it. Also one minor: § 2 D1 rationale referenced "3d6+stat vs. d20+stat resolver"; the resolver is purely d20+stat (3d6 is Blessing Ritual stat-gen only).
+
+**Notes:**
+- Two minimal edits in `design/soul-doors.md`: line 58 (drop misleading 3d6 comparison) and line 240 (108-cell → 120-cell, with rationale "12 classes × 10 Sefirot — matching the test plan in § 5").
+- Full `pnpm ci:local` ran on this branch (per CLAUDE.md per-PR checklist § 3): verify ✓, build ✓, e2e ✓ (62 passed / 45 skipped / 107 total), integration ✓ (real-Supabase, 1/1). Earlier on this branch only `ci:local:fast` had run via the pre-push hook, missing e2e and integration — that gap is now closed.
+- Pilot lesson: agent-side code-reviewer is necessary but not sufficient. The orchestrator-side re-review pass found the surviving issue in 73s; without it the doc would have shipped with an internal contradiction.
+
+**Commit(s):** `c68d9ce` *(was `c7f264f` pre-rebase onto 1d1c036)*
+
+## 2026-04-29T18:38:00-04:00 — #241: rebase onto 1d1c036 + final push
+
+**Pushed:** force-push of `docs/241-soul-doors-design` after rebase onto current `origin/main` (1d1c036). Resolves Journal.md conflict from #247 + #248 landing in parallel.
+
+**Why:** PR #249 was reported `mergeable: CONFLICTING` because main moved on while we drafted (T3 #247 and T5 #248 of Epic #212 both merged). Rebase preserves all four T1 commits; only Journal.md needed manual conflict resolution (kept all entries chronologically). Two earlier `Commit(s):` SHA references in the file were updated to their post-rebase equivalents.
+
+**Notes:**
+- Hosted GitHub Actions CI is currently blocked across the whole repo by a billing/spending-limit issue. Every recent run on `main` and on PR branches reports "The job was not started because recent account payments have failed." This satisfies CLAUDE.md's admin-merge bypass criteria (infrastructure failure, identical shape on unrelated PRs and on the default branch itself).
+- Full local CI parity: see the next push.
+
+**Commit(s):** _filled in after push_
