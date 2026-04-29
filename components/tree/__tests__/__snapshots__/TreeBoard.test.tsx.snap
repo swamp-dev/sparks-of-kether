@@ -13,7 +13,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     <radialgradient
       cx="50%"
       cy="40%"
-      id="tree-bg-:r6:"
+      id="tree-bg-:r7:"
       r="70%"
     >
       <stop
@@ -27,7 +27,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </radialgradient>
   </defs>
   <rect
-    fill="url(#tree-bg-:r6:)"
+    fill="url(#tree-bg-:r7:)"
     height="620"
     width="400"
   />
@@ -1299,7 +1299,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     data-layer="nodes"
   >
     <g
-      aria-label="Crown (כתר), Sefirah 1"
+      aria-label="Crown (1)"
       data-cleared="false"
       data-sefirah="kether"
       role="img"
@@ -1316,18 +1316,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#1a1a1a"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="200"
-        y="66"
-      >
-        כתר
-      </text>
-      <text
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
@@ -1339,20 +1327,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Crown
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="170"
-        y="30"
-      >
-        1
-      </text>
     </g>
     <g
-      aria-label="Wisdom (חכמה), Sefirah 2"
+      aria-label="Wisdom (2)"
       data-cleared="false"
       data-sefirah="chokmah"
       role="img"
@@ -1369,18 +1346,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#1a1a1a"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="320"
-        y="156"
-      >
-        חכמה
-      </text>
-      <text
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
@@ -1392,20 +1357,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Wisdom
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="290"
-        y="120"
-      >
-        2
-      </text>
     </g>
     <g
-      aria-label="Understanding (בינה), Sefirah 3"
+      aria-label="Understanding (3)"
       data-cleared="false"
       data-sefirah="binah"
       role="img"
@@ -1423,18 +1377,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       />
       <text
         fill="#f8f8ff"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="80"
-        y="156"
-      >
-        בינה
-      </text>
-      <text
-        fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
         letter-spacing="1.5"
@@ -1445,20 +1387,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Understanding
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="50"
-        y="120"
-      >
-        3
-      </text>
     </g>
     <g
-      aria-label="Mercy (חסד), Sefirah 4"
+      aria-label="Mercy (4)"
       data-cleared="false"
       data-sefirah="chesed"
       role="img"
@@ -1476,18 +1407,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       />
       <text
         fill="#f8f8ff"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="320"
-        y="286"
-      >
-        חסד
-      </text>
-      <text
-        fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
         letter-spacing="1.5"
@@ -1498,20 +1417,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Mercy
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="290"
-        y="250"
-      >
-        4
-      </text>
     </g>
     <g
-      aria-label="Severity (גבורה), Sefirah 5"
+      aria-label="Severity (5)"
       data-cleared="false"
       data-sefirah="gevurah"
       role="img"
@@ -1529,18 +1437,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       />
       <text
         fill="#f8f8ff"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="80"
-        y="286"
-      >
-        גבורה
-      </text>
-      <text
-        fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
         letter-spacing="1.5"
@@ -1551,20 +1447,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Severity
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="50"
-        y="250"
-      >
-        5
-      </text>
     </g>
     <g
-      aria-label="Beauty (תפארת), Sefirah 6"
+      aria-label="Beauty (6)"
       data-cleared="false"
       data-sefirah="tiferet"
       role="img"
@@ -1581,18 +1466,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#1a1a1a"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="200"
-        y="346"
-      >
-        תפארת
-      </text>
-      <text
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
@@ -1604,20 +1477,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Beauty
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="170"
-        y="310"
-      >
-        6
-      </text>
     </g>
     <g
-      aria-label="Victory (נצח), Sefirah 7"
+      aria-label="Victory (7)"
       data-cleared="false"
       data-sefirah="netzach"
       role="img"
@@ -1635,18 +1497,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       />
       <text
         fill="#f8f8ff"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="320"
-        y="436"
-      >
-        נצח
-      </text>
-      <text
-        fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
         letter-spacing="1.5"
@@ -1657,20 +1507,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Victory
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="290"
-        y="400"
-      >
-        7
-      </text>
     </g>
     <g
-      aria-label="Splendor (הוד), Sefirah 8"
+      aria-label="Splendor (8)"
       data-cleared="false"
       data-sefirah="hod"
       role="img"
@@ -1687,18 +1526,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#1a1a1a"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="80"
-        y="436"
-      >
-        הוד
-      </text>
-      <text
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
@@ -1710,20 +1537,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Splendor
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="50"
-        y="400"
-      >
-        8
-      </text>
     </g>
     <g
-      aria-label="Foundation (יסוד), Sefirah 9"
+      aria-label="Foundation (9)"
       data-cleared="false"
       data-sefirah="yesod"
       role="img"
@@ -1741,18 +1557,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       />
       <text
         fill="#f8f8ff"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="200"
-        y="496"
-      >
-        יסוד
-      </text>
-      <text
-        fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
         letter-spacing="1.5"
@@ -1763,20 +1567,9 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       >
         Foundation
       </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="170"
-        y="460"
-      >
-        9
-      </text>
     </g>
     <g
-      aria-label="Kingdom (מלכות), Sefirah 10"
+      aria-label="Kingdom (10)"
       data-cleared="false"
       data-sefirah="malkuth"
       role="img"
@@ -1794,18 +1587,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       />
       <text
         fill="#f8f8ff"
-        font-family="var(--font-hebrew), serif"
-        font-size="20"
-        lang="he"
-        style="direction: rtl; unicode-bidi: isolate;"
-        text-anchor="middle"
-        x="200"
-        y="566"
-      >
-        מלכות
-      </text>
-      <text
-        fill="#f8f8ff"
         font-family="var(--font-display), serif"
         font-size="11"
         letter-spacing="1.5"
@@ -1815,17 +1596,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         y="602"
       >
         Kingdom
-      </text>
-      <text
-        fill="#f8f8ff"
-        fill-opacity="0.5"
-        font-family="var(--font-sans), sans-serif"
-        font-size="10"
-        text-anchor="end"
-        x="170"
-        y="530"
-      >
-        10
       </text>
     </g>
   </g>

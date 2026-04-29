@@ -15,31 +15,59 @@ describe('TreeBoard', () => {
     expect(title?.textContent).toMatch(/tree of life/i);
   });
 
-  it('renders all 10 Sefirot, each with the canonical Hebrew + English name', () => {
+  it('renders all 10 Sefirot — each labelled with the English Hebrew-name spelling only (#214)', () => {
+    // #214: declutter the board. Drop the Hebrew script and the
+    // 1-10 numbering on each Sefirah node; keep the English
+    // transliteration (Malkuth, Yesod, Netzach, Tiferet, etc).
+    // Other surfaces (BlessingRitual hero badge) still use the
+    // Hebrew text — the data layer is unchanged.
     const { container } = render(<TreeBoard />);
+    // Precondition: with no `state` prop the player-token layer is
+    // omitted entirely, so the only text descendants of each node
+    // <g> are the English-name <text> elements. If a future change
+    // ever nests tokens under the node group, this assertion will
+    // fail loudly instead of leaking an initial into the visibleText
+    // comparison below.
+    expect(container.querySelectorAll('[data-layer="players"]')).toHaveLength(0);
     for (const sefirah of sefirot) {
       const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
       expect(node, `node for ${sefirah.key}`).not.toBeNull();
-      expect(node?.textContent).toContain(sefirah.hebrewName);
       expect(node?.textContent).toContain(sefirah.englishName);
-      expect(node?.getAttribute('aria-label')).toMatch(
-        new RegExp(`${sefirah.englishName}`, 'i'),
-      );
+      expect(node?.textContent).not.toContain(sefirah.hebrewName);
+      // The visible textContent of the node is exactly the English
+      // name (whitespace-normalised). A permissive
+      // `not.toContain(String(number))` would false-positive on
+      // Sefirah names containing a digit glyph (none today; safer).
+      const visibleText = (node?.textContent ?? '').replace(/\s+/g, '').trim();
+      expect(visibleText).toBe(sefirah.englishName.replace(/\s+/g, ''));
     }
   });
 
-  it('marks Hebrew text with lang="he" and an RTL style', () => {
-    // SVG <text> doesn't take the HTML `dir` attribute; bidi is set
-    // via the SVG-spec `direction` CSS property instead. Both belt
-    // (lang for assistive tech) and suspenders (direction for visual
-    // bidi) are required.
+  it('aria-label on each Sefirah keeps the position number for screen-reader orientation (#214)', () => {
+    // Visual decluttering removes the Hebrew + number from VISIBLE
+    // text, but the AT layer keeps the position number so a screen-
+    // reader user can answer "where am I in the 1-10 descent?"
+    // without memory. Hebrew is intentionally dropped — the data
+    // layer's `hebrewName` is not part of the AT contract here.
     const { container } = render(<TreeBoard />);
-    const hebrewEls = container.querySelectorAll('[lang="he"]');
-    expect(hebrewEls.length).toBeGreaterThan(0);
-    for (const el of hebrewEls) {
-      const style = (el as SVGElement).style;
-      expect(style.direction).toBe('rtl');
+    for (const sefirah of sefirot) {
+      const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
+      const label = node?.getAttribute('aria-label') ?? '';
+      expect(label).toContain(sefirah.englishName);
+      expect(label).toContain(String(sefirah.number));
+      expect(label).not.toContain(sefirah.hebrewName);
     }
+  });
+
+  it('the nodes layer renders no Hebrew text — lang="he" is reserved for other surfaces (#214)', () => {
+    // Scoped to data-layer="nodes" so a future feature (e.g. a
+    // legend or hover tooltip elsewhere in the SVG) can legitimately
+    // include Hebrew text without breaking this regression-pin.
+    const { container } = render(<TreeBoard />);
+    const hebrewInNodes = container.querySelectorAll(
+      '[data-layer="nodes"] [lang="he"]',
+    );
+    expect(hebrewInNodes.length).toBe(0);
   });
 
   it('renders all 22 paths with labels carrying number, letter, and arcanum', () => {

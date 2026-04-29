@@ -89,24 +89,6 @@ const EMPTY_VALID_PATHS: ReadonlySet<number> = Object.freeze(new Set<number>());
  */
 const PATH_HIT_WIDTH = 28;
 
-/**
- * Per-Sefirah glyph foreground color. Hardcoded rather than derived
- * from luminance so contrast can be hand-tuned where the math is
- * borderline (Yesod's violet / Malkuth's russet).
- */
-const glyphForeground: Readonly<Record<SefirahKey, string>> = {
-  kether: '#1a1a1a',
-  chokmah: '#1a1a1a',
-  binah: VEIL,
-  chesed: VEIL,
-  gevurah: VEIL,
-  tiferet: '#1a1a1a',
-  netzach: VEIL,
-  hod: '#1a1a1a',
-  yesod: VEIL,
-  malkuth: VEIL,
-};
-
 interface TreeBoardProps {
   readonly className?: string;
   /**
@@ -316,15 +298,20 @@ export function TreeBoard({
       <g data-layer="nodes">
         {sefirot.map((sefirah) => {
           const pos = nodeLayout[sefirah.key];
-          const fg = glyphForeground[sefirah.key];
-          const label = `${sefirah.englishName} (${sefirah.hebrewName}), Sefirah ${sefirah.number}`;
+          // #214: declutter — only the English transliteration is
+          // rendered as visible text on the board. Hebrew script and
+          // the 1-10 number are gone visually (still in `data/sefirot.ts`
+          // and used by other surfaces like BlessingRitual's hero
+          // badge). The `aria-label` keeps the position number so
+          // screen-reader users still get spatial context (e.g.
+          // "Malkuth (10)" → tenth in the descent), since visible-
+          // text removal is a UX choice that shouldn't strip
+          // orientation cues from the AT layer.
+          const label = `${sefirah.englishName} (${sefirah.number})`;
           // #37: a Sefirah is "cleared" if any current player has it
           // in their `clearedSefirot` set. The wrapping `<g>` carries
           // `data-cleared` so the visible circle can run the
           // `sefirah-clear-pulse` keyframe (Tailwind config).
-          // `transformOrigin` is the node centre so the scale pulses
-          // outward symmetrically. `motion-reduce:animate-none`
-          // honours the user's preference.
           const cleared = state
             ? state.players.some((p) => p.clearedSefirot.has(sefirah.key))
             : false;
@@ -364,18 +351,6 @@ export function TreeBoard({
               />
               <text
                 x={pos.x}
-                y={pos.y + 6}
-                textAnchor="middle"
-                fontSize={20}
-                fontFamily="var(--font-hebrew), serif"
-                fill={fg}
-                lang="he"
-                style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
-              >
-                {sefirah.hebrewName}
-              </text>
-              <text
-                x={pos.x}
                 y={pos.y + NODE_RADIUS + 14}
                 textAnchor="middle"
                 fontSize={11}
@@ -385,17 +360,6 @@ export function TreeBoard({
                 style={{ textTransform: 'uppercase' }}
               >
                 {sefirah.englishName}
-              </text>
-              <text
-                x={pos.x - NODE_RADIUS - 2}
-                y={pos.y - NODE_RADIUS - 2}
-                textAnchor="end"
-                fontSize={10}
-                fontFamily="var(--font-sans), sans-serif"
-                fill={VEIL}
-                fillOpacity={0.5}
-              >
-                {sefirah.number}
               </text>
             </g>
           );

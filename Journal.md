@@ -3354,3 +3354,19 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (784 tests; +3 from this PR), build ✓, e2e ✓ (62 passed + 45 review-only skipped, including the updated play-flow), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T15:08:02-04:00 — #214: Sefirah nodes show only the English name
+
+**Pushed:** `components/tree/TreeBoard.tsx` — drop the Hebrew script overlay and the 1-10 corner number from each Sefirah node. Keep the English-spelled Hebrew name (Malkuth, Yesod, Netzach, ...). The unused `glyphForeground` colour map deleted. The wrapping `<g>`'s `aria-label` collapses to "Malkuth (10)" so screen-reader users keep position-in-descent context even though the visible text drops it.
+
+**Why:** Closing #214. Playtest report: "the board is cluttered. we don't need the numbers of each sefirah, we don't need the hebrew names on the board... Let's just have the english spelling of the jewish name for each sefirah."
+
+**Notes:**
+- Other surfaces (BlessingRitual hero badge in `components/setup/BlessingRitual.tsx:170`) keep using `sefirah.hebrewName` from the data layer — the change touches only the TreeBoard surface.
+- Visual regression baselines didn't shift (the `--update-snapshots` reported zero file modifications). The removed glyphs sit at 10-20px against a solid colour-band background, dominated by anti-aliasing tolerance under the `maxDiffPixelRatio: 0.005` threshold. Unit tests carry the regression-pin work: explicit `not.toContain(hebrewName)` + a whitespace-normalised `visibleText.toBe(englishName)` assertion + a scoped `[data-layer="nodes"] [lang="he"]` zero-count assertion. Reviewer flagged the loose visual regression threshold as a yellow flag for a future ticket.
+- Two review rounds. Round 1 caught two significant items: the `visibleText` assertion was relying on a code comment about no `state` → no token layer (fixed with an explicit `expect(querySelectorAll('[data-layer="players"]')).toHaveLength(0)` precondition); and the aria-label collapse to `englishName` only was an a11y regression (fixed by keeping the position number: `${englishName} (${number})`). Round 2: ship.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (785 tests; +3 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
+
+**Commit(s):** _filled in after push_
