@@ -3238,3 +3238,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (760 + 1 todo / 761), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T11:09:29-04:00 — #200: cinematic trailer storyboard (Epic #119 sub-ticket 11)
+
+**Pushed:** New `design/trailer-storyboard.md` — markdown-only brief for a future cinematic trailer. Five sections: aesthetic-shorthand-led brief ("contemplative puzzle ritual"), tonal-arc music brief with reference tracks (Olafur Arnalds / Jóhann Jóhannsson / Max Richter for the vibe, custom score preferred), 11-shot shot list summing to 59 s with explicit dependency notes on future captures, voice-over script as a clean prose block, and 3 open questions.
+**Why:** Sub-ticket 11 of Epic #119 Part 2. Production explicitly out of scope per the epic body — the deliverable is the brief itself, so any future editor / agent / collaborator can produce a v1 from it.
+**Notes:**
+- Reviewer flagged two before-merge fixes: (1) resolve VO-vs-no-VO in the brief rather than handing the editor a fork at frame 1; (2) add fallback for shots 8 and 9 or call them out as hard production blockers. Both applied — committed to VO primary (no-VO version explicitly punted to a separate brief if pursued); shot 8 gets a degraded-but-unblocked fallback (slow drift across an existing still); shot 9 names sub-ticket 9 as preferred source plus an After Effects composite fallback.
+- Reviewer also cleaned up the brief: dropped the redundant rule-explainer in point 2, pulled "contemplative puzzle ritual" up to the top, marked shot 11 explicitly as a "deliverable not a clip", fixed the "59s within 60–90s window" contradiction.
+- Reviewer's VO reorder suggestion ended on "Evil in this game is separation" which read as a downer. Took a different path: dropped that line entirely, made shot 7 silent so the visual carries the separation beat, and let the VO build to "Good is illumination. Unity. Returning to source." as the resolution. Cleaner read.
+- Pre-pushing CI hit a transient supabase port-conflict that retried clean. The self-cleanup from #182/#183 fired but Docker hadn't fully released the port. Filing a follow-up to add a port-free wait loop to `scripts/ci-local.sh`.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (760 + 1 todo), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
