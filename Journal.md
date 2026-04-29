@@ -3264,3 +3264,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (all 42 visual regression baselines match), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T11:50:16-04:00 — #202: /about marketing landing route (Epic #119 sub-ticket 10)
+
+**Pushed:** New `app/about/page.tsx` — server-rendered marketing landing surface. Hero band (title + tagline + screenshot from `assets/marketing/home-desktop.png`), 3-paragraph pitch, 6-image gallery with captions (5 in a 2-col grid + 1 spanning both cols on the last row), footer CTAs (Play it → /, Read the rules → mechanics.md on GitHub, View source → repo). Wired `/about` into all three e2e specs (visual-regression, screenshots.review, screenshots) with 3 new committed baselines.
+**Why:** Sub-ticket 10 of Epic #119 Part 2. The home page (`/`) is operationally a play surface (room CTAs, Hot-seat link); a first-time visitor confronted with form fields. `/about` is the dedicated "share this URL with a curious friend" landing — pure pitch, no operational state.
+**Notes:**
+- Decided new route over root rewrite: a rewrite would push the room CTAs to a sub-route and break the existing flow + e2e tests against `/`. Additive is safer and easier to revert.
+- Surfaced #203 mid-development: when I generated /about baselines on a fresh dev server, demo-meters started failing visual regression. Investigation showed the demo-meters baseline from #175 was captured against a stale dev server (pre-#172 polish). Filed and fixed in #203/#204; merged before this PR rebased.
+- Plain `<img>` chosen over `next/image` — marketing assets are statically imported PNGs and the page is server-rendered, so the lazy-loading and optimization next/image provides isn't earning its bundle weight. The first import of next/image into the project also caused a bundle shift that complicated the visual regression — `<img>` keeps the bundle clean. ESLint warning suppressed with a comment explaining the choice.
+- Reviewer flagged a 5-item-in-a-2-col-grid asymmetry; applied `md:col-span-2` to the last item so it spans the row. Also tightened `rel="noreferrer"` to `rel="noopener noreferrer"` on the two external links.
+- Stripped `-chromium-linux` suffix in marketing pack but baselines keep Playwright's auto-suffix (provenance + cross-platform gitignore guard from #175).
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (45 visual regression assertions including 3 new for /about), integration ✓.
+
+**Commit(s):** _filled in after push_

@@ -42,6 +42,7 @@ interface Route {
 
 const ROUTES: readonly Route[] = [
   { path: '/', slug: 'home' },
+  { path: '/about', slug: 'about' },
   { path: '/play', slug: 'play' },
   { path: '/tokens', slug: 'tokens' },
   // Demo pages (one per directory under `app/demo/`).
