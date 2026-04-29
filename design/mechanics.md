@@ -192,7 +192,7 @@ challenge names one stat and a Difficulty Class (DC).
 
 | Sefirah | Stat | DC | Theme |
 |---|---|---|---|
-| Yesod | Intuition | 10 | See through illusion |
+| Yesod | Intuition | 12 | See through illusion |
 | Hod | Intellect | 12 | Solve / articulate |
 | Netzach | Passion | 12 | Name what you desire |
 | Tiferet | Harmony | 14 | Integrate shadow and light |

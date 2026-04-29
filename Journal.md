@@ -3387,3 +3387,18 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (788 tests; +3 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T16:40:51-04:00 — #222: Yesod DC bumped from 10 to 12
+
+**Pushed:** `data/sefirot.ts` `yesod.challenge.dc` 10 → 12; `design/mechanics.md` stat-checks table updated; comment refresh in `engine/__tests__/checks.test.ts` to reflect the new DC + new effective shortcut penalty (15, was 13). New test in `data/__tests__/data.test.ts` pins `yesod.challenge.dc === 12` so a future regression to 10 fails loudly at the data layer.
+
+**Why:** Closing #222. Pass-rate analysis surfaced during #212 design review: Yesod at DC 10 was 97% first-roll pass at average stat — basically auto-pass, so the d20/assist/card-burn mechanics never got a chance to teach themselves at the entry point. Bumping to 12 brings Yesod into line with Hod/Netzach (also 12), creating an "entry tier" of paired DCs while making the first encounter actually a check (~95% at average stat, ~70% at low roll + −2 class fit).
+
+**Notes:**
+- Existing checks.test.ts math holds at the new threshold without functional changes — only the explanatory comments needed updating. Verified by reviewer.
+- `design/doc-audit-2026-04.md:171` mentions "Yesod 10" in its audit snapshot. Intentionally left as-is — that file is a point-in-time record; rewriting it would falsify the "matches `data/sefirot.ts` exactly" claim against the commit it audited.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (792 tests; +1 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
+
+**Commit(s):** _filled in after push_

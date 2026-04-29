@@ -180,7 +180,7 @@ describe('resolveChallenge', () => {
   });
 
   it('on success: marks Sefirah cleared, awards Spark, +1 Illumination, state unchanged otherwise', () => {
-    // Yesod DC = 10, Intuition stat 20 + any roll ≥ 0 will pass.
+    // Yesod DC = 12, Intuition stat 20 + any roll ≥ 0 will pass.
     const state = makeState({
       position: 'yesod',
       stats: statSheet({ intuition: 20 }),
@@ -206,7 +206,7 @@ describe('resolveChallenge', () => {
   });
 
   it('on failure: returns the outcome but does NOT mutate counters / clearedSefirot', () => {
-    // Intuition 1 + any d20 roll ≤ 9 + no mods fails DC 10.
+    // Intuition 1 + d20 roll 3 = 4, no mods, fails DC 12.
     const state = makeState({
       position: 'yesod',
       stats: statSheet({ intuition: 1 }),
@@ -233,8 +233,9 @@ describe('resolveChallenge', () => {
   });
 
   it('honours the shortcut-penalty modifier on challenge resolution', () => {
-    // Yesod base DC = 10. With shortcut penalty, effective 13.
-    // Intuition 5 + roll 7 = 12 < 13 → fail. Without penalty: 12 ≥ 10 → pass.
+    // Yesod base DC = 12. With shortcut penalty (+3), effective 15.
+    // Intuition 5 + roll 7 = 12 ≥ 12 → pass without penalty;
+    // Intuition 5 + roll 7 = 12 < 15 → fail with penalty.
     const state = makeState({
       position: 'yesod',
       stats: statSheet({ intuition: 5 }),

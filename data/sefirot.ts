@@ -124,7 +124,7 @@ export const sefirot: readonly Sefirah[] = [
     color: '#9370db',
     bodyPart: 'Generative organs',
     stat: 'intuition',
-    challenge: { kind: 'check', dc: 10 },
+    challenge: { kind: 'check', dc: 12 },
     shellKeyword: 'Illusion',
   },
   {

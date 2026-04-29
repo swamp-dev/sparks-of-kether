@@ -51,6 +51,20 @@ describe('sefirot', () => {
     }
   });
 
+  // #222: Yesod is the *first* encounter every player faces. DC 10 was
+  // a 97% first-roll pass at average stat — basically auto-pass, so the
+  // d20/assist/card-burn mechanics never got tested at the entry point.
+  // Bumping to 12 brings Yesod into line with Hod/Netzach (also 12),
+  // preserving an "entry tier" of paired DCs while making the first
+  // encounter actually a check (~95% at average stat, ~70% at a low
+  // roll with a -2 class fit).
+  it('Yesod challenge DC is 12 — entry-tier check, not auto-pass (#222)', () => {
+    const yesod = sefirot.find((s) => s.key === 'yesod');
+    expect(yesod).toBeDefined();
+    if (!yesod || yesod.challenge.kind !== 'check') return;
+    expect(yesod.challenge.dc).toBe(12);
+  });
+
   it('pillar partition is 3 mercy / 3 severity / 4 balance', () => {
     const counts = { mercy: 0, severity: 0, balance: 0 };
     for (const s of sefirot) {
