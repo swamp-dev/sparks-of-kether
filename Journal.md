@@ -3292,3 +3292,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (770 + 1 todo / 771), build ✓, e2e ✓ (45 visual regression assertions all match), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T12:58:13-04:00 — #208: empty + loading states (Epic #118 wave 4)
+
+**Pushed:** Two real audit gaps closed. (1) `useLobby` exposes `loading: boolean` (initial `true`, flips `false` in a `finally` once the first fetch resolves — covers both success and not-found paths). The lobby page renders a "Connecting…" state when `loading && !error`, sitting between the error and success branches. (2) The Hand open variant gains an explicit "Hand is empty." paragraph when `hand.length === 0`, so the absence of cards reads as intentional state rather than UI miss. The close button is unaffected (already always rendered for collapsibility). 5 new tests across the two surfaces.
+**Why:** Sub-ticket 6 of Epic #118 wave 4. Audit found `HomeRoomForms` already had busy/error states, BlessingRitual / SoulAspectPicker / ChallengeModal / TreeBoard render unconditionally. Only the lobby first-fetch race and the Hand empty-when-open case were real gaps.
+**Notes:**
+- `loading` doesn't reset to `true` on `refresh()` — that's deliberate. On refresh the page already has data; "Connecting…" framing would blank the screen on stale-but-valid state. The flag is one-shot.
+- Conditional order in the lobby page: error → loading → success. Defensive belt + braces (in practice `loading` is already `false` by the time `error` could be non-null, since the `finally` runs on every code path) but the order documents intent.
+- Hand empty paragraph sits inside the open-variant flex container; close button is `absolute` so no layout fight. On narrow viewports the close button's 44 px tap target overlaps the right edge of the paragraph but the overlap is cosmetic — paragraph is informational.
+- Reviewer caught a test name inaccuracy ("fetch errors" → it was actually testing the not-found path). Renamed.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (775 + 1 todo / 776), build ✓, e2e ✓ (45 visual regression assertions match — neither change affects baseline routes), integration ✓.
+
+**Commit(s):** _filled in after push_

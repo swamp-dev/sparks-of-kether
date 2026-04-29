@@ -131,6 +131,27 @@ describe('useLobby', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('loading is true initially and flips false once the fetch resolves', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.room?.id).toBe('room-uuid');
+  });
+
+  it('loading flips false even on the room-not-found path', async () => {
+    roomResponse = { data: null, error: null };
+    const { result } = renderHook(() => useLobby('NOPE'));
+    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.error).not.toBeNull();
+  });
+
   it('reports an error when the room is not found', async () => {
     roomResponse = { data: null, error: null };
     const { result } = renderHook(() => useLobby('XXXXXX'));

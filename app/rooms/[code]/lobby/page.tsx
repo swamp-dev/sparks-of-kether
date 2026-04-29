@@ -24,6 +24,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     players,
     currentPlayerId,
     error,
+    loading,
     beginning,
     refresh,
     beginGame,
@@ -46,6 +47,25 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
         >
           Back to home
         </Link>
+      </main>
+    );
+  }
+
+  if (loading) {
+    // First fetch hasn't resolved. Without this branch the page
+    // briefly renders an empty-but-successful-looking lobby (no
+    // players yet, no error) which misleads a freshly-arrived user.
+    return (
+      <main className="min-h-screen p-8 text-center text-veil">
+        <h1 className="font-display text-3xl tracking-widest">Lobby — {code}</h1>
+        <p
+          role="status"
+          aria-live="polite"
+          data-loading
+          className="mt-8 text-sm opacity-70"
+        >
+          Connecting…
+        </p>
       </main>
     );
   }

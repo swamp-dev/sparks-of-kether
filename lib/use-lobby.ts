@@ -27,6 +27,12 @@ export interface UseLobbyReturn {
   readonly players: readonly PlayerRow[];
   readonly currentPlayerId: string | null;
   readonly error: string | null;
+  /**
+   * True until the first fetch (success or error) resolves. Lets the
+   * page distinguish "still connecting" from "successfully empty"
+   * — both have `room === null && players.length === 0` otherwise.
+   */
+  readonly loading: boolean;
   /** True between `beginGame()` invocation and the response landing. */
   readonly beginning: boolean;
   /** Trigger a re-fetch of room + players. */
@@ -42,6 +48,10 @@ export function useLobby(code: string): UseLobbyReturn {
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [beginning, setBeginning] = useState(false);
+  // True until the first fetch resolves. Stays true on subsequent
+  // refreshes (the page already has data; "loading" framing would
+  // be misleading) — only the *initial* read sets it false.
+  const [loading, setLoading] = useState(true);
   // Guard against re-entrancy within a single render. `beginning`
   // is React state — synchronous double-clicks both see the
   // pre-update value via the useCallback closure. The ref flips
@@ -84,6 +94,8 @@ export function useLobby(code: string): UseLobbyReturn {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Unknown error.');
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
@@ -137,6 +149,7 @@ export function useLobby(code: string): UseLobbyReturn {
     players,
     currentPlayerId,
     error,
+    loading,
     beginning,
     refresh,
     beginGame,

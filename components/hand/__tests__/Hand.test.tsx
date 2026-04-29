@@ -248,3 +248,25 @@ describe('Hand — open / close toggle (#132)', () => {
     expect(container.querySelector('[data-action="close-hand"]')).not.toBeNull();
   });
 });
+
+describe('Hand — empty state (#208)', () => {
+  it('renders explicit empty-state copy when open with zero cards', () => {
+    const { container } = render(<Hand hand={[]} visible={true} />);
+    const empty = container.querySelector('[data-hand-empty]');
+    expect(empty).not.toBeNull();
+    expect(empty?.textContent).toMatch(/empty/i);
+  });
+
+  it('does NOT render the empty-state copy when the hand has cards', () => {
+    const { container } = render(<Hand hand={[1, 5]} visible={true} />);
+    expect(container.querySelector('[data-hand-empty]')).toBeNull();
+  });
+
+  it('the closed badge already shows "0 cards" — no empty-state node there', () => {
+    const { container } = render(
+      <Hand hand={[]} visible={true} defaultOpen={false} />,
+    );
+    expect(container.querySelector('[data-hand-empty]')).toBeNull();
+    expect(container.textContent).toMatch(/0 cards/);
+  });
+});

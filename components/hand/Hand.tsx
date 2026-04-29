@@ -167,6 +167,20 @@ export function Hand({
       >
         ×
       </button>
+      {hand.length === 0 ? (
+        // #208: explicit empty-state copy. The open hand at length 0
+        // would otherwise render as the close button alone — no
+        // signal to the player that the absence is intentional state
+        // ("you've played all your cards") rather than a UI miss.
+        // The closed badge already carries the count; this mirrors
+        // it in the open variant.
+        <p
+          data-hand-empty
+          className="px-8 py-12 text-center text-sm opacity-60"
+        >
+          Hand is empty.
+        </p>
+      ) : null}
       {hand.map((arcanum, i) => {
         const offsetFromCenter = i - (hand.length - 1) / 2;
         const fanDeg =
