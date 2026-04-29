@@ -57,6 +57,15 @@ export interface Sefirah {
   readonly pillar: Pillar;
   /** Planetary attribution, phrased as in `reference/sefirot.md`. */
   readonly planet: string;
+  /**
+   * Lowercase planet key matching the `Planet` type, used for engine
+   * lookups (e.g. zodiac dignities → stat). Absent on Malkuth, whose
+   * attribution is Earth — Earth is not in the `Planet` union because
+   * the path system doesn't model an earth-attributed major arcanum
+   * and the zodiac dignity system has no Earth entry. The `planet`
+   * display string ('Earth') stays for human-readable contexts.
+   */
+  readonly planetKey?: Planet;
   /** Hex color, matches Tailwind's per-Sefirah token. */
   readonly color: string;
   readonly bodyPart: string;

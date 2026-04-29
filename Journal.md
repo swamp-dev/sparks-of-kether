@@ -3437,3 +3437,20 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (823 tests; +28 from this PR), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T17:50:02-04:00 — #233 (T4/#212): zodiac-bonus engine helper
+
+**Pushed:** `engine/zodiac-bonus.ts` (new) — pure function turning a `ZodiacSignKey` into a `Partial<StatSheet>` of stat deltas via the design § 2 formula (rulership +1, exaltation +2, detriment −1, fall −2, modern co-rulership +1). Plus `statForPlanet(planet): StatKey` lookup helper extracted to `data/index.ts` (sourced from a new optional `planetKey: Planet` field on `Sefirah`). Single source of truth: `sefirot.ts`. Engine helper has no embedded planet-to-stat map.
+
+**Why:** Sub-ticket T4 of Epic #212. Keystone for T5 (game-setup integration / #234) and T6 (picker UI / #235).
+
+**Notes:**
+- TDD-first: 18 failing tests covering all 12 per-sign deltas explicitly against design § 4 + spot-checks for Virgo +3 intellect, Pisces −3 intellect, Scorpio +1 unity (Pluto co-ruler), Pisces +1 insight (Neptune co-ruler), and body-never-modified.
+- Two review rounds. Round-1 caught the `PLANET_TO_STAT` duplication risk (the engine helper had its own hand-copied shadow of `sefirot.ts`'s planet→stat chain); refactored into `statForPlanet` in `data/index.ts`. Plus three minors: const ordering (matched `engine/checks.ts` pattern), `coRuler !== undefined` instead of truthy, and a direct planet→stat cross-check test. Round-2 caught a residual `if (s.planetKey)` truthy check in `data/index.ts` that should also be `!== undefined` for codebase-style consistency. Two-line fix.
+- Sefirah interface change: optional `planetKey?: Planet` (absent on Malkuth — Earth has no Planet entry). Confirmed no consumer outside the data layer reads `.planet` or expects `.planetKey`; additive.
+- Integration step hit a one-off Supabase port race on first ci:local; retry cleared. Not introduced by this PR.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (~853 tests; +22 new this PR via engine + data tests), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_

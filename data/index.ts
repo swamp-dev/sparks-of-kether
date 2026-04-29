@@ -24,11 +24,13 @@ import type {
   HebrewLetter,
   LetterKey,
   Path,
+  Planet,
   Sefirah,
   SefirahKey,
   SignDignities,
   SoulAspect,
   SoulAspectKey,
+  StatKey,
   ZodiacSign,
   ZodiacSignKey,
 } from './types';
@@ -150,4 +152,27 @@ export function dignitiesBySign(key: ZodiacSignKey): SignDignities {
     throw new Error(`No dignities for zodiac sign: ${key}`);
   }
   return found;
+}
+
+/**
+ * Planet → stat mapping, derived once at module load from
+ * `sefirot.ts` (each Sefirah's `planetKey` and `stat` fields). The
+ * `Planet` type covers exactly the 9 planets that have a Sefirah
+ * attribution; Earth (Malkuth/body) is absent by design — body is
+ * class-neutral.
+ *
+ * Single source of truth: `data/sefirot.ts`. The engine's zodiac-
+ * bonus helper reads from `statForPlanet`, not its own embedded map.
+ */
+const planetToStatIndex = new Map<Planet, StatKey>();
+for (const s of sefirot) {
+  if (s.planetKey !== undefined) planetToStatIndex.set(s.planetKey, s.stat);
+}
+
+export function statForPlanet(planet: Planet): StatKey {
+  const stat = planetToStatIndex.get(planet);
+  if (stat === undefined) {
+    throw new Error(`No stat for planet: ${planet}`);
+  }
+  return stat;
 }

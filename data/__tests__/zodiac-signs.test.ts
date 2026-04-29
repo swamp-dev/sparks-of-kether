@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  sefirot,
+  statForPlanet,
   zodiacSigns,
   zodiacSignByKey,
   type Planet,
@@ -105,6 +107,53 @@ describe('zodiacSigns', () => {
   it('zodiacSignByKey throws on an unknown key', () => {
     expect(() => zodiacSignByKey('ghost' as ZodiacSignKey)).toThrow(
       /Unknown zodiac sign key/,
+    );
+  });
+});
+
+describe('statForPlanet', () => {
+  // Pinning the planet → stat mapping directly so a future regression
+  // in either `data/sefirot.ts` (renamed planetKey) or `data/types.ts`
+  // (StatKey rename) surfaces here as a labelled failure rather than
+  // as a per-sign delta mismatch downstream in the engine tests.
+  const expected: Readonly<Record<Planet, string>> = {
+    saturn: 'understanding',
+    jupiter: 'lovingkindness',
+    mars: 'strength',
+    sun: 'harmony',
+    venus: 'passion',
+    mercury: 'intellect',
+    moon: 'intuition',
+    pluto: 'unity',
+    neptune: 'insight',
+  };
+
+  it.each(Object.entries(expected) as [Planet, string][])(
+    'statForPlanet(%s) returns %s',
+    (planet, stat) => {
+      expect(statForPlanet(planet)).toBe(stat);
+    },
+  );
+
+  it('the mapping is derived from sefirot.ts (no embedded duplication)', () => {
+    // Cross-check: every Sefirah with a planetKey contributes its
+    // (planetKey → stat) pair to the lookup. If sefirot.ts is the
+    // sole source of truth, this assertion holds.
+    for (const s of sefirot) {
+      if (s.planetKey) {
+        expect(statForPlanet(s.planetKey)).toBe(s.stat);
+      }
+    }
+  });
+
+  it('Malkuth has no planetKey (Earth is excluded from Planet by design)', () => {
+    const malkuth = sefirot.find((s) => s.key === 'malkuth');
+    expect(malkuth?.planetKey).toBeUndefined();
+  });
+
+  it('throws on an unknown planet key', () => {
+    expect(() => statForPlanet('chronos' as Planet)).toThrow(
+      /No stat for planet/,
     );
   });
 });
