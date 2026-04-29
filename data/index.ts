@@ -19,6 +19,7 @@ import { sefirot } from './sefirot';
 import { soulAspects } from './soul-aspects';
 import { zodiacSigns } from './zodiac-signs';
 import { signDignities } from './dignities';
+import { soulDoorsBySign } from './soul-doors';
 import type {
   Arcanum,
   HebrewLetter,
@@ -42,6 +43,7 @@ export { paths } from './paths';
 export { soulAspects } from './soul-aspects';
 export { zodiacSigns } from './zodiac-signs';
 export { signDignities } from './dignities';
+export { soulDoorsBySign } from './soul-doors';
 export { sefirahMarkLetter } from './sefirah-glyphs';
 export * from './types';
 
@@ -150,6 +152,20 @@ export function dignitiesBySign(key: ZodiacSignKey): SignDignities {
   const found = signDignitiesByKeyIndex.get(key);
   if (!found) {
     throw new Error(`No dignities for zodiac sign: ${key}`);
+  }
+  return found;
+}
+
+/**
+ * Zodiac sign → its Soul Doors (the 1-2 Sefirot where this class's
+ * Challenge DC is reduced by 2). Throws on an unknown key — the
+ * symbolic data is fixed at build time, so a miss always indicates a
+ * programming error. See `data/soul-doors.ts` for the table itself.
+ */
+export function soulDoorsForSign(key: ZodiacSignKey): readonly SefirahKey[] {
+  const found = soulDoorsBySign[key];
+  if (!found) {
+    throw new Error(`No Soul Doors for zodiac sign: ${key}`);
   }
   return found;
 }

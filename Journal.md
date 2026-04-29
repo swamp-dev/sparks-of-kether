@@ -3529,3 +3529,17 @@ don't reach naturally. Centralised them.
 - Full local CI parity: see the next push.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T19:10:14-04:00 — #242: T2 — data/soul-doors.ts
+
+**Pushed:** the per-class Soul Doors data table (`data/soul-doors.ts`) for Epic #240. Exports `soulDoorsBySign: Readonly<Record<ZodiacSignKey, readonly SefirahKey[]>>` (frozen at every level) and adds a `soulDoorsForSign(key)` lookup function in `data/index.ts` matching the existing `dignitiesBySign` / `zodiacSignByKey` throw-on-miss pattern.
+
+**Why:** Sub-ticket T2 of Epic #240. Unblocks T3 (engine pure fn).
+
+**Notes:**
+- TDD-first: 20 failing tests covering all 12 sign rows, no-Malkuth, no-Kether, the 23-Door invariant, and a path-network cross-check that derives expected Doors from `arcana.ts` + `paths.ts` independently. Implementation took the suite to 20/20 green.
+- Code-reviewer (one round) verified all 12 rows against `data/paths.ts` + `data/arcana.ts`, confirmed convention conformance, no critical/significant findings. Two minor improvements applied: documented the cross-check independence assumption (footgun-protection if `soul-doors.ts` ever becomes computed), and switched the Record↔lookup identity assertion from `toEqual` to `toBe` since `soulDoorsForSign` returns the array reference uncopied.
+- Pisces is structurally unique: 1 Door (Netzach), aligning exactly with Pisces's Venus exaltation in #212's dignity table. All other 11 classes get 2 Doors. Total = 23.
+- Full `pnpm ci:local`: verify ✓ (66 files / 889 passed / 1 todo), build ✓, e2e ✓ (62 passed / 45 skipped), integration ✓ (1/1).
+
+**Commit(s):** `2905d89` (impl), `b883780` (review tightening)
