@@ -17,6 +17,8 @@ import { letters } from './letters';
 import { paths } from './paths';
 import { sefirot } from './sefirot';
 import { soulAspects } from './soul-aspects';
+import { zodiacSigns } from './zodiac-signs';
+import { signDignities } from './dignities';
 import type {
   Arcanum,
   HebrewLetter,
@@ -24,8 +26,11 @@ import type {
   Path,
   Sefirah,
   SefirahKey,
+  SignDignities,
   SoulAspect,
   SoulAspectKey,
+  ZodiacSign,
+  ZodiacSignKey,
 } from './types';
 
 export { sefirot } from './sefirot';
@@ -33,6 +38,8 @@ export { letters } from './letters';
 export { arcana } from './arcana';
 export { paths } from './paths';
 export { soulAspects } from './soul-aspects';
+export { zodiacSigns } from './zodiac-signs';
+export { signDignities } from './dignities';
 export { sefirahMarkLetter } from './sefirah-glyphs';
 export * from './types';
 
@@ -116,6 +123,31 @@ export function soulAspectByKey(key: SoulAspectKey): SoulAspect {
   const found = soulAspectsByKeyIndex.get(key);
   if (!found) {
     throw new Error(`Unknown Soul Aspect key: ${key}`);
+  }
+  return found;
+}
+
+const zodiacSignsByKeyIndex = new Map<ZodiacSignKey, ZodiacSign>(
+  zodiacSigns.map((s) => [s.key, s]),
+);
+const signDignitiesByKeyIndex = new Map<ZodiacSignKey, SignDignities>(
+  signDignities.map((d) => [d.sign, d]),
+);
+
+/** Zodiac sign → the sign record (glyph, element, modality, ruler, ...). */
+export function zodiacSignByKey(key: ZodiacSignKey): ZodiacSign {
+  const found = zodiacSignsByKeyIndex.get(key);
+  if (!found) {
+    throw new Error(`Unknown zodiac sign key: ${key}`);
+  }
+  return found;
+}
+
+/** Zodiac sign → its classical four-slot dignity table. */
+export function dignitiesBySign(key: ZodiacSignKey): SignDignities {
+  const found = signDignitiesByKeyIndex.get(key);
+  if (!found) {
+    throw new Error(`No dignities for zodiac sign: ${key}`);
   }
   return found;
 }

@@ -1,4 +1,4 @@
-import type { Attribution, Element, Planet, ZodiacSign } from '@/data';
+import type { Attribution, Element, Planet, ZodiacSignKey } from '@/data';
 
 /**
  * Map each astrological attribution to a single accent color used for
@@ -25,9 +25,15 @@ const PLANET_COLORS: Readonly<Record<Planet, string>> = {
   mars: '#a82323', // crimson (Gevurah)
   sun: '#d4af37', // gold (Tiferet)
   saturn: '#5c4a78', // indigo (Binah-adjacent)
+  // Modern outer planets — added for the astrological-class system
+  // (`design/astrological-classes.md`). Card attributions in the major
+  // arcana are still classical-only (no path uses Pluto/Neptune yet),
+  // but the type now includes them so the union is exhaustive.
+  pluto: '#1a1542', // deep ground (Kether)
+  neptune: '#0a8a8a', // teal (Chokmah)
 };
 
-const SIGN_COLORS: Readonly<Record<ZodiacSign, string>> = {
+const SIGN_COLORS: Readonly<Record<ZodiacSignKey, string>> = {
   aries: '#c0392b', // fire — red
   taurus: '#3a8f4a', // earth — green-leaning
   gemini: '#d4af37', // air — gold

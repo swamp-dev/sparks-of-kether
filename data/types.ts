@@ -118,6 +118,14 @@ export interface HebrewLetter {
  * here). If Minor Arcana are added, extend this union with `'earth'`.
  */
 export type Element = 'fire' | 'water' | 'air';
+/**
+ * The 7 classical planets plus modern Pluto and Neptune (already
+ * attributed to Kether and Chokmah in `data/sefirot.ts`). Pluto and
+ * Neptune are used in zodiac dignities as modern co-rulers of Scorpio
+ * and Pisces respectively (see `design/astrological-classes.md`).
+ * Uranus is intentionally absent — its traditional Hermetic-Qabalah
+ * home is Daath, which the game doesn't model.
+ */
 export type Planet =
   | 'mercury'
   | 'moon'
@@ -125,8 +133,10 @@ export type Planet =
   | 'jupiter'
   | 'mars'
   | 'sun'
-  | 'saturn';
-export type ZodiacSign =
+  | 'saturn'
+  | 'pluto'
+  | 'neptune';
+export type ZodiacSignKey =
   | 'aries'
   | 'taurus'
   | 'gemini'
@@ -143,7 +153,63 @@ export type ZodiacSign =
 export type Attribution =
   | { readonly kind: 'element'; readonly value: Element }
   | { readonly kind: 'planet'; readonly value: Planet }
-  | { readonly kind: 'sign'; readonly value: ZodiacSign };
+  | { readonly kind: 'sign'; readonly value: ZodiacSignKey };
+
+/** Astrological qualities used to describe a sign's character. */
+export type ZodiacModality = 'cardinal' | 'fixed' | 'mutable';
+
+/**
+ * The four classical elements as they appear in the zodiac. Wider than
+ * `Element` (which omits 'earth' because no Major Arcanum is Earth-
+ * attributed in the path system). Kept as its own alias so callers can
+ * pattern-match exhaustively without re-stating the union inline.
+ */
+export type ZodiacElement = Element | 'earth';
+
+/** Per-sign metadata used by the picker UI and the engine bonus computation. */
+export interface ZodiacSign {
+  readonly key: ZodiacSignKey;
+  /** Display name (capitalised). */
+  readonly name: string;
+  /** Single Unicode glyph (♈, ♉, ...). */
+  readonly glyph: string;
+  /** Classical four-element attribution. */
+  readonly element: ZodiacElement;
+  readonly modality: ZodiacModality;
+  /** Classical ruler. Always present. */
+  readonly ruler: Planet;
+  /**
+   * Modern co-ruler. The `?` (rather than `Planet | null`) is
+   * intentional: a co-ruler is a *non-classical addition* — most signs
+   * simply don't have one. Compare with `SignDignities.exaltation`,
+   * which uses `Planet | null` because every sign has an exaltation
+   * *slot* (it just happens to be empty for some signs in the classical
+   * tradition).
+   */
+  readonly coRuler?: Planet;
+}
+
+/** A planet's relationship to a zodiac sign (one of four classical dignities). */
+export type Dignity = 'rulership' | 'exaltation' | 'detriment' | 'fall';
+
+/**
+ * Per-sign dignity table. Each sign maps a `Dignity` to a `Planet | null`;
+ * `null` indicates the slot exists but has no planet assigned (the
+ * four classical "thin" signs — Gemini, Leo, Sagittarius, Aquarius —
+ * have empty exaltation and fall slots, and Taurus has an empty fall
+ * slot matching Scorpio's empty exaltation).
+ *
+ * Modern co-rulerships (Pluto for Scorpio, Neptune for Pisces) are
+ * stored on `ZodiacSign.coRuler`; this table is for the four classical
+ * dignities only. Engine code combines both at bonus computation.
+ */
+export interface SignDignities {
+  readonly sign: ZodiacSignKey;
+  readonly rulership: Planet;
+  readonly exaltation: Planet | null;
+  readonly detriment: Planet;
+  readonly fall: Planet | null;
+}
 
 // ──────────────── Major Arcana ────────────────
 

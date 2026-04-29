@@ -3420,3 +3420,20 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (795 tests, no code changes from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T17:26:51-04:00 — #231 (T2/#212): zodiac signs and dignities data layer
+
+**Pushed:** `data/zodiac-signs.ts` and `data/dignities.ts` (both new) plus type extensions in `data/types.ts` and lookup helpers in `data/index.ts`. `Planet` union extended with `'pluto'` and `'neptune'` (Scorpio/Pisces modern co-rulers); existing `ZodiacSign` string union renamed to `ZodiacSignKey` so the new `ZodiacSign` interface name is free for per-sign metadata. New `ZodiacElement = Element | 'earth'` alias so consumers can exhaustive-switch.
+
+**Why:** Sub-ticket 2 of Epic #212. Builds the data layer that the engine bonus helper (T4 / #233) and picker UI (T6 / #235) consume. Doc lock from #221 (`design/astrological-classes.md`) is the contract; this commits it to code.
+
+**Notes:**
+- Two review rounds. Round-1 caught the inline-`Element | 'earth'` issue (T6 would have re-stated the union everywhere; extracted `ZodiacElement` alias instead) and a misleading `Object.keys(expected) as ZodiacSignKey[]` test pattern (replaced with an explicit `allSigns` list — TypeScript's `Record<ZodiacSignKey, Row>` typing on `expected` is the real compile-time completeness guard). Plus added a population-level zero-sum test pinning the design § 4 claim that the classical 7 planets net to 0 across all 12 signs while Pluto/Neptune carry +1 each (deliberate skew from the modern co-rulership). Round-2: ship.
+- `coRuler?: Planet` (optional) vs `exaltation: Planet | null` (explicit null) inconsistency is intentional and now commented in the source: optional means "no slot exists" (most signs don't have a co-ruler at all), null means "slot exists, no planet assigned" (every sign has an exaltation slot; some classically empty).
+- Two callsites of the old `ZodiacSign` string union updated: the `Attribution` discriminated union in `data/types.ts` and `components/cards/attribution-colors.ts` (`SIGN_COLORS: Readonly<Record<ZodiacSignKey, string>>`).
+- Pluto/Neptune colours added to `PLANET_COLORS` (Kether deep-ground, Chokmah teal) — no Major Arcanum currently uses them as path attributions but the `Record<Planet, ...>` type now requires exhaustive coverage.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (823 tests; +28 from this PR), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
