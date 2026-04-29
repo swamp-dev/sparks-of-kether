@@ -1,10 +1,32 @@
 # UI review — Sparks of Kether
 
+> **v1 pre-polish baseline. Wave 3 of Epic #118 has shipped since this
+> review.** The scores below describe the UI _before_ wave-3 polish
+> (#156–#163, all merged 2026-04-28) and the per-route ambient layer
+> (#161). The post-polish surface is now locked in pixel-diff baselines
+> by #175. The v1 scores stay in this doc as historical baselines —
+> they're not overwritten because a future re-review will compare
+> deltas against them.
+
 _Snapshot: 2026-04-28, post-#37 merge. Captures from
 `pnpm screenshots` (multi-viewport baselines, see #152). This doc
 scores every route on four axes and ranks the weakest screens. The
 fan-out polish tickets in Epic #118 wave 3 are scoped from the
 recommendations here._
+
+## Next review
+
+The doc should be re-scored against a fresh multi-viewport capture
+when **Epic #118 wave 4** (motion pass + empty / error / loading
+states) closes. Trigger: when both wave-4 sub-tickets ship, run
+`pnpm screenshots` to refresh `e2e/__screenshots__/baselines/`,
+then re-score every route on the same four-axis rubric. The v1
+scores below become the "pre-polish" column; the new pass produces
+a "post-polish" column.
+
+Re-scoring before wave 4 closes risks scoring a half-polished
+surface and producing fan-out tickets that overlap with wave-4
+work already filed.
 
 ## How to read this
 
@@ -33,10 +55,12 @@ Scoring rubric — each axis 1–5 (5 = strong, 1 = needs work):
 A `–` means the axis is not applicable for that route (developer
 reference pages skip Fun).
 
-## TL;DR — ranked weakness list
+## TL;DR — ranked weakness list (v1 pre-polish)
 
-The five worst screens and what to do. Each becomes a fan-out
-polish ticket in Epic #118 wave 3 unless noted.
+> **v1 pre-polish — historical.** The five worst screens at the time
+> of this review. Each became a fan-out polish ticket in Epic #118
+> wave 3 — all merged 2026-04-28. See "What shipped since v1"
+> below for the route → PR mapping.
 
 1. **`/play` and `/demo/ritual` — the Blessing Ritual** _(V2 F2 T4 D1
    = 9/20)_. The first surface a hot-seat player meets. Cosmic
@@ -100,7 +124,51 @@ polish ticket in Epic #118 wave 3 unless noted.
   not 5: ~120 px of empty space below the Confirm button on
   desktop, same pattern that pulls other screens down.)
 
-## Per-route scoring
+## What shipped since v1 (post-polish, 2026-04-28)
+
+Every recommendation below this line drove a wave-3 fan-out
+ticket; all of them are now merged. The per-route scores from v1
+are preserved verbatim as historical baselines.
+
+### Cross-cutting polish
+
+- **#161 — per-route ambient layer (PR #168).** Every route now
+  carries a global `<Starfield />` (sparse) inherited from
+  `app/layout.tsx`. Per-route bloom + glyph-wash on `/play`,
+  `/demo/ritual`, `/demo/meters`. Addresses the D-axis "void
+  below the fold" weakness across the board.
+- **#162 — SVG token audit (PR #164).** Every hand-coded hex in
+  SVG components (`#0e0a1f`, `#f8f8ff`, `#ffd700`, etc.)
+  replaced with imports from `data/colors.ts`. Tightens T-axis
+  consistency.
+- **#163 — demo page chrome (PR #165).** Outer padding on every
+  `app/demo/*/page.tsx` tightened to `p-4 sm:p-8` so embedded
+  components have room to breathe at mobile width.
+
+### Per-route polish
+
+| Route | v1 score | Ticket | PR |
+|---|---|---|---|
+| `/play` | 9/20 | #156 ritual scene polish | #171 |
+| `/demo/ritual` | 9/20 | #156 ritual scene polish | #171 |
+| `/` home | 10/20 | #157 home hero illustration | #169 |
+| `/demo/meters` | 11/20 | #158 TeamMeters polish | #172 |
+| `/demo/hand` | 14/20 | #160 card-back motif | #170 |
+| `/demo/soul-aspect` | 16/20 | #159 Sefirah-keyed accents | #166 |
+
+The remaining routes (`/demo/icons`, `/demo/challenge`,
+`/demo/shell-panel`, `/demo/stat-sheet`, `/demo/tokens`, `/tokens`,
+`/demo/tree`, `/demo/cards`) either scored ≥14/20 in v1 or were
+addressed sufficiently by the cross-cutting work above.
+
+### Regression lock-in
+
+- **#175 — visual regression baselines (Playwright `toHaveScreenshot`).**
+  42 baselines (14 routes × 3 viewports) committed under
+  `e2e/visual-regression.spec.ts-snapshots/`. Future regressions
+  in the post-polish surface fail `pnpm e2e`.
+
+## Per-route scoring (v1 — pre-polish)
 
 Sorted worst-first by total score. Routes with the same total
 appear in declared order.
@@ -308,7 +376,12 @@ fan-out wave to consider:
   needed — but the keyframes for path-travel are defined and
   unwired. A future polish ticket can wire them up safely.
 
-## Fan-out tickets to file (Epic #118 wave 3)
+## Fan-out tickets to file (Epic #118 wave 3) — historical
+
+> **All eight tickets below were filed and merged 2026-04-28.** The
+> proposed scope below is preserved as historical reference; see
+> "What shipped since v1" near the top of this doc for the
+> ticket → PR mapping.
 
 Ordered by playtest leverage. Filenames named explicitly so a
 filer doesn't have to re-derive scope.

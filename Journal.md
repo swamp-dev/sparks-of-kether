@@ -3129,3 +3129,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T09:27:51-04:00 — #184: mark ui-review.md as pre-polish historical (Epic #119 sub-ticket 2)
+
+**Pushed:** Three additions to `design/ui-review.md`, no original content overwritten. (1) Top banner explaining v1 status — wave-3 polish has shipped, scores describe the pre-polish surface, post-polish is locked in pixel-diff baselines by #175. (2) "Next review" subsection naming the trigger (re-score after Epic #118 wave 4 closes — motion pass + empty/error/loading states). (3) "What shipped since v1" section between TL;DR and Per-route scoring, with a route → PR mapping table covering all eight wave-3 polish merges plus the cross-cutting atmosphere (#161), SVG token (#162), and demo chrome (#163) work, plus the regression lock-in via #175.
+**Why:** Third fan-out from the #176 doc-audit (top-3 finding #3). Doc was reviewed pre-polish; preserving the v1 scores as historical baselines (rather than overwriting) lets a future re-review compare deltas.
+**Notes:**
+- Reviewer caught a count error ("five routes not in this table" but eight listed) — dropped the count, kept the list. Also flagged inconsistent v1 labelling on the TL;DR vs the Fan-out section — added a parallel `> v1 pre-polish — historical.` callout block to TL;DR.
+- Per-route prose (one paragraph per route, scoring the four axes) preserved verbatim so a future re-review can compare deltas.
+- Did not re-score from PNGs — the visual regression baselines exist as the post-polish source of truth, but actual re-scoring requires fresh review captures and judgment that belongs to a future review pass when wave 4 closes.
+- Self-cleanup from #182/#183 worked first run — `supabase start` no port-conflict, no manual intervention.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
