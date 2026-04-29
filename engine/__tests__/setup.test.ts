@@ -111,6 +111,143 @@ describe('initializeGame — starting state', () => {
   });
 });
 
+describe('initializeGame — zodiac sign bonuses (#234)', () => {
+  // Filler player so each call satisfies the 2-4 player minimum.
+  const filler: PlayerSetup = {
+    id: 'filler',
+    name: 'F',
+    soulAspect: 'gevurah',
+    stats: DEFAULT_STATS,
+  };
+
+  it('applies the zodiac bonus additively to the rolled stats when zodiacSign is set', () => {
+    // Virgo: ruler + exalt Mercury → +3 intellect; -1 lovingkindness;
+    // -2 passion. Plus Tiferet aspect: +2 harmony.
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'tiferet',
+          zodiacSign: 'virgo',
+          stats: {
+            ...DEFAULT_STATS,
+            intellect: 10,
+            lovingkindness: 10,
+            passion: 10,
+            harmony: 10,
+          },
+        },
+        filler,
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.intellect).toBe(13); // 10 + 3
+    expect(state.players[0]?.stats.lovingkindness).toBe(9); // 10 - 1
+    expect(state.players[0]?.stats.passion).toBe(8); // 10 - 2
+    expect(state.players[0]?.stats.harmony).toBe(12); // 10 + 2 from soul aspect
+    expect(state.players[0]?.stats.body).toBe(DEFAULT_STATS.body); // unchanged
+  });
+
+  it('clamps the resulting stat to the [1, 18] range (D5 — additive, capped 1–18)', () => {
+    // Virgo + intellect 16 + 3 → 19 → CAP 18.
+    // Pisces + intellect 3 + (-3) → 0 → FLOOR 1.
+    const state = initializeGame({
+      players: [
+        {
+          id: 'high',
+          name: 'High',
+          soulAspect: 'tiferet',
+          zodiacSign: 'virgo',
+          stats: { ...DEFAULT_STATS, intellect: 16 },
+        },
+        {
+          id: 'low',
+          name: 'Low',
+          soulAspect: 'tiferet',
+          zodiacSign: 'pisces',
+          stats: { ...DEFAULT_STATS, intellect: 3 },
+        },
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.intellect).toBe(18);
+    expect(state.players[1]?.stats.intellect).toBe(1);
+  });
+
+  it('Scorpio Pluto co-ruler grants +1 unity (Kether-stat that was previously class-neutral)', () => {
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'tiferet',
+          zodiacSign: 'scorpio',
+          stats: { ...DEFAULT_STATS, unity: 10 },
+        },
+        filler,
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.unity).toBe(11);
+  });
+
+  it('Pisces Neptune co-ruler grants +1 insight', () => {
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'tiferet',
+          zodiacSign: 'pisces',
+          stats: { ...DEFAULT_STATS, insight: 10 },
+        },
+        filler,
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.insight).toBe(11);
+  });
+
+  it('zodiacSign is optional: existing players-without-sign behave identically to before', () => {
+    // Sanity: when zodiacSign is absent, only the Soul Aspect bonus
+    // applies. Mirrors the earlier "Soul Aspect +2 bonus" test.
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'tiferet',
+          stats: { ...DEFAULT_STATS, harmony: 12 },
+        },
+        filler,
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.harmony).toBe(14);
+    expect(state.players[0]?.stats.intellect).toBe(DEFAULT_STATS.intellect);
+  });
+
+  it('clamps the Soul Aspect bonus too (17 + 2 = 19 → cap 18)', () => {
+    // Behavior change: pre-#234, stats could exceed 18 via Soul
+    // Aspect alone (3d6 max 18 + 2 = 20). Now clamped to 18 to
+    // match the 1–18 range pinned by D5.
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'tiferet',
+          stats: { ...DEFAULT_STATS, harmony: 17 },
+        },
+        filler,
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.stats.harmony).toBe(18);
+  });
+});
+
 describe('initializeGame — determinism', () => {
   it('same seed produces same deal', () => {
     const a = initializeGame({

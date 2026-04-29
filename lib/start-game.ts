@@ -9,8 +9,9 @@ import type { PlayerRow, RoomRow } from './supabase';
  * Sefirot blessings to build a custom sheet — but the multiplayer
  * blessing UI doesn't exist yet, so for now everyone starts with
  * 10 in every stat. The Soul Aspect's +2 bonus still applies on top
- * via `engine/setup.applySoulAspectBonus`. Per-Sefirah blessings
- * are a follow-up ticket.
+ * via `engine/setup.initializeGame`'s class-bonus step (which also
+ * applies any picked zodiac sign's deltas, post-#234). Per-Sefirah
+ * blessings are a follow-up ticket.
  */
 const DEFAULT_MP_STATS: StatSheet = {
   unity: 10,

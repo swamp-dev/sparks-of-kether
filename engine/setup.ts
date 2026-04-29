@@ -1,5 +1,5 @@
 import { arcana, soulAspectByKey } from '@/data';
-import type { SoulAspectKey, StatKey } from '@/data';
+import type { SoulAspectKey, StatKey, ZodiacSignKey } from '@/data';
 import type { Rng } from './rng';
 import {
   EMPTY_ABILITY_FLAGS,
@@ -7,19 +7,38 @@ import {
   EMPTY_SHELL_STATE,
 } from './types';
 import type { GameState, PlayerState, StatSheet } from './types';
+import { zodiacBonus } from './zodiac-bonus';
 
 /**
  * Per-player setup input — what the lobby has gathered before dealing.
  * Stats come from the Sefirot-blessing ritual (#27); soulAspect from
- * the Soul Aspect picker (#28). The +2 bonus for the Soul Aspect is
- * NOT yet folded into `stats` — `initializeGame` applies it.
+ * the Soul Aspect picker (#28); zodiacSign from the new astrological-
+ * class picker (Epic #212). Class bonuses are NOT yet folded into
+ * `stats` — `initializeGame` applies them and clamps to [1, 18].
+ *
+ * `zodiacSign` is optional during the #212 transition: callers that
+ * haven't yet wired the picker (hot-seat, multiplayer-flow tests, the
+ * legacy lobby) keep their existing Soul-Aspect-only behaviour. T7
+ * (#236) wires the orchestration; T8 (#237) makes it required and
+ * removes Soul Aspects.
  */
 export interface PlayerSetup {
   readonly id: string;
   readonly name: string;
   readonly soulAspect: SoulAspectKey;
+  readonly zodiacSign?: ZodiacSignKey;
   readonly stats: StatSheet;
 }
+
+/**
+ * Stat clamp range. Per `design/astrological-classes.md` § 6 D5:
+ * "Sign bonus is applied additively to the rolled 3d6 stat at game
+ * start, capped to a floor of 1 and ceiling of 18 (matching 3d6's
+ * natural range)." Applied to the *combined* class-bonus result so
+ * Soul Aspect + Zodiac stack additively before clamping.
+ */
+const STAT_FLOOR = 1;
+const STAT_CEILING = 18;
 
 /**
  * Hand size dealt at game start. Per `design/mechanics.md` § Starting
@@ -57,15 +76,35 @@ export function deckCountFor(playerCount: number): 1 | 2 {
 }
 
 /**
- * Bonus stat per Soul Aspect. Mirrors `data/soul-aspects.ts`'s
- * `bonusStat` field; resolved at deal time so the resulting
- * `PlayerState.stats` already reflects the +2 the player rolls with.
+ * Apply class bonuses (Soul Aspect +2 to its bonus stat, plus zodiac
+ * deltas if a sign is picked) additively to the rolled stats and
+ * clamp each stat to [STAT_FLOOR, STAT_CEILING].
+ *
+ * The clamp is applied to the *combined* result, not each bonus
+ * individually — so a 17 rolled stat gaining +2 (Soul Aspect) +3
+ * (Virgo Mercury double-count) ends at 18, not at 17 + 5 = 22.
+ *
+ * **Behaviour change vs pre-#234**: the old `applySoulAspectBonus`
+ * did not clamp, so a player who rolled 17 for their Soul Aspect's
+ * bonus stat could end up at 19. That latent over-cap is now
+ * clamped to 18 — design D5 pins the 1–18 range.
  */
-function applySoulAspectBonus(
+function applyClassBonuses(
   stats: StatSheet,
-  bonusStat: StatKey,
+  soulAspect: SoulAspectKey,
+  zodiacSign: ZodiacSignKey | undefined,
 ): StatSheet {
-  return { ...stats, [bonusStat]: stats[bonusStat] + 2 };
+  const aspectBonusStat = soulAspectByKey(soulAspect).bonusStat;
+  const zodiacDeltas: Partial<StatSheet> =
+    zodiacSign !== undefined ? zodiacBonus(zodiacSign) : {};
+  const out: Partial<Record<StatKey, number>> = {};
+  for (const stat of Object.keys(stats) as StatKey[]) {
+    const aspectAdd = stat === aspectBonusStat ? 2 : 0;
+    const zodiacAdd = zodiacDeltas[stat] ?? 0;
+    const raw = stats[stat] + aspectAdd + zodiacAdd;
+    out[stat] = Math.max(STAT_FLOOR, Math.min(STAT_CEILING, raw));
+  }
+  return out as StatSheet;
 }
 
 /**
@@ -131,12 +170,10 @@ export function initializeGame(input: InitializeGameInput): GameState {
   const playerStates: PlayerState[] = players.map((p, idx) => {
     const start = idx * STARTING_HAND_SIZE;
     const hand = shuffled.slice(start, start + STARTING_HAND_SIZE);
-    // Pull the bonus stat from the data layer's throwing lookup
-    // instead of accepting a pre-computed map — that way an unknown
-    // soul-aspect key fails loudly rather than silently NaN-ing the
-    // resulting stat.
-    const bonusStat = soulAspectByKey(p.soulAspect).bonusStat;
-    const stats = applySoulAspectBonus(p.stats, bonusStat);
+    // Apply Soul Aspect +2 + zodiac deltas (if any), clamp to [1, 18].
+    // Lookup helpers throw on unknown keys, so a bad soulAspect or
+    // zodiacSign fails loudly rather than silently NaN-ing the result.
+    const stats = applyClassBonuses(p.stats, p.soulAspect, p.zodiacSign);
     return {
       id: p.id,
       name: p.name,

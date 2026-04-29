@@ -3471,3 +3471,20 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (854 tests, no code changes from this PR), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T18:10:15-04:00 — #234 (T5/#212): zodiac bonus integrated into initializeGame
+
+**Pushed:** `engine/setup.ts` `PlayerSetup` gains optional `zodiacSign?: ZodiacSignKey`; private `applySoulAspectBonus` replaced with `applyClassBonuses` that folds Soul Aspect +2 + zodiac deltas additively into rolled stats then clamps each stat to [1, 18] per design D5. Stale comment in `lib/start-game.ts` referencing the renamed helper refreshed.
+
+**Why:** Sub-ticket T5 of Epic #212. Wires the `zodiacBonus` engine helper from #246 into game start so a player's chosen sign actually moves their stats.
+
+**Notes:**
+- `zodiacSign` is OPTIONAL during the transition (T7 wires the picker; T8 makes it required and removes Soul Aspects). Existing callsites — hot-seat `app/play/page.tsx`, `lib/start-game.ts`, fixtures, multiplayer-flow tests — work unchanged because the absent zodiacSign falls through to Soul-Aspect-only behaviour.
+- **Behaviour change:** the old code never clamped, so a player rolling 17 for their Soul Aspect's bonus stat could end up at 19 (3d6 max 18 + Soul Aspect +2 = 20). D5 pins the 1-18 range, so the new clamp closes that latent over-cap. No existing test hit that edge so no test churn.
+- TDD-first: 6 failing tests covered Virgo's full 4-stat profile (intellect +3 / lovingkindness -1 / passion -2 / Soul Aspect harmony +2), the cap edges (Virgo 16+3 → 18, Pisces 3-3 → 1), Pluto co-ruler unity (Scorpio +1), Neptune co-ruler insight (Pisces +1), the optional-zodiacSign backward compat, and the new Soul-Aspect-only over-cap clamp.
+- Code-reviewer caught one stale doc comment in `lib/start-game.ts` referencing the renamed helper. Fixed.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (860 tests; +6 new), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
