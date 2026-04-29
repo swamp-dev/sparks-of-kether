@@ -45,6 +45,22 @@ soul of the game lives here; any implementation is downstream.
 The `reference/` files are the raw source of truth for the symbolic system;
 the `design/` files describe how the game uses them.
 
+## Gameplay
+
+A walk through the surfaces in the order a player meets them.
+
+| | |
+|---|---|
+| ![Soul Aspect picker](assets/marketing/demo-soul-aspect-desktop.png) | **Choose your role.** Heart, Boundary-Keeper, Giver, Mind, Feeler, or Dreamer — six aspects keyed to the Sefirot of personality. Each grants a +2 stat and a once-per-game ability. |
+| ![Blessing Ritual](assets/marketing/demo-ritual-desktop.png) | **The opening ritual.** Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat. The atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible. |
+| ![Tree of Life board](assets/marketing/demo-tree-desktop.png) | **The board.** Ten Sefirot connected by twenty-two paths — the geometry the team traverses together. |
+| ![Play surface](assets/marketing/play-desktop.png) | **The play surface.** Board, hand, and shared meters all in view. |
+| ![Team Meters](assets/marketing/demo-meters-desktop.png) | **Illumination vs Separation.** The two team-wide counters that decide the run. Pillar-streak columns track which side of the Tree the team has been favouring. |
+| ![Major Arcana grid](assets/marketing/demo-cards-desktop.png) | **22 path-keys.** A symbolic-minimalist deck of the Major Arcana — each card a key, each key a path between Sefirot. |
+
+For a stable image URL set (e.g. for sharing or for a future
+landing page), see [`assets/marketing/README.md`](assets/marketing/README.md).
+
 ## Running the web app
 
 The web implementation is a Next.js 14 (App Router) project using

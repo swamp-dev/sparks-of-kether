@@ -3211,3 +3211,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T10:42:16-04:00 — #196: gameplay gallery in README (Epic #119 sub-ticket 8)
+
+**Pushed:** New `## Gameplay` section in README between `## Where to look` and `## Running the web app`. 6 captioned images in narrative order — Soul Aspect picker, Blessing Ritual, Tree of Life, mid-game play surface, Team Meters, Major Arcana — sourced from `assets/marketing/`. 2-column markdown table layout. Trailing pointer to `assets/marketing/README.md` for the full pack index.
+**Why:** Sub-ticket 8 of Epic #119 Part 2. The hero band (#194/#195) introduces the game; the gallery walks through the surfaces in the order a player meets them.
+**Notes:**
+- Images use markdown `![alt](path)` syntax (not HTML `<img>`) so the link drift-check from #189 catches a missing asset on rename. Reviewer's width-cap suggestion (`<img width="400">`) trades drift-check coverage for tidy table rendering — punted to a follow-up if mobile-readability becomes an issue. GitHub's default rendering keeps table cells reasonably sized.
+- Reviewer cut the redundant trailing sentence on row 4 ("The game gives you the whole picture at once.") — the lead "The play surface. Board, hand, and shared meters all in view." already says the same thing. Sharpened.
+- Skipped `home-desktop.png` from the gallery — it's already the README hero, no point repeating.
+- Skipped Lobby / Encounter / Shell awakening / Victory shots — those play-state surfaces don't have static-route screenshots in the marketing pack yet. The ticket body acknowledges this; capturing them is a follow-up.
+- 47 → 54 link/anchor drift-check assertions (6 new image embeds + 1 new link to `assets/marketing/README.md`).
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (760 + 1 todo / 761), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
