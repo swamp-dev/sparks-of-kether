@@ -3117,3 +3117,15 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (incl. 42 visual-regression assertions), integration ✓ (after the port-conflict cleanup).
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T09:17:27-04:00 — #182: ci-local self-cleanup of stray Supabase stack
+
+**Pushed:** One-line fix in `scripts/ci-local.sh`: run an idempotent `pnpm exec supabase stop --no-backup` immediately before `supabase start` in the integration step. Reaps any stray stack from a prior run that exited abruptly (terminal close, parent-process kill) where bash's EXIT trap didn't fire. The `supabase stop` CLI is a no-op when nothing is running, so unconditional pre-cleanup is safe.
+**Why:** Surfaced during #180. The script's trap-on-EXIT/INT/TERM is correct for the success path and most failure paths, but bash doesn't propagate a parent-process kill into the EXIT trap. Result: `pnpm ci:local`'s integration step would error at `supabase start` with a port-54322 conflict, requiring a manual `supabase stop` to recover. With the rule being "run `pnpm ci:local` before every merge," that's a real friction point.
+**Notes:**
+- Verified by leaving a stack running (`pnpm exec supabase start`), then running `pnpm ci:local` — the integration step booted cleanly without intervention.
+- Reviewer noted the stdout suppression on the pre-clean call masks the "Docker daemon not running" case; that error still surfaces from the immediately-following `supabase start` (just with a less-specific error message). Acceptable trade.
+- The original trap-on-exit stays unchanged — it's still the right thing for clean shutdown.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_

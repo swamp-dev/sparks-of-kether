@@ -70,6 +70,11 @@ else
   # uncaught signals, so a Ctrl-C mid-run would otherwise leave the
   # Supabase containers running.
   trap 'pnpm exec supabase stop --no-backup > /dev/null 2>&1 || true' EXIT INT TERM
+  # Reap any stray stack from a prior run that exited abruptly
+  # (terminal close, parent-process kill — bash's EXIT trap doesn't
+  # fire in those cases). Idempotent: `supabase stop` no-ops when
+  # nothing is running, so this is safe to call unconditionally.
+  pnpm exec supabase stop --no-backup > /dev/null 2>&1 || true
   pnpm exec supabase start || fail "supabase start"
 
   # `supabase status -o env` writes to a tmpfile that contains a
