@@ -3402,3 +3402,21 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (792 tests; +1 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T17:05:53-04:00 — #223: encounter prep → resolve → react phase contract
+
+**Pushed:** `design/encounter-prep-phase.md` — locked design doc for the three-act encounter rhythm (prep → resolve → react). Refinement on Epic #117. Sub-tickets E1 (#226 engine), E2 (#227 multiplayer), E3 (#228 UI), E4 (#229 hot-seat) filed.
+
+**Why:** Closing #223. The current `'challenge'` phase collapsed modifier-and-roll into a single moment — mechanically dense, visually thin, no window for multiplayer co-op coordination. Splitting into prep (declare modifiers) → resolve (d20 + outcome) → react (advance or burn-and-retry) gives each encounter the staging-then-engage rhythm an action-RPG provides via gear-and-fight, but in turn-based form. Sits underneath whatever per-Sefirah avatar mechanics Epic #117 sub-tickets 1–3 ship.
+
+**Notes:**
+- Locked phase model: keep `TurnPhase` unchanged at `'move' | 'challenge' | 'draw' | 'end'`; add `challengeSubPhase: 'prep' | 'resolve' | 'react'` on `TurnSnapshot`. Minimizes blast radius — external consumers gating on top-level phase don't change.
+- Locked action vocabulary: 4 new `ClientAction` kinds, all active-player-only (`prep-add-modifier`, `prep-remove-modifier`, `prep-confirm`, `react-retry`). Authorize gate stays unchanged. Existing `submit-challenge` removed end-to-end (engine TurnEvent + wire format) — reducer transitions prep → resolve internally on `prep-confirm`.
+- Locked ally consent model: out-of-band (voice/chat). Active player stages ally Spark via `spark-burn { sourcePlayerId }` modifier with optional ally id; ally consent is the table conversation, not a wire round-trip. The doc explicitly flags that E3 should NOT build an "offer my Spark" button — the ally UI shows what the active player has staged on their behalf and offers a "no" path via voice/chat.
+- Two review rounds. Round 1 caught 6 items (allyId→stat translation gap, anchor mislabeling, UseTurnReturn shape undefined, prep-confirm-assist 403 risk, E1/E4 boundary ambiguity, missing ally-Spark-offer action). Round 2 caught 3 items (structural-equality wording, missing "no in-band offer" statement, submit-challenge removal scope reconciliation). All addressed; doc locked.
+- Anchors: `lib/turn-machine.ts:turnReducer`, `engine/checks.ts:resolveChallenge`, `lib/room-actions.ts:applyClientAction`, `lib/room-actions.ts:ClientAction`. All resolve.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (795 tests, no code changes from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
+
+**Commit(s):** _filled in after push_
