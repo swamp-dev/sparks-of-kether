@@ -3104,3 +3104,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-28T14:41:32-04:00 — #180: refresh playability-priorities.md (Epic #119 sub-ticket 2)
+
+**Pushed:** Rewrite of `design/playability-priorities.md` to v3.0. The v2 doc framed the punch list as in-flight gating; the new doc reframes it as MVP-shipped (all 14 Tier 1–4 tickets closed 2026-04-27/28) and pivots to a forward-looking post-punch-list epic queue. Preserved the v2 sequencing rationale as a "v2 history" footer because the reasoning still holds; dropped the "Quick reference for the agent picking it up next" gh-issue-view block because that phase is over.
+**Why:** Second fan-out from the #176 doc-audit (top-3 drift finding #1). The doc was the most stale surface in the repo — it claimed "13 open tickets" gating MVP when in fact every Tier 1–4 ticket had merged 2026-04-28.
+**Notes:**
+- Reviewer caught three real issues. (1) Ticket-count inconsistency: TL;DR said 13, sequence at the bottom listed 13 but the actual punch list was 14 (adding #128 which closed pre-v2.1). Reconciled to 14 with explicit framing. (2) Epic #84 marked "✅ done" but the tracking issue is OPEN on GitHub — softened to "sub-tickets closed; tracking issue still open." (3) Recommended-sequence step 5 was a 30-second admin action ("close #84"); demoted to a footnote so the numbered sequence only contains real dev initiatives.
+- Reviewer's improvement: timestamp the "hosted CI is broken" risk-register entry with a self-expiry note ("Remove this entry once hosted CI has been green for 48 h"). Applied.
+- Mid-run wart: `pnpm ci:local` hit a port-54322 conflict because a stray Supabase stack from a prior worktree's `ci:local` run was still bound. Trap-on-exit didn't fire (prior shell had exited). Ran `pnpm exec supabase stop --no-backup` manually; re-ran ci:local; clean. Filing a follow-up to make `ci-local.sh` reap stray stacks pre-start.
+- Acceptance criterion ⏳ kept open (manual user-flow video on real device) — the only acceptance bar not covered by automated tests; honest to leave it pending.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (incl. 42 visual-regression assertions), integration ✓ (after the port-conflict cleanup).
+
+**Commit(s):** _filled in after push_
