@@ -3251,3 +3251,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (760 + 1 todo), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T11:38:50-04:00 — #203: refresh stale /demo/meters baselines
+
+**Pushed:** Refreshed three visual-regression baselines (`demo-meters-{desktop,tablet,mobile}-chromium-linux.png`) to reflect the post-#172 polish actually shipped. Refreshed `assets/marketing/demo-meters-desktop.png` to match (the pack inherited the staleness).
+**Why:** Surfaced while working on #202 (/about landing). The committed baselines from #175 showed pre-polish TeamMeters: thin (16 px) flat-color bars, "Pillar streak Mercy 2/3 (imbalance)" text caption. Post-#172 the production code renders 48 px gradient bars and a three-column M/S/B pillar widget. The baseline never reflected the merged code.
+**Notes:**
+- Root cause: when I generated baselines for #175, my dev server was being shared (Playwright `reuseExistingServer: true`) with a stale `pnpm dev` running pre-polish code from a different worktree. Stale server served pre-polish JS; screenshots captured it; wrong baseline got committed. Same class of issue surfaced in #202's verification workflow.
+- Spot-checked other wave-3 routes against current code: `/`, `/demo/ritual`, `/demo/soul-aspect`, `/demo/cards` all clean — only demo-meters is stale.
+- Possible follow-up: tighten the baseline-update workflow (e.g. `webServer.reuseExistingServer: false` for `--update-snapshots` runs, or a `pnpm` script that kills stale dev servers first). Filing as a thought, not in this PR.
+- Marketing pack copy refreshed alongside (`assets/marketing/demo-meters-desktop.png` = same MD5 as the baseline).
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓ (all 42 visual regression baselines match), integration ✓.
+
+**Commit(s):** _filled in after push_
