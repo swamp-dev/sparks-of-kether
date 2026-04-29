@@ -19,7 +19,7 @@ import { RitualLedger } from './RitualLedger';
  *   1. Sefirah essence line + invocation appear.
  *   2. Player rolls 3d6 (or auto-rolls when entering the step;
  *      configurable later).
- *   3. The total reveals; "Receive this blessing" advances.
+ *   3. The total reveals; the player clicks **Next** to advance.
  * After Malkuth, a summary screen lists all 10 stats and waits for
  * an explicit "Continue" click before emitting `onComplete(statSheet)`.
  * The Continue gate (#215) ensures the user actually sees the recap
@@ -27,8 +27,10 @@ import { RitualLedger } from './RitualLedger';
  * stepIndex crossed sefirot.length, and the parent unmounted us
  * before the Summary committed visibly.
  *
- * State machine per step: `'awaiting' → 'rolled' → 'received'`. The
- * received → next-step transition happens on the advance click.
+ * State machine per step: `'awaiting' → 'rolled'`. The advance click
+ * jumps to the next step's `'awaiting'`. The earlier "Receive this
+ * blessing" CTA was dead weight — there is no real alternative once
+ * the dice land — so #250 collapsed it to a single Next click.
  *
  * Pure presentation. The component takes a seeded `rng` so tests can
  * assert exact rolls. Production callers wire the engine's session
@@ -41,7 +43,7 @@ interface BlessingRitualProps {
   readonly className?: string;
 }
 
-type StepStatus = 'awaiting' | 'rolled' | 'received';
+type StepStatus = 'awaiting' | 'rolled';
 
 export function BlessingRitual({
   rng,
@@ -109,7 +111,7 @@ export function BlessingRitual({
   // loudly if a future regression skips a step instead of silently
   // passing an incomplete StatSheet downstream), then fires
   // `onComplete`. Was previously a `useEffect` keyed on `stepIndex`
-  // — that fired synchronously the moment the final Receive click
+  // — that fired synchronously the moment the 10th advance click
   // committed, and the parent unmounted us before the Summary
   // screen was visible.
   const handleContinue = (): void => {
@@ -321,7 +323,7 @@ function RollDisplay({ roll, stat, onAdvance }: RollDisplayProps): JSX.Element {
         data-action="advance"
         className="rounded border border-illumination px-4 py-2 text-sm tracking-widest"
       >
-        Receive this blessing
+        Next
       </button>
     </div>
   );

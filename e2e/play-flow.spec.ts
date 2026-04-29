@@ -39,10 +39,10 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
       page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
     ).toBeVisible();
 
-    // Ten steps: Roll 3d6 → Receive this blessing.
+    // Ten steps: Roll 3d6 → Next.
     for (let step = 0; step < 10; step++) {
       await page.getByRole('button', { name: /Roll 3d6/i }).click();
-      await page.getByRole('button', { name: /Receive this blessing/i }).click();
+      await page.getByRole('button', { name: /^Next$/i }).click();
     }
 
     // #215: the ritual now pauses on a Summary screen so the user

@@ -3543,3 +3543,18 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (66 files / 889 passed / 1 todo), build ✓, e2e ✓ (62 passed / 45 skipped), integration ✓ (1/1).
 
 **Commit(s):** `2905d89` (impl), `b883780` (review tightening)
+
+## 2026-04-29T19:27:39-04:00 — #250: remove "Receive Blessing" CTA, rename to "Next"
+
+**Pushed:** the per-step pacing change in `components/setup/BlessingRitual.tsx`. The "Receive this blessing" button was dead weight (no real alternative once the dice land); collapsed to a simple "Next" advance. `StepStatus` type narrowed from `'awaiting' | 'rolled' | 'received'` to `'awaiting' | 'rolled'` — the third value was never set anywhere in the code, so this is documentation cleanup as much as functional change.
+
+**Why:** Standalone ticket #250. Unblocks Sefirah-Voices Epic #251 T4 (UI quote rendering builds on the cleaned-up 2-state per-step view).
+
+**Notes:**
+- TDD-first: existing tests updated (`/Receive/i` → `/^Next$/i`, anchored to avoid collisions), plus two new regression-guards: a 10-step loop asserting `/Receive/i` is absent at every Sefirah pre- and post-roll, and a `data-status` attribute check that the state machine only takes `'awaiting'` / `'rolled'` (no `'received'` linger). Failing-test commit (`fe7cc1d`) precedes implementation (`f400730`).
+- Code-reviewer caught the 10-step loop test originally only covered step 1 — docblock claimed "at any step" but assertion didn't loop. Loop fix in `b60521e`. Plus a stale "final Receive click" phrase in `handleContinue`'s docblock corrected to "10th advance click."
+- Re-review pass confirmed the loop covers all 10 Sefirot and a regression on any single step trips the assertion. No new issues.
+- Existing `#133` (skip-ceremony) and `#215` (Summary pause) tests preserved; both still meaningfully exercise their flows with the new selector.
+- Full `pnpm ci:local`: verify ✓, build ✓, e2e ✓ (62 passed), integration ✓ (1/1).
+
+**Commit(s):** `f400730` (impl), `b60521e` (review fix)

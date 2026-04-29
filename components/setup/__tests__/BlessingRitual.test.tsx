@@ -21,7 +21,7 @@ describe('BlessingRitual — flow', () => {
       <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     expect(container.querySelector('[data-sefirah]')?.getAttribute('data-sefirah')).toBe('chokmah');
   });
 
@@ -37,7 +37,7 @@ describe('BlessingRitual — flow', () => {
     );
     for (const _ of sefirot) {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     }
     fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(result, 'onComplete should have been called').not.toBeNull();
@@ -62,7 +62,7 @@ describe('BlessingRitual — flow', () => {
       );
       for (const _ of sefirot) {
         fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-        fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+        fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
       }
       fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
       unmount();
@@ -78,14 +78,55 @@ describe('BlessingRitual — flow', () => {
 });
 
 describe('BlessingRitual — step gating', () => {
-  it('Receive button is absent until the Roll has been clicked', () => {
+  it('Next button is absent until the Roll has been clicked', () => {
     render(<BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />);
-    // Before rolling, no Receive button.
-    expect(screen.queryByRole('button', { name: /Receive/i })).toBeNull();
+    // Before rolling, no Next button.
+    expect(screen.queryByRole('button', { name: /^Next$/i })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-    // After rolling, Roll is gone, Receive is present.
+    // After rolling, Roll is gone, Next is present.
     expect(screen.queryByRole('button', { name: /Roll 3d6/i })).toBeNull();
-    expect(screen.getByRole('button', { name: /Receive/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Next$/i })).toBeInTheDocument();
+  });
+
+  // #250: the prior "Receive this blessing" CTA was dead weight — there
+  // is no real alternative once the dice land — so it was renamed to a
+  // simpler "Next" advance. This test guards against regression: the
+  // word "Receive" must not appear on any button at any of the 10
+  // steps, pre-roll or post-roll. Loop matters: a regression that
+  // adds "Receive" back conditionally (e.g. only on a particular
+  // Sefirah) must trip this assertion.
+  it('does not render a "Receive" CTA at any of the 10 steps (#250)', () => {
+    render(<BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />);
+    for (const s of sefirot) {
+      expect(
+        screen.queryByRole('button', { name: /Receive/i }),
+        `pre-roll at ${s.key}`,
+      ).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      expect(
+        screen.queryByRole('button', { name: /Receive/i }),
+        `post-roll at ${s.key}`,
+      ).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    }
+  });
+
+  // #250 sanity: the per-step state machine has exactly two states
+  // (awaiting / rolled). The "received" intermediate state was removed
+  // — it was never reachable in code anyway, but the type left it
+  // available, which is misleading documentation.
+  it('data-status attribute is only "awaiting" or "rolled" mid-ceremony (#250)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
+    );
+    const root = container.querySelector('[data-blessing-ritual]');
+    expect(root?.getAttribute('data-status')).toBe('awaiting');
+    fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    expect(root?.getAttribute('data-status')).toBe('rolled');
+    fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    // After Next, we're at the next step's `awaiting` — never linger
+    // in a 'received' state.
+    expect(root?.getAttribute('data-status')).toBe('awaiting');
   });
 
   it('shows the rolled total visibly after Roll', () => {
@@ -116,7 +157,7 @@ describe('BlessingRitual — onComplete', () => {
     render(<BlessingRitual rng={seededRng(1)} onComplete={onComplete} />);
     for (const _ of sefirot) {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     }
     expect(onComplete).not.toHaveBeenCalled();
     // Summary is visible.
@@ -133,7 +174,7 @@ describe('BlessingRitual — onComplete', () => {
     // Halfway through.
     for (let i = 0; i < 5; i++) {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     }
     expect(onComplete).not.toHaveBeenCalled();
   });
@@ -161,7 +202,7 @@ describe('BlessingRitual — summary', () => {
     );
     for (const _ of sefirot) {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     }
     // The summary is on screen WITHOUT onComplete having fired —
     // pre-#215 the parent unmounted us before the user saw it.
@@ -229,10 +270,10 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
         }}
       />,
     );
-    // Roll + receive the first two Sefirot manually.
+    // Roll + advance the first two Sefirot manually.
     for (let i = 0; i < 2; i++) {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     }
     // Skip from the third step onward.
     fireEvent.click(screen.getByRole('button', { name: /Skip/i }));
@@ -284,9 +325,9 @@ describe('BlessingRitual — scene polish (#156)', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} onComplete={vi.fn()} />,
     );
-    // Roll Kether and receive — the row should now report a value.
+    // Roll Kether and advance — the row should now report a value.
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     const ketherValue = container.querySelector('[data-ledger-value="unity"]');
     expect(ketherValue?.textContent).toMatch(/^\d+$/);
     const malkuthValue = container.querySelector('[data-ledger-value="body"]');
