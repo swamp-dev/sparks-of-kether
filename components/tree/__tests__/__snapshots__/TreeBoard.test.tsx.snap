@@ -134,12 +134,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="11"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="200"
-        x2="320"
-        y1="60"
-        y2="150"
+        x1="222.4"
+        x2="297.6"
+        y1="76.8"
+        y2="133.2"
       />
       <line
         pointer-events="none"
@@ -165,12 +165,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="12"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="200"
-        x2="80"
-        y1="60"
-        y2="150"
+        x1="177.6"
+        x2="102.4"
+        y1="76.8"
+        y2="133.2"
       />
       <line
         pointer-events="none"
@@ -196,12 +196,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="13"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="200"
         x2="200"
-        y1="60"
-        y2="340"
+        y1="88"
+        y2="312"
       />
       <line
         pointer-events="none"
@@ -227,10 +227,10 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="14"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="80"
+        x1="292"
+        x2="108"
         y1="150"
         y2="150"
       />
@@ -258,12 +258,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="15"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="200"
-        y1="150"
-        y2="340"
+        x1="305.0481962411365"
+        x2="214.9518037588635"
+        y1="173.67368928486718"
+        y2="316.3263107151328"
       />
       <line
         pointer-events="none"
@@ -289,12 +289,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="16"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="320"
         x2="320"
-        y1="150"
-        y2="280"
+        y1="178"
+        y2="252"
       />
       <line
         pointer-events="none"
@@ -320,12 +320,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="17"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="80"
-        x2="200"
-        y1="150"
-        y2="340"
+        x1="94.95180375886349"
+        x2="185.0481962411365"
+        y1="173.67368928486718"
+        y2="316.3263107151328"
       />
       <line
         pointer-events="none"
@@ -351,12 +351,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="18"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="80"
         x2="80"
-        y1="150"
-        y2="280"
+        y1="178"
+        y2="252"
       />
       <line
         pointer-events="none"
@@ -382,10 +382,10 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="19"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="80"
+        x1="292"
+        x2="108"
         y1="280"
         y2="280"
       />
@@ -413,12 +413,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="20"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="200"
-        y1="280"
-        y2="340"
+        x1="294.95603865200235"
+        x2="225.04396134799765"
+        y1="292.5219806739988"
+        y2="327.4780193260012"
       />
       <line
         pointer-events="none"
@@ -444,12 +444,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="21"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="320"
         x2="320"
-        y1="280"
-        y2="430"
+        y1="308"
+        y2="402"
       />
       <line
         pointer-events="none"
@@ -475,12 +475,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="22"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="80"
-        x2="200"
-        y1="280"
-        y2="340"
+        x1="105.04396134799764"
+        x2="174.95603865200235"
+        y1="292.5219806739988"
+        y2="327.4780193260012"
       />
       <line
         pointer-events="none"
@@ -506,12 +506,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="23"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="80"
         x2="80"
-        y1="280"
-        y2="430"
+        y1="308"
+        y2="402"
       />
       <line
         pointer-events="none"
@@ -537,12 +537,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="24"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="200"
-        x2="320"
-        y1="340"
-        y2="430"
+        x1="222.4"
+        x2="297.6"
+        y1="356.8"
+        y2="413.2"
       />
       <line
         pointer-events="none"
@@ -568,12 +568,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="25"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="200"
         x2="200"
-        y1="340"
-        y2="490"
+        y1="368"
+        y2="462"
       />
       <line
         pointer-events="none"
@@ -599,12 +599,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="26"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="200"
-        x2="80"
-        y1="340"
-        y2="430"
+        x1="177.6"
+        x2="102.4"
+        y1="356.8"
+        y2="413.2"
       />
       <line
         pointer-events="none"
@@ -630,10 +630,10 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="27"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="80"
+        x1="292"
+        x2="108"
         y1="430"
         y2="430"
       />
@@ -661,12 +661,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="28"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="200"
-        y1="430"
-        y2="490"
+        x1="294.95603865200235"
+        x2="225.04396134799765"
+        y1="442.5219806739988"
+        y2="477.4780193260012"
       />
       <line
         pointer-events="none"
@@ -692,12 +692,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="29"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="320"
-        x2="200"
-        y1="430"
-        y2="560"
+        x1="301.0081571234742"
+        x2="218.99184287652585"
+        y1="450.57449644956966"
+        y2="539.4255035504303"
       />
       <line
         pointer-events="none"
@@ -723,12 +723,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="30"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="80"
-        x2="200"
-        y1="430"
-        y2="490"
+        x1="105.04396134799764"
+        x2="174.95603865200235"
+        y1="442.5219806739988"
+        y2="477.4780193260012"
       />
       <line
         pointer-events="none"
@@ -754,12 +754,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="31"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
-        x1="80"
-        x2="200"
-        y1="430"
-        y2="560"
+        x1="98.99184287652585"
+        x2="181.00815712347415"
+        y1="450.57449644956966"
+        y2="539.4255035504303"
       />
       <line
         pointer-events="none"
@@ -785,12 +785,12 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <line
         data-path-hit="32"
         stroke="transparent"
-        stroke-linecap="round"
+        stroke-linecap="butt"
         stroke-width="28"
         x1="200"
         x2="200"
-        y1="490"
-        y2="560"
+        y1="518"
+        y2="532"
       />
       <line
         pointer-events="none"

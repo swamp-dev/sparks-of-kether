@@ -162,6 +162,10 @@ export function TreeBoard({
         {paths.map((path) => {
           const a = nodeLayout[path.from];
           const b = nodeLayout[path.to];
+          // #213: trimmed coordinates for the invisible hit-line.
+          // The visible line still runs a→b; only the click target
+          // is shrunk to live in the gap between the node circles.
+          const hit = trimEndpoints(a, b, NODE_RADIUS);
           const letter = letterByKey(path.letterKey);
           const fromName = sefirahByKey(path.from).englishName;
           const toName = sefirahByKey(path.to).englishName;
@@ -206,21 +210,28 @@ export function TreeBoard({
                 #130: invisible wide-stroke hit-line so the path is
                 tappable on a finger-sized target, not just the
                 visible 1.5–3px stroke. PATH_HIT_WIDTH widens the
-                invisible target toward the WCAG 2.5.5 mobile minimum
-                (44px on a 320px viewport renders this 28px viewBox-
-                unit stroke at ~22.4px — close enough; the visible
-                board scales up beyond that on desktop). The visible
-                line and label disc paint over the top.
+                invisible target toward the WCAG 2.5.5 mobile minimum.
+
+                #213: trim each endpoint inward by NODE_RADIUS so the
+                hit-zone lives strictly between the two Sefirah node
+                circles, not under them. The Sefirah nodes paint
+                later in the SVG render order and intercept clicks
+                first, so a hit-line that overlaps a node was
+                effectively "stolen" — short central-pillar paths
+                (Yesod ↔ Malkuth in particular) had almost no
+                clickable surface. `linecap="butt"` prevents the
+                rounded cap from extending half-stroke-width back
+                toward the node we just trimmed past.
               */}
               <line
                 data-path-hit={path.number}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
+                x1={hit.x1}
+                y1={hit.y1}
+                x2={hit.x2}
+                y2={hit.y2}
                 stroke="transparent"
                 strokeWidth={PATH_HIT_WIDTH}
-                strokeLinecap="round"
+                strokeLinecap="butt"
               />
               <line
                 x1={a.x}
@@ -367,6 +378,39 @@ export function TreeBoard({
       </g>
     </svg>
   );
+}
+
+/**
+ * Pure: shrink the segment a→b inward by `inset` units along its own
+ * direction, returning the new endpoints. Used by the path hit-line
+ * (#213) so its interactive zone doesn't overlap the Sefirah node
+ * circles that paint on top and intercept clicks first.
+ *
+ * If the segment is shorter than `2 × inset` (no real-world Tree path
+ * is, but defensively), returns the midpoint for both endpoints — the
+ * hit-line collapses to a degenerate point rather than inverting.
+ */
+function trimEndpoints(
+  a: NodeLayout,
+  b: NodeLayout,
+  inset: number,
+): { x1: number; y1: number; x2: number; y2: number } {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len <= 2 * inset) {
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    return { x1: mx, y1: my, x2: mx, y2: my };
+  }
+  const ux = dx / len;
+  const uy = dy / len;
+  return {
+    x1: a.x + ux * inset,
+    y1: a.y + uy * inset,
+    x2: b.x - ux * inset,
+    y2: b.y - uy * inset,
+  };
 }
 
 const STARS: readonly (readonly [number, number, number])[] = [

@@ -284,6 +284,63 @@ describe('TreeBoard — path hit-target widening (#130)', () => {
     expect(onPathClick).toHaveBeenCalledExactlyOnceWith(13);
   });
 
+  // #213: short paths between adjacent Sefirot (notably Yesod ↔
+  // Malkuth on the central pillar) had hit-lines that ran from one
+  // node center to the other. Because each Sefirah node is a circle
+  // of radius NODE_RADIUS=28 painted on top of the path layer, the
+  // hit-line was almost entirely inside the two end-nodes, which
+  // stole every click. The fix: trim each hit-line endpoint inward
+  // by NODE_RADIUS so the interactive zone lives strictly in the
+  // gap between nodes.
+  it('hit-line endpoints are trimmed by NODE_RADIUS so they live between the nodes (#213)', () => {
+    // Path 32 is the central-pillar Yesod ↔ Malkuth path.
+    // Yesod sits at (200, 490); Malkuth at (200, 560). NODE_RADIUS
+    // is 28, so the trimmed hit-line should run between y=518 and
+    // y=532 — strictly in the 14-unit gap between the nodes (the
+    // direction depends on the path's `from`/`to` ordering, which
+    // is data-defined; the test is direction-agnostic).
+    const { container } = render(<TreeBoard />);
+    const hit32 = container.querySelector('[data-path-hit="32"]');
+    expect(hit32).not.toBeNull();
+    const y1 = Number(hit32?.getAttribute('y1'));
+    const y2 = Number(hit32?.getAttribute('y2'));
+    const x1 = Number(hit32?.getAttribute('x1'));
+    const x2 = Number(hit32?.getAttribute('x2'));
+    expect(x1).toBeCloseTo(200, 0);
+    expect(x2).toBeCloseTo(200, 0);
+    expect(Math.min(y1, y2)).toBeCloseTo(518, 0);
+    expect(Math.max(y1, y2)).toBeCloseTo(532, 0);
+  });
+
+  it('hit-line uses linecap=butt so the rounded end-cap does not extend back into the node (#213)', () => {
+    // Round caps would push half the cap radius (PATH_HIT_WIDTH/2 =
+    // 14 units) past the trimmed endpoint, partially re-overlapping
+    // the node. butt caps end exactly at the trimmed coordinates.
+    // We set the attribute explicitly (rather than relying on SVG's
+    // default-of-butt) so the regression-pin reads at a glance.
+    const { container } = render(<TreeBoard />);
+    const hitLines = container.querySelectorAll('[data-path-hit]');
+    for (const line of hitLines) {
+      expect(line.getAttribute('stroke-linecap')).toBe('butt');
+    }
+  });
+
+  it('hit-line endpoint trim is applied to every path (not just path 32)', () => {
+    // Sanity-check the trim formula on a non-central-pillar path.
+    // Path 13 connects Kether (200, 60) and Tiferet (200, 340).
+    // Untrimmed length is 280; with NODE_RADIUS=28 trimmed off
+    // each end the hit-line should be exactly 224 long. Both
+    // endpoints sit at x=200 (central pillar).
+    const { container } = render(<TreeBoard />);
+    const hit13 = container.querySelector('[data-path-hit="13"]');
+    expect(hit13).not.toBeNull();
+    const y1 = Number(hit13?.getAttribute('y1'));
+    const y2 = Number(hit13?.getAttribute('y2'));
+    expect(Math.abs(y2 - y1)).toBeCloseTo(224, 0);
+    expect(Number(hit13?.getAttribute('x1'))).toBeCloseTo(200, 0);
+    expect(Number(hit13?.getAttribute('x2'))).toBeCloseTo(200, 0);
+  });
+
   it('path-labels layer is pointer-events:none so it does not steal clicks from the hit-lines', () => {
     // Reviewer caught: several path-label discs (paths 13/14/19/25/
     // 27/29/32) sit on or near a path's hit centerline. Without

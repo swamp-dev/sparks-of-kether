@@ -3370,3 +3370,20 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (785 tests; +3 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T15:27:21-04:00 — #213: trim path hit-line endpoints by NODE_RADIUS
+
+**Pushed:** `components/tree/TreeBoard.tsx` — each path's invisible `data-path-hit` `<line>` now runs from `(a + NODE_RADIUS·û)` to `(b - NODE_RADIUS·û)` instead of `a → b`, where `û` is the unit vector along the path. Linecap switched from `round` to `butt` so the cap doesn't push half-stroke-width back into the node we just trimmed past. New `trimEndpoints(a, b, inset)` pure helper at module scope; pure, defensively collapses to a midpoint when `length ≤ 2 × inset` (unreachable for any real Tree path).
+
+**Why:** Closing #213. Playtest report: "the path between malkuth and yesod is too short and difficult to click." Root cause: each Sefirah node is a circle of radius 28 painted in `<g data-layer="nodes">` AFTER the paths layer; the node intercepts clicks first because of SVG render order. For path 32 (Yesod ↔ Malkuth, length 70), the hit-line endpoints (centers of the two end-nodes) sat 28 units inside each node — almost the entire 70-unit hit-zone was stolen by the two end-nodes; only a 14-unit gap was actually clickable. Trimming pulls the hit-zone strictly into that gap.
+
+**Notes:**
+- For path 32 specifically the trimmed hit-line is now 14 units long × 28 wide = a 14×28 rectangular hit-zone in the previously-stolen gap. With diagonal paths the same trim-by-NODE_RADIUS produces an axis-aligned-along-path shrink of equal magnitude.
+- Unit tests pin coordinates for path 32 (the worst-case central-pillar example) and path 13 (a longer central-pillar path) to validate the trim formula in both directions; linecap=butt is asserted globally for all 22 paths.
+- Visible 1.5–3 px stroke is unaffected — it still runs `a → b`. Visual regression baselines didn't shift (the hit-line is `stroke="transparent"` and produces zero rendered pixels regardless of coordinates).
+- Two review rounds. Round 1 flagged a JSX IIFE smell (extracted `trimEndpoints` to a per-path `hit` binding alongside `a`, `b`, `letter`) and a vacuous test assertion (`cap === null || cap === 'butt'` → `expect(...).toBe('butt')`). Round 2: ship.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (788 tests; +3 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
+
+**Commit(s):** _filled in after push_
