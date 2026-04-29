@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { sefirot } from '@/data';
 import type { Sefirah, StatKey } from '@/data';
 import type { Rng } from '@/engine/rng';
@@ -20,8 +20,12 @@ import { RitualLedger } from './RitualLedger';
  *   2. Player rolls 3d6 (or auto-rolls when entering the step;
  *      configurable later).
  *   3. The total reveals; "Receive this blessing" advances.
- * After Malkuth, a summary screen lists all 10 stats and emits
- * `onComplete(statSheet)`.
+ * After Malkuth, a summary screen lists all 10 stats and waits for
+ * an explicit "Continue" click before emitting `onComplete(statSheet)`.
+ * The Continue gate (#215) ensures the user actually sees the recap
+ * — pre-fix `onComplete` fired from a useEffect synchronously when
+ * stepIndex crossed sefirot.length, and the parent unmounted us
+ * before the Summary committed visibly.
  *
  * State machine per step: `'awaiting' → 'rolled' → 'received'`. The
  * received → next-step transition happens on the advance click.
@@ -66,12 +70,9 @@ export function BlessingRitual({
 
   const handleAdvance = (): void => {
     if (stepStatus !== 'rolled') return;
-    // Reset for the next step. `onComplete` fires from the effect
-    // below once `stepIndex` reaches `sefirot.length`, so React has
-    // committed all the pending state updates before the parent sees
-    // the final stats. Doing it here, mid-handler, would risk
-    // interleaving with parent re-renders triggered synchronously
-    // from the callback.
+    // Reset for the next step. When stepIndex passes sefirot.length
+    // we render the Summary panel; onComplete only fires later when
+    // the user clicks Continue (#215).
     setStepIndex((i) => i + 1);
     setStepStatus('awaiting');
     setLastRoll(null);
@@ -103,13 +104,15 @@ export function BlessingRitual({
     setLastRoll(null);
   };
 
-  // Fire onComplete exactly once when the ritual finishes. Validates
-  // that every stat is present before casting — the type system can't
-  // prove it, but this throws loudly if a future regression skips a
-  // step instead of silently passing an incomplete StatSheet to
-  // downstream code.
-  useEffect(() => {
-    if (stepIndex < sefirot.length) return;
+  // #215: explicit Continue handler. Validates the StatSheet first
+  // (the type system can't prove every stat is present; this throws
+  // loudly if a future regression skips a step instead of silently
+  // passing an incomplete StatSheet downstream), then fires
+  // `onComplete`. Was previously a `useEffect` keyed on `stepIndex`
+  // — that fired synchronously the moment the final Receive click
+  // committed, and the parent unmounted us before the Summary
+  // screen was visible.
+  const handleContinue = (): void => {
     const missing: StatKey[] = [];
     for (const s of sefirot) {
       if (stats[s.stat] === undefined) missing.push(s.stat);
@@ -120,16 +123,13 @@ export function BlessingRitual({
       );
     }
     onComplete(stats as StatSheet);
-    // Intentionally omitting `stats` and `onComplete` from deps —
-    // we want this to fire exactly once when stepIndex crosses the
-    // boundary, not whenever the parent passes a new callback ref.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepIndex]);
+  };
 
   if (finished) {
     return (
       <Summary
         stats={stats as StatSheet}
+        onContinue={handleContinue}
         className={className}
       />
     );
@@ -329,9 +329,11 @@ function RollDisplay({ roll, stat, onAdvance }: RollDisplayProps): JSX.Element {
 
 function Summary({
   stats,
+  onContinue,
   className,
 }: {
   stats: StatSheet;
+  onContinue: () => void;
   className: string | undefined;
 }): JSX.Element {
   return (
@@ -363,6 +365,14 @@ function Summary({
           </div>
         ))}
       </dl>
+      <button
+        type="button"
+        onClick={onContinue}
+        data-action="continue"
+        className="mt-6 rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground"
+      >
+        Continue
+      </button>
     </section>
   );
 }

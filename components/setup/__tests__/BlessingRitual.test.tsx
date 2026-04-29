@@ -39,6 +39,7 @@ describe('BlessingRitual — flow', () => {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
       fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
     }
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(result, 'onComplete should have been called').not.toBeNull();
     if (!result) return;
     for (const stat of STAT_KEYS) {
@@ -63,6 +64,7 @@ describe('BlessingRitual — flow', () => {
         fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
         fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
       }
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
       unmount();
       if (!result) throw new Error('onComplete not called');
       return result;
@@ -104,13 +106,24 @@ describe('BlessingRitual — step gating', () => {
 });
 
 describe('BlessingRitual — onComplete', () => {
-  it('fires exactly once at the end of the 10-step flow', () => {
+  it('does NOT fire onComplete after the 10th roll until Continue is clicked (#215)', () => {
+    // #215: pre-fix, onComplete fired from a useEffect synchronously
+    // when stepIndex crossed sefirot.length. The parent unmounted
+    // BlessingRitual before the Summary screen was visible. The fix
+    // gates onComplete behind an explicit Continue click on the
+    // Summary screen so the user sees their stats.
     const onComplete = vi.fn();
     render(<BlessingRitual rng={seededRng(1)} onComplete={onComplete} />);
     for (const _ of sefirot) {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
       fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
     }
+    expect(onComplete).not.toHaveBeenCalled();
+    // Summary is visible.
+    expect(
+      screen.queryByRole('button', { name: /Continue/i }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
@@ -124,10 +137,19 @@ describe('BlessingRitual — onComplete', () => {
     }
     expect(onComplete).not.toHaveBeenCalled();
   });
+
+  it('Skip path also requires a Continue click before onComplete (#215)', () => {
+    const onComplete = vi.fn();
+    render(<BlessingRitual rng={seededRng(7)} onComplete={onComplete} />);
+    fireEvent.click(screen.getByRole('button', { name: /Skip/i }));
+    expect(onComplete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('BlessingRitual — summary', () => {
-  it('renders a summary row for each of the 10 stats', () => {
+  it('renders a summary row for each of the 10 stats — visible before Continue (#215)', () => {
     let result: StatSheet | null = null;
     const { container } = render(
       <BlessingRitual
@@ -141,14 +163,29 @@ describe('BlessingRitual — summary', () => {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
       fireEvent.click(screen.getByRole('button', { name: /Receive/i }));
     }
-    // Final render shows the summary screen.
+    // The summary is on screen WITHOUT onComplete having fired —
+    // pre-#215 the parent unmounted us before the user saw it.
     expect(
       container.querySelector('[data-blessing-ritual][data-status="complete"]'),
     ).not.toBeNull();
+    expect(result).toBeNull();
+    // Each stat row is rendered with a value before Continue —
+    // proving the Summary's content is present even without
+    // onComplete having fired.
     for (const stat of STAT_KEYS) {
       const cell = container.querySelector(`[data-summary-value="${stat}"]`);
       expect(cell, `summary value for ${stat}`).not.toBeNull();
-      expect(Number(cell?.textContent)).toBe(result?.[stat]);
+      expect(Number(cell?.textContent)).toBeGreaterThanOrEqual(3);
+      expect(Number(cell?.textContent)).toBeLessThanOrEqual(18);
+    }
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    // After Continue, onComplete has fired with the same stats the
+    // Summary displayed.
+    if (!result) throw new Error('onComplete did not fire on Continue');
+    for (const stat of STAT_KEYS) {
+      const cell = container.querySelector(`[data-summary-value="${stat}"]`);
+      expect(cell, `post-continue summary value for ${stat}`).not.toBeNull();
+      expect(Number(cell?.textContent)).toBe(result[stat]);
     }
   });
 });
@@ -173,6 +210,8 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
     expect(
       container.querySelector('[data-blessing-ritual][data-status="complete"]'),
     ).not.toBeNull();
+    // #215: explicit Continue gate before onComplete.
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     // All 10 stats present.
     for (const stat of STAT_KEYS) {
       expect(result?.[stat]).toBeGreaterThanOrEqual(3);
@@ -197,6 +236,7 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
     }
     // Skip from the third step onward.
     fireEvent.click(screen.getByRole('button', { name: /Skip/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     // All 10 still present in the result.
     for (const stat of STAT_KEYS) {
       expect(result?.[stat]).toBeGreaterThanOrEqual(3);

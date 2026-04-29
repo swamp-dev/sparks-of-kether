@@ -3337,3 +3337,20 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (781 tests; +3 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T14:48:08-04:00 — #215: Blessing ritual pauses on summary screen
+
+**Pushed:** Replace BlessingRitual's auto-firing `useEffect` with an explicit `Continue` button on the Summary panel. Pre-fix, `onComplete(stats)` fired synchronously the moment `stepIndex` crossed `sefirot.length`; the parent in `app/play/page.tsx:52` advanced the phase to the Soul Aspect picker on the same commit, unmounting BlessingRitual before the Summary screen rendered visibly. The user never saw their final stats.
+
+**Why:** Closing #215. Playtest report: "make sure the screen stops after rolling for all attributes so the user can see what they got before proceeding."
+
+**Notes:**
+- `handleContinue` keeps the missing-stat validation that previously lived in the effect, so a future regression that skips a Sefirah still throws loudly instead of silently passing an incomplete StatSheet downstream.
+- The skip-to-summary affordance also lands on the new gate — Skip → Summary → Continue → onComplete.
+- e2e flow test (`e2e/play-flow.spec.ts`) updated to click Continue between the 10th roll and the Soul Aspect picker. The new `expect(getByRole('heading', { name: /The Tree has spoken/i })).toBeVisible()` assertion runs BEFORE the Continue click, so a regression that re-introduces the unmount bug would fail at that assertion specifically (not just at a downstream missing-button).
+- Two review rounds. Round 1 caught a stale `handleAdvance` JSDoc still referencing the deleted effect, plus a fragile test assertion (`Number(cell).toBe(result?.[stat])` would produce `Expected NaN, received 8` on `handleContinue` regression). Both fixed. Round 2 caught one minor null-check asymmetry; fixed.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (784 tests; +3 from this PR), build ✓, e2e ✓ (62 passed + 45 review-only skipped, including the updated play-flow), integration ✓.
+
+**Commit(s):** _filled in after push_

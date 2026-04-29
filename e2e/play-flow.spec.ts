@@ -45,6 +45,14 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
       await page.getByRole('button', { name: /Receive this blessing/i }).click();
     }
 
+    // #215: the ritual now pauses on a Summary screen so the user
+    // sees their final stats before advancing. Click Continue to
+    // transition to the Soul Aspect picker.
+    await expect(
+      page.getByRole('heading', { name: /The Tree has spoken/i }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
+
     await expect(
       page.getByRole('heading', { name: /Choose your Soul Aspect/i }),
     ).toBeVisible();
