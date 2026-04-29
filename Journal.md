@@ -3454,3 +3454,20 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (~853 tests; +22 new this PR via engine + data tests), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T17:57:52-04:00 — #232 (T3/#212): zodiac dignities table in reference/correspondences.md
+
+**Pushed:** New § 2a "Zodiac → planetary dignities" section in `reference/correspondences.md`, slotted between the existing § 2 (zodiac↔letter↔path) and § 3 (tarot↔letter↔path). Mirrors the locked table in `design/astrological-classes.md` § 3. Cross-link added from the design doc's § 8 References list back to § 2a.
+
+**Why:** Sub-ticket T3 of Epic #212. Surfaces the dignity table to readers who go to `reference/correspondences.md` for symbolic data, alongside the existing zodiac and tarot tables.
+
+**Notes:**
+- Section labelled `§ 2a` rather than renumbering. The design doc and other readers reference correspondences.md sections by number (`§ 1`, `§ 2`, `§ 3`); `§ 2a` is the idiomatic "inserted between 2 and 3" form that avoids breaking those refs.
+- Cell-by-cell verified against the design doc by code-reviewer; zero drift.
+- Notes bullets cover the four classical anomalies (Virgo + Pisces double-Mercury, four thin signs with empty slots, opposite-sign rule for detriment + fall).
+- No code changes. Anchor + link drift checks pass.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (854 tests, no code changes from this PR), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_

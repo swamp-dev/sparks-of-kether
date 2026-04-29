@@ -209,6 +209,7 @@ For Epic #212. Listed here so reviewers can sanity-check that this doc covers wh
 - `data/sefirot.ts` — planet ↔ Sefirah ↔ stat (already wired)
 - `reference/correspondences.md` § 1 — Sefirot → planet mapping (line ~6)
 - `reference/correspondences.md` § 2 — zodiac → Hebrew letter → path (line ~24)
+- `reference/correspondences.md` § 2a — zodiac → planetary dignities (the table this doc generates from)
 - `data/soul-aspects.ts` — the system being replaced
 - `design/mechanics.md` § "Soul Aspects (classes)" — current copy that will be rewritten in sub-ticket 9
 

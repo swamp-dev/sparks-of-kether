@@ -49,6 +49,32 @@ tables are the shorthand. For full context, see the topical files.
 | ש Shin | Mother | Fire | 31 |
 | ת Tav | Double | Saturn | 32 |
 
+## 2a. Zodiac → planetary dignities
+
+Per Ptolemaic / classical Western tradition for the 7 traditional planets, plus modern Pluto/Neptune co-rulerships. Used by the astrological-class system — see [`../design/astrological-classes.md`](../design/astrological-classes.md) for the bonus formula (rulership +1, exaltation +2, detriment −1, fall −2) and the per-sign stat deltas.
+
+| Sign         | Ruler   | Co-Ruler (modern) | Exaltation | Detriment | Fall    |
+|--------------|---------|-------------------|------------|-----------|---------|
+| Aries        | Mars    |                   | Sun        | Venus     | Saturn  |
+| Taurus       | Venus   |                   | Moon       | Mars      | —       |
+| Gemini       | Mercury |                   | —          | Jupiter   | —       |
+| Cancer       | Moon    |                   | Jupiter    | Saturn    | Mars    |
+| Leo          | Sun     |                   | —          | Saturn    | —       |
+| Virgo        | Mercury |                   | Mercury    | Jupiter   | Venus   |
+| Libra        | Venus   |                   | Saturn     | Mars      | Sun     |
+| Scorpio      | Mars    | Pluto             | —          | Venus     | Moon    |
+| Sagittarius  | Jupiter |                   | —          | Mercury   | —       |
+| Capricorn    | Saturn  |                   | Mars       | Moon      | Jupiter |
+| Aquarius     | Saturn  |                   | —          | Sun       | —       |
+| Pisces       | Jupiter | Neptune           | Venus      | Mercury   | Mercury |
+
+Notes:
+- **Detriment** is always the planet that rules the *opposite* sign.
+- **Fall** is always the planet exalted in the *opposite* sign.
+- **Virgo's Mercury** is doubled (ruler + exalted) — cumulative +3 to intellect.
+- **Pisces' Mercury** is doubled (detriment + fall) — cumulative −3 to intellect, the matching shadow of Virgo.
+- Four signs (Gemini, Leo, Sagittarius, Aquarius) classically have empty exaltation and fall slots; the `—` means "no planet assigned in that dignity."
+
 ## 3. Tarot → letter → path → astrology
 
 | # | Arcanum | Letter | Path | Attribution |
