@@ -3305,3 +3305,15 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (775 + 1 todo / 776), build ✓, e2e ✓ (45 visual regression assertions match — neither change affects baseline routes), integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T13:13:03-04:00 — #210: ci-local port-wait / retry loop
+
+**Pushed:** `scripts/ci-local.sh` now wraps `pnpm exec supabase start` in a 3-attempt retry-with-backoff (0.5 → 1 → 2 s). The original ticket scope was a port-poll loop, but verification showed `ss` reports the port free immediately after `supabase stop` while Docker's userland proxy is still holding it for a sub-second window — polling on `ss` doesn't help. Retry-on-error catches the actual failure mode: if `supabase start` errors with `address already in use`, sleep, re-clean, retry. After 3 attempts the original error surfaces.
+**Why:** Surfaced repeatedly during #200, #202, #207, #208. The self-cleanup added in #182/#183 catches stray-stack cases but not the post-stop kernel-vs-userland-proxy race. With the rule being "run `pnpm ci:local` before every merge," every false-positive retry is friction.
+**Notes:**
+- Verified: stress-tested by leaving a stack running and re-running `ci:local`. Self-clean fires, then `supabase start` succeeds (clean run, no retry needed). Earlier in development the actual race surfaced when running back-to-back full `ci:local` invocations against the same worktree state — the retry path exercised cleanly.
+- `ss`-based wait was kept off the final design — the kernel-level listener was already gone, the issue is in Docker's daemon-side cleanup. A blanket `sleep 1` would have worked too but slows the common case where nothing was running. Retry-on-actual-error is the cheaper trade.
+- Output handling: `supabase start` output goes to a tmpfile we grep for the specific port-busy phrase. On non-port errors, we cat it to stderr and `fail`. On success, the tmpfile is removed.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓ (incl. stress-test where the previous version would have failed).
+
+**Commit(s):** _filled in after push_

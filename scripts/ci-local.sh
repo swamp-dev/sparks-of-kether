@@ -75,7 +75,34 @@ else
   # fire in those cases). Idempotent: `supabase stop` no-ops when
   # nothing is running, so this is safe to call unconditionally.
   pnpm exec supabase stop --no-backup > /dev/null 2>&1 || true
-  pnpm exec supabase start || fail "supabase start"
+  # Retry `supabase start` with backoff. After `supabase stop`,
+  # Docker's userland proxy can still hold the port for a short
+  # window even after `ss` shows nothing listening — the kernel
+  # has freed the listener but the proxy hasn't been torn down. An
+  # immediate `supabase start` then fails with `bind: address
+  # already in use`. Three attempts with growing backoff
+  # (0.5 s → 1 s → 2 s) covers that window without imposing a
+  # baseline delay on the common case where nothing was bound.
+  start_ok=0
+  for attempt in 1 2 3; do
+    if pnpm exec supabase start > /tmp/sok-supabase-start.log 2>&1; then
+      start_ok=1
+      break
+    fi
+    if grep -q "address already in use" /tmp/sok-supabase-start.log; then
+      printf "%s  supabase start hit a port race (attempt %d) — backing off\n" \
+        "$cyan" "$attempt"
+      sleep $(awk "BEGIN { print $attempt * 0.5 }")
+      pnpm exec supabase stop --no-backup > /dev/null 2>&1 || true
+      continue
+    fi
+    cat /tmp/sok-supabase-start.log >&2
+    fail "supabase start"
+  done
+  rm -f /tmp/sok-supabase-start.log
+  if [[ "$start_ok" != "1" ]]; then
+    fail "supabase start (port stayed busy across 3 attempts)"
+  fi
 
   # `supabase status -o env` writes to a tmpfile that contains a
   # service-role JWT (admin bypass on the local stack). Source it,
