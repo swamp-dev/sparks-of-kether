@@ -3155,3 +3155,18 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓ (711 + 2 todo / 713 incl. 1 new), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T09:55:49-04:00 — #188: markdown link drift-check (Epic #119 sub-ticket 4 link half)
+
+**Pushed:** New `tests/docs/links.test.ts`. Walks every Markdown file with the same exclusion list as `tests/docs/anchors.test.ts`, parses inline `[text](path)` and `![alt](path)` links, skips externals (`http(s)://`, `mailto:`, `ftp:`, `tel:`), pure fragments (`#section`), empty paths, fenced code blocks, and inline code spans. Each remaining relative path is asserted to resolve to an existing file or directory; one `it()` per link so failures point at the exact `mdPath:line :: link → target` drift.
+**Why:** Sub-ticket 4 of Epic #119, link half. Sub-ticket's route-table half is deferred until the README has an explicit route list (the marketing-polish ticket that adds one will be the natural place to land both).
+**Notes:**
+- 25 relative links found across all docs at HEAD, all resolve.
+- Verified by seeding a broken `[missing](does-not-exist.md)` link → fail with clear message; restored cleanly.
+- Walker + exclusion list duplicated with `anchors.test.ts`. Comment in both files calls out the manual sync; will extract a shared helper if/when a third consumer arrives. Not yet.
+- Treats files AND directories as "exists" — `[link](./design)` is fine if `design/` is a directory. Markdown renderers typically expand those to `index.md` or a directory listing.
+- No fragment validation in this pass — `[link](./adjacent.md#section)` only checks `adjacent.md` exists. Documented.
+- Reviewer suggested also documenting that reference-style links `[text][label]` are out of scope (none in this repo); added to the JSDoc.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (736 + 2 todo / 738), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
