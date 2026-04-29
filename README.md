@@ -1,6 +1,17 @@
 # Sparks of Kether
 
-A cooperative ascent up the Kabbalistic Tree of Life.
+> _A cooperative ascent up the Kabbalistic Tree of Life._
+
+![Status: MVP playable](https://img.shields.io/badge/status-MVP%20playable-2ea043)
+![Next.js 14](https://img.shields.io/badge/next.js-14-000000?logo=next.js)
+![TypeScript strict](https://img.shields.io/badge/typescript-strict-3178c6?logo=typescript)
+![Node 20+](https://img.shields.io/badge/node-20%2B-339933?logo=node.js)
+
+![Sparks of Kether — landing screen](assets/marketing/home-desktop.png)
+
+**[Read the rules](design/mechanics.md)** · **[Run it locally](#running-the-web-app)** · **[See the screenshots](assets/marketing/README.md)**
+
+---
 
 2–4 players journey together from Malkuth (the material world) to Kether (the
 Crown). Along the way, each Sefirah you visit grants you a **Spark** — a

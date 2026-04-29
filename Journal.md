@@ -3197,3 +3197,17 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T10:32:00-04:00 — #194: README hero refresh (Epic #119 sub-ticket 7)
+
+**Pushed:** Hero band added to the top of `README.md`. Tagline elevated to a blockquote ("A cooperative ascent up the Kabbalistic Tree of Life"). 4-badge row via shields.io: Status (MVP playable), Next.js 14, TypeScript strict, Node 20+. Hero screenshot embedded — `assets/marketing/home-desktop.png`, the landing surface (per reviewer recommendation; first-impression honesty beats mid-game richness for a README hero). CTA row with three links: Read the rules → `design/mechanics.md`, Run it locally → in-page `#running-the-web-app`, See the screenshots → `assets/marketing/README.md`. All existing prose below preserved unchanged.
+**Why:** Sub-ticket 7 of Epic #119, second of the Part 2 marketing fan-out. README v0 was functional but read as a developer file with no visual signal that this is a game. The hero band is the surface a potential player or contributor sees first; this gives it teeth.
+**Notes:**
+- Skipped CI badge (hosted runners in the runner-startup-failure pattern; perpetually-red badge is worse than none).
+- Skipped LICENSE badge — no LICENSE file. Reviewer flagged this as worth a separate ticket (no LICENSE = "all rights reserved" under copyright law, which may not be the intent). Filing as follow-up scope, not in #194.
+- Anchor slug `#running-the-web-app` verified to match the H2's GitHub-rendered slug.
+- Reviewer's substantive call: hero asset choice. Originally chose `play-desktop.png` (mid-game richness); reviewer argued `home-desktop.png` is more honest as a hero. Swapped — the home page IS the marketing surface (with the hero band added in #169).
+- All 4 new relative links + 1 image embed pass `tests/docs/links.test.ts`. Drift-check earned its keep on the same PR it was used in.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
