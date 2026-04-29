@@ -6,7 +6,9 @@ import {
   type CheckModifiers,
   type CheckOutcome,
 } from '@/engine/checks';
+import { drawNCards, MEDITATE_DRAW } from '@/engine/draws';
 import type { Rng } from '@/engine/rng';
+import { HAND_CAP } from '@/engine/setup';
 import { endTurn } from '@/engine/turn';
 import type { GameState, MoveRejection } from '@/engine/types';
 
@@ -16,8 +18,10 @@ import type { GameState, MoveRejection } from '@/engine/types';
  * engine reducers; the same action shape is sent over the
  * `game_events` table so other clients see it via Realtime.
  *
- * Sparks, meditate, draw, and full assist coordination are still TBD
- * — they'll arrive when the multiplayer game UI starts using them.
+ * Sparks, draw, and full assist coordination are still TBD — they'll
+ * arrive when the multiplayer game UI starts using them. `meditate`
+ * was filled in by #216 (the action otherwise silently no-opped on
+ * the server because the dispatcher had no case for it).
  */
 export type ClientAction =
   | {
@@ -44,6 +48,10 @@ export type ClientAction =
       readonly shortcut?: boolean;
     }
   | {
+      readonly kind: 'meditate';
+      readonly playerId: string;
+    }
+  | {
       readonly kind: 'end-turn';
       readonly playerId: string;
     };
@@ -51,6 +59,7 @@ export type ClientAction =
 export type ApplyActionRejection =
   | { readonly kind: 'move'; readonly cause: MoveRejection }
   | { readonly kind: 'challenge'; readonly cause: string }
+  | { readonly kind: 'meditate'; readonly cause: 'hand-full' | 'unknown-player' }
   | { readonly kind: 'unknown-action' };
 
 export type ApplyActionResult =
@@ -99,6 +108,34 @@ export function applyClientAction(
         sefirah: action.sefirah,
         shortcut: action.shortcut ?? false,
       });
+      return { ok: true, newState };
+    }
+    case 'meditate': {
+      // Mirrors the meditate path in `lib/turn-machine.ts` so server-
+      // and client-applied state agree. Reject loudly rather than
+      // silently no-opping — a direct API caller (bot, replay tool,
+      // future CLI) needs an explicit signal when the action could
+      // not draw cards. Production callers go through `authorize`
+      // first, so `unknown-player` here is a programming error or a
+      // bypass; surfacing it cleanly costs nothing and matches the
+      // `MoveRejection.unknown-player` precedent.
+      const player = state.players.find((p) => p.id === action.playerId);
+      if (!player) {
+        return {
+          ok: false,
+          error: { kind: 'meditate', cause: 'unknown-player' },
+        };
+      }
+      if (player.hand.length >= HAND_CAP) {
+        return { ok: false, error: { kind: 'meditate', cause: 'hand-full' } };
+      }
+      const newState = drawNCards(
+        state,
+        action.playerId,
+        MEDITATE_DRAW,
+        HAND_CAP,
+        rng,
+      );
       return { ok: true, newState };
     }
     case 'end-turn': {

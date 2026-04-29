@@ -10,7 +10,10 @@ import {
   type CheckOutcome,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
-import { recycleDiscardIntoDeck } from '@/engine/draws';
+import {
+  drawNCards,
+  MEDITATE_DRAW as ENGINE_MEDITATE_DRAW,
+} from '@/engine/draws';
 import {
   HAND_CAP as ENGINE_HAND_CAP,
   STARTING_HAND_SIZE as ENGINE_STARTING_HAND_SIZE,
@@ -48,8 +51,8 @@ export type TurnPhase = 'move' | 'challenge' | 'draw' | 'end';
 // to `@/engine/setup`.
 export const STARTING_HAND_SIZE = ENGINE_STARTING_HAND_SIZE;
 export const HAND_CAP = ENGINE_HAND_CAP;
-/** Per `design/mechanics.md` § Drawing — meditate draws 2 (capped at HAND_CAP). */
-export const MEDITATE_DRAW = 2;
+/** Re-exported from `engine/draws` so legacy imports through `turn-machine` keep working. */
+export const MEDITATE_DRAW = ENGINE_MEDITATE_DRAW;
 
 export interface TurnSnapshot {
   readonly state: GameState;
@@ -161,7 +164,7 @@ export function turnReducer(
       // landed in 'draw' phase, hit Draw, and saw no change because
       // `drawToHand` only refilled toward STARTING_HAND_SIZE which
       // they already had.
-      const nextState = drawCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng);
+      const nextState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng);
       return { ok: true, value: { next: { state: nextState, phase: 'end' } } };
     }
 
@@ -225,90 +228,18 @@ export function turnReducer(
 }
 
 /**
- * Pure: refill `playerId`'s hand up to `STARTING_HAND_SIZE`. If the
- * deck is empty mid-fill, recycle the discard pile face-down.
- * Stranded states (no cards anywhere) leave the hand short —
- * `checkEndgame` reports the loss.
+ * Pure: refill `playerId`'s hand up to `STARTING_HAND_SIZE`. Delegates
+ * to the engine's shared `drawNCards`, which handles the deck →
+ * discard recycle and the hard cap.
  *
  * `HAND_CAP` (6) is the *gift/burn* ceiling — applied when other
  * players send cards or in spark abilities — NOT a draw ceiling.
  * This function only fills toward `STARTING_HAND_SIZE` (4), so a
- * hand already at or above 4 is left alone. The previous loop
- * condition `< STARTING_HAND_SIZE && < HAND_CAP` was dead-code
- * branching since 4 < 6 always; reviewer caught the misleading
- * implication on #106.
- *
- * Recycling shuffles the discard pile via `recycleDiscardIntoDeck`
- * in `engine/draws.ts`. The shared helper is also used by Kether-
- * Unity, so both recycle paths produce identical statistics for a
- * given seed (#56). Pre-fix this routine kept the discard order
- * verbatim, which let any player who memorised the discard
- * predict every subsequent draw.
+ * hand already at or above 4 is left alone.
  */
 function drawToHand(state: GameState, playerId: string, rng: Rng): GameState {
-  // End-of-turn replenishment: refill toward STARTING_HAND_SIZE only.
-  // For the meditate-bonus case, see `drawCards`.
-  const target = STARTING_HAND_SIZE;
-  const pIndex = state.players.findIndex((p) => p.id === playerId);
-  if (pIndex === -1) return state;
-  const startHand = state.players[pIndex]?.hand ?? [];
-  return drawNCards(state, pIndex, Math.max(0, target - startHand.length), HAND_CAP, rng);
-}
-
-/**
- * Draw a fixed number of cards toward `hardCap`. Used by the
- * meditate path (draw exactly `MEDITATE_DRAW` cards, capped at
- * `HAND_CAP`). Differs from `drawToHand` (which targets
- * `STARTING_HAND_SIZE`).
- */
-function drawCards(
-  state: GameState,
-  playerId: string,
-  count: number,
-  hardCap: number,
-  rng: Rng,
-): GameState {
-  const pIndex = state.players.findIndex((p) => p.id === playerId);
-  if (pIndex === -1) return state;
-  return drawNCards(state, pIndex, count, hardCap, rng);
-}
-
-function drawNCards(
-  state: GameState,
-  pIndex: number,
-  count: number,
-  hardCap: number,
-  rng: Rng,
-): GameState {
-  let pHand = state.players[pIndex]?.hand ?? [];
-  let deck: readonly number[] = state.deck;
-  let discard: readonly number[] = state.discardPile;
-  let remaining = count;
-  while (remaining > 0 && pHand.length < hardCap) {
-    if (deck.length === 0) {
-      if (discard.length === 0) break;
-      // #56: shuffle on recycle so the order in the discard pile
-      // doesn't leak into future draws. The single helper means
-      // both the turn-machine and Kether-Unity get the same shuffle
-      // semantics.
-      const recycled = recycleDiscardIntoDeck(deck, discard, rng);
-      deck = recycled.deck;
-      discard = recycled.discard;
-    }
-    const top = deck[0];
-    if (top === undefined) break;
-    pHand = [...pHand, top];
-    deck = deck.slice(1);
-    remaining -= 1;
-  }
-  const updated = state.players[pIndex];
-  if (!updated) return state;
-  return {
-    ...state,
-    players: state.players.map((p, idx) =>
-      idx === pIndex ? { ...updated, hand: pHand } : p,
-    ),
-    deck,
-    discardPile: discard,
-  };
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return state;
+  const need = Math.max(0, STARTING_HAND_SIZE - player.hand.length);
+  return drawNCards(state, playerId, need, HAND_CAP, rng);
 }

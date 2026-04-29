@@ -16,6 +16,19 @@ import { seededRng } from '@/engine/rng';
  * cap is 6).
  */
 
+/** Re-derive the soul-aspect-by-id map the way `makeFullGame` does. */
+function aspectMap(
+  state: ReturnType<typeof makeFullGame>,
+): Record<string, 'chesed' | 'gevurah' | 'tiferet' | 'hod'> {
+  const aspects = ['chesed', 'gevurah', 'tiferet', 'hod'] as const;
+  const map: Record<string, typeof aspects[number]> = {};
+  for (const [idx, p] of state.players.entries()) {
+    const aspect = aspects[idx % aspects.length];
+    if (aspect) map[p.id] = aspect;
+  }
+  return map;
+}
+
 describe('PlayScreen — meditate updates the hand', () => {
   it('renders two more card slots after clicking Meditate', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
@@ -26,22 +39,12 @@ describe('PlayScreen — meditate updates the hand', () => {
       idx === activeIdx ? { ...p, hand: p.hand.slice(0, 2) } : p,
     );
     const initial = { ...state, players: trimmedPlayers };
-
-    // soulAspect lives on the engine-level player; for fixture
-    // games the choices are already baked in. We re-derive here
-    // by mirroring `makeFullGame`'s default-aspect order.
-    const aspects = ['chesed', 'gevurah', 'tiferet', 'hod'] as const;
-    const soulAspectByPlayer: Record<string, typeof aspects[number]> = {};
-    for (const [idx, p] of initial.players.entries()) {
-      const aspect = aspects[idx % aspects.length];
-      if (aspect) soulAspectByPlayer[p.id] = aspect;
-    }
     const rng = seededRng(2);
 
     render(
       <PlayScreen
         initialState={initial}
-        soulAspectByPlayer={soulAspectByPlayer}
+        soulAspectByPlayer={aspectMap(state)}
         rng={rng}
       />,
     );
@@ -57,5 +60,46 @@ describe('PlayScreen — meditate updates the hand', () => {
 
     slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(4);
+  });
+});
+
+describe('PlayScreen — meditate disabled at HAND_CAP', () => {
+  it('disables the Meditate button when the active player holds HAND_CAP cards', () => {
+    // #216 root cause: when a player's hand is already at HAND_CAP=6,
+    // clicking Meditate silently no-ops because `drawNCards` early-
+    // exits. The fix is to gate the click in the UI so the user sees
+    // why the action is unavailable.
+    const state = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = state.players.findIndex(
+      (p) => p.id === state.activePlayerId,
+    );
+    const cappedPlayers = state.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
+    );
+    const initial = { ...state, players: cappedPlayers };
+    const rng = seededRng(2);
+
+    render(
+      <PlayScreen
+        initialState={initial}
+        soulAspectByPlayer={aspectMap(state)}
+        rng={rng}
+      />,
+    );
+
+    const meditateBtn = screen.getByRole('button', { name: /meditate/i });
+    expect(meditateBtn).toBeDisabled();
+    // The button surfaces *why* via aria-label / title so screen-
+    // reader and hover users both understand the gating.
+    expect(meditateBtn.getAttribute('title')).toMatch(/full|cap/i);
+
+    // Sanity: clicking the disabled button does not grow the hand.
+    let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    const before = slots.length;
+    act(() => {
+      fireEvent.click(meditateBtn);
+    });
+    slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    expect(slots.length).toBe(before);
   });
 });

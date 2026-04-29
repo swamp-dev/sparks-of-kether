@@ -3317,3 +3317,23 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓ (incl. stress-test where the previous version would have failed).
 
 **Commit(s):** _filled in after push_
+
+---
+
+## 2026-04-29T14:15:40-04:00 — #216: meditate now mutates server state and gates at HAND_CAP
+
+**Pushed:** Engine + dispatcher + UI fix for the playtest report "the meditate functionality didn't seem to add any cards." Three layers:
+
+- **Engine extraction** — `drawNCards` and `MEDITATE_DRAW` lifted from private `lib/turn-machine.ts` helpers into `engine/draws.ts` as exported, single source of truth. `turn-machine.ts`'s old `drawCards` / `drawNCards` pair collapsed into one call site that imports the engine helper.
+- **Dispatcher wiring** — `'meditate'` added to `ClientAction` and to `applyClientAction`'s switch. The pre-existing TBD comment at `lib/room-actions.ts:19` explicitly flagged this gap; without the case the multiplayer events route silently no-opped on the action. Hot-seat happened to work because `useTurn` calls `turnReducer` directly, bypassing the dispatcher.
+- **UI gate** — `components/game/PlayScreen.tsx` extracts a `MeditateButton` helper that disables the click when the active player's hand is at HAND_CAP. The pre-fix silent no-op was the actually-observed symptom (the in-the-wild user is on hot-seat; the dispatcher was a future-proofing bug).
+
+**Why:** Closing #216. The user's symptom matched a silent `drawNCards` cap-no-op exactly; the multiplayer dispatcher gap was a separate forward-looking failure mode that would have surfaced the moment a multiplayer game UI shipped.
+
+**Notes:**
+- Code-reviewer flagged two real things: an unreachable `if (!player) return state` after the `findIndex === -1` guard (dropped, replaced with non-null assertion); and a "phantom audit row" risk where the API would 200 OK on a meditate-at-cap with a no-op `meditate` event. Closed the API gap by adding `{ kind: 'meditate', cause: 'hand-full' }` to `ApplyActionRejection` so a direct caller (bot / replay tool) sees an explicit 422 instead of a silent ack.
+- Tests cover three layers: `lib/__tests__/room-actions.test.ts` for dispatcher behaviour (happy path, cap rejection, recycle), `components/game/__tests__/PlayScreen.draw.test.tsx` for the disabled-at-cap UI, and `app/api/__tests__/multiplayer-flow.test.ts` for both the happy-path event flow and the new 422 rejection through the route.
+- IIFE in JSX → extracted `MeditateButton` helper per reviewer; added `disabled:cursor-not-allowed` so hover affordance matches the disabled visual.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓ (781 tests; +3 from this PR), build ✓, e2e ✓ (62 + 45 review-only skipped), integration ✓.
+
+**Commit(s):** _filled in after push_

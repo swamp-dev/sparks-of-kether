@@ -1,4 +1,5 @@
 import type { Rng } from './rng';
+import type { GameState } from './types';
 
 /**
  * Shared draw-pile helpers (#56). Both `lib/turn-machine.ts` (post-
@@ -12,6 +13,9 @@ import type { Rng } from './rng';
  * one implementation. Engine boundary stays clean: `lib/` imports
  * from `engine/`, never the reverse.
  */
+
+/** Per `design/mechanics.md` § Drawing — meditate draws 2 cards (capped at HAND_CAP). */
+export const MEDITATE_DRAW = 2;
 
 /**
  * Fisher-Yates shuffle. Pure: returns a new array; `arr` is unchanged.
@@ -47,4 +51,60 @@ export function recycleDiscardIntoDeck(
     return { deck, discard };
   }
   return { deck: shuffleArray(discard, rng), discard: [] };
+}
+
+/**
+ * Draw up to `count` cards from the deck into `playerId`'s hand,
+ * stopping early at `hardCap`. Recycles the discard pile mid-fill
+ * when the deck empties (via `recycleDiscardIntoDeck`). Pure: returns
+ * a new `GameState`; the input is unchanged.
+ *
+ * Used by:
+ *   - `lib/turn-machine.ts` end-of-turn `drawToHand` (refill toward
+ *     `STARTING_HAND_SIZE`, hardCap = `HAND_CAP`).
+ *   - `lib/turn-machine.ts` and `lib/room-actions.ts` meditate path
+ *     (draw `MEDITATE_DRAW`, hardCap = `HAND_CAP`).
+ *
+ * Silently no-ops when the player is unknown OR already at `hardCap`
+ * OR no cards are available anywhere. Callers that need to surface
+ * "couldn't draw" feedback should compare hand sizes themselves.
+ */
+export function drawNCards(
+  state: GameState,
+  playerId: string,
+  count: number,
+  hardCap: number,
+  rng: Rng,
+): GameState {
+  const pIndex = state.players.findIndex((p) => p.id === playerId);
+  // `findIndex` returning ≥ 0 means the player exists at that slot in
+  // the dense `players` array — `!` rather than a second guard so
+  // TS narrows away the `noUncheckedIndexedAccess` undefined.
+  if (pIndex === -1) return state;
+  const player = state.players[pIndex]!;
+  let pHand: readonly number[] = player.hand;
+  let deck: readonly number[] = state.deck;
+  let discard: readonly number[] = state.discardPile;
+  let remaining = count;
+  while (remaining > 0 && pHand.length < hardCap) {
+    if (deck.length === 0) {
+      if (discard.length === 0) break;
+      const recycled = recycleDiscardIntoDeck(deck, discard, rng);
+      deck = recycled.deck;
+      discard = recycled.discard;
+    }
+    const top = deck[0];
+    if (top === undefined) break;
+    pHand = [...pHand, top];
+    deck = deck.slice(1);
+    remaining -= 1;
+  }
+  return {
+    ...state,
+    players: state.players.map((p, idx) =>
+      idx === pIndex ? { ...player, hand: pHand } : p,
+    ),
+    deck,
+    discardPile: discard,
+  };
 }

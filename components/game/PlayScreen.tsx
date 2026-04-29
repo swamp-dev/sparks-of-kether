@@ -15,7 +15,7 @@ import type {
 import { FinalThreshold } from '@/components/game/FinalThreshold';
 import type { FinalThresholdResult } from '@/engine/endgame';
 import { isHandVisible } from '@/components/hand/visibility';
-import { useTurn, type TurnPhase } from '@/lib/use-turn';
+import { HAND_CAP, useTurn, type TurnPhase } from '@/lib/use-turn';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -234,14 +234,10 @@ export function PlayScreen({
           </span>
           <div className="flex gap-2">
             {turn.phase === 'move' ? (
-              <button
-                type="button"
-                onClick={() => turn.meditate()}
-                data-action="meditate"
-                className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs"
-              >
-                Meditate
-              </button>
+              <MeditateButton
+                handFull={(activePlayer?.hand.length ?? 0) >= HAND_CAP}
+                onMeditate={turn.meditate}
+              />
             ) : null}
             {turn.phase === 'draw' ? (
               <button
@@ -368,6 +364,40 @@ function buildChallengeContext(
     availableCardBurns: player.hand.length,
     availableSparkBurns: player.sparksHeld.size,
   };
+}
+
+/**
+ * Meditate button. Disabled when the active player's hand is at
+ * HAND_CAP — `drawNCards` early-exits silently in that case (#216).
+ * The `title` surfaces the reason for hover + screen-reader users.
+ *
+ * `onMeditate` is `() => void` because the button discards the
+ * caller's return value (`turn.meditate` returns `GameState`, but
+ * the button doesn't use it).
+ */
+function MeditateButton({
+  handFull,
+  onMeditate,
+}: {
+  handFull: boolean;
+  onMeditate: () => void;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={() => onMeditate()}
+      data-action="meditate"
+      disabled={handFull}
+      title={
+        handFull
+          ? `Hand is full (${HAND_CAP} cards) — play or burn a card first.`
+          : undefined
+      }
+      className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Meditate
+    </button>
+  );
 }
 
 /**

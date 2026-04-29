@@ -242,6 +242,86 @@ describe('multiplayer flow — start → events integration', () => {
     expect(db.rooms[0]?.state).toBe('lobby'); // unchanged
   });
 
+  it('meditate event grows the active player hand by 2 and is recorded', async () => {
+    // #216: regression cover. Pre-fix the events route silently
+    // accepted the action's audit but applyClientAction had no
+    // 'meditate' case, so the snapshot's hand never grew. This
+    // asserts both the audit log AND the snapshot mutation.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    const before =
+      db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand
+        .length ?? 0;
+    // Precondition: the start-route fixture must leave room for two
+    // more cards. If `makeFullGame`'s starting hand size ever
+    // changes, the test wants to fail loudly here, not via a
+    // confusing assertion failure below.
+    expect(before).toBeLessThan(6);
+
+    const res = await callEvent('ABCDEF', {
+      kind: 'meditate',
+      playerId: 'p1',
+    });
+    expect(res.status).toBe(200);
+
+    expect(db.game_events).toHaveLength(1);
+    expect(db.game_events[0]?.event_type).toBe('meditate');
+    expect(db.game_states[0]?.last_event_id).toBe(1);
+
+    const after =
+      db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand
+        .length ?? 0;
+    expect(after - before).toBe(2);
+  });
+
+  it('meditate at HAND_CAP returns 422 with action-rejected detail and leaves the snapshot untouched', async () => {
+    // #216 review fix. The dispatcher rejects with
+    // `{ kind: 'meditate', cause: 'hand-full' }` so direct API
+    // callers see an explicit signal rather than a 200 with a
+    // no-op audit row.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    // Force p1's hand to HAND_CAP=6 by replacing the in-memory
+    // snapshot row. The seeded fixture deals 4; we top up via
+    // direct db mutation since there is no in-game flow that
+    // produces a 6-card hand without other side-effects (a real
+    // game would get here via gifting). `snapshot` on the row is
+    // readonly, so we splice in a fresh row rather than mutating
+    // it in place.
+    const original = db.game_states[0];
+    expect(original).toBeDefined();
+    if (!original) return;
+    const players = original.snapshot.players.map((p) =>
+      p.id === 'p1' ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
+    );
+    db.game_states[0] = {
+      ...original,
+      snapshot: { ...original.snapshot, players },
+    };
+
+    const res = await callEvent('ABCDEF', {
+      kind: 'meditate',
+      playerId: 'p1',
+    });
+    expect(res.status).toBe(422);
+    const body = res.body as {
+      detail: { kind: string; cause: string };
+    };
+    expect(body.detail.kind).toBe('meditate');
+    expect(body.detail.cause).toBe('hand-full');
+
+    // No game_events row — neither an applied event nor a
+    // `rejected:` audit row. Dispatcher rejections take the same
+    // 422-no-audit path as invalid moves; only the upstream
+    // authorize gate writes audit rows.
+    expect(db.game_events).toHaveLength(0);
+    expect(db.game_states[0]?.last_event_id).toBe(0);
+    expect(db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand)
+      .toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
   it('serialized snapshot round-trips through engine state correctly', async () => {
     // Sanity check on the makeFullGame setup we use for the start
     // route's initial state. Confirms the in-memory shim's snapshot

@@ -138,3 +138,101 @@ describe('applyClientAction — end-turn', () => {
     expect(result.newState.activePlayerId).toBe('p2');
   });
 });
+
+describe('applyClientAction — meditate', () => {
+  it('draws MEDITATE_DRAW (2) cards from the deck and appends them to the player hand', () => {
+    const player = makePlayer({ id: 'p1', hand: [1, 2] });
+    const state = makeState(
+      {},
+      { players: [player], deck: [10, 11, 12, 13], discardPile: [] },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.players[0]?.hand).toEqual([1, 2, 10, 11]);
+    expect(result.newState.deck).toEqual([12, 13]);
+  });
+
+  it('rejects with hand-full when the player is already at HAND_CAP=6', () => {
+    // The dispatcher rejects rather than silently applying a no-op so
+    // a direct API caller sees an explicit signal. The route writes a
+    // `rejected:meditate` audit row instead of a phantom `meditate`
+    // event recording an action that drew zero cards.
+    const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
+    const state = makeState(
+      {},
+      { players: [player], deck: [10, 11], discardPile: [] },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('meditate');
+    if (result.error.kind !== 'meditate') return;
+    expect(result.error.cause).toBe('hand-full');
+  });
+
+  it('reports unknown-player BEFORE hand-full — guard order pinned', () => {
+    // Round-3 review pin: ensure the dispatcher checks for player
+    // existence first. If the guards were reordered (or merged), a
+    // ghost playerId could surface as `hand-full` based on someone
+    // else's hand state, which is misleading. The state below has
+    // ONE real player whose hand is at HAND_CAP; meditating as a
+    // ghost must report unknown-player, not hand-full.
+    const realFullHand = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
+    const state = makeState({}, { players: [realFullHand] });
+    const result = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'ghost' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    if (result.error.kind !== 'meditate') return;
+    expect(result.error.cause).toBe('unknown-player');
+  });
+
+  it('rejects with unknown-player when the playerId is not in state.players', () => {
+    // Defense in depth — the route's `authorize` gate already rejects
+    // unknown players before reaching the dispatcher, but a direct
+    // caller (scenario builder, future CLI) needs an explicit signal
+    // rather than a silent 200.
+    const player = makePlayer({ id: 'p1', hand: [1, 2] });
+    const state = makeState({}, { players: [player], deck: [10, 11] });
+    const result = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'ghost' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('meditate');
+    if (result.error.kind !== 'meditate') return;
+    expect(result.error.cause).toBe('unknown-player');
+  });
+
+  it('recycles a non-empty discard pile when the deck empties mid-meditate', () => {
+    const player = makePlayer({ id: 'p1', hand: [1, 2] });
+    const state = makeState(
+      {},
+      { players: [player], deck: [10], discardPile: [20, 21, 22] },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'p1' },
+      seededRng(7),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Hand grew by exactly 2 (10 from the deck + one from recycled discard).
+    expect(result.newState.players[0]?.hand).toHaveLength(4);
+    expect(result.newState.discardPile).toHaveLength(0);
+  });
+});
