@@ -3184,3 +3184,16 @@ don't reach naturally. Centralised them.
 - Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** _filled in after push_
+
+## 2026-04-29T10:21:27-04:00 — #192: ingest screenshot pack to assets/marketing/ (Epic #119 sub-ticket 6)
+
+**Pushed:** New `assets/marketing/` directory with 8 curated PNGs (~640 KB total) copied from the visual-regression baselines: home-desktop, home-mobile, play-desktop, demo-tree-desktop, demo-cards-desktop, demo-ritual-desktop, demo-meters-desktop, demo-soul-aspect-desktop. Plus an `assets/marketing/README.md` indexing each asset, documenting the refresh workflow, and setting a 1 MB size budget for the directory.
+**Why:** First marketing-polish ticket of Epic #119 Part 2. Sub-tickets 7 (README hero), 8 (gameplay gallery), and 9 (animated GIFs) need a stable place to point at. Sourcing from the regression baselines (rather than re-capturing) means the marketing pack is always derived from the locked surface the visual regression test guards.
+**Notes:**
+- File-naming: stripped the `-chromium-linux` Playwright suffix (implementation detail of the regression harness; marketing assets are a public contract). Source-baseline mapping recorded in the README's index table for provenance.
+- Reviewer flagged `demo-soul-aspect-desktop` as a worth-adding miss (the wave-3 character picker; sub-ticket 8 will need a "choose your aspect" gallery shot). Added.
+- Reviewer also asked for an explicit size budget. Added — 1 MB ceiling, with an LFS / external-CDN escape hatch documented.
+- Refresh workflow stays manual `cp` loop in the README rather than a `package.json` script — this is a rare, intentional operation, not something to encourage running by accident.
+- Gate green: typecheck ✓, lint ✓, test:coverage ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** _filled in after push_
