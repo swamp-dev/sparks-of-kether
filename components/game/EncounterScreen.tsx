@@ -17,7 +17,7 @@ import { D20Roll } from '@/components/challenge/D20Roll';
 import type {
   ChallengeContext,
   ChallengeResolution,
-} from '@/components/challenge/ChallengeModal';
+} from '@/lib/challenge-types';
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 

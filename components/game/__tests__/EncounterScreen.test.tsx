@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import { EncounterScreen } from '../EncounterScreen';
-import type { ChallengeContext } from '@/components/challenge/ChallengeModal';
+import type { ChallengeContext } from '@/lib/challenge-types';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
 import { makeFullGame, makePlayer } from '@/test/fixtures';

@@ -11,7 +11,7 @@ import { EncounterScreen } from '@/components/game/EncounterScreen';
 import type {
   ChallengeContext,
   ChallengeResolution,
-} from '@/components/challenge/ChallengeModal';
+} from '@/lib/challenge-types';
 import { FinalThreshold } from '@/components/game/FinalThreshold';
 import type { FinalThresholdResult } from '@/engine/endgame';
 import { isHandVisible } from '@/components/hand/visibility';

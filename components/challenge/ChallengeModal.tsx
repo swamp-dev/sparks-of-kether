@@ -1,7 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { sefirahByKey } from '@/data';
-import type { SefirahKey } from '@/data';
 import {
   CARD_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
@@ -14,7 +13,17 @@ import type { Rng } from '@/engine/rng';
 import type { PlayerState } from '@/engine/types';
 import { StatIcon } from '@/components/icons/StatIcon';
 import { StatSheet } from '@/components/player/StatSheet';
+import type {
+  ChallengeContext,
+  ChallengeResolution,
+} from '@/lib/challenge-types';
 import { D20Roll } from './D20Roll';
+
+// Re-exported for back-compat with the `/demo/challenge` route and
+// this component's own tests. Production callers (`EncounterScreen`,
+// `PlayScreen`) import directly from `@/lib/challenge-types` (#282)
+// so they don't pull types from this `@deprecated` module.
+export type { ChallengeContext, ChallengeResolution };
 
 /**
  * @deprecated Replaced by `components/game/EncounterScreen.tsx` (#228)
@@ -42,58 +51,6 @@ import { D20Roll } from './D20Roll';
  *
  * Tests inject a seeded `rng` so dice rolls are deterministic.
  */
-
-export interface ChallengeContext {
-  readonly sefirah: SefirahKey;
-  readonly stat: number;
-  readonly statLabel: string;
-  /** True when arrival was via a central-pillar shortcut (Da'at-style). */
-  readonly shortcut?: boolean;
-  /** Allies at the same Sefirah whose stat can boost this check. */
-  readonly availableAllies?: readonly {
-    readonly id: string;
-    readonly name: string;
-    readonly stat: number;
-  }[];
-  /** How many cards the player can burn (typically `hand.length`). */
-  readonly availableCardBurns?: number;
-  /** How many sparks the player can burn (size of `sparksHeld`). */
-  readonly availableSparkBurns?: number;
-  /**
-   * Soul Door DC delta (#245 / Epic #240). Typically `-2` when the
-   * arriving player's class has this Sefirah as one of its Doors;
-   * `0` or absent otherwise. The orchestrator computes this via
-   * `engine/soul-door-bonus.ts:soulDoorDcDelta(player.zodiacSign,
-   * sefirah)`. The modal renders a "Soul Door open here" callout
-   * for non-zero values AND folds the delta into both the displayed
-   * `effectiveDC` and the `CheckModifiers` it builds for `rollCheck`
-   * — so the pre-roll outcome's `effectiveDC` matches what the
-   * engine will compute. See the `#244 contract` on
-   * `ResolveChallengeInput.outcome`.
-   */
-  readonly soulDoorDelta?: number;
-}
-
-/**
- * What the modal reports to the orchestrator after a roll. Always
- * carries the `CheckModifiers` that produced the outcome — the
- * orchestrator forwards them to the engine so the state mutation
- * matches what the player committed (assist allies, cards burned,
- * sparks burned). Without this, the engine has to roll again with
- * no modifiers and produces a different result.
- */
-export type ChallengeResolution =
-  | {
-      readonly pass: true;
-      readonly outcome: CheckOutcome;
-      readonly modifiers: CheckModifiers;
-    }
-  | {
-      readonly pass: false;
-      readonly outcome: CheckOutcome;
-      readonly modifiers: CheckModifiers;
-      readonly choice: 'retry' | 'accept';
-    };
 
 interface ChallengeModalProps {
   readonly context: ChallengeContext;
