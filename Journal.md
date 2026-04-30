@@ -3588,3 +3588,18 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (67 files / 976 passed / 1 todo), build ✓, e2e ✓ (62 passed), integration ✓ (1/1).
 
 **Commit(s):** `1193d0a` (impl), `4bc178f` (review fix)
+
+## 2026-04-29T20:24:05-04:00 — #245: T5 — Soul Door callout in challenge modal (closes Epic #240)
+
+**Pushed:** Final piece of Epic #240. Challenge modal now renders the verbatim "Soul Door open here: DC X → X−2" callout when the active player is at one of their Doors. Wires the engine helper from #258 through to the UI via a new optional `soulDoorDelta` field on `ChallengeContext`.
+
+**Why:** Sub-ticket T5 of Epic #240. With this PR, the Soul Doors mechanic is fully shipped end-to-end: data layer (#256), engine pure fn (#258), challenge resolver integration (#259), and now UI surfacing.
+
+**Notes:**
+- TDD-first: 6 failing tests (`5385502`) before implementation (`5cdc5c0`).
+- Three-file change: `ChallengeContext` gains `soulDoorDelta?: number`; `ChallengeModal` folds the delta into both displayed `effectiveDC` and the `CheckModifiers` it builds for `rollCheck` (closing the #244 contract gap — engine treats `input.outcome` as authoritative when supplied, so the modal must compute the right effective DC); `PlayScreen.buildChallengeContext` computes the delta from `(player.zodiacSign, sefirah)` via `soulDoorDcDelta`. Signless players (#212 transition) get 0; the modal's `< 0` guard hides the callout for them.
+- Code-reviewer caught a real spec deviation in the first pass: design § 6 explicitly requires the parenthetical breakdown `(shortcut +3, Door −2)` when both modifiers apply, plus a worked example `"Soul Door open here: DC 14 → 15 (shortcut +3, Door −2)"`. My initial impl used the post-shortcut DC as the "from" baseline — the doc uses base DC. Fix in `3b93449` switches to base DC and appends the parenthetical when shortcut is also active. Plus tightened the render guard from `!== 0` to `< 0` so a hypothetical future positive delta wouldn't render misleading copy.
+- Re-review confirmed: shortcut + Door now renders exactly `"Soul Door open here: DC 12 → 13 (shortcut +3, Door −2)"`. U+2212 minus sign matches the design doc typography.
+- Full `pnpm ci:local`: verify ✓ (67 files / 982 passed / 1 todo), build ✓, e2e ✓ (62 passed), integration ✓ (1/1).
+
+**Commit(s):** `5cdc5c0` (impl), `3b93449` (review fix)

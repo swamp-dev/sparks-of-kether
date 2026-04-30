@@ -97,6 +97,125 @@ describe('ChallengeModal — committing modifiers', () => {
   });
 });
 
+describe('ChallengeModal — Soul Door callout (#245)', () => {
+  // Epic #240 D5: when the active player is at one of their Doors,
+  // a callout reads exactly "Soul Door open here: DC X → X−2" — the
+  // colon, en-arrow, and capitalisation are verbatim per the locked
+  // design (`design/soul-doors.md` § 6).
+
+  it('renders the verbatim callout when soulDoorDelta is -2', () => {
+    const { container } = render(
+      <ChallengeModal
+        context={{ ...baseContext, soulDoorDelta: -2 }}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+      />,
+    );
+    const callout = container.querySelector('[data-soul-door]');
+    expect(callout, 'callout should render').not.toBeNull();
+    // Gevurah base DC is 15 → 13 with Door. The arrow is U+2192.
+    // Simple no-shortcut case has no parenthetical (only baseDC →
+    // effectiveDC).
+    expect(callout?.textContent).toBe('Soul Door open here: DC 15 → 13');
+  });
+
+  it('reduces the displayed effective DC by the Door delta', () => {
+    const { container } = render(
+      <ChallengeModal
+        context={{ ...baseContext, soulDoorDelta: -2 }}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+      />,
+    );
+    const subtitle = container.querySelector('h2')?.nextElementSibling;
+    // Was DC 15; with Door it's DC 13.
+    expect(subtitle?.textContent).toMatch(/DC 13\b/);
+    expect(subtitle?.textContent).not.toMatch(/DC 15\b/);
+  });
+
+  it('stacks Door reduction with shortcut penalty (12 + 3 - 2 = 13 for Yesod-style)', () => {
+    const { container } = render(
+      <ChallengeModal
+        context={{
+          ...baseContext,
+          sefirah: 'yesod',
+          stat: 10,
+          statLabel: 'intuition',
+          shortcut: true,
+          soulDoorDelta: -2,
+        }}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+      />,
+    );
+    const subtitle = container.querySelector('h2')?.nextElementSibling;
+    // Yesod base DC 12, +3 shortcut, -2 Door = 13.
+    expect(subtitle?.textContent).toMatch(/DC 13\b/);
+    // Both adjustments are surfaced to the player. The header keeps
+    // its existing `(shortcut +3)` annotation; the Soul Door callout
+    // adds the breakdown per `design/soul-doors.md` § 6.
+    expect(subtitle?.textContent).toMatch(/shortcut \+3/);
+    const callout = container.querySelector('[data-soul-door]');
+    // Per design doc § 6 worked example: "DC X → X−2" template plus
+    // the (shortcut +N, Door −M) breakdown when the shortcut is also
+    // active. `12` is base DC; `13` is final after both modifiers.
+    expect(callout?.textContent).toBe(
+      'Soul Door open here: DC 12 → 13 (shortcut +3, Door −2)',
+    );
+  });
+
+  it('does not render the callout when soulDoorDelta is 0', () => {
+    const { container } = render(
+      <ChallengeModal
+        context={{ ...baseContext, soulDoorDelta: 0 }}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+      />,
+    );
+    expect(container.querySelector('[data-soul-door]')).toBeNull();
+  });
+
+  it('does not render the callout when soulDoorDelta is omitted entirely', () => {
+    // Existing callers (every test before this one) pass no soulDoor
+    // field. The callout must stay invisible for them.
+    const { container } = render(
+      <ChallengeModal
+        context={baseContext}
+        rng={seededRng(1)}
+        onResolved={vi.fn()}
+      />,
+    );
+    expect(container.querySelector('[data-soul-door]')).toBeNull();
+  });
+
+  it('passes soulDoorDelta into CheckModifiers when the player rolls', async () => {
+    // Critical: the modal must include the delta in the modifiers it
+    // gives `rollCheck`, otherwise outcome.effectiveDC won't match the
+    // engine's resolveChallenge auto-inject. See the #244 contract on
+    // ResolveChallengeInput.outcome.
+    vi.useFakeTimers();
+    const onResolved = vi.fn();
+    render(
+      <ChallengeModal
+        context={{ ...baseContext, stat: 18, soulDoorDelta: -2 }}
+        rng={seededRng(1)}
+        onResolved={onResolved}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    expect(onResolved).toHaveBeenCalledTimes(1);
+    const arg = onResolved.mock.calls[0]?.[0] as { modifiers: { soulDoorDelta?: number }; outcome: { effectiveDC: number } };
+    expect(arg.modifiers.soulDoorDelta).toBe(-2);
+    // Gevurah DC 15 - 2 Door = 13.
+    expect(arg.outcome.effectiveDC).toBe(13);
+    vi.useRealTimers();
+  });
+});
+
 describe('ChallengeModal — rolling and reveal', () => {
   it('full happy path: roll passes → reveal shown → Continue fires onResolved', async () => {
     vi.useFakeTimers();

@@ -52,6 +52,19 @@ export interface ChallengeContext {
   readonly availableCardBurns?: number;
   /** How many sparks the player can burn (size of `sparksHeld`). */
   readonly availableSparkBurns?: number;
+  /**
+   * Soul Door DC delta (#245 / Epic #240). Typically `-2` when the
+   * arriving player's class has this Sefirah as one of its Doors;
+   * `0` or absent otherwise. The orchestrator computes this via
+   * `engine/soul-door-bonus.ts:soulDoorDcDelta(player.zodiacSign,
+   * sefirah)`. The modal renders a "Soul Door open here" callout
+   * for non-zero values AND folds the delta into both the displayed
+   * `effectiveDC` and the `CheckModifiers` it builds for `rollCheck`
+   * — so the pre-roll outcome's `effectiveDC` matches what the
+   * engine will compute. See the `#244 contract` on
+   * `ResolveChallengeInput.outcome`.
+   */
+  readonly soulDoorDelta?: number;
 }
 
 /**
@@ -127,7 +140,18 @@ export function ChallengeModal({
     );
   }
   const baseDC = sefirahData.challenge.dc;
-  const effectiveDC = baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0);
+  // Effective DC composes two adjustments on the DC side: the shortcut
+  // penalty (+3) and the Soul Door delta (typically -2 when the
+  // player is at one of their Doors). Mirror of `rollCheck`'s
+  // composition in `engine/checks.ts`.
+  const soulDoorDelta = context.soulDoorDelta ?? 0;
+  const effectiveDC =
+    baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta;
+  // Only the canonical Door discount (`-2`) shows the callout. Any
+  // future positive delta (anti-Door penalty, hypothetical) would be
+  // semantically wrong to render under "Soul Door open here", so the
+  // guard is tighter than `!== 0`.
+  const showSoulDoor = soulDoorDelta < 0;
 
   const [assistIds, setAssistIds] = useState<ReadonlySet<string>>(new Set());
   const [cardBurns, setCardBurns] = useState(0);
@@ -175,6 +199,12 @@ export function ChallengeModal({
       cardBurns,
       sparkBurns,
       shortcutPenalty: context.shortcut ?? false,
+      // #245 / #244 contract: include the Door delta in the modifiers
+      // we hand to `rollCheck` so the pre-roll outcome's effectiveDC
+      // matches what `resolveChallenge` would compute. The engine
+      // treats `outcome` as authoritative when supplied, so the modal
+      // is the source of truth for the displayed DC.
+      ...(soulDoorDelta !== 0 ? { soulDoorDelta } : {}),
     };
     const result = rollCheck({
       stat: context.stat,
@@ -244,6 +274,28 @@ export function ChallengeModal({
         {sefirahData.hebrewName} · DC {effectiveDC}
         {context.shortcut ? ` (shortcut +${SHORTCUT_DC_PENALTY})` : ''}
       </p>
+
+      {showSoulDoor ? (
+        // #245 / Epic #240: surface the per-class Door discount when
+        // the arriving player is at one of their Doors. Verbatim copy
+        // per `design/soul-doors.md` § 6 — colon, U+2192 arrow, no
+        // period. The "from" is the base DC; the "to" is the final
+        // effective DC. When a central-pillar shortcut also applies,
+        // append a parenthetical breakdown per § 6's worked example
+        // ("DC 14 → 15 (shortcut +3, Door −2)") so the player can see
+        // both modifiers at once. U+2212 minus sign in "Door −2"
+        // matches the design doc's typography.
+        <p
+          data-soul-door
+          className="mt-2 rounded border border-illumination/40 bg-illumination/5 px-3 py-1 text-sm"
+          style={{ borderColor: sefirahData.color }}
+        >
+          Soul Door open here: DC {baseDC} → {effectiveDC}
+          {context.shortcut
+            ? ` (shortcut +${SHORTCUT_DC_PENALTY}, Door −${Math.abs(soulDoorDelta)})`
+            : ''}
+        </p>
+      ) : null}
 
       {player ? (
         // #134: compact stat sheet embedded inside the modal so the
