@@ -22,6 +22,7 @@ export default function TokensDemoPage(): JSX.Element {
         Player tokens, Spark inventory icons, Shell pressure indicators, d20 roll glyph.
       </p>
 
+      <div data-demo-canvas>
       <Section title="Player tokens (variants 1–4)">
         <div className="flex gap-4">
           {([1, 2, 3, 4] as const).map((v) => (
@@ -62,6 +63,7 @@ export default function TokensDemoPage(): JSX.Element {
           <D20 value={20} className="h-14 w-14" />
         </div>
       </Section>
+      </div>
     </main>
   );
 }

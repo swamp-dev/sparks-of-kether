@@ -24,34 +24,36 @@ export default function HandDemoPage(): JSX.Element {
         the owner has crossed into the upper Tree.
       </p>
 
-      <Section title="Own hand (selectable)">
-        <Hand
-          hand={ownHand}
-          visible={true}
-          onCardSelect={(n) => setSelected(n)}
-          {...(selected !== undefined ? { selectedArcanum: selected } : {})}
-          ariaLabel="Your hand, 5 cards"
-        />
-        <p className="mt-4 text-xs opacity-60">
-          Selected: {selected !== undefined ? `Arcanum ${selected}` : 'none'}
-        </p>
-      </Section>
+      <div data-demo-canvas>
+        <Section title="Own hand (selectable)">
+          <Hand
+            hand={ownHand}
+            visible={true}
+            onCardSelect={(n) => setSelected(n)}
+            {...(selected !== undefined ? { selectedArcanum: selected } : {})}
+            ariaLabel="Your hand, 5 cards"
+          />
+          <p className="mt-4 text-xs opacity-60">
+            Selected: {selected !== undefined ? `Arcanum ${selected}` : 'none'}
+          </p>
+        </Section>
 
-      <Section title="Other player at lower Tree (private — face-down)">
-        <Hand
-          hand={otherHandLower}
-          visible={false}
-          ariaLabel="Bea's hand, 4 face-down cards"
-        />
-      </Section>
+        <Section title="Other player at lower Tree (private — face-down)">
+          <Hand
+            hand={otherHandLower}
+            visible={false}
+            ariaLabel="Bea's hand, 4 face-down cards"
+          />
+        </Section>
 
-      <Section title="Other player at upper Tree (public — face-up)">
-        <Hand
-          hand={otherHandUpper}
-          visible={true}
-          ariaLabel="Carla's hand at Kether, 4 cards"
-        />
-      </Section>
+        <Section title="Other player at upper Tree (public — face-up)">
+          <Hand
+            hand={otherHandUpper}
+            visible={true}
+            ariaLabel="Carla's hand at Kether, 4 cards"
+          />
+        </Section>
+      </div>
     </main>
   );
 }

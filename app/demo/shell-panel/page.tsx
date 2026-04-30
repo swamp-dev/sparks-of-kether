@@ -26,17 +26,19 @@ export default function ShellPanelDemoPage(): JSX.Element {
         effect copy, banished struck through.
       </p>
 
-      <Section title="All dormant (fresh game)">
-        <ShellPanel shells={allDormant} />
-      </Section>
+      <div data-demo-canvas>
+        <Section title="All dormant (fresh game)">
+          <ShellPanel shells={allDormant} />
+        </Section>
 
-      <Section title="Two active (Cruelty, Hoarding)">
-        <ShellPanel shells={someActive} />
-      </Section>
+        <Section title="Two active (Cruelty, Hoarding)">
+          <ShellPanel shells={someActive} />
+        </Section>
 
-      <Section title="Mixed: Kether + Malkuth active, Binah banished">
-        <ShellPanel shells={mixed} />
-      </Section>
+        <Section title="Mixed: Kether + Malkuth active, Binah banished">
+          <ShellPanel shells={mixed} />
+        </Section>
+      </div>
     </main>
   );
 }

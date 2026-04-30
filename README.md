@@ -51,10 +51,10 @@ A walk through the surfaces in the order a player meets them.
 
 | | |
 |---|---|
-| ![Blessing Ritual](assets/marketing/demo-ritual-desktop.png) | **The opening ritual.** Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat, then pick your zodiac class — its dignities tilt your starting stats. The atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible. |
-| ![Tree of Life board](assets/marketing/demo-tree-desktop.png) | **The board.** Ten Sefirot connected by twenty-two paths — the geometry the team traverses together. |
-| ![Play surface](assets/marketing/play-desktop.png) | **The play surface.** Board, hand, and shared meters all in view; class-derived stat bonuses are folded in by start of play. |
-| ![Team Meters](assets/marketing/demo-meters-desktop.png) | **Illumination vs Separation.** The two team-wide counters that decide the run. Pillar-streak columns track which side of the Tree the team has been favouring. |
+| ![Blessing Ritual mid-flow](assets/marketing/play-desktop.png) | **The opening ritual.** Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat. The atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible. |
+| ![Zodiac sign picker](assets/marketing/play-sign-picker-desktop.png) | **Your class.** Twelve classical signs, each tilting your starting stats through planetary dignities and opening one or two Soul Doors on the Tree. |
+| ![The play surface](assets/marketing/play-mid-game-desktop.png) | **The play surface.** Tree of Life board, hand fan, team meters, Shells row, and turn UI — everything in view at once. |
+| ![Challenge with Soul Door](assets/marketing/demo-challenge-soul-door-desktop.png) | **A Soul Door opens.** When your class's soul card aligns with the Sefirah being challenged, the DC drops by 2 — the modal calls it out verbatim. |
 | ![Major Arcana grid](assets/marketing/demo-cards-desktop.png) | **22 path-keys.** A symbolic-minimalist deck of the Major Arcana — each card a key, each key a path between Sefirot. |
 
 For a stable image URL set (e.g. for sharing or for a future

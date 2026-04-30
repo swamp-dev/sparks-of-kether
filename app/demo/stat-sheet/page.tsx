@@ -38,23 +38,25 @@ export default function StatSheetDemoPage(): JSX.Element {
         folded into the stat values at game start.
       </p>
 
-      <Section title="Expanded — active challenge: Harmony">
-        <div className="max-w-md rounded-lg border border-veil/20 bg-ground/50 p-4">
-          <StatSheet player={player} activeStat="harmony" />
-        </div>
-      </Section>
+      <div data-demo-canvas>
+        <Section title="Expanded — active challenge: Harmony">
+          <div className="max-w-md rounded-lg border border-veil/20 bg-ground/50 p-4">
+            <StatSheet player={player} activeStat="harmony" />
+          </div>
+        </Section>
 
-      <Section title="Compact — orchestrator row">
-        <div className="rounded-lg border border-veil/20 bg-ground/50 p-3">
-          <StatSheet player={player} mode="compact" activeStat="harmony" />
-        </div>
-      </Section>
+        <Section title="Compact — orchestrator row">
+          <div className="rounded-lg border border-veil/20 bg-ground/50 p-3">
+            <StatSheet player={player} mode="compact" activeStat="harmony" />
+          </div>
+        </Section>
 
-      <Section title="Expanded — no active stat highlight">
-        <div className="max-w-md rounded-lg border border-veil/20 bg-ground/50 p-4">
-          <StatSheet player={player} />
-        </div>
-      </Section>
+        <Section title="Expanded — no active stat highlight">
+          <div className="max-w-md rounded-lg border border-veil/20 bg-ground/50 p-4">
+            <StatSheet player={player} />
+          </div>
+        </Section>
+      </div>
     </main>
   );
 }

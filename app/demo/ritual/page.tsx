@@ -24,7 +24,7 @@ export default function RitualDemoPage(): JSX.Element {
         produce the same blessings.
       </p>
 
-      <div className="mt-8">
+      <div data-demo-canvas className="mt-8">
         <BlessingRitual
           key={seed}
           rng={seededRng(seed)}

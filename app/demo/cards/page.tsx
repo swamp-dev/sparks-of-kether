@@ -20,7 +20,10 @@ export default function CardsDemoPage(): JSX.Element {
         Symbolic-minimalist deck. Each card composes 1–3 glyphs from the
         shared vocabulary in <code>components/cards/glyphs.tsx</code>.
       </p>
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+      <div
+        data-demo-canvas
+        className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
+      >
         {arcana.map((arcanum) => (
           <ArcanumCard
             key={arcanum.number}

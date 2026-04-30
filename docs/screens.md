@@ -32,14 +32,36 @@ Long-form pitch: what the game is, the symbolic system, screenshots,
 contributor links. The deeper "what is this" surface for visitors who
 clicked through from the landing.
 
-### `/play` — the hot-seat play surface
+### `/play` — the hot-seat play surface (opening ritual)
 
-![Play page screenshot](screenshots/play-desktop.png)
+![Play page — Blessing Ritual mid-flow](screenshots/play-desktop.png)
 
-The local-only hot-seat play surface — Tree of Life board with team
-meters, hand, and turn UI. Used for solo testing and the offline
-co-located mode; the multiplayer rooms variant lives at
+The local-only hot-seat surface, captured at STEP 6 OF 10 of the
+Blessing Ritual — five Sefirot rolled, Tiferet/Beauty active, the
+ledger filling in. The multiplayer rooms variant lives at
 `/rooms/[code]/lobby` (see "Captured separately" below).
+
+The /play route is a state machine. The next two captures show two
+later states of the same route, since they're meaningfully different
+surfaces from a player's perspective.
+
+### `/play` — zodiac sign picker (post-ritual)
+
+![Zodiac sign picker — twelve classes](screenshots/play-sign-picker-desktop.png)
+
+After the ritual completes, the picker appears — twelve classical
+signs with stat dignities and Soul Door copy per sign. Headline UI
+of Epic #212 (astrological-sign classes). Captured by walking past
+the ritual via "Skip — roll all remaining" + "Continue".
+
+### `/play` — live play surface (post-setup)
+
+![Live play surface — board, hand, meters, turn UI](screenshots/play-mid-game-desktop.png)
+
+After both players complete setup and the host clicks Begin, the
+live `PlayScreen` mounts: Tree of Life board, hand fan, team meters,
+Shells row, and turn UI all in view. Captured by walking the full
+setup pipeline (ritual P1 → Aries → ritual P2 → Leo → Begin).
 
 ---
 
@@ -75,8 +97,19 @@ All 22 Major Arcana rendered in a single grid using the shared
 
 ![Demo challenge screenshot](screenshots/demo-challenge-desktop.png)
 
-The challenge-resolution UI: dice, modifiers, success/failure ledger.
-Used to iterate on outcome readability without driving a full match.
+The challenge-resolution UI: DC, stat being checked, allies, burn
+cards/sparks dials, projected total. Pre-roll state. The same demo
+also accepts `?door=open` and `?shortcut=1` search params to seed
+state — the next entry shows the Soul Door variant.
+
+### `/demo/challenge?door=open` — challenge with Soul Door callout
+
+![Challenge with Soul Door callout](screenshots/demo-challenge-soul-door-desktop.png)
+
+Same modal, with Epic #240's "Soul Door open here: DC 15 → 13" band
+visible at the top. The DC line in the header reflects the adjusted
+value (13 vs the base 15). Captured deterministically via the search
+param — see `app/demo/challenge/page.tsx`.
 
 ### `/demo/hand` — player hand
 

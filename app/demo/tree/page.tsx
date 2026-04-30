@@ -18,7 +18,7 @@ export default function TreeDemoPage(): JSX.Element {
       <p className="mt-2 max-w-xl text-sm opacity-70">
         Static board. Interactivity (move highlighting, click handlers) lands in Phase 3.
       </p>
-      <div className="mx-auto mt-8 max-w-md">
+      <div data-demo-canvas className="mx-auto mt-8 max-w-md">
         <TreeBoard className="w-full" />
       </div>
     </main>

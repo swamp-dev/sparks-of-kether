@@ -20,15 +20,17 @@ export default function MetersDemoPage(): JSX.Element {
       </p>
 
       <div className="mt-8 flex items-start gap-12">
-        <TeamMeters
-          illumination={illum}
-          separation={sep}
-          pillarStreak={{
-            currentPillar: 'mercy',
-            sameCount: 2,
-            alternationCount: 0,
-          }}
-        />
+        <div data-demo-canvas>
+          <TeamMeters
+            illumination={illum}
+            separation={sep}
+            pillarStreak={{
+              currentPillar: 'mercy',
+              sameCount: 2,
+              alternationCount: 0,
+            }}
+          />
+        </div>
 
         <div className="flex flex-col gap-3">
           <Stepper

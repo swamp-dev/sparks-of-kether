@@ -3755,3 +3755,25 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (68 files / 1035 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
 
 **Commit(s):** `45fb2b8` (dispatcher cases), `a770d4f` (remove deprecated `submit-challenge` ClientAction + scenario.ts rewrite), `f4a85be` (CRITICAL fix: move phase/sub-phase/lastOutcome onto GameState; +SIGNIFICANT fixes)
+
+## 2026-04-30T01:02:46-04:00 — #271: screenshot review pass — Phase 1 + Phase 2
+
+**Pushed:** Two-phase ticket consolidating into one PR. Phase 1 was already pushed standalone in `8eb7dd1` (rating doc); this entry covers both that push and the just-completed Phase 2 implementation in commits `9da2465..8cac96c`.
+
+**Phase 1 (rating doc):** `design/screenshots-review-2026-04.md` — blunt audit of every PNG in `assets/marketing/` (11) and `docs/screenshots/` (14) with verdict (Keep / Restate / Recrop / Drop / Add) + specific problem + specific fix per asset. Surfaced five recurring problems: dev-tooling header strip on every `/demo/*`, sparse-layout black void in 4+ shots, first-step state for `play`/`demo-ritual`, `about-desktop` out-of-sync between surfaces, and Epic #212 + #240 features absent from any capture.
+
+**Phase 2 (implementation):** Five chunks, four commits.
+- `9da2465` (chunk 1): `data-demo-canvas` attribute on every `/demo/*` page (10 files). `?door=open` and `?shortcut=1` URL search-param handling on `/demo/challenge` so the Soul Door callout can be captured deterministically (ChallengeModal already supported the props).
+- `2ae2a6b` (chunk 2): rewrote `e2e/screenshots.review.spec.ts` with two extension hooks per route — `setup(page)` for state seeding, `captureLocator` for tighter framing. Added three new state-seeded captures: `play-sign-picker` (Epic #212 zodiac picker), `play-mid-game` (live PlayScreen after walking the full setup pipeline), `demo-challenge-soul-door` (Epic #240 callout).
+- `727a78b` (chunk 3 follow-up): tightened the meters demo's `data-demo-canvas` wrap to exclude the dev stepper. First capture pass had the +/- buttons inside the canvas region.
+- `8cac96c` (chunks 3+4): refresh `assets/marketing/` (11 → 13 PNGs, drop demo-ritual marketing copy as redundant with the new play-desktop, add three new state-seeded entries) and `docs/screenshots/` (14 → 17 PNGs). Restructure README gallery and `app/about/page.tsx` GalleryItems around the player journey: ritual → sign picker → play → Soul Door → Major Arcana. Bump `assets/marketing/README.md` size budget from 1024 KiB to 1.5 MiB with explicit rationale.
+
+**Why:** Epic #119 sub-ticket 14 — review the screenshots that #266/#267 shipped and improve them. Several captures were stale-by-state (play landed on STEP 1 OF 10 with empty ledger; demo-challenge was pre-roll only) and the Epic #212 + #240 surfaces (zodiac picker, Soul Door callout) weren't captured anywhere despite being recently shipped headline features.
+
+**Notes:**
+- Two iterations of the `setup(page)` helpers were needed: the first `rollFiveTimes` clicked Roll-3d6 5× without the intermediate Next clicks (BlessingRitual flow is `awaiting → rolled` per step, both buttons must be clicked in alternation). The first `skipRitualToSignPicker` missed that `handleSkipCeremony` doesn't call `onComplete` directly — the user has to click Continue on the Summary panel (#215 gate). Both fixed in chunk 2's edits.
+- Marketing pack is now 1432 KiB / 1.5 MiB. Tour pack is 1817 KiB. PNG compression (pngquant / oxipng) isn't available via `pnpm dlx` so size growth is taken at face value; future refreshes can compress before bumping again.
+- Deferred to follow-ups: about-desktop hero crop (a clip-region marketing variant), the multiplayer lobby capture (needs Supabase fixture mocking), and aligning visual-regression baselines with the new locator-based capture pattern.
+- `pnpm typecheck`, `pnpm test --run tests/docs` (96/96 passing — 3 new image embeds resolve), and `pnpm build` all green during chunk-by-chunk verification. Full `pnpm ci:local` to follow before push.
+
+**Commit(s):** `8eb7dd1` (Phase 1 rating doc, pushed earlier), `9da2465` (chunk 1 — data-demo-canvas + door param), `2ae2a6b` (chunk 2 — spec extensions), `727a78b` (chunk 3 follow-up — meters wrap tighten), `8cac96c` (chunks 3+4 — curation + embeds)

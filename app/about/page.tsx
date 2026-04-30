@@ -2,11 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ColorBloom } from '@/components/atmosphere/ColorBloom';
 import homeShot from '@/assets/marketing/home-desktop.png';
-import ritualShot from '@/assets/marketing/demo-ritual-desktop.png';
+import ritualShot from '@/assets/marketing/play-desktop.png';
+import signPickerShot from '@/assets/marketing/play-sign-picker-desktop.png';
+import midGameShot from '@/assets/marketing/play-mid-game-desktop.png';
 import treeShot from '@/assets/marketing/demo-tree-desktop.png';
-import metersShot from '@/assets/marketing/demo-meters-desktop.png';
 import cardsShot from '@/assets/marketing/demo-cards-desktop.png';
-import challengeShot from '@/assets/marketing/demo-challenge-desktop.png';
+import soulDoorShot from '@/assets/marketing/demo-challenge-soul-door-desktop.png';
 
 /**
  * Marketing landing surface. Server-rendered, no client state — the
@@ -90,8 +91,18 @@ export default function AboutPage(): JSX.Element {
         <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
           <GalleryItem
             src={ritualShot}
-            alt="Blessing Ritual — the opening rolls"
-            caption="The opening ritual. Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat, then pick your zodiac class — its dignities tilt your starting stats. Atmosphere shifts hue with the active Sefirah."
+            alt="Blessing Ritual mid-flow — five Sefirot rolled"
+            caption="The opening ritual. Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat. Atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible."
+          />
+          <GalleryItem
+            src={signPickerShot}
+            alt="Zodiac sign picker — twelve classes with stat dignities"
+            caption="Your class. Twelve classical signs, each tilting your starting stats through planetary dignities and opening one or two Soul Doors on the Tree."
+          />
+          <GalleryItem
+            src={midGameShot}
+            alt="The live play surface — Tree, hand, meters, turn UI"
+            caption="The play surface. Tree of Life board, hand fan, team meters, Shells row, and turn UI — everything in view at once."
           />
           <GalleryItem
             src={treeShot}
@@ -99,14 +110,9 @@ export default function AboutPage(): JSX.Element {
             caption="The board. Ten Sefirot connected by twenty-two paths — the geometry the team traverses together."
           />
           <GalleryItem
-            src={metersShot}
-            alt="Team meters — Illumination vs Separation"
-            caption="Illumination vs Separation. The two team-wide counters that decide the run; pillar-streak columns track which side of the Tree the team has favoured."
-          />
-          <GalleryItem
-            src={challengeShot}
-            alt="Challenge modal — Severity, mid-resolve"
-            caption="The tense moment. Each challenge surfaces the DC, the stat being checked, the allies who can assist, and the burn-card / burn-spark dials before the d20 lands."
+            src={soulDoorShot}
+            alt="Challenge modal with Soul Door callout"
+            caption="A Soul Door opens. When your class's soul card aligns with the Sefirah being challenged, the DC drops by 2 — the modal calls it out verbatim."
           />
           <GalleryItem
             src={cardsShot}

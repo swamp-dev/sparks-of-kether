@@ -20,6 +20,7 @@ export default function IconsDemoPage(): JSX.Element {
         Pillar markers, stat icons, twin meters, decorative flourishes.
       </p>
 
+      <div data-demo-canvas>
       <Section title="Pillar markers">
         <div className="flex gap-6">
           {(['mercy', 'severity', 'balance'] as const).map((p) => (
@@ -87,6 +88,7 @@ export default function IconsDemoPage(): JSX.Element {
           <Flourish className="h-4 w-32" />
         </div>
       </Section>
+      </div>
     </main>
   );
 }
