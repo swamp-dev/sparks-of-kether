@@ -551,14 +551,82 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
   });
 });
 
-describe('useTurn — submitChallenge shortcutPenalty forwarding (E4 / #229)', () => {
-  it('forwards modifiers.shortcutPenalty so the engine bumps effectiveDC by +3', () => {
-    // E4 hot-seat hatch (#229): a player who arrived via a
-    // central-pillar shortcut sees `shortcutPenalty: true` in the
-    // modal-built CheckModifiers. The wrapper must forward it
-    // through `prep-confirm` so the engine actually applies the
-    // +3 DC penalty. Skipping `outcome` so the engine itself
-    // rolls and computes `effectiveDC` from `shortcutPenalty`.
+describe('useTurn — submitChallenge shortcutPenalty derivation (#286)', () => {
+  // Pre-#286: the wrapper forwarded `modifiers.shortcutPenalty` through
+  // a `prep-confirm` event override. Post-#286: the field is gone from
+  // the event, and the reducer derives the +3 DC penalty from the
+  // active player's `lastArrivalPathNumber`. The wrapper-built
+  // `CheckModifiers.shortcutPenalty` (still used by the modal's UI to
+  // render the DC summary line) no longer round-trips through the
+  // engine event. These tests pin that contract: identical inputs to
+  // `submitChallenge` reach the same `effectiveDC` whether the player
+  // arrived via a shortcut path or not, driven purely by state.
+
+  it('engine derives +3 DC penalty after a central-pillar shortcut arrival', () => {
+    // Set up a snapshot where the active player just arrived at
+    // yesod via path 25 (Tiferet ↔ Yesod, all-balance pillars — a
+    // central-pillar shortcut). The reducer should derive
+    // `shortcutPenalty: true` and bump effectiveDC by +3.
+    // yesod base DC 12 → effective 15.
+    const initialState = makeState(
+      {},
+      {
+        players: [
+          makePlayer({
+            id: 'p1',
+            name: 'Andy',
+            position: 'yesod',
+            stats: {
+              unity: 10,
+              insight: 10,
+              understanding: 10,
+              lovingkindness: 10,
+              strength: 10,
+              harmony: 10,
+              passion: 10,
+              intellect: 10,
+              intuition: 10,
+              body: 10,
+            },
+            lastArrivalPathNumber: 25,
+          }),
+        ],
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    );
+    const { result } = renderHook(() =>
+      useTurn({ initialState, rng: seededRng(1) }),
+    );
+    let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
+    act(() => {
+      // The modal still passes `shortcutPenalty: true` in
+      // CheckModifiers (it computes the UI DC line from the same
+      // state) but the wrapper no longer forwards it — the reducer
+      // derives the same answer from `lastArrivalPathNumber`.
+      outcome = result.current.submitChallenge('yesod', {
+        assistStats: [],
+        cardBurns: 0,
+        sparkBurns: 0,
+        shortcutPenalty: true,
+      });
+    });
+    expect(outcome?.ok).toBe(true);
+    if (!outcome?.ok) return;
+    // yesod base DC 12; with +3 shortcut, effective 15.
+    expect(outcome.value.outcome.effectiveDC).toBe(15);
+  });
+
+  it('engine derives no penalty after a non-shortcut arrival, even if modifiers.shortcutPenalty=true', () => {
+    // Belt-and-braces: pin that the modifiers.shortcutPenalty bit
+    // the modal sets is no longer authoritative. The active player
+    // arrived at binah via path 14 (Chokmah ↔ Binah, mercy/severity
+    // — not a shortcut). The wrapper still receives `shortcutPenalty:
+    // true` in the modifiers blob (e.g. a future UI bug or stale
+    // CheckModifiers), but the engine MUST disregard it and read
+    // truth from `lastArrivalPathNumber`. This is the security-
+    // benefit half of the #286 derivation: the wrapper can no
+    // longer fabricate a shortcut.
     const { result } = hookViaMoveIntoPrep();
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {
@@ -571,18 +639,13 @@ describe('useTurn — submitChallenge shortcutPenalty forwarding (E4 / #229)', (
     });
     expect(outcome?.ok).toBe(true);
     if (!outcome?.ok) return;
-    // binah base DC 16; with +3 shortcut, effective 19.
-    expect(outcome.value.outcome.effectiveDC).toBe(19);
+    // binah base DC 16; non-shortcut arrival, no bump.
+    expect(outcome.value.outcome.effectiveDC).toBe(16);
   });
 
-  it('omits shortcutPenalty when the modifier is false (translate-default applies)', () => {
-    // Belt-and-braces: confirms the spread-conditional in the
-    // wrapper actually leaves shortcutPenalty out when the modal
-    // says false, so the reducer's translate-default of `false`
-    // is observably unchanged. (A regression that always passed
-    // `shortcutPenalty: modifiers.shortcutPenalty` would still
-    // pass the prior test but break this one if a future caller
-    // distinguished "absent" from "explicitly false".)
+  it('engine derives no penalty when modifiers.shortcutPenalty is false on a non-shortcut path', () => {
+    // The path 14 arrival via hookViaMoveIntoPrep + the modal's
+    // honest `shortcutPenalty: false`. Baseline DC.
     const { result } = hookViaMoveIntoPrep();
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {

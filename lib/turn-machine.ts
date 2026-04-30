@@ -1,4 +1,4 @@
-import { sefirahByKey } from '@/data';
+import { isPathShortcut, sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
 import {
@@ -158,15 +158,6 @@ export type TurnEvent =
        * assists are the multiplayer-coordination affordance.
        */
       readonly directAssistStats?: readonly number[];
-      /**
-       * Hot-seat-only override. The hot-seat wrapper (`useTurn.submitChallenge`)
-       * receives `shortcutPenalty` from the modal but cannot stage it through
-       * a `prep-add-modifier` event — `pendingModifiers` has no shortcut-state
-       * field. Multiplayer / `EncounterScreen` callers MUST NOT pass this; the
-       * shortcut-state lives elsewhere on `GameState` and (TBD) will be derived
-       * by the reducer when the prep-stage UI grows a "I took a shortcut" affordance.
-       */
-      readonly shortcutPenalty?: boolean;
     }
   | { readonly kind: 'react-retry' }
   | {
@@ -719,14 +710,21 @@ export function turnReducer(
         event.directAssistStats !== undefined
           ? { ...translated, assistStats: event.directAssistStats }
           : translated;
-      // Hot-seat override (#229 / E4). The wrapper learns
-      // `shortcutPenalty` from the modal but `pendingModifiers` has no
-      // field to stage it on, so the only way to get it through is an
-      // event-level override. Multiplayer must not pass this; it will
-      // be derived from `GameState` once the prep-stage UI grows a
-      // "I took a shortcut" affordance.
-      if (event.shortcutPenalty !== undefined) {
-        modifiers = { ...modifiers, shortcutPenalty: event.shortcutPenalty };
+      // #286 Path B: derive `shortcutPenalty` from the player's last
+      // arrival path. A central-pillar shortcut (paths 13 / 25 / 32 —
+      // `pillarsCrossed === ['balance', 'balance']`) sets the +3 DC
+      // penalty. Pre-#286 this was forwarded from the modal as an
+      // event-level override (`event.shortcutPenalty`); now both
+      // hot-seat and multiplayer reach the same answer by reading
+      // `lastArrivalPathNumber` from state. `applyMove` stamps that
+      // field on every move (#275). When unset (fresh game / pre-move
+      // state / synthesised test fixture), `isPathShortcut` returns
+      // `false`, matching the prior translate-default of `false`.
+      const shortcutPenalty =
+        player.lastArrivalPathNumber !== undefined &&
+        isPathShortcut(player.lastArrivalPathNumber);
+      if (shortcutPenalty) {
+        modifiers = { ...modifiers, shortcutPenalty: true };
       }
       const result = resolveChallenge({
         state,

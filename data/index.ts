@@ -109,6 +109,32 @@ export function arcanumByPath(pathNumber: number): Arcanum {
   return arcanumByNumber(path.arcanumNumber);
 }
 
+/**
+ * `true` iff the given path number is a central-pillar shortcut —
+ * `pillarsCrossed === ['balance', 'balance']`. The three paths that
+ * qualify are 13 (Kether ↔ Tiferet), 25 (Tiferet ↔ Yesod), and 32
+ * (Yesod ↔ Malkuth).
+ *
+ * Single source of truth for the shortcut check, used by the
+ * `prep-confirm` reducer (#286) when deriving `shortcutPenalty`
+ * from `state.players[active].lastArrivalPathNumber`, and by
+ * `PlayScreen.buildChallengeContext` to populate the modal's
+ * `shortcut` flag for the +2 Separation tick on accept-setback.
+ *
+ * Returns `false` for unknown / out-of-range path numbers — callers
+ * (UI, reducer) treat that as "not a shortcut" rather than throwing,
+ * since the field is optional on `PlayerState` and a fresh game has
+ * no prior arrival.
+ */
+export function isPathShortcut(pathNumber: number): boolean {
+  const path = tryPathByNumber(pathNumber);
+  if (!path) return false;
+  return (
+    path.pillarsCrossed[0] === 'balance' &&
+    path.pillarsCrossed[1] === 'balance'
+  );
+}
+
 /** Arcanum → Path: the inverse of `arcanumByPath`. */
 export function pathByArcanum(arcanumNumber: number): Path {
   const arc = arcanumByNumber(arcanumNumber);

@@ -760,23 +760,24 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     ).toBe(true);
   });
 
-  it('honours shortcutPenalty override and bumps effectiveDC by +3', () => {
-    // E4 hot-seat hatch (#229): the wrapper learns `shortcutPenalty`
-    // from the modal, but `pendingModifiers` has no field to stage
-    // it on. The override forces `shortcutPenalty: true` onto the
-    // translated CheckModifiers so a player who arrived via a
-    // central-pillar shortcut actually faces the +3 DC penalty
-    // (gevurah base DC 15 → effective 18). Without the override,
-    // `translatePendingModifiers` defaults to `false` and the
-    // penalty is silently dropped.
+  it('derives shortcutPenalty from lastArrivalPathNumber and bumps effectiveDC by +3 on a central-pillar arrival', () => {
+    // #286 Path B: the reducer derives `shortcutPenalty` at confirm
+    // time from `state.players[active].lastArrivalPathNumber` rather
+    // than honouring an event-side override. A player who arrived
+    // via path 25 (Tiferet ↔ Yesod, all-balance pillars) is on a
+    // central-pillar shortcut and faces the +3 DC penalty —
+    // yesod base DC 12 → effective 15. We use an aries player at a
+    // non-soul-door sefirah (yesod) so the soul-door delta stays 0
+    // and the assertion isolates the shortcut bump.
     //
-    // No `outcome` is passed: we let the engine call `rollCheck`
-    // so the resulting `effectiveDC` is computed from
+    // No `outcome` is passed: the engine calls `rollCheck` and the
+    // resulting `effectiveDC` is computed from the derived
     // `modifiers.shortcutPenalty`, which is the assertion target.
     const player = makePlayer({
       id: 'p1',
-      position: 'gevurah',
-      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 10 },
+      position: 'yesod',
+      stats: { ...DEFAULT_STATS_FOR_TEST, intuition: 10 },
+      lastArrivalPathNumber: 25,
     });
     const state = makeState(
       {},
@@ -786,22 +787,49 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
       { state },
       {
         kind: 'prep-confirm',
-        sefirah: 'gevurah',
-        shortcutPenalty: true,
+        sefirah: 'yesod',
       },
       seededRng(1),
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // gevurah base DC 15; with +3 shortcut, effective 18.
-    expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(18);
+    // yesod base DC 12; with +3 shortcut, effective 15.
+    expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(15);
   });
 
-  it('defaults shortcutPenalty to false when override is absent', () => {
-    // Confirms the override is opt-in: without it, the translate
-    // helper's hardcoded `shortcutPenalty: false` survives. So a
-    // multiplayer caller that never supplies the override sees the
-    // baseline DC, exactly as before E4's hatch was added.
+  it('derives shortcutPenalty=false on a non-shortcut arrival (path 14, mercy/severity)', () => {
+    // Counter-test: a non-central-pillar arrival. Path 14
+    // (Chokmah ↔ Binah, mercy/severity) is NOT a shortcut. Baseline
+    // DC applies. Aries player at binah (not a soul door), so the
+    // delta is purely the shortcut derivation.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      stats: { ...DEFAULT_STATS_FOR_TEST, understanding: 10 },
+      lastArrivalPathNumber: 14,
+    });
+    const state = makeState(
+      {},
+      { players: [player], phase: 'challenge', challengeSubPhase: 'prep' },
+    );
+    const result = turnReducer(
+      { state },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'binah',
+      },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // binah base DC 16; no shortcut bump.
+    expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(16);
+  });
+
+  it('derives shortcutPenalty=false when lastArrivalPathNumber is unset (fresh game / pre-move)', () => {
+    // Fixture default: no `lastArrivalPathNumber` set. Folds to
+    // non-shortcut so the engine never throws on a pre-#275
+    // snapshot or a synthesised test state without prior moves.
     const player = makePlayer({
       id: 'p1',
       position: 'gevurah',
@@ -816,13 +844,76 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
       {
         kind: 'prep-confirm',
         sefirah: 'gevurah',
-        // No shortcutPenalty.
       },
       seededRng(1),
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(15);
+  });
+
+  it('derived-shortcut failure → accept-setback still produces +2 Separation and position rollback (#275 / #303 regression)', () => {
+    // End-to-end #275 regression coverage under the #286 derivation:
+    // a path-25 arrival (Tiferet ↔ Yesod, central pillar) at yesod
+    // produces +3 DC; a forced-fail outcome lands in `react`; an
+    // `accept-setback` event with `shortcut: true` then ticks
+    // Separation by 2 (not 1) AND rolls the player back to tiferet.
+    // Pre-#286 the shortcut bit was an event-side override; under
+    // derivation the same flow must reach the same final state.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'yesod',
+      stats: { ...DEFAULT_STATS_FOR_TEST, intuition: 10 },
+      lastArrivalPathNumber: 25,
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        separation: 0,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    );
+    // 1) Confirm with a forced-fail pre-rolled outcome that already
+    //    bakes in the +3 effectiveDC from the derivation. (We pass a
+    //    pre-rolled `outcome` because using the engine's seededRng
+    //    path can pass on lucky rolls. The assertion is on the post-
+    //    setback state, not on the d20 itself.)
+    const confirm = turnReducer(
+      { state },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'yesod',
+        outcome: {
+          rolled: 1,
+          statContribution: 10,
+          modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+          total: 11,
+          effectiveDC: 15,
+          pass: false,
+        },
+      },
+      seededRng(1),
+    );
+    expect(confirm.ok).toBe(true);
+    if (!confirm.ok) return;
+    expect(confirm.value.next.state.lastOutcome?.pass).toBe(false);
+
+    // 2) Accept setback on a shortcut: +2 Separation + rollback.
+    const setback = turnReducer(
+      confirm.value.next,
+      { kind: 'accept-setback', sefirah: 'yesod', shortcut: true },
+      seededRng(1),
+    );
+    expect(setback.ok).toBe(true);
+    if (!setback.ok) return;
+    expect(setback.value.next.state.separation).toBe(2);
+    // #275: position rolls back to tiferet (other endpoint of path 25).
+    expect(setback.value.next.state.players[0]?.position).toBe('tiferet');
+    // Phase teardown: leaves challenge → draw, sub-phase cleared.
+    expect(setback.value.next.state.phase).toBe('draw');
+    expect(setback.value.next.state.challengeSubPhase).toBeUndefined();
   });
 });
 
@@ -1116,10 +1207,12 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
   it('hot-seat wrapper consumes cards via the same prep-confirm path', () => {
     // The hot-seat `submitChallenge` wrapper synthesizes
     // prep-add-modifier events from the head of the player's hand,
-    // then calls prep-confirm with `directAssistStats` /
-    // `shortcutPenalty` overrides. Card consumption flows through the
-    // same reducer case as the multiplayer per-step path, so the fix
-    // covers both. This test pins that integration.
+    // then calls prep-confirm with the `directAssistStats` hatch
+    // (#286 dropped the sibling `shortcutPenalty` override — the
+    // reducer derives it from `lastArrivalPathNumber` now). Card
+    // consumption flows through the same reducer case as the
+    // multiplayer per-step path, so the fix covers both. This test
+    // pins that integration.
     const player = makePlayer({
       id: 'p1',
       position: 'gevurah',
@@ -1150,15 +1243,14 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
     if (!stage2.ok) return;
     snap = stage2.value.next;
 
-    // Confirm with the wrapper's hatch fields (directAssistStats=[],
-    // shortcutPenalty=false). Consumption still applies.
+    // Confirm with the wrapper's surviving hatch field
+    // (directAssistStats=[]). Consumption still applies.
     const confirm = turnReducer(
       snap,
       {
         kind: 'prep-confirm',
         sefirah: 'gevurah',
         directAssistStats: [],
-        shortcutPenalty: false,
         outcome: {
           rolled: 18,
           statContribution: 10,

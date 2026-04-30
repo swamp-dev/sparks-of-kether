@@ -415,17 +415,19 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
 
       // Confirm — using `directAssistStats` so the modal's
       // pre-translated assist numbers feed straight through to
-      // `resolveChallenge`. We also forward `shortcutPenalty`
-      // (only when truly set, so the absence-means-translate
-      // semantic stays intact for the engine path) and the optional
-      // pre-rolled outcome.
+      // `resolveChallenge`, plus the optional pre-rolled outcome.
+      // #286: `shortcutPenalty` is no longer forwarded — the reducer
+      // derives it from the active player's `lastArrivalPathNumber`
+      // at confirm time, so hot-seat and multiplayer reach the same
+      // answer without a wrapper-side hint. The `modifiers.shortcutPenalty`
+      // bit the modal builds is still used by the UI (DC summary line)
+      // but no longer needs to round-trip through the engine event.
       const confirmResult = turnReducer(
         working,
         {
           kind: 'prep-confirm',
           sefirah,
           ...(outcome !== undefined ? { outcome } : {}),
-          ...(modifiers.shortcutPenalty ? { shortcutPenalty: true } : {}),
           ...(modifiers.assistStats.length > 0
             ? { directAssistStats: modifiers.assistStats }
             : {}),

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { sefirahByKey, tryPathByNumber } from '@/data';
+import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
@@ -413,14 +413,12 @@ function buildChallengeContext(
   // moves yet) which folds to a non-shortcut arrival. A "shortcut"
   // path is one whose `pillarsCrossed` is two `'balance'` entries —
   // i.e. Kether↔Tiferet, Tiferet↔Yesod, Yesod↔Malkuth (paths 13, 25, 32).
-  const lastPath =
-    player.lastArrivalPathNumber !== undefined
-      ? tryPathByNumber(player.lastArrivalPathNumber)
-      : undefined;
+  // The same `isPathShortcut` helper drives the engine-side derivation
+  // in `lib/turn-machine.ts:prep-confirm` (#286), so UI and engine
+  // can never disagree about which paths are shortcuts.
   const isShortcut =
-    lastPath !== undefined &&
-    lastPath.pillarsCrossed[0] === 'balance' &&
-    lastPath.pillarsCrossed[1] === 'balance';
+    player.lastArrivalPathNumber !== undefined &&
+    isPathShortcut(player.lastArrivalPathNumber);
   return {
     sefirah: sefirahData.key,
     stat: player.stats[sefirahData.stat],
