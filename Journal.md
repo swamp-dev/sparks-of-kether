@@ -4156,3 +4156,24 @@ Section 4 fans out 8 implementation tickets with engine and UX touch-points and 
 - **Local CI: pending.** `pnpm typecheck && pnpm lint && pnpm test` all green (1196 passed, 1 todo). `pnpm ci:local` will run before merge.
 
 **Commit(s):** `15bd924` (failing tests), `97a0895` (derivation + helper), `31a4e78` (drop forwarding + PlayScreen DRY), `30bb6cc` (regression coverage for #275/#303 still works)
+
+## 2026-04-30T19:28:05-04:00 — #329: docs(avatars) — address #294 voice-proofread findings (S-1 + S-3 + S-4 + S-5 borderline + M-1)
+
+**Pushed:** Surgical edits to `design/avatars.md` addressing the SIGNIFICANT and one borderline finding from the #294 voice-proofread. Four logical groups, four commits:
+
+- **S-1 — drop modern-co-rulership framing (4 cells, 1 commit).** `data/dignities.ts` is locked to the classical Ptolemaic four-slot frame (rules / exalts / detrim / falls); modern co-rulerships live on `ZodiacSign.coRuler`. The matrix violated this in three cells: Demeter/Aquarius `"Saturn co-home"` → `"Saturn rules"`, Ares/Scorpio `"Mars co-rules — second home"` → `"Mars rules — second home"`, Zeus/Pisces `"Jupiter co-rules"` → `"Jupiter rules"`. Athena/Pisces is a fourth case that's internally consistent with §1.1's deviation table (Athena maps to Chokmah/Neptune by energy fit) — kept the modern Neptune reference but flagged the deviation explicitly using §1.1's `⚠️ deviation —` style.
+- **S-3 — Demeter/Capricorn fail V2 rewrite (1 commit).** V1 ("filed grief") and V2 ("docket number") were bureaucratic-deferral synonyms. V2 now leans on calendar/seasons ("set the loss on next season's calendar like a meeting…arrived before, during, and after. You weren't there for any of it.") — Demeter's native idiom, distinctively NOT another filing word.
+- **S-4 — Hermes/Aries pass V3 rewrite (1 commit).** V2 ("crossing first, thinking second") and V3 ("hit the answer before the question landed") were rhythm-only different. V3 now uses Hermes-as-hodios/psychopomp ("ran the road before I'd finished lighting it…Crossed by torchlight you brought yourself"). V1 keeps the ram-trampling.
+- **S-5 borderline + M-1 optional (1 commit).** S-5: Hermes/Scorpio fail V2 ("kept the answer to yourself") was a synonym of V1's teeth/bite. V2 now uses Hermes-as-trade-god (knowledge-as-currency, refused market). M-1: Athena/Cancer pass V1 ended on "The eye doesn't always need to lead" — most-tonally-divergent Athena line in the matrix. Tightened to "The eye saw second. It still saw." — credits feeling-first without surrendering Athena's sight-language signature.
+
+**Why:** Voice-proofread fixes from #294. The S-1 framing tags actively mislead about the dignity contract; the variant-collapse cells weaken the anti-repetition guarantee that the per-cell three-variants format exists to provide.
+
+**Notes:**
+- **Outcome cells and pass/fail axes untouched.** Only V2 / V3 within variants and the dignity-tag parentheticals changed. No factual claims added — Hermes' road/psychopomp role and trade-god role are both already established in the §7.1 voice notes.
+- **§1.1 style match.** The Athena/Pisces dignity-tag now uses `⚠️ deviation —` and explicitly cross-references §1.1, matching the doc's own deviation-flag style. The new tag is the longest in the doc; that's acceptable as the cell explicitly advertises a known deviation.
+- **Local checks.** `pnpm typecheck && pnpm lint` clean; `pnpm test --run tests/docs` (anchors + links, 109 tests) all green. `SKIP_E2E=1 SKIP_INTEGRATION=1 pnpm ci:local` green (verify + build); e2e and integration are not affected by markdown changes so skipped per the file's own guidance.
+- **Code review.** No subagent dispatch tool available in this session — performed self-review against the four criteria the ticket specified (voice register preserved; no new factual claims; deviation flag matches §1.1 style; outcome cells / pass/fail axes untouched). All four hold.
+- **Out of scope per ticket body.** S-2 (Athena/Virgo Mercury-exalted dignity-tag convention), S-6 (Hestia pass/fail), M-2/M-3/M-4/M-5 (stylistic notes).
+- **Hosted CI:** still billing-blocked per project memory; PR opens for human merge regardless.
+
+**Commit(s):** `fe7c8a7` (S-1 framing), `68113c1` (S-3 Demeter V2), `102feaa` (S-4 Hermes V3), `18999a6` (S-5 + M-1)
