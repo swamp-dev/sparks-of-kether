@@ -219,6 +219,7 @@ SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot (saves ~70s)
 | What do the Hebrew letters mean? | `reference/hebrew-letters.md` |
 | What do the Tarot cards correspond to? | `reference/arcana.md` |
 | How do the symbolic systems cross-index? | `reference/correspondences.md` |
+| What does each screen look like? | `docs/screens.md` |
 | What was built, by whom, what surprised them? | `Journal.md` |
 | What work is queued? | GitHub issues (milestone: _MVP: Playable web version_) |
 | What's the master plan? | Epic issue #1 |

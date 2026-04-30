@@ -67,6 +67,9 @@ See [`assets/marketing/README.md`](assets/marketing/README.md) for the
 index, the size budget, and how to refresh the pack after a baseline
 update.
 
+For a visual index of every screen in the app — public routes, dev
+tooling, and component demos — see [`docs/screens.md`](docs/screens.md).
+
 ## Code of conduct
 
 Be kind. This is a hobby project about unity and lovingkindness — act like it.

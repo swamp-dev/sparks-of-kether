@@ -3673,3 +3673,23 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (67 files / 975 passed / 1 todo), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** `b403643` (rewrite), `ba4bd8d` (review fix)
+
+## 2026-04-29T22:59:21-04:00 — #267: docs/screens.md visual tour
+
+**Pushed:** New `docs/screens.md` cataloguing all public + dev-only + demo routes with embedded desktop screenshots, plus 14 PNGs under `docs/screenshots/` (~1.34 MB total, under the 1.5 MB budget). Cross-linked from `CONTRIBUTING.md` (next to the Marketing assets section) and the `CLAUDE.md` "Where to look" table.
+
+**Why:** Contributors had no single index of "what every screen looks like" — Epic #119 sub-ticket 13. The marketing pack at `assets/marketing/` is curated and external-facing; this tour is exhaustive and contributor-facing, deliberately separate.
+
+**Notes:** Captures generated from `pnpm screenshots` (the existing review spec) — 42 captures across desktop/tablet/mobile passed; only the 14 desktop PNGs were copied into the doc. `/rooms/[code]/lobby` is intentionally out of scope (the static review spec doesn't seed a room code) and is documented as such in a "Captured separately" section. Self-reviewed (no `code-reviewer` Skill available in this sandbox); `pnpm ci:local` green across all four jobs (verify / build / e2e / integration).
+
+**Commit(s):** `e2bb7b3` (screenshots), `2f7fa0b` (screens.md), `41fa58a` (cross-links)
+
+## 2026-04-29T23:04:38-04:00 — #267: review fix — /demo/ritual wording
+
+**Pushed:** One-line wording fix in `docs/screens.md` — re-described `/demo/ritual` as the *setup-phase* surface (game-start ceremony) rather than an "end-of-act" surface. Parent agent's `code-reviewer` pass flagged the original phrasing as imprecise.
+
+**Why:** Track 2 sub-agent ran without `code-reviewer` available; the parent agent caught this minor on the second pass.
+
+**Notes:** `pnpm test --run tests/docs` re-checked — 93 doc-link assertions still pass. Prose-only patch; no image moved.
+
+**Commit(s):** `2a40aea`
