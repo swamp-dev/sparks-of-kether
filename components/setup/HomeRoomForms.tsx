@@ -181,8 +181,19 @@ function formatJoinError(err: JoinRoomError): string {
         : 'That game has finished.';
     case 'room-full':
       return 'That room is full (4 players max).';
-    case 'players-fetch-failed':
-      return `Could not load room roster: ${err.cause}`;
+    case 'seat-rpc-failed':
+      // The `join_room_next_seat` RPC (#325, migration 0006) is the
+      // server-side seat picker. A failure here is a deployment /
+      // migration drift issue, not a normal user condition; surface
+      // it as a database error so the user retries and the cause
+      // reaches the dev console.
+      return `Database error: ${err.cause}`;
+    case 'self-lookup-failed':
+      // Post-RPC re-join detection read failure (e.g. transient
+      // PostgREST error). Surface so the user can retry rather
+      // than fall through to a confusing constraint-violation
+      // `insert-failed`.
+      return `Database error: ${err.cause}`;
     case 'insert-failed':
       return `Database error: ${err.cause}`;
   }

@@ -1,7 +1,7 @@
 'use client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ZodiacSignKey } from '@/data';
-import type { Database, PlayerRow, RoomRow } from './supabase';
+import type { Database, RoomRow } from './supabase';
 import { generateRoomCode } from './room-code';
 import { query } from './supabase-query';
 
@@ -38,7 +38,8 @@ export type JoinRoomError =
   | { readonly kind: 'room-not-found'; readonly code: string }
   | { readonly kind: 'room-not-joinable'; readonly state: RoomRow['state'] }
   | { readonly kind: 'room-full' }
-  | { readonly kind: 'players-fetch-failed'; readonly cause: string }
+  | { readonly kind: 'seat-rpc-failed'; readonly cause: string }
+  | { readonly kind: 'self-lookup-failed'; readonly cause: string }
   | { readonly kind: 'insert-failed'; readonly cause: string };
 
 export type Result<T, E> =
@@ -164,10 +165,27 @@ export interface JoinRoomSuccess {
 
 /**
  * Join an existing room by code. Validates the room is in lobby
- * state and not full, then assigns the next free seat (max-existing
- * seat + 1). Race condition with another concurrent join is mitigated
- * by the `players_seat_per_room_unique` constraint — on conflict the
- * caller can retry, but for now we surface a clean error.
+ * state, then asks Postgres for the next free seat via the
+ * `join_room_next_seat` RPC (migration 0006), and finally inserts
+ * the player row via the existing `players_join` RLS path with the
+ * seat pre-baked.
+ *
+ * **Why an RPC for seat-pick.** The original implementation read
+ * `players` under the joiner's auth scope and computed
+ * `max(seat) + 1` client-side. The `players_member_select` RLS
+ * policy denies that read because the joiner isn't yet a member —
+ * they see an empty list, pick seat 0, and collide with the host on
+ * `players_seat_per_room_unique`. The RPC is `security definer` and
+ * runs as the function owner, bypassing RLS for the read while
+ * keeping the insert authorization on the joiner's auth principal
+ * (so `id = auth.uid()` is still enforced at write time).
+ *
+ * Concurrency: the RPC takes no row lock. Two concurrent joiners can
+ * race and be handed the same seat; the loser's insert hits the
+ * unique constraint and surfaces as `insert-failed`. For the
+ * lobby-join scale (4 players, human-paced clicks) that's
+ * acceptable; if real contention shows up later we can switch the
+ * RPC to `select ... for update` on `rooms`.
  */
 export async function joinRoom(
   input: JoinRoomInput,
@@ -183,6 +201,11 @@ export async function joinRoom(
   // collapse issue that `query()` works around only affects writes.
   // Mixing query() into reads creates two patterns in this file
   // (reviewer flagged on #114).
+  //
+  // The room read passes RLS via `rooms_find_by_code` (any
+  // authenticated user can resolve a code → row). It's the
+  // *players* read that the joiner can't do pre-membership; that's
+  // why the seat-pick has moved to the RPC below.
   const roomLookup = await client
     .from('rooms')
     .select('id, code, host_id, state, created_at, started_at, finished_at')
@@ -196,44 +219,96 @@ export async function joinRoom(
     return { ok: false, error: { kind: 'room-not-joinable', state: room.state } };
   }
 
-  const players = await client
-    .from('players')
-    .select('id, room_id, nickname, zodiac_sign, ready, seat, joined_at')
-    .eq('room_id', room.id);
-  if (players.error) {
+  // Service-role-equivalent (security definer) seat pick. Returns
+  // the assigned seat 0..3, or null if the room is full / doesn't
+  // exist. We've already established the room exists via the lookup
+  // above, so a null return here means the room is full.
+  //
+  // The RPC is also idempotent: if `auth.uid()` already has a row
+  // for this room it returns the existing seat. That keeps the
+  // "already in this room" branch from needing a separate read.
+  // The typed `client.rpc(name, args)` overload in supabase-js 2.104
+  // collapses `Args` to `never` unless the call site provides a
+  // matching `Schema['Functions'][name]['Args']`, but the schema
+  // resolution doesn't reliably reach our Database type once the
+  // client type parameter is captured (the same Insert-overload-
+  // collapse pattern documented in `supabase-query.ts`). Cast at
+  // the boundary so the args object is accepted; the runtime path
+  // is unaffected, and the return value is read through our
+  // Database type below.
+  const seatRpc = await (
+    client as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{
+        data: Database['public']['Functions']['join_room_next_seat']['Returns'];
+        error: { message: string } | null;
+      }>;
+    }
+  ).rpc('join_room_next_seat', {
+    target_room_id: room.id,
+  });
+  if (seatRpc.error) {
     return {
       ok: false,
-      error: { kind: 'players-fetch-failed', cause: players.error.message },
+      error: { kind: 'seat-rpc-failed', cause: seatRpc.error.message },
     };
   }
-  // Cast at the boundary — Supabase's chained `.select(cols)` is
-  // typed structurally and our cols match `PlayerRow`. Explicit
-  // cast keeps `existing` strongly typed for the seat math below.
-  const existing = (players.data ?? []) as readonly PlayerRow[];
-  if (existing.length >= MAX_PLAYERS_PER_ROOM) {
+  // The Database['public']['Functions'] type pins `Returns` as
+  // `number | null`; the typed `.rpc()` surfaces that without a cast.
+  const assignedSeat = seatRpc.data;
+  if (assignedSeat === null) {
     return { ok: false, error: { kind: 'room-full' } };
   }
-  // If the current user is already in this room, return their existing seat.
-  const self = existing.find((p) => p.id === userId);
-  if (self) {
+
+  // If the RPC handed back an existing seat (idempotent re-join),
+  // we still need to skip the insert. Detect that by reading our
+  // own row — under `players_member_select` the joiner CAN read
+  // their own row when the RPC has confirmed they're already a
+  // member, because the RLS membership check
+  // (`is_player_in_room(room_id)`) succeeds.
+  const selfLookup = await client
+    .from('players')
+    .select('id, seat')
+    .eq('room_id', room.id)
+    .eq('id', userId)
+    .maybeSingle<{ id: string; seat: number }>();
+  // Guard against PostgREST errors falling through to the insert path.
+  // Without this, a transient self-lookup error (e.g. connection lost)
+  // would silently drop into `.insert()`, which then either hits
+  // `players_seat_per_room_unique` for a re-joining player (surfaces
+  // confusingly as `insert-failed` with a constraint-violation cause)
+  // or, if the previous row was somehow removed, creates a ghost row
+  // that doesn't match what the RPC returned. Fail fast instead.
+  if (selfLookup.error) {
     return {
-      ok: true,
-      value: { roomId: room.id, playerId: self.id, seat: self.seat },
+      ok: false,
+      error: { kind: 'self-lookup-failed', cause: selfLookup.error.message },
     };
   }
-  const nextSeat =
-    existing.reduce((max, p) => Math.max(max, p.seat), -1) + 1;
+  if (selfLookup.data) {
+    return {
+      ok: true,
+      value: {
+        roomId: room.id,
+        playerId: selfLookup.data.id,
+        seat: selfLookup.data.seat,
+      },
+    };
+  }
 
   // Plain insert (no `.select()` chain). See createRoom for the
   // PostgREST 12 + RLS interaction that motivates this — same fix.
-  // Inserted row's id and seat are known client-side.
+  // Inserted row's id and seat are known client-side; the RLS
+  // `players_join` policy still enforces `id = auth.uid()`.
   const playerInsert = await query(client, 'players').insert({
     id: userId,
     room_id: room.id,
     nickname,
     zodiac_sign: null,
     ready: false,
-    seat: nextSeat,
+    seat: assignedSeat,
   });
   if (playerInsert.error) {
     return {
@@ -243,7 +318,7 @@ export async function joinRoom(
   }
   return {
     ok: true,
-    value: { roomId: room.id, playerId: userId, seat: nextSeat },
+    value: { roomId: room.id, playerId: userId, seat: assignedSeat },
   };
 }
 

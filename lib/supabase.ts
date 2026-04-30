@@ -105,6 +105,25 @@ export interface Database {
         Update: Partial<Mutable<GameEventRow>>;
       };
     };
+    // Postgres functions exposed via PostgREST `/rpc/*`. The typed
+    // client routes `client.rpc(name, args)` through this map; the
+    // `Args` shape is the named-param object PostgREST expects and
+    // `Returns` is the function's return type.
+    //
+    // Keep entries narrow — one per function the application calls.
+    // The generic in `rpc<>` collapses to `never` if the function
+    // name isn't listed here (TS will reject the call site).
+    Functions: {
+      // #325: server-side seat picker for joinRoom. The function is
+      // SECURITY DEFINER so the read bypasses RLS for the
+      // pre-membership joiner. Returns the assigned seat (0..3) or
+      // null if the room is full / doesn't exist / caller is
+      // unauthenticated. See migration 0006.
+      join_room_next_seat: {
+        Args: { target_room_id: string };
+        Returns: number | null;
+      };
+    };
   };
 }
 

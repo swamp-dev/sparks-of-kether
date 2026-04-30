@@ -1,42 +1,18 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { createRoom, setReady, setZodiacSign } from '@/lib/rooms';
+import { createRoom, joinRoom, setReady, setZodiacSign } from '@/lib/rooms';
 import { getServiceClient, makeAnonClient, wipeAllTables } from './setup';
 
 /**
- * Seat a second anonymous player (`guestUserId`) into the room via the
- * service-role client. We do NOT go through `lib/rooms.joinRoom` here:
- * its seat-calculation step reads `players` through the JOINER's
- * (still-pre-membership) auth scope, which the `players_member_select`
- * RLS policy denies — the joiner sees an empty list and re-uses
- * seat 0, colliding with the host. That's a latent bug surfaced by
- * the multi-player tests below; fixing it is outside #265's scope, so
- * we side-step here via the service role and let the integration
- * smoke focus on what #265 added (the update mutations + Realtime).
- *
- * The real app's join path is the same `joinRoom` helper, so this
- * shortcut means these tests don't exercise it. The createRoom test
- * in `tests/integration/createRoom.test.ts` already covers the
- * single-player insert; the join-collision bug needs its own ticket.
+ * The two-player test below previously needed a `seedSecondPlayer`
+ * service-role helper because `joinRoom`'s seat-calculation step read
+ * `players` through the joiner's pre-membership auth scope, which RLS
+ * denied — the joiner saw an empty list and re-used seat 0. #325
+ * fixed that with a `security definer` RPC (`join_room_next_seat`,
+ * migration 0006); the real `joinRoom` flow now seats Player 2
+ * correctly, and `seedSecondPlayer` was removed. The new
+ * `joinRoom.test.ts` integration suite is the canonical multi-player
+ * gate; this file keeps the focused #265 mutation coverage.
  */
-async function seedSecondPlayer(
-  roomId: string,
-  guestUserId: string,
-  nickname: string,
-  seat: number,
-): Promise<void> {
-  const svc = getServiceClient();
-  const insert = await svc.from('players').insert({
-    id: guestUserId,
-    room_id: roomId,
-    nickname,
-    zodiac_sign: null,
-    ready: false,
-    seat,
-  });
-  if (insert.error) {
-    throw new Error(`seedSecondPlayer failed: ${insert.error.message}`);
-  }
-}
 
 /**
  * #265 smoke: setZodiacSign + setReady against real Supabase. Validates
@@ -116,7 +92,18 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
     }
 
     const guest = await makeAnonClient();
-    await seedSecondPlayer(create.value.roomId, guest.userId, 'Bea', 1);
+    // Real joinRoom path — pre-#325 this hit `players_seat_per_room_unique`
+    // because the joiner's seat-pick read was blocked by RLS. Migration
+    // 0006's security-definer RPC bypasses RLS for the read, so the
+    // production path now works without a service-role workaround.
+    const joined = await joinRoom({
+      code: create.value.code,
+      nickname: 'Bea',
+      client: guest.client,
+    });
+    if (!joined.ok) {
+      throw new Error(`joinRoom failed: ${JSON.stringify(joined.error)}`);
+    }
 
     // Guest sets their own sign — succeeds.
     await setZodiacSign(guest.client, {

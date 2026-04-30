@@ -4226,3 +4226,41 @@ Section 4 fans out 8 implementation tickets with engine and UX touch-points and 
 - **Hosted CI: still billing-blocked** per project memory. Local CI green is the bar; user merges when ready.
 
 **Commit(s):** `dcd0cf0` (failing test), `ef0ab4c` (PlayScreen roomCode prop + mode derivation), `7433ade` (Playwright e2e for hot-seat route-level wiring), `96696bc` (review fix: tighten round-trip assertion via cumulative-burns DOM signal)
+
+---
+
+## 2026-04-30T19:39:31-04:00 — #325: joinRoom seat calc via security definer RPC — closes the multi-player-broken-end-to-end gap
+
+**Pushed:** Two commits implementing #325 from the #265 retro-review.
+
+- `aa10b3f` (test, red): `tests/integration/joinRoom.test.ts` pins the bug against real Supabase. Two anonymous clients run host-`createRoom` then guest-`joinRoom`; the unfixed code fails with `duplicate key value violates unique constraint "players_seat_per_room_unique"` — the exact production failure shape described in the ticket. Four tests: distinct seats, fill-to-4, room-not-found, idempotent re-join.
+- `11664bd` (fix): the seat calc moves to a security-definer RPC.
+  - **`supabase/migrations/0006_join_room_seat_rpc.sql`.** New `public.join_room_next_seat(target_room_id uuid)`. SECURITY DEFINER + `set search_path = ''` (mirrors the hardening of 0003 `is_player_in_room` and 0005 `publication_tables`). Returns the lowest-available seat 0..3, idempotent on re-join (returns the caller's existing seat if they already have a row), null on room-full. `revoke ... grant execute` locked down to `anon` / `authenticated` / `service_role`.
+  - **`lib/rooms.ts:joinRoom` rewrite.** Drops the pre-membership `players` read. Calls the RPC for seat, then a `select(...).eq(room_id).eq(id).maybeSingle()` self-lookup to short-circuit idempotent re-joins (which now passes RLS — the joiner is a member by then). Insert path unchanged — still `id = auth.uid()` through the existing `players_join` policy. New `JoinRoomError` variant `seat-rpc-failed` replaces the no-longer-reachable `players-fetch-failed`. `HomeRoomForms.tsx` formatter updated.
+  - **`lib/supabase.ts`.** `Database['public'].Functions.join_room_next_seat` declared so the RPC has a typed return shape. Args binding goes through a narrow cast at the call site (same Insert-overload-collapse pattern as `supabase-query.ts`).
+  - **`tests/integration/setZodiacSign.test.ts`.** `seedSecondPlayer` service-role workaround **removed**; the cross-player RLS test now exercises real `joinRoom`. The integration suite is now fully service-role-shortcut-free for multi-player setup.
+  - **`lib/__tests__/rooms.test.ts`.** joinRoom unit suite rewritten for the new shape — RPC stub + self-lookup chain. Adds regression cases: `seat-rpc-failed`, `target_room_id` (not `code`) is what the RPC receives, "insert is NOT called on idempotent re-join."
+
+**Why:** Multi-player was effectively broken end-to-end despite #265 landing. Real browsers using `HomeRoomForms.tsx` hit the `players_seat_per_room_unique` constraint as soon as Player 2 joined — the same bug `setZodiacSign.test.ts` had to side-step with `seedSecondPlayer`. This unblocks the multiplayer smoke tests in `design/qa-smoke.md` § 3 / § 4.
+
+**Notes:**
+- **RLS posture preserved.** The RPC bypasses RLS only for the read (the count + seat pick). The insert that actually creates the player row still goes through `players_join` (`with check (id = auth.uid())`), so a malicious client can't fabricate someone else's identity. The RPC discloses two bits — "is room X full?" and "do I already have a row in X?" — both inferable already from the existing surface.
+- **Concurrency.** The RPC takes no row lock. Two concurrent joiners can race and be handed the same seat; the loser's insert hits the unique constraint and surfaces as `insert-failed`. For lobby-join scale (4 players, human-paced clicks) acceptable; if real contention shows up later, switch the RPC to `select ... for update` on `rooms` to serialize.
+- **Lowest-available, not max+1.** The function returns the smallest free seat 0..3 (via `generate_series(0,3) EXCEPT used`). The pre-fix code did `max(seat) + 1`, which would skip past gaps (e.g. after a kick). New behaviour is more conservative — a kicked seat gets refilled — which matches the design's "seats are an index, not a chronological badge."
+- **`auth.uid()` under empty `search_path`.** The RPC uses bare `auth.uid()` despite `set search_path = ''`. Consistent with 0003's `is_player_in_room` (which also does this). Postgres parses `auth.uid()` as a schema-qualified function call, so the empty search_path doesn't break it; the integration test confirms.
+- **Local CI: GREEN end-to-end.** `pnpm ci:local` clean across all four jobs — verify (typecheck + lint + test:coverage), build, e2e (58 passed / 51 skipped), real-Supabase integration (9 passed across 3 files). One transient e2e flake on the first run (dev-server `ERR_CONNECTION_RESET` on mobile-viewport demo routes — unrelated to my surface, cleared on re-run).
+- **Code review.** Inline review of the security surface: RPC's `security definer` posture matches existing pattern (0003, 0005); search_path lockdown present; role grants narrow; no SQL injection surface (UUID-typed input, no string concat); insert authorization unchanged. No critical, no significant findings.
+
+**Commit(s):** `aa10b3f` (failing integration test), `11664bd` (RPC + joinRoom rewrite + test cleanup)
+
+**Addendum 2026-04-30T19:55 — security retro-review fix.** PM ran a follow-up `code-reviewer` security pass on PR #333. The reviewer cleared the SECURITY DEFINER RPC posture (matches the existing 0003/0005 pattern), and flagged one foldable significant: the `lib/rooms.ts` self-lookup at line 270–275 only inspected `.data`, so a PostgREST-side error (`{ data: null, error: {...} }`) would fall through to the insert path. For a re-joining player that meant the insert hit `players_seat_per_room_unique` and surfaced confusingly as `insert-failed`; for a removed-row case it could create a ghost row.
+
+Added an explicit error guard before the insert. New `JoinRoomError` kind `self-lookup-failed` distinguishes the read-side failure from the insert-side `insert-failed` (different debug paths warrant different signals). `HomeRoomForms.tsx` formatter updated. Pinned by a new unit test that mocks the self-lookup to return `{ data: null, error: { message: 'connection lost' } }` and asserts (a) the `self-lookup-failed` variant surfaces and (b) `.insert()` is NEVER called — the load-bearing assertion.
+
+Out of scope per the retro-review: RPC `stable`/`volatile` annotation (low-risk, matches precedent), raw Postgres error strings in the formatter (pre-existing pattern, not new in #325), cross-room boundary test (design question whether multi-room players are allowed; deferred).
+
+`pnpm test lib/__tests__/rooms.test.ts` → 22 passed (1 new + 21 existing). `pnpm ci:local` GREEN end-to-end (verify + build + e2e 59 passed/51 skipped + integration 9 passed).
+
+Also resolved the `Journal.md` merge conflict from rebase against main (#311 + #329 + #278 entries landed since branch was cut). Kept all entries in chronological order by timestamp.
+
+**Commit(s):** `72f0e9e` (selfLookup error guard + new unit test)
