@@ -3797,3 +3797,24 @@ don't reach naturally. Centralised them.
 - Full post-rebase `pnpm ci:local`: verify ✓ (1052 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
 
 **Commit(s):** `81d1b06` (directAssistStats override), `574357f` (useTurn extension + wrapper), `91344f0` (delete deprecated engine arm), `0d54f47` (shortcutPenalty fix + atomicity tests)
+
+## 2026-04-30T10:13:00-04:00 — #228: E3 — EncounterScreen UI (closes Epic #117 prep→resolve→react slice)
+
+**Pushed:** New `components/game/EncounterScreen.tsx` replacing `ChallengeModal.tsx` in the real game flow. Three visual sub-states (`prep` / `resolve` / `react`) keyed on `data-encounter-sub-phase`. Two-tier UI sub-phase derivation: `(turn.challengeSubPhase, animatingResolve)` → `uiSubPhase` so the d20 spin gets a window even though the engine flips to `'react'` synchronously inside `prep-confirm`. PlayScreen mounts `EncounterScreen` (hard-coded `mode="hot-seat"` for now; multiplayer wiring is a later phase). `ChallengeModal` demoted to `/demo/challenge` with `@deprecated` JSDoc. Bonus: fixed a pre-existing CRITICAL gameplay bug — accept-setback after a shortcut arrival was silently applying +1 Separation instead of +2 (preserved verbatim from `6663caf`, 9 commits before E3).
+
+**Why:** Sub-ticket E3 of Epic #117. The visual surface that ties the prep machine to players. **Closes the prep→resolve→react implementation slice (E1-E4).** Per-Sefirah avatar copy + multiplayer mode wiring + tutorial copy are downstream tickets.
+
+**Notes:**
+- Multi-subagent execution: a general-purpose agent did the UI implementation (commits `8966f7a`/`282fb2d`/`7c25926`), `code-reviewer` ran twice, final verification on host.
+- **Code-reviewer pass 1 surfaced 1 CRITICAL + 2 SIGNIFICANT + 3 MINOR:**
+  - **CRITICAL: shortcut flag dropped in accept-setback.** `buildChallengeContext` never set `shortcut` on the returned context, so `acceptChallengeSetback({ shortcut: ctx.shortcut ?? false })` always evaluated to `false`. Pre-existing bug (preserved by E3, not introduced). Fix: added `lastArrivalPathNumber?: number` field on `PlayerState` (`engine/types.ts`); `applyMove` populates it in `engine/movement.ts`; `buildChallengeContext` reads it via `tryPathByNumber` and checks `pillarsCrossed === ['balance','balance']` (paths 13/25/32). Field is optional/additive — no Supabase migration needed. Five new tests in `PlayScreen.shortcut.test.tsx` pin the +2 vs +1 Separation delta.
+  - **SIGNIFICANT: `prefers-reduced-motion` ignored.** The 800ms resolve→react gate fired unconditionally; reduced-motion players sat on a static "Rolling…" screen. Fix: `window.matchMedia('(prefers-reduced-motion: reduce)').matches` checked at Roll-click time; 50ms when true, 800ms otherwise.
+  - **SIGNIFICANT: multiplayer player invariant.** `EncounterScreen.tsx` had `const playerHand = player?.hand ?? []` — multiplayer mode would silently no-op all card-burn dispatches if `player` was undefined. Fix: discriminated-union props on `mode`; `multiplayer` requires `player: PlayerState` at compile time. Hot-seat unchanged.
+  - MINOR fixes folded in: `useRef`-stored timer with unmount cleanup; JSDoc accuracy; tests cover both reduced-motion branches.
+- **Code-reviewer pass 2 (re-review of fixes) verdict: ship.** All five items confirmed clean. One follow-up flag: when position-rollback eventually ships (per `engine/checks.ts:265`), it must either route through `applyMove` (so `lastArrivalPathNumber` updates) or explicitly clear the field on the rolled-back player.
+- **Two-tier UI sub-phase derivation justified.** Without the local `animatingResolve` lag, the d20 spin would be invisible — the engine sets `challengeSubPhase: 'react'` synchronously inside `prep-confirm`, so without the lag the react verdict replaces the prep panel instantly. The local UI state is presentation; engine state is truth. `uiSubPhase` is `'resolve'` only during the animation window.
+- **Visual regression:** no baselines drifted (`/play` doesn't enter challenge state in the regression spec; `/demo/challenge` still mounts the unchanged `ChallengeModal`). The next ticket touching encounter visuals will need to add a mid-encounter capture.
+- **Follow-ups deferred:** per-Sefirah avatar copy (Epic #117 sub-tickets 1-3 per the original epic body), multiplayer mode wiring in PlayScreen (Phase 5), tutorial copy for the new prep/resolve/react cadence (Epic #224), `ChallengeContext` type extraction out of the deprecated `ChallengeModal.tsx` (when ChallengeModal is fully retired), axe coverage for resolve/react sub-states.
+- Full post-fix `pnpm ci:local`: verify ✓ (1083 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
+
+**Commit(s):** `8966f7a` (EncounterScreen + tests), `282fb2d` (PlayScreen swap), `7c25926` (ChallengeModal demote + axe), `0404aa0` (CRITICAL shortcut fix + reduced-motion + discriminated-union + timer cleanup)

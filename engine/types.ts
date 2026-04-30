@@ -112,6 +112,22 @@ export interface PlayerState {
    * this on every challenge to compute the per-Door DC discount.
    */
   readonly zodiacSign: ZodiacSignKey;
+  /**
+   * Path number (11..32) the player last travelled to arrive at
+   * `position`. `undefined` for fresh players who have not yet moved.
+   * Read by the challenge UI to derive whether the arrival was via a
+   * central-pillar shortcut (`pillarsCrossed === ['balance', 'balance']`)
+   * — the shortcut state drives both the +3 DC penalty during the
+   * challenge and the +2 Separation tick on accept-setback (vs. the
+   * +1 tick on a non-shortcut failure).
+   *
+   * Optional/additive: existing snapshots without this field survive
+   * deserialisation via the `?` and the `shortcut`-derivation default
+   * of `false`. The PR adding this field (E3 review) does not
+   * back-fill old DB rows; the field comes into being on the next
+   * `applyMove` after a snapshot loads.
+   */
+  readonly lastArrivalPathNumber?: number | undefined;
 }
 
 /**

@@ -6,7 +6,7 @@ import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
-import { ChallengeModal } from '@/components/challenge/ChallengeModal';
+import { EncounterScreen } from '@/components/game/EncounterScreen';
 import type {
   ChallengeContext,
   ChallengeResolution,
@@ -31,8 +31,9 @@ import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
  *   - StatSheet for the active player (active stat highlighted during a check)
  *   - TeamMeters (Illumination / Separation / pillar streak)
  *   - ShellPanel
- *   - ChallengeModal opens automatically when the active player arrives at
- *     an uncleared `'check'`-kind Sefirah
+ *   - EncounterScreen opens automatically when the active player arrives at
+ *     an uncleared `'check'`-kind Sefirah (replaces the prior ChallengeModal
+ *     in #228; ChallengeModal stays alive for `/demo/challenge` only).
  *   - FinalThreshold takes over when all players reach Kether
  *
  * The orchestrator does not own GameState authoritatively — `useTurn`
@@ -66,10 +67,6 @@ export function PlayScreen({
   const [thresholdResult, setThresholdResult] =
     useState<FinalThresholdResult | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
-  // Bumped on every retry choice from the challenge modal — keyed
-  // into the modal's React `key` so the modal remounts with a clean
-  // committing/rolling/reveal state machine.
-  const [retryNonce, setRetryNonce] = useState(0);
 
   // #131: hot-seat cadence — once the active player lands in `'end'`
   // phase, schedule an auto-advance to the next turn after a short
@@ -165,25 +162,23 @@ export function PlayScreen({
     if (!activePlayer) return;
     const ctx = challengeContext;
     if (!ctx) return;
-    // The modal animated the d20 and committed the modifiers the
-    // player chose; both come back in the resolution. Forward them
-    // so the engine applies the same outcome the player saw.
+    // EncounterScreen calls the engine itself (`submitChallenge` for
+    // hot-seat, `prepConfirm` for multiplayer) before invoking
+    // `onResolved`, so by the time we get here the engine's
+    // post-resolve snapshot already reflects the pass-with-Spark or
+    // fail-no-state-change outcome. The orchestrator no longer
+    // forwards the outcome to the engine — that double-dispatched the
+    // event in the pre-#228 ChallengeModal flow and is unnecessary now.
+    //
+    // The retry path doesn't reach here: `EncounterScreen` handles
+    // it internally via `turn.reactRetry()` and stays mounted. The
+    // only resolutions surfaced are `pass` (player saw the win, hit
+    // Continue) and `accept` (player saw the fail, hit Accept setback).
     if (resolution.pass) {
-      turn.submitChallenge(
-        ctx.sefirah,
-        resolution.modifiers,
-        resolution.outcome,
-      );
-      // Reset retry counter so the next challenge starts at 0.
-      setRetryNonce(0);
-      return;
-    }
-    if (resolution.choice === 'retry') {
-      // Retry: don't advance the phase. The player commits another
-      // round of modifiers (typically a card or spark burn) and
-      // rolls again. We force a fresh modal mount by bumping a
-      // local key so the previous outcome state doesn't bleed in.
-      setRetryNonce((n) => n + 1);
+      // Engine already cleared the Sefirah and ticked Illumination —
+      // nothing to do here. The next render's `showChallenge` gate
+      // unmounts the EncounterScreen because the player's
+      // `clearedSefirot` now contains their position.
       return;
     }
     // 'accept': apply the engine's failure consequence — Separation
@@ -198,7 +193,6 @@ export function PlayScreen({
       sefirah: ctx.sefirah,
       shortcut: ctx.shortcut ?? false,
     });
-    setRetryNonce(0);
   };
 
   return (
@@ -295,23 +289,22 @@ export function PlayScreen({
         // outer padding below `sm:` so the dialog reaches the edges,
         // and let the modal itself shrink via its own className.
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-ground/80 p-0 sm:p-4">
-          <ChallengeModal
-            // Bumping retryNonce remounts the modal so the
-            // committing/rolling/reveal state machine starts fresh
-            // for the next roll. Reset on pass/accept so a future
-            // challenge at the same Sefirah doesn't start at a
-            // stale nonce.
-            key={`challenge-${retryNonce}`}
+          <EncounterScreen
+            // Hot-seat: the orchestrator runs on a single device so
+            // we collapse prep-staging into one Roll click via the
+            // `submitChallenge` wrapper. Multiplayer wiring (Phase 5)
+            // flips this to 'multiplayer' so each modifier goes over
+            // the wire and other players see the staging in real
+            // time.
+            mode="hot-seat"
             context={challengeContext}
             rng={rng}
+            turn={turn}
             onResolved={handleChallengeResolved}
-            // #134: embedded stat sheet inside the modal so players
-            // can see their full stat row without dismissing the
-            // dialog. `challengeContext` is only set when
-            // `activePlayer` is defined (see `showChallenge`), so the
-            // direct prop is safe here.
+            // #134: embedded stat sheet so players can see their
+            // full stat row without dismissing the dialog.
             player={activePlayer}
-            // #38: on `sm:` and up the modal stays centred at 28rem;
+            // #38: on `sm:` and up the dialog stays centred at 28rem;
             // below that it fills the screen so a 320 px viewport
             // gets a usable dialog without horizontal scrolling.
             className="min-h-screen w-full sm:min-h-fit sm:max-w-md"
@@ -327,6 +320,15 @@ export function PlayScreen({
  * The check is for the Sefirah they just arrived at; the relevant
  * stat is that Sefirah's stat. Allies are other players currently
  * at the same Sefirah; their relevant stat is the same.
+ *
+ * Shortcut derivation: a "shortcut" arrival is one that travelled a
+ * central-pillar path (Kether↔Tiferet, Tiferet↔Yesod, Yesod↔Malkuth —
+ * `pillarsCrossed === ['balance', 'balance']`). The flag drives BOTH
+ * the +3 DC penalty inside `EncounterScreen` AND the +2 Separation
+ * tick on `acceptChallengeSetback` (vs. the +1 tick on a non-shortcut
+ * failure) — without it the engine silently applies the wrong cost
+ * for any shortcut-path failure. Pre-#228 review fix this field was
+ * never populated; `acceptChallengeSetback` always saw `shortcut: false`.
  */
 function buildChallengeContext(
   state: GameState,
@@ -352,6 +354,19 @@ function buildChallengeContext(
   // zodiacSign is required on PlayerState since #237 (T8); the modal's
   // `showSoulDoor` guard skips the callout when the delta is 0.
   const doorDelta = soulDoorDcDelta(player.zodiacSign, sefirahData.key);
+  // Derive shortcut from the path the player just travelled. Set by
+  // `engine/movement.ts:applyMove`; `undefined` for a fresh game (no
+  // moves yet) which folds to a non-shortcut arrival. A "shortcut"
+  // path is one whose `pillarsCrossed` is two `'balance'` entries —
+  // i.e. Kether↔Tiferet, Tiferet↔Yesod, Yesod↔Malkuth (paths 13, 25, 32).
+  const lastPath =
+    player.lastArrivalPathNumber !== undefined
+      ? tryPathByNumber(player.lastArrivalPathNumber)
+      : undefined;
+  const isShortcut =
+    lastPath !== undefined &&
+    lastPath.pillarsCrossed[0] === 'balance' &&
+    lastPath.pillarsCrossed[1] === 'balance';
   return {
     sefirah: sefirahData.key,
     stat: player.stats[sefirahData.stat],
@@ -360,6 +375,7 @@ function buildChallengeContext(
     availableCardBurns: player.hand.length,
     availableSparkBurns: player.sparksHeld.size,
     ...(doorDelta !== 0 ? { soulDoorDelta: doorDelta } : {}),
+    ...(isShortcut ? { shortcut: true } : {}),
   };
 }
 

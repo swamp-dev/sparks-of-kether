@@ -17,6 +17,13 @@ import { StatSheet } from '@/components/player/StatSheet';
 import { D20Roll } from './D20Roll';
 
 /**
+ * @deprecated Replaced by `components/game/EncounterScreen.tsx` (#228)
+ * for the real-game `/play` flow. This component is preserved for the
+ * `/demo/challenge` design-system route only — it has no engine
+ * sub-phase awareness, doesn't read `pendingModifiers`, and can't drive
+ * the multiplayer per-step modifier wire. New callers should mount
+ * `EncounterScreen` instead.
+ *
  * Modal-style challenge UI for an arrival at an uncleared Sefirah.
  *
  * Flow:

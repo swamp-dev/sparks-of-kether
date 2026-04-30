@@ -115,6 +115,14 @@ export function applyMove(state: GameState, playerId: string, pathNumber: number
     ...player,
     position: destination,
     hand: nextHand,
+    // Track the path used so the challenge UI can derive whether
+    // arrival was via a central-pillar shortcut (path's
+    // `pillarsCrossed === ['balance', 'balance']`). Used by
+    // `buildChallengeContext` in PlayScreen to set
+    // `ChallengeContext.shortcut`, which in turn drives the +3 DC
+    // penalty on the check and the +2 Separation tick on
+    // accept-setback (vs. the regular +1 tick).
+    lastArrivalPathNumber: pathNumber,
   };
 
   // Pillar streak: tracked team-wide. The destination's pillar is

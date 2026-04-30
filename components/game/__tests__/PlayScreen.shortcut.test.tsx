@@ -1,0 +1,225 @@
+import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { PlayScreen } from '../PlayScreen';
+import { makeFullGame } from '@/test/fixtures';
+import { seededRng } from '@/engine/rng';
+import type { GameState } from '@/engine/types';
+
+/**
+ * Code-review fix (E3, #228): the `shortcut` flag was never populated
+ * on `ChallengeContext` — `buildChallengeContext` returned a context
+ * with no `shortcut` field, so `acceptChallengeSetback` always saw
+ * `shortcut: false` and applied +1 Separation instead of the
+ * design-mandated +2 on shortcut failures.
+ *
+ * The fix derives `shortcut` from the path the player just travelled
+ * (`PlayerState.lastArrivalPathNumber`, set by `engine/movement.ts:applyMove`).
+ * A path is a shortcut iff its `pillarsCrossed` is `['balance', 'balance']`
+ * — i.e. paths 13 (Kether↔Tiferet), 25 (Tiferet↔Yesod), 32 (Yesod↔Malkuth).
+ */
+
+/**
+ * Build a state where the active player has just travelled the named
+ * path and is parked at the destination's `'prep'` challenge sub-phase
+ * with miserable stats, so a Roll click is a guaranteed fail.
+ *
+ * Yesod is the destination — DC 12 base, +3 with shortcut = 15. Stat
+ * 1 means total is at most 1 + 20 = 21; the seeded RNG (seed 1) rolls
+ * a low value first, so we get a fail without needing to fight the rng.
+ */
+function makePrepState(opts: {
+  readonly arrivalPath: number;
+  readonly destination: 'yesod';
+}): GameState {
+  const base = makeFullGame({ playerCount: 2, seed: 1 });
+  const activeIdx = base.players.findIndex(
+    (p) => p.id === base.activePlayerId,
+  );
+  const players = base.players.map((p, idx) =>
+    idx === activeIdx
+      ? {
+          ...p,
+          position: opts.destination,
+          lastArrivalPathNumber: opts.arrivalPath,
+          // Empty hand and no sparks so the prep panel has no burn
+          // affordances to interact with — the tests just want to
+          // click Roll.
+          hand: [] as readonly number[],
+          sparksHeld: new Set() as ReadonlySet<never>,
+          // Stat 1: with even d20=13 (the highest fail roll vs DC 15)
+          // total is 14 < 15. With shortcut+3 the player is going to
+          // fail across most of the d20 range.
+          stats: { ...p.stats, intuition: 1 },
+        }
+      : { ...p, position: opts.destination },
+  );
+  return {
+    ...base,
+    players,
+    phase: 'challenge',
+    challengeSubPhase: 'prep',
+    pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+    lastOutcome: undefined,
+    separation: 0,
+  };
+}
+
+describe('PlayScreen — shortcut flag drives EncounterScreen DC penalty', () => {
+  it('renders the +3 shortcut DC penalty in the encounter header when arrival was via a shortcut path', () => {
+    const initial = makePrepState({
+      destination: 'yesod',
+      arrivalPath: 25, // Tiferet→Yesod, balance/balance — shortcut
+    });
+    const rng = seededRng(3);
+    render(<PlayScreen initialState={initial} rng={rng} />);
+
+    // The header includes "(shortcut +3)" when context.shortcut is true.
+    expect(screen.getByText(/shortcut \+3/i)).toBeInTheDocument();
+  });
+
+  it('does NOT render the shortcut DC penalty when arrival was via a non-shortcut path', () => {
+    const initial = makePrepState({
+      destination: 'yesod',
+      arrivalPath: 30, // Hod→Yesod, severity/balance — NOT a shortcut
+    });
+    const rng = seededRng(3);
+    render(<PlayScreen initialState={initial} rng={rng} />);
+
+    expect(screen.queryByText(/shortcut \+3/i)).toBeNull();
+  });
+
+  it('does NOT render the shortcut DC penalty when lastArrivalPathNumber is undefined (fresh state)', () => {
+    // Defensive: PlayerState's `lastArrivalPathNumber` is optional. A
+    // freshly-initialised player who somehow lands in challenge phase
+    // without a recorded arrival path falls through to non-shortcut.
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex(
+      (p) => p.id === base.activePlayerId,
+    );
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? {
+            ...p,
+            position: 'yesod' as const,
+            // Explicitly do NOT set lastArrivalPathNumber.
+            hand: [] as readonly number[],
+            sparksHeld: new Set() as ReadonlySet<never>,
+            stats: { ...p.stats, intuition: 10 },
+          }
+        : { ...p, position: 'yesod' as const },
+    );
+    const initial: GameState = {
+      ...base,
+      players,
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+      pendingModifiers: {
+        cardBurns: [],
+        sparkBurns: [],
+        assistRequests: [],
+      },
+      lastOutcome: undefined,
+    };
+    const rng = seededRng(3);
+    render(<PlayScreen initialState={initial} rng={rng} />);
+
+    expect(screen.queryByText(/shortcut \+3/i)).toBeNull();
+  });
+});
+
+describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
+  it('Separation rises by 2 when the active player accepts a shortcut-path failure', () => {
+    vi.useFakeTimers();
+    try {
+      const initial = makePrepState({
+        destination: 'yesod',
+        arrivalPath: 25, // shortcut
+      });
+      const rng = seededRng(1);
+      render(<PlayScreen initialState={initial} rng={rng} />);
+
+      // Pre-roll: Separation starts at 0.
+      const sepReadout = (): Element | null =>
+        document.querySelector('[data-meter-readout="separation"]');
+      expect(sepReadout()?.textContent?.startsWith('0 ')).toBe(true);
+
+      // Click Roll. With stat=1 and effective DC=15 (12+3), the seeded
+      // RNG produces a failure for most rolls — verify the result
+      // dynamically rather than hardcoding the d20 face.
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      // Drive past the resolve animation (800ms in default-motion mode).
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
+      // The react sub-phase should now be visible. If the seeded roll
+      // happened to pass against a stat-1 vs DC-15 setup, the test
+      // setup is wrong and we should bail loudly rather than silently
+      // pass on the wrong branch.
+      const acceptBtn = document.querySelector(
+        '[data-fail-choice="accept"]',
+      );
+      if (!acceptBtn) {
+        throw new Error(
+          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+        );
+      }
+
+      act(() => {
+        fireEvent.click(acceptBtn as HTMLButtonElement);
+      });
+
+      // Pre-fix this would be "1 / ..." (the silent +1 default the
+      // missing shortcut field produced). Post-fix the +2 shortcut tax
+      // applies.
+      expect(sepReadout()?.textContent?.startsWith('2 ')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('Separation rises by 1 when arrival was via a non-shortcut path (control)', () => {
+    vi.useFakeTimers();
+    try {
+      const initial = makePrepState({
+        destination: 'yesod',
+        arrivalPath: 30, // NOT a shortcut
+      });
+      // Seed 7 produces d20=1 — guarantees fail vs DC 12 (stat 1 + 1 < 12).
+      // With seed 1 (d20=13) the non-shortcut path passes (1+13=14 vs DC 12)
+      // even though the same roll fails on the shortcut path (vs DC 15).
+      const rng = seededRng(7);
+      render(<PlayScreen initialState={initial} rng={rng} />);
+
+      const sepReadout = (): Element | null =>
+        document.querySelector('[data-meter-readout="separation"]');
+      expect(sepReadout()?.textContent?.startsWith('0 ')).toBe(true);
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
+      const acceptBtn = document.querySelector(
+        '[data-fail-choice="accept"]',
+      );
+      if (!acceptBtn) {
+        throw new Error(
+          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+        );
+      }
+
+      act(() => {
+        fireEvent.click(acceptBtn as HTMLButtonElement);
+      });
+
+      expect(sepReadout()?.textContent?.startsWith('1 ')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

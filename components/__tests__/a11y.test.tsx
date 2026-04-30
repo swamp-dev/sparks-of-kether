@@ -1,5 +1,5 @@
 import { describe, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, renderHook } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import type { AxeResults } from 'axe-core';
 import { TreeBoard } from '@/components/tree/TreeBoard';
@@ -8,10 +8,12 @@ import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { ChallengeModal } from '@/components/challenge/ChallengeModal';
+import { EncounterScreen } from '@/components/game/EncounterScreen';
+import { useTurn } from '@/lib/use-turn';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { Lobby } from '@/components/setup/Lobby';
-import { makePlayer, makeState } from '@/test/fixtures';
+import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 
 // vitest-axe's `extend-expect` ships an empty file in 0.1.0 and the
@@ -100,6 +102,50 @@ describe('a11y — major UI surfaces', () => {
   it('ShellPanel is axe-clean', async () => {
     const state = makeState();
     const { container } = render(<ShellPanel shells={state.shells} />);
+    expectNoViolations(await axe(container));
+  });
+
+  it('EncounterScreen (Gevurah prep, hot-seat) is axe-clean', async () => {
+    // #228: the new encounter UI replaces ChallengeModal in the
+    // real-game `/play` flow. Tested at the prep sub-state — the
+    // most-rendered shape — with the same axe-clean bar.
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex(
+      (p) => p.id === base.activePlayerId,
+    );
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? { ...p, position: 'gevurah' as const, hand: [0, 1, 2] }
+        : { ...p, position: 'gevurah' as const },
+    );
+    const state = {
+      ...base,
+      players,
+      phase: 'challenge' as const,
+      challengeSubPhase: 'prep' as const,
+      pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+      lastOutcome: undefined,
+    };
+    const rng = seededRng(1);
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
+    const player = state.players.find((p) => p.id === state.activePlayerId);
+    const { container } = render(
+      <EncounterScreen
+        context={{
+          sefirah: 'gevurah',
+          stat: 12,
+          statLabel: 'Strength',
+          availableAllies: [],
+          availableCardBurns: 3,
+          availableSparkBurns: 2,
+        }}
+        rng={rng}
+        mode="hot-seat"
+        turn={result.current}
+        onResolved={() => undefined}
+        {...(player ? { player } : {})}
+      />,
+    );
     expectNoViolations(await axe(container));
   });
 

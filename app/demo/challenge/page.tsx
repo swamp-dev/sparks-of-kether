@@ -10,6 +10,14 @@ import { seededRng } from '@/engine/rng';
  */
 const SOUL_DOOR_DC_DELTA = -2;
 
+/**
+ * Demo-only route. The real `/play` flow uses `EncounterScreen` (#228);
+ * this page renders the deprecated `ChallengeModal` for design-system
+ * reference and visual-regression baselines. Keeping it lets tooling
+ * pin both surfaces without forcing a wider refactor of the
+ * design-system shelf.
+ */
+
 export default function ChallengeDemoPage(): JSX.Element {
   if (process.env.NODE_ENV === 'production') {
     notFound();
