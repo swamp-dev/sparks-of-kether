@@ -3603,3 +3603,21 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (67 files / 982 passed / 1 todo), build ✓, e2e ✓ (62 passed), integration ✓ (1/1).
 
 **Commit(s):** `5cdc5c0` (impl), `3b93449` (review fix)
+
+## 2026-04-29T20:46:06-04:00 — #235: T6 — ZodiacSignPicker component
+
+**Pushed:** New 12-card picker `components/setup/ZodiacSignPicker.tsx` (~230 LOC) replacing the six-card SoulAspectPicker. Each card surfaces glyph + name + element/modality + ruler (+ co-ruler) + full dignity bonuses + Soul Doors line per design § 5 (`design/astrological-classes.md`) and § 6 (`design/soul-doors.md`).
+
+**Why:** Sub-ticket T6 of Epic #212. Unblocks T7 (#236) — wiring into the play setup pipeline.
+
+**Notes:**
+- TDD-first: 16 failing tests (`61b4730`) before implementation (`f3d4938`).
+- API surface mirrors SoulAspectPicker exactly so T7's swap is mechanical: `{ taken?, onPick, className }`.
+- Soul Doors copy is verbatim per § 6: plural form for 11 signs, singular form with the Malkuth footnote for Pisces. Sefirot named via Hebrew transliteration (titlecased key) — NOT `englishName` (which holds the *translation*: Victory, Foundation, etc.). The design doc uses transliterations throughout, the picker matches.
+- Bonus list shows EVERY non-zero entry from `zodiacBonus(sign)` — positives AND negatives. Pisces shows `+1 lovingkindness`, `+1 insight`, `+2 passion`, `−3 intellect`. U+2212 minus sign matches design-doc typography.
+- Selected-state visual uses inline `style={{ borderColor, backgroundColor }}` driven by the ruling planet's Sefirah color (Aries → Mars → Gevurah red, etc.). Matches the same dynamic-color pattern used by the BlessingRitual ledger and the Soul Door callout in #260; avoids Tailwind tree-shaking issues with dynamic class names.
+- Code-reviewer caught one significant: import for `zodiacBonus` was placed AFTER the `transliterated` helper const declaration — module spec violation that the current ESLint config tolerates but a stricter rule set would flag. Fixed in `a931a1a` (import joins the `@/data` block; helper moves below all imports).
+- Re-review confirmed clean.
+- Full `pnpm ci:local`: verify ✓ (68 files / 998 passed / 1 todo), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** `f3d4938` (impl), `a931a1a` (review fix)
