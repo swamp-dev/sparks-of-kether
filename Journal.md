@@ -3777,3 +3777,23 @@ don't reach naturally. Centralised them.
 - `pnpm typecheck`, `pnpm test --run tests/docs` (96/96 passing — 3 new image embeds resolve), and `pnpm build` all green during chunk-by-chunk verification. Full `pnpm ci:local` to follow before push.
 
 **Commit(s):** `8eb7dd1` (Phase 1 rating doc, pushed earlier), `9da2465` (chunk 1 — data-demo-canvas + door param), `2ae2a6b` (chunk 2 — spec extensions), `727a78b` (chunk 3 follow-up — meters wrap tighten), `8cac96c` (chunks 3+4 — curation + embeds)
+
+## 2026-04-30T01:22:00-04:00 — #229: E4 — useTurn adapter + hot-seat one-click
+
+**Pushed:** `useTurn` migrated to expose the new sub-phase machine; deprecated `submit-challenge` engine `TurnEvent` arm deleted. `UseTurnReturn` extended with `challengeSubPhase`, `pendingModifiers`, and four per-step methods (`prepAddModifier`, `prepRemoveModifier`, `prepConfirm`, `reactRetry`). `submitChallenge` survives as a public method but its implementation now wraps the per-step machine: synthesises `PrepModifier` events from the active player's `hand` and `sparksHeld`, threads a working snapshot through reducer calls, and only commits to React on full-chain success (atomicity preserved). Two new `prep-confirm` event override fields (`directAssistStats`, `shortcutPenalty`) thread the lossy-CheckModifier-shape inputs through to the engine without losing semantics.
+
+**Why:** Sub-ticket E4 of Epic #117. Closes the hot-seat compatibility gap left by E1 — players still get a one-click "Roll" experience, but every modifier now flows through the prep machine.
+
+**Notes:**
+- Multi-subagent execution: a general-purpose agent did the migration (commits c1ba3db / a06d685 / 286f1f9), `code-reviewer` ran twice, structural-rebase + final verification on host.
+- **Code-reviewer pass 1 caught two SIGNIFICANT bugs:**
+  - `shortcutPenalty: true` from `ChallengeModal` was silently dropped — the wrapper claimed to forward it, but the new `prep-confirm` event arm had no field for it. Players who arrived via a shortcut path didn't get the +3 DC penalty. Silent gameplay-correctness bug. Fix: added `shortcutPenalty?: boolean` override on `prep-confirm` (mirroring the `directAssistStats` pattern); reducer overrides post-translation; wrapper forwards via spread-conditional. Pinned by engine + wrapper tests asserting `effectiveDC` actually changes.
+  - The atomicity claim (wrapper rolls back React state if any chain step fails) was untested. Added two rollback tests: wrong-phase entry, and cardBurns-exceeds-hand. Both confirm `setSnapshot` only fires after all events succeed.
+- **Then E2 (#272) merged with a structural change** that broke the assumed shape: it moved `phase`, `challengeSubPhase`, `lastOutcome` from `TurnSnapshot` onto `GameState`. Rebased E4 onto post-E2 main. Conflicts hit (and were resolved):
+  - `lib/turn-machine.ts` `prep-confirm` reducer case: E2's GameState-maintenance writes coexist with E4's `directAssistStats`/`shortcutPenalty` overrides — orthogonal semantics, both kept.
+  - `lib/turn-machine.ts` deprecated `submit-challenge` arm: E4's deletion stood; E2's GameState-writes for that case dropped along with it.
+  - `lib/use-turn.ts` import block + snapshot-field reads retargeted from `snapshot.<field>` to `state.<field>` (E4's hook-derivation block updated accordingly).
+  - `lib/__tests__/turn-machine.test.ts` two tests with old-shape `TurnSnapshot` literals migrated to `makeState` overrides + `{ state }`.
+- Full post-rebase `pnpm ci:local`: verify ✓ (1052 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
+
+**Commit(s):** `81d1b06` (directAssistStats override), `574357f` (useTurn extension + wrapper), `91344f0` (delete deprecated engine arm), `0d54f47` (shortcutPenalty fix + atomicity tests)

@@ -137,21 +137,38 @@ export type TurnEvent =
        * only callers (tests, future bots) can use the rng-rolled path.
        */
       readonly outcome?: CheckOutcome;
+      /**
+       * Hot-seat compatibility hatch (#229 / E4). When set, the
+       * reducer ignores any `assistRequests` staged in
+       * `state.pendingModifiers` and feeds these full ally stat
+       * values straight into `CheckModifiers.assistStats`. The engine
+       * halves (floors) and sums them as usual.
+       *
+       * Why: the hot-seat `submitChallenge` wrapper in `useTurn`
+       * receives a pre-built `CheckModifiers.assistStats: number[]`
+       * from `ChallengeModal`, which has lost the originating ally
+       * IDs by the time it reaches the wrapper. Synthesizing fake
+       * `assist-request` events would re-translate via player stats
+       * and (in the absence of ally IDs) could not reproduce the
+       * exact numbers the modal showed the player. This override
+       * preserves the modal-as-source-of-truth invariant.
+       *
+       * Multiplayer / `EncounterScreen` (E3) uses staged
+       * `assist-request`s and MUST NOT pass this field — staged
+       * assists are the multiplayer-coordination affordance.
+       */
+      readonly directAssistStats?: readonly number[];
+      /**
+       * Hot-seat-only override. The hot-seat wrapper (`useTurn.submitChallenge`)
+       * receives `shortcutPenalty` from the modal but cannot stage it through
+       * a `prep-add-modifier` event — `pendingModifiers` has no shortcut-state
+       * field. Multiplayer / `EncounterScreen` callers MUST NOT pass this; the
+       * shortcut-state lives elsewhere on `GameState` and (TBD) will be derived
+       * by the reducer when the prep-stage UI grows a "I took a shortcut" affordance.
+       */
+      readonly shortcutPenalty?: boolean;
     }
   | { readonly kind: 'react-retry' }
-  | {
-      /**
-       * @deprecated Hot-seat compatibility shim. Will be removed in E4
-       * (#229) once `useTurn` migrates to the per-step prep methods.
-       * Internally fires the same path as `prep-confirm`, but accepts
-       * pre-built `CheckModifiers` directly instead of translating
-       * from `state.pendingModifiers`. New code MUST use `prep-confirm`.
-       */
-      readonly kind: 'submit-challenge';
-      readonly sefirah: SefirahKey;
-      readonly modifiers: CheckModifiers;
-      readonly outcome?: CheckOutcome;
-    }
   | {
       readonly kind: 'accept-setback';
       readonly sefirah: SefirahKey;
@@ -508,11 +525,29 @@ export function turnReducer(
           reason: { kind: 'wrong-sub-phase', expected: 'prep', actual: challengeSubPhase },
         };
       }
-      const { modifiers, dropped } = translatePendingModifiers(
+      const { modifiers: translated, dropped } = translatePendingModifiers(
         state,
         player,
         event.sefirah,
       );
+      // Hot-seat override (#229 / E4). When `directAssistStats` is
+      // supplied, replace the translated assistStats wholesale —
+      // staged `assist-request`s are silently dropped from the
+      // assist contribution. See the JSDoc on the `prep-confirm`
+      // event variant for the full rationale.
+      let modifiers: CheckModifiers =
+        event.directAssistStats !== undefined
+          ? { ...translated, assistStats: event.directAssistStats }
+          : translated;
+      // Hot-seat override (#229 / E4). The wrapper learns
+      // `shortcutPenalty` from the modal but `pendingModifiers` has no
+      // field to stage it on, so the only way to get it through is an
+      // event-level override. Multiplayer must not pass this; it will
+      // be derived from `GameState` once the prep-stage UI grows a
+      // "I took a shortcut" affordance.
+      if (event.shortcutPenalty !== undefined) {
+        modifiers = { ...modifiers, shortcutPenalty: event.shortcutPenalty };
+      }
       const result = resolveChallenge({
         state,
         playerId: player.id,
@@ -592,65 +627,6 @@ export function turnReducer(
         lastOutcome: undefined,
       };
       return { ok: true, value: { next: { state: stateAfter } } };
-    }
-
-    case 'submit-challenge': {
-      // Deprecated hot-seat compatibility shim — see TurnEvent
-      // declaration. E4 (#229) will delete this once `useTurn`
-      // migrates to the per-step prep methods. Gates on `phase ===
-      // 'challenge'` only (not `challengeSubPhase`) because legacy
-      // callers don't know about sub-phases. Calls `resolveChallenge`
-      // directly with the modal's pre-built `CheckModifiers` — no
-      // translation from `state.pendingModifiers`.
-      if (phase !== 'challenge') {
-        return {
-          ok: false,
-          reason: { kind: 'wrong-phase', expected: 'challenge', actual: phase },
-        };
-      }
-      const result = resolveChallenge({
-        state,
-        playerId: player.id,
-        sefirah: event.sefirah,
-        modifiers: event.modifiers,
-        rng,
-        ...(event.outcome !== undefined ? { outcome: event.outcome } : {}),
-      });
-      if (!result.ok) {
-        return { ok: false, reason: { kind: 'challenge-rejected', cause: result.reason } };
-      }
-      // Match the legacy contract: pass → 'draw' with no sub-phase;
-      // fail → stay in 'challenge', exposing the new `react`
-      // sub-phase + `lastOutcome` (now on GameState — see the
-      // #227 review fix) so legacy callers can upgrade piecewise.
-      // `pendingModifiers` is cleared on both paths (the prep stack
-      // was not used by this code path anyway — modifiers came
-      // pre-built from the modal).
-      const passed = result.value.outcome.pass;
-      const baseState: GameState = {
-        ...result.value.newState,
-        pendingModifiers: EMPTY_PENDING_MODIFIERS,
-      };
-      const stateAfter: GameState = passed
-        ? {
-            ...baseState,
-            phase: 'draw',
-            challengeSubPhase: undefined,
-            lastOutcome: undefined,
-          }
-        : {
-            ...baseState,
-            phase: 'challenge',
-            challengeSubPhase: 'react',
-            lastOutcome: result.value.outcome,
-          };
-      return {
-        ok: true,
-        value: {
-          next: { state: stateAfter },
-          meta: { challenge: result.value, dropped: [] },
-        },
-      };
     }
 
     case 'accept-setback': {

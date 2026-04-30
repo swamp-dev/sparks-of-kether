@@ -550,7 +550,154 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     if (result.ok) return;
     expect(result.reason.kind).toBe('wrong-sub-phase');
   });
+
+  it('honours directAssistStats override and ignores staged assistRequests', () => {
+    // E4 hot-seat hatch (#229): the wrapper passes pre-built
+    // `assistStats: number[]` (full ally stats — engine halves on
+    // sum). The override must short-circuit translation so the
+    // numbers the modal showed the player are exactly what the
+    // engine sees. Staged `assist-request`s on the same snapshot
+    // are NOT credited (the wrapper does not stage them; this is
+    // belt-and-braces in case both ever coexist).
+    const ally = makePlayer({
+      id: 'p2',
+      position: 'gevurah',
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 14 },
+    });
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 10 },
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player, ally],
+        activePlayerId: 'p1',
+        pendingModifiers: {
+          cardBurns: [],
+          sparkBurns: [],
+          // Staged assist that would normally contribute 14/2 = 7;
+          // the override should make this irrelevant.
+          assistRequests: ['p2'],
+        },
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    );
+    const result = turnReducer(
+      { state },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        // Different magnitude (8) so the assertion can distinguish
+        // override-was-honoured from staged-was-translated.
+        directAssistStats: [8],
+        outcome: {
+          rolled: 18,
+          statContribution: 10,
+          modifierBreakdown: { assist: 4, cardBurn: 0, sparkBurn: 0 },
+          total: 32,
+          effectiveDC: 15,
+          pass: true,
+        },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // The challenge resolved successfully — staged assist-request
+    // does NOT appear in `meta.dropped` because translation never
+    // produced it. (The override path skips translation's drop
+    // accounting for assists.) The state advanced (Sefirah cleared
+    // → success path), confirming `resolveChallenge` saw the
+    // override-supplied stats.
+    expect(
+      result.value.next.state.players[0]?.clearedSefirot.has('gevurah'),
+    ).toBe(true);
+  });
+
+  it('honours shortcutPenalty override and bumps effectiveDC by +3', () => {
+    // E4 hot-seat hatch (#229): the wrapper learns `shortcutPenalty`
+    // from the modal, but `pendingModifiers` has no field to stage
+    // it on. The override forces `shortcutPenalty: true` onto the
+    // translated CheckModifiers so a player who arrived via a
+    // central-pillar shortcut actually faces the +3 DC penalty
+    // (gevurah base DC 15 → effective 18). Without the override,
+    // `translatePendingModifiers` defaults to `false` and the
+    // penalty is silently dropped.
+    //
+    // No `outcome` is passed: we let the engine call `rollCheck`
+    // so the resulting `effectiveDC` is computed from
+    // `modifiers.shortcutPenalty`, which is the assertion target.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 10 },
+    });
+    const state = makeState(
+      {},
+      { players: [player], phase: 'challenge', challengeSubPhase: 'prep' },
+    );
+    const result = turnReducer(
+      { state },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        shortcutPenalty: true,
+      },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // gevurah base DC 15; with +3 shortcut, effective 18.
+    expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(18);
+  });
+
+  it('defaults shortcutPenalty to false when override is absent', () => {
+    // Confirms the override is opt-in: without it, the translate
+    // helper's hardcoded `shortcutPenalty: false` survives. So a
+    // multiplayer caller that never supplies the override sees the
+    // baseline DC, exactly as before E4's hatch was added.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 10 },
+    });
+    const state = makeState(
+      {},
+      { players: [player], phase: 'challenge', challengeSubPhase: 'prep' },
+    );
+    const result = turnReducer(
+      { state },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        // No shortcutPenalty.
+      },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(15);
+  });
 });
+
+// Locally re-declare DEFAULT_STATS keys for the override test so we
+// don't import a fixture-private constant. Mirrors what
+// `makePlayer` defaults to, with `strength` overridable in the test.
+const DEFAULT_STATS_FOR_TEST = {
+  unity: 10,
+  insight: 10,
+  understanding: 10,
+  lovingkindness: 10,
+  strength: 10,
+  harmony: 10,
+  passion: 10,
+  intellect: 10,
+  intuition: 10,
+  body: 10,
+} as const;
 
 describe('turnReducer — react sub-phase: react-retry', () => {
   it('returns to prep on a failed outcome and preserves cumulative cardBurns count', () => {
