@@ -196,6 +196,82 @@ describe('property: acceptSetback raises separation by +1 regular / +2 shortcut'
   });
 });
 
+// ──────── #303 retro-review: rollback correctness across shortcuts ────────
+//
+// The previous separation-delta property runs against `makeFullGame`
+// states where `lastArrivalPathNumber` is always undefined — so
+// `shortcut: true` always hits the no-op branch and only the
+// Separation tick is exercised. This property generates a (sefirah,
+// shortcut path, direction) tuple that PINS the position rollback
+// itself: starting at one endpoint with `lastArrivalPathNumber` set,
+// the post-setback position must be the OTHER endpoint and the field
+// must be cleared.
+//
+// Three central-pillar shortcuts exist: 13 (Kether↔Tiferet),
+// 25 (Tiferet↔Yesod), 32 (Yesod↔Malkuth). Each is bidirectional, so
+// for each path we pick which endpoint the player started from.
+
+interface ShortcutScenario {
+  readonly pathNumber: 13 | 25 | 32;
+  readonly arrivedAt: SefirahKey;
+  readonly origin: SefirahKey;
+}
+
+const SHORTCUT_SCENARIOS: readonly ShortcutScenario[] = [
+  // Path 13: Kether ↔ Tiferet
+  { pathNumber: 13, arrivedAt: 'kether', origin: 'tiferet' },
+  { pathNumber: 13, arrivedAt: 'tiferet', origin: 'kether' },
+  // Path 25: Tiferet ↔ Yesod
+  { pathNumber: 25, arrivedAt: 'tiferet', origin: 'yesod' },
+  { pathNumber: 25, arrivedAt: 'yesod', origin: 'tiferet' },
+  // Path 32: Yesod ↔ Malkuth
+  { pathNumber: 32, arrivedAt: 'yesod', origin: 'malkuth' },
+  { pathNumber: 32, arrivedAt: 'malkuth', origin: 'yesod' },
+];
+
+describe('property: shortcut acceptSetback rolls active player back to path origin', () => {
+  it('holds across all three shortcut paths in either direction', () => {
+    fc.assert(
+      fc.property(
+        gameStateArb(),
+        fc.constantFrom(...SHORTCUT_SCENARIOS),
+        (initial, scenario) => {
+          // Place the active player at the "arrived" endpoint with the
+          // matching `lastArrivalPathNumber`. Other players are
+          // untouched — the rollback property is per-player.
+          const activeId = initial.activePlayerId;
+          const state: GameState = {
+            ...initial,
+            players: initial.players.map((p) =>
+              p.id === activeId
+                ? {
+                    ...p,
+                    position: scenario.arrivedAt,
+                    lastArrivalPathNumber: scenario.pathNumber,
+                  }
+                : p,
+            ),
+          };
+
+          const next = acceptSetback(state, {
+            playerId: activeId,
+            sefirah: scenario.arrivedAt,
+            shortcut: true,
+          });
+
+          const movedPlayer = next.players.find((p) => p.id === activeId);
+          // Position rolled back to the OTHER endpoint of the path.
+          expect(movedPlayer?.position).toBe(scenario.origin);
+          // lastArrivalPathNumber cleared so a subsequent challenge
+          // at the origin doesn't re-read the old path's pillarsCrossed.
+          expect(movedPlayer?.lastArrivalPathNumber).toBeUndefined();
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+});
+
 describe('property: applyMove conserves total card count', () => {
   it('hand loses 1, discard gains 1, deck unchanged on a successful move', () => {
     // Reviewer note: the original endTurn-card-invariant property was

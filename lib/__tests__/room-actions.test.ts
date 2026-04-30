@@ -512,8 +512,24 @@ describe('applyClientAction — accept-setback', () => {
     expect(result.newState.separation).toBe(4);
   });
 
-  it('ticks separation +2 on a shortcut failure', () => {
-    const player = makePlayer({ id: 'p1', position: 'tiferet', hand: [] });
+  it('ticks separation +2 and rolls position back to origin on a shortcut failure', () => {
+    // #303 retro-review: pin BOTH the Separation delta and the
+    // position rollback at the multiplayer-action boundary. Pre-fix
+    // the test only asserted Separation, so a regression in
+    // `acceptSetback`'s position rollback could silently slip past
+    // the multiplayer action layer.
+    //
+    // Path 25 (Tiferet ↔ Yesod) is a real central-pillar shortcut.
+    // Player arrived at Tiferet via path 25 (origin = Yesod).
+    // Failing the Tiferet challenge with shortcut: true must:
+    //   - tick Separation +2 (per design/mechanics.md § Shortcuts)
+    //   - roll position back to Yesod (the other endpoint of path 25)
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [],
+      lastArrivalPathNumber: 25,
+    });
     const state = makeState({}, { players: [player], separation: 0 });
     const result = applyClientAction(
       state,
@@ -528,6 +544,11 @@ describe('applyClientAction — accept-setback', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.separation).toBe(2);
+    // Position rolled back to Yesod (the other endpoint of path 25).
+    expect(result.newState.players[0]?.position).toBe('yesod');
+    // lastArrivalPathNumber cleared so a subsequent challenge at the
+    // origin doesn't re-read the old path's pillarsCrossed.
+    expect(result.newState.players[0]?.lastArrivalPathNumber).toBeUndefined();
   });
 });
 

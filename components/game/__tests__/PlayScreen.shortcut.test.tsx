@@ -163,7 +163,12 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       );
       if (!acceptBtn) {
         throw new Error(
-          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+          'test setup (seed 1, stat=1, DC 12+3=15 shortcut): the ' +
+            'first d20 the seeded rng produces was high enough to pass ' +
+            '— total ≥ 15. ChallengeModal calls rng.d20() once on the ' +
+            'Roll click. If the seed changes (or assist-stats / shells ' +
+            'introduce earlier rng draws), pick a seed whose first ' +
+            'd20 face is < 14 so total = 1 + roll < 15.',
         );
       }
 
@@ -209,7 +214,12 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
       if (!acceptBtn) {
         throw new Error(
-          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+          'test setup (seed 1, stat=1, DC 12+3=15 shortcut): the ' +
+            'seeded d20 rolled high enough to pass — total ≥ 15. ' +
+            'PlayScreen prep-confirm consumes one rng value before ' +
+            'the d20, so if the seed changes you may need to retune. ' +
+            'Pick a seed whose first non-bookkeeping rng value yields ' +
+            'a d20 < 14 so total = 1 + roll < 15.',
         );
       }
       act(() => {
@@ -218,13 +228,15 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
 
       // After the rollback, the active player's token aria-label
       // should read "... at Beauty" (Tiferet) — not "at Foundation"
-      // (Yesod). aria-label is the most stable surface for the
-      // engine-side position change at the integration boundary.
-      const activeToken = document.querySelector(
-        '[data-active="true"]',
-      );
-      expect(activeToken?.getAttribute('aria-label')).toMatch(/at Beauty/);
-      expect(activeToken?.getAttribute('aria-label')).not.toMatch(/at Foundation/);
+      // (Yesod). Query via the accessible role + name (TreeBoard
+      // renders the active token as an SVG group with role="img"
+      // and an aria-label that contains "(active turn)"); getByRole
+      // couples to semantics rather than DOM structure.
+      const activeToken = screen.getByRole('img', {
+        name: /\(active turn\)/,
+      });
+      expect(activeToken.getAttribute('aria-label')).toMatch(/at Beauty/);
+      expect(activeToken.getAttribute('aria-label')).not.toMatch(/at Foundation/);
     } finally {
       vi.useRealTimers();
     }
@@ -250,7 +262,13 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
       if (!acceptBtn) {
         throw new Error(
-          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+          'test setup (seed 7, stat=1, DC 12 non-shortcut): the ' +
+            'first d20 the seeded rng produces was high enough to pass ' +
+            '— total ≥ 12. Seed 7 was chosen because it produces d20=1 ' +
+            'here so total = 1 + 1 = 2 < 12. ChallengeModal calls ' +
+            'rng.d20() once on the Roll click; if the seed changes (or ' +
+            'assist-stats / shells introduce earlier rng draws), pick ' +
+            'a seed whose first d20 face is < 11.',
         );
       }
       act(() => {
@@ -258,10 +276,12 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       });
 
       // Non-shortcut: the player stays at Yesod (Foundation).
-      const activeToken = document.querySelector(
-        '[data-active="true"]',
-      );
-      expect(activeToken?.getAttribute('aria-label')).toMatch(/at Foundation/);
+      // Query via the accessible role + name so the assertion
+      // couples to semantics rather than DOM structure.
+      const activeToken = screen.getByRole('img', {
+        name: /\(active turn\)/,
+      });
+      expect(activeToken.getAttribute('aria-label')).toMatch(/at Foundation/);
     } finally {
       vi.useRealTimers();
     }
@@ -296,7 +316,13 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       );
       if (!acceptBtn) {
         throw new Error(
-          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+          'test setup (seed 7, stat=1, DC 12 non-shortcut): the ' +
+            'first d20 the seeded rng produces was high enough to pass ' +
+            '— total ≥ 12. Seed 7 was chosen because it produces d20=1 ' +
+            'here so total = 1 + 1 = 2 < 12. ChallengeModal calls ' +
+            'rng.d20() once on the Roll click; if the seed changes (or ' +
+            'assist-stats / shells introduce earlier rng draws), pick ' +
+            'a seed whose first d20 face is < 11.',
         );
       }
 

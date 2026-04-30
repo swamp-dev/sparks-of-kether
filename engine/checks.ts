@@ -308,6 +308,18 @@ export function acceptSetback(state: GameState, input: SetbackInput): GameState 
  * the target player is missing or has no recorded arrival path —
  * callers (`acceptSetback`) treat the position-update as best-effort
  * so the +2 Separation tick still lands on a malformed snapshot.
+ *
+ * **#303 retro-review fix.** This helper does NOT trust the caller's
+ * `shortcut` flag — it independently verifies the recorded arrival
+ * path's `pillarsCrossed` is `['balance', 'balance']` (the central-
+ * pillar shortcut signature) before moving the player. Without that
+ * check, a buggy/malicious multiplayer client could pass
+ * `{ kind: 'accept-setback', shortcut: true }` after arriving via a
+ * non-shortcut path (e.g. path 27 Netzach↔Hod) and get silently
+ * teleported. The +2 Separation tick from `acceptSetback` still
+ * fires on a no-op — the player chose to accept setback per
+ * `design/mechanics.md` § Shortcuts; only the position change is
+ * gated on the path actually being a shortcut.
  */
 function rollbackPosition(state: GameState, playerId: string): GameState {
   const player = state.players.find((p) => p.id === playerId);
@@ -318,6 +330,18 @@ function rollbackPosition(state: GameState, playerId: string): GameState {
 
   const path = tryPathByNumber(arrivalPathNumber);
   if (!path) return state;
+
+  // Defense-in-depth (#303 retro): independently verify the path is a
+  // central-pillar shortcut before honouring the rollback. A non-
+  // shortcut path here means the caller's `shortcut` flag was wrong
+  // (client bug, malicious payload, or transitional snapshot). No-op
+  // the position change; the Separation tick already happened upstream.
+  if (
+    path.pillarsCrossed[0] !== 'balance' ||
+    path.pillarsCrossed[1] !== 'balance'
+  ) {
+    return state;
+  }
 
   // The origin is the OTHER endpoint of the path. Path is bidirectional
   // and `from`/`to` follow traditional top-down numbering, but the

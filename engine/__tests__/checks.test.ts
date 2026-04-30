@@ -508,6 +508,67 @@ describe('acceptSetback', () => {
     expect(next.separation).toBe(2);
   });
 
+  // ──────── #303 retro-review: validate pillarsCrossed before rollback ────────
+  //
+  // Defense-in-depth against an exploitable trust gap. Pre-#308 the
+  // rollback trusted the caller's `shortcut` flag entirely — it would
+  // happily roll the player back along ANY recorded `lastArrivalPathNumber`
+  // as long as the path's endpoints touched the current position. A
+  // buggy/malicious multiplayer client could send `{ kind:
+  // 'accept-setback', shortcut: true }` after arriving via a non-
+  // shortcut path (e.g. path 27 Netzach↔Hod) and get silently
+  // teleported with the +2 Separation tick.
+  //
+  // Fix: `rollbackPosition` verifies the path's `pillarsCrossed` is
+  // `['balance', 'balance']` (the central-pillar shortcut signature)
+  // before moving the player. On mismatch, the position is left
+  // untouched but the +2 Separation tick still fires — the player
+  // chose to accept setback, they pay the design's published cost.
+
+  it('shortcut failure with non-shortcut arrival path is a no-op for position, but +2 Separation still ticks', () => {
+    // Path 27 (Netzach ↔ Hod) crosses mercy/severity, not the central
+    // pillar. Even if the (buggy/malicious) caller passes
+    // `shortcut: true`, the rollback must reject the path as not
+    // actually a shortcut and leave position alone.
+    const state = makeState({
+      position: 'hod',
+      lastArrivalPathNumber: 27,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'hod',
+      shortcut: true,
+    });
+    // Position unchanged: caller's shortcut flag was untrusted.
+    expect(next.players[0]?.position).toBe('hod');
+    // lastArrivalPathNumber NOT cleared — no rollback happened, so
+    // the field stays so subsequent legitimate flows can read it.
+    expect(next.players[0]?.lastArrivalPathNumber).toBe(27);
+    // Separation tick still applies — design semantic per
+    // `design/mechanics.md` § Shortcuts: the player asked for
+    // setback, they pay it.
+    expect(next.separation).toBe(2);
+  });
+
+  it('shortcut failure with another non-shortcut arrival path (path 28, mercy/balance) is also a no-op for position', () => {
+    // Second case to lock in the validation: path 28 Netzach↔Yesod
+    // is mercy/balance — only HALF balance, so it's NOT a central-
+    // pillar shortcut. The endpoint touches Yesod, but `pillarsCrossed`
+    // disqualifies it.
+    const state = makeState({
+      position: 'yesod',
+      lastArrivalPathNumber: 28,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('yesod');
+    expect(next.players[0]?.lastArrivalPathNumber).toBe(28);
+    expect(next.separation).toBe(2);
+  });
+
   it('rollback only touches the active player (other players untouched)', () => {
     // Regression guard for the multi-player case: the rollback
     // must scope to the player whose challenge failed. Sibling
