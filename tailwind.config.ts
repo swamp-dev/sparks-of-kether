@@ -47,8 +47,10 @@ const config: Config = {
       },
       fontFamily: {
         // Loaded via next/font in app/layout.tsx — all self-hosted.
+        // See `docs/typography.md` for stack rationale (Fraunces / Inter /
+        // Frank Ruhl Libre).
         // Fallbacks intentionally exclude CDN-resolvable font names
-        // (e.g. "Noto Sans Hebrew") so a CSS-var miss cannot trigger
+        // (e.g. "Frank Ruhl Libre") so a CSS-var miss cannot trigger
         // an external Google Fonts fetch; we degrade to generic serif
         // / sans-serif instead.
         display: ['var(--font-display)', 'serif'],

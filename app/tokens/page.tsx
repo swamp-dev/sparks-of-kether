@@ -8,9 +8,10 @@ import { notFound } from 'next/navigation';
  * Production builds 404 this route (see guard below) so token names
  * and layout are not indexed publicly.
  *
- * Display font note: the ticket allowed "Cinzel or EB Garamond" — we
- * chose Cinzel for its compressed, classical feel on headlines. If a
- * body-serif becomes desirable later, add `font-body-serif` as a
+ * Type stack — see `docs/typography.md` for the rationale. Display is
+ * Fraunces (with `opsz` optical-size axis); body is Inter; Hebrew is
+ * Frank Ruhl Libre (the face Sefaria uses for digital Hebrew reading).
+ * If a body-serif becomes desirable later, add `font-body-serif` as a
  * separate token rather than overloading `font-display`.
  */
 
@@ -140,7 +141,9 @@ export default function TokensPage() {
         </h2>
         <div className="space-y-4 rounded-lg border border-white/10 p-6">
           <div>
-            <div className="mb-1 text-xs opacity-50">font-display (Cinzel, self-hosted via next/font)</div>
+            <div className="mb-1 text-xs opacity-50">
+              font-display (Fraunces, self-hosted via next/font; opsz axis enabled)
+            </div>
             <div className="font-display text-3xl tracking-widest">Sparks of Kether</div>
           </div>
           <div>
@@ -151,7 +154,7 @@ export default function TokensPage() {
           </div>
           <div>
             <div className="mb-1 text-xs opacity-50">
-              font-hebrew (Noto Sans Hebrew, self-hosted) — the 22 letters, aleph (rightmost) to
+              font-hebrew (Frank Ruhl Libre, self-hosted) — the 22 letters, aleph (rightmost) to
               tav (leftmost)
             </div>
             <div className="font-hebrew text-3xl" dir="rtl" lang="he">

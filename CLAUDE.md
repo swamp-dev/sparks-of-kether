@@ -31,7 +31,7 @@ this repo.
 | Language | TypeScript strict mode |
 | Package manager | pnpm |
 | Node | 20 LTS |
-| Styling | Tailwind + per-Sefirah color tokens |
+| Styling | Tailwind + per-Sefirah color tokens (typography stack: [`docs/typography.md`](docs/typography.md)) |
 | Client state | Zustand |
 | Backend | Supabase (Postgres + Realtime + anonymous auth) |
 | Testing | Vitest + React Testing Library + Playwright |

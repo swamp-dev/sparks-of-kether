@@ -71,7 +71,7 @@ reference pages skip Fun).
    ritual content, scale the Sefirah icon up, fill the lower half
    with the running roll history (or a static cosmography
    illustration that responds to which Sefirah is active).
-2. **`/` (home)** _(V2 F2 T4 D2 = 10/20)_. Title is striking (Cinzel
+2. **`/` (home)** _(V2 F2 T4 D2 = 10/20)_. Title is striking (Fraunces
    in off-white over the dark navy). One line below it, the page
    lapses into a CRUD form
    (NICKNAME, JOIN GAME). On desktop the form is parked centre-
@@ -176,7 +176,7 @@ appear in declared order.
 ### `/play` (V2 F2 T4 D1, total 9)
 
 What renders: the BlessingRitual at step 1 (Crown). "Player 1 — Sefirot
-Blessing" in Cinzel off-white, "STEP 1 OF 10", "Crown / כתר",
+Blessing" in Fraunces off-white, "STEP 1 OF 10", "Crown / כתר",
 italic invocation, "Stat: Unity", "Roll 3d6" yellow button. That's it
 on a 1280×800 viewport. The Sefirah indicator is a circled-dot
 glyph that sits between the invocation and the stat label — it
@@ -204,7 +204,7 @@ actual UX.
 
 ### `/` home (V2 F2 T4 D2, total 10)
 
-Title "Sparks of Kether" sits in Cinzel off-white at the top.
+Title "Sparks of Kether" sits in Fraunces off-white at the top.
 Below it — `NICKNAME` input, `New game` button (the yellow on the
 page comes from this CTA), divider, `Room code` input, `Join game`
 (gold-bordered transparent), `Hot-seat / single-machine` button. Mobile splits the title into two stacked lines, which
@@ -306,7 +306,7 @@ for borderline AA pairings (Netzach 4.1:1, Yesod 3.6:1) — _excellent_.
 ### `/demo/soul-aspect` (V4 F4 T4 D4, total 16)
 
 Six aspect cards (3×2 desktop, stacked on mobile). Each card carries
-its title in Cinzel gold, the +2-stat badge, the quote, the ability
+its title in Fraunces gold, the +2-stat badge, the quote, the ability
 title + body, the weakness, and an optional "TAKEN BY..." disabled
 state. The hierarchy works.
 
