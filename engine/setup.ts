@@ -183,6 +183,10 @@ export function initializeGame(input: InitializeGameInput): GameState {
       clearedSefirot: new Set(),
       sparksHeld: new Set(),
       pendingAbilities: EMPTY_ABILITY_FLAGS,
+      // #244: persist the zodiac sign so the challenge resolver can
+      // compute Soul Door DC reductions on every check, not just at
+      // setup. Optional during the #212 transition (see PlayerState).
+      ...(p.zodiacSign !== undefined && { zodiacSign: p.zodiacSign }),
     };
   });
 

@@ -2,6 +2,7 @@ import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
+import { soulDoorDcDelta } from './soul-door-bonus';
 import type { GameState, PlayerState, Result } from './types';
 
 // ──────────────── Modifier constants ────────────────
@@ -29,6 +30,17 @@ export interface CheckModifiers {
   readonly sparkBurns: number;
   /** True if this check is happening on a central-pillar shortcut arrival. */
   readonly shortcutPenalty: boolean;
+  /**
+   * Soul Door DC adjustment (#244). Operates on the DC side, like
+   * `shortcutPenalty` but in the opposite direction — a negative
+   * delta lowers the bar. Stacks with shortcut penalty additively.
+   * `resolveChallenge` auto-injects this from `(player.zodiacSign,
+   * sefirah)` when omitted, so engine-only callers get the right
+   * behaviour for free; UI callers can supply it explicitly so the
+   * pre-roll animation matches the engine's effective DC.
+   * Magnitude locked at -2 in `design/soul-doors.md` § 7 D1.
+   */
+  readonly soulDoorDelta?: number;
 }
 
 export interface CheckOutcome {
@@ -94,7 +106,13 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   const cardBurn = modifiers.cardBurns * CARD_BURN_BONUS;
   const sparkBurn = modifiers.sparkBurns * SPARK_BURN_BONUS;
   const total = rolled + stat + assist + cardBurn + sparkBurn;
-  const effectiveDC = modifiers.shortcutPenalty ? dc + SHORTCUT_DC_PENALTY : dc;
+  // Effective DC composes two DC-side adjustments: the central-pillar
+  // shortcut penalty (+3) and the Soul Door delta (typically -2).
+  // They stack additively — Sagittarius on the shortcut at Yesod
+  // (a Door for that class) faces baseDC + 3 - 2 = baseDC + 1.
+  const shortcutAdjustment = modifiers.shortcutPenalty ? SHORTCUT_DC_PENALTY : 0;
+  const soulDoorAdjustment = modifiers.soulDoorDelta ?? 0;
+  const effectiveDC = dc + shortcutAdjustment + soulDoorAdjustment;
 
   return {
     rolled,
@@ -125,6 +143,16 @@ export interface ResolveChallengeInput {
    *
    * Optional so engine-only call sites (tests, future bots) can keep
    * the existing roll-here behavior unchanged.
+   *
+   * **#244 contract.** When `outcome` is supplied, the engine does
+   * NOT auto-inject the Soul Door delta from `(player.zodiacSign,
+   * sefirah)`. The caller is responsible for having computed
+   * `outcome.effectiveDC` with the Door delta already folded in
+   * (e.g. by passing the right `soulDoorDelta` into `rollCheck` when
+   * producing the pre-roll outcome). The auto-inject only runs on
+   * the engine path (`outcome` absent), where the resolver controls
+   * the modifier construction. UI callers that ignore this will see
+   * the player's roll evaluated against the un-discounted DC.
    */
   readonly outcome?: CheckOutcome;
 }
@@ -166,12 +194,28 @@ export function resolveChallenge(
   }
 
   const stat = player.stats[sefirahRecord.stat];
+  // #244: auto-inject Soul Door delta from the player's class when
+  // the caller hasn't supplied one. UI callers (ChallengeModal) set
+  // their own so the pre-roll animation matches the engine's DC; the
+  // explicit-override branch (modifiers.soulDoorDelta !== undefined)
+  // honours that. Signless players (#212 transition) auto-resolve to
+  // delta 0, matching pre-#244 behaviour.
+  const resolvedModifiers: CheckModifiers =
+    modifiers.soulDoorDelta !== undefined
+      ? modifiers
+      : {
+          ...modifiers,
+          soulDoorDelta:
+            player.zodiacSign !== undefined
+              ? soulDoorDcDelta(player.zodiacSign, sefirah)
+              : 0,
+        };
   const outcome =
     input.outcome ??
     rollCheck({
       stat,
       dc: sefirahRecord.challenge.dc,
-      modifiers,
+      modifiers: resolvedModifiers,
       rng,
     });
 

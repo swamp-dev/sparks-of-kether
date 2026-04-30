@@ -3572,3 +3572,19 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (67 files / 965 passed / 1 todo), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** `9f5a44f` (impl), `0c8bae5` (review fix)
+
+## 2026-04-29T20:10:13-04:00 — #244: T4 — fold Soul Door delta into challenge resolver
+
+**Pushed:** Final engine piece for Epic #240. Wires `soulDoorDcDelta` (#258 / T3) into `engine/checks.ts:rollCheck` so Door players actually face reduced DC at challenge time. Also persists `zodiacSign` on PlayerState (was only on PlayerSetup before — Soul Doors are class-passive, must apply on every challenge).
+
+**Why:** Sub-ticket T4 of Epic #240. Closes the engine half of Soul Doors. UI surfacing (T5 / #245) is the only remaining piece in the epic.
+
+**Notes:**
+- TDD-first: failing-test commit (`11fdf2d`) before implementation (`1193d0a`). 6 new tests RED → all green after impl. Plus 2 setup.test.ts tests for zodiacSign passthrough.
+- Four-file change: `engine/types.ts` (PlayerState gains optional zodiacSign — `?:` form, no `| undefined`, matches exactOptionalPropertyTypes), `engine/setup.ts` (initializeGame conditional spread), `engine/checks.ts` (CheckModifiers gains optional soulDoorDelta; rollCheck folds into effectiveDC; resolveChallenge auto-injects when caller hasn't), tests.
+- Code-reviewer caught one significant: when caller supplies `input.outcome`, the auto-inject is silently bypassed but the JSDoc didn't warn about that contract. Risk of silent bug at UI-wiring time. Fix in `4bc178f` adds an explicit "#244 contract" paragraph to ResolveChallengeInput.outcome and tightens the rollCheck boundary test (now stat 5 + roll 5 = 10 against DC 12: fails without Door, passes with). Plus minor: misleading test comment fixed.
+- Re-review confirmed both fixes correct, no new issues.
+- Composition: shortcut + Door stack additively. Sagittarius on shortcut at Yesod = baseDC + 3 - 2 = baseDC + 1.
+- Full `pnpm ci:local`: verify ✓ (67 files / 976 passed / 1 todo), build ✓, e2e ✓ (62 passed), integration ✓ (1/1).
+
+**Commit(s):** `1193d0a` (impl), `4bc178f` (review fix)

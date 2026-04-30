@@ -97,6 +97,83 @@ describe('rollCheck', () => {
     expect(withPenalty.pass).toBe(true); // Stat+roll 20 still beats 19.
   });
 
+  // #244: Soul Door reduction (Epic #240). The Door delta operates on
+  // the DC side, not the roll side — keeps the breakdown ledger
+  // (assist/burn/spark) clean. -2 is locked in design/soul-doors.md
+  // § 7 D1.
+  it('applies soulDoorDelta to the DC side', () => {
+    // Two runs at the boundary: stat 5 + roll 5 = 10 against base
+    // DC 12. Without Door: total 10 vs DC 12 → fails. With Door:
+    // total 10 vs effective DC 10 → passes. Asserts both the DC
+    // value AND the pass/fail direction, so a regression that
+    // accidentally moved the delta to the roll side would surface
+    // here (stays at DC 12 but `pass` flips).
+    const noDoor = rollCheck({
+      stat: 5,
+      dc: 12,
+      modifiers: blank,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    const withDoor = rollCheck({
+      stat: 5,
+      dc: 12,
+      modifiers: { ...blank, soulDoorDelta: -2 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(noDoor.effectiveDC).toBe(12);
+    expect(noDoor.pass).toBe(false);
+    expect(withDoor.effectiveDC).toBe(10);
+    expect(withDoor.pass).toBe(true);
+  });
+
+  it('omitting soulDoorDelta is equivalent to 0 (default)', () => {
+    const rng = { d20: () => 5, int: () => 5 };
+    const out = rollCheck({ stat: 5, dc: 12, modifiers: blank, rng });
+    expect(out.effectiveDC).toBe(12);
+  });
+
+  it('soulDoorDelta and shortcutPenalty stack additively on the DC', () => {
+    const rng = { d20: () => 8, int: () => 8 };
+    // Sagittarius on the central-pillar shortcut at Yesod (Door):
+    // base 12, +3 shortcut, -2 Door → effective DC = 13.
+    const both = rollCheck({
+      stat: 5,
+      dc: 12,
+      modifiers: { ...blank, shortcutPenalty: true, soulDoorDelta: -2 },
+      rng,
+    });
+    expect(both.effectiveDC).toBe(12 + SHORTCUT_DC_PENALTY - 2);
+  });
+
+  it('soulDoorDelta does NOT affect the roll-side total (assist / burn / spark)', () => {
+    const rng = { d20: () => 5, int: () => 5 };
+    // The Door reduces effectiveDC but should leave `total` and the
+    // breakdown (assist, cardBurn, sparkBurn) untouched. Two runs
+    // with the same stat + roll + side modifiers, only differing in
+    // the Door delta, must produce the same total but different DCs.
+    const without = rollCheck({
+      stat: 10,
+      dc: 14,
+      modifiers: { ...blank, cardBurns: 1, sparkBurns: 1, assistStats: [4] },
+      rng,
+    });
+    const with_ = rollCheck({
+      stat: 10,
+      dc: 14,
+      modifiers: {
+        ...blank,
+        cardBurns: 1,
+        sparkBurns: 1,
+        assistStats: [4],
+        soulDoorDelta: -2,
+      },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(with_.total).toBe(without.total);
+    expect(with_.modifierBreakdown).toEqual(without.modifierBreakdown);
+    expect(with_.effectiveDC).toBe(without.effectiveDC - 2);
+  });
+
   it('same seed produces identical outcomes', () => {
     const rng1 = seededRng(42);
     const rng2 = seededRng(42);
@@ -284,5 +361,134 @@ describe('acceptSetback', () => {
     const state = makeState({ position: 'yesod' });
     const next = acceptSetback(state, { playerId: 'p1', sefirah: 'yesod', shortcut: true });
     expect(next.separation).toBe(2);
+  });
+});
+
+// ──────────────── resolveChallenge × Soul Doors (#244) ────────────────
+
+describe('resolveChallenge — Soul Door auto-injection (#244)', () => {
+  // The resolver computes the Door delta from `player.zodiacSign + sefirah`
+  // when the caller hasn't supplied one explicitly. This keeps callers
+  // (UI, turn-machine, tests) from each having to know the Soul Door
+  // table. Modifies the effective DC the same way `shortcutPenalty`
+  // does — DC-side, not roll-side.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+  };
+
+  // Concrete: Pisces at Netzach (path 29: The Moon → Netzach is the
+  // only Door endpoint with a challenge). Base DC 12, after Door = 10.
+  // Stat 5 + roll 5 = 10 → fails without Door (10 < 12), passes with
+  // (10 ≥ 10).
+  it('Pisces at Netzach: DC 12 → 10 (passes a roll that would fail without)', () => {
+    const state = makeState({
+      position: 'netzach',
+      zodiacSign: 'pisces',
+      stats: statSheet({ passion: 5 }),
+    });
+    const rng = { d20: () => 5, int: () => 5 };
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(10);
+    expect(result.value.outcome.pass).toBe(true);
+  });
+
+  it('Aries at Hod (non-Door): no DC reduction', () => {
+    const state = makeState({
+      position: 'hod',
+      zodiacSign: 'aries',
+      stats: statSheet({ intellect: 5 }),
+    });
+    const rng = { d20: () => 5, int: () => 5 };
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+  });
+
+  it('player without zodiacSign: no Door injection (transitional path)', () => {
+    // During the #212 transition some players still lack a sign
+    // (#236 wires the picker; #237 makes it required). Those players
+    // get no Door discount and the resolver behaves identically to
+    // the pre-#244 path.
+    // Note: under `exactOptionalPropertyTypes`, omit the key entirely
+    // (rather than passing `undefined` literally).
+    const state = makeState({
+      position: 'netzach',
+      stats: statSheet({ passion: 5 }),
+    });
+    const rng = { d20: () => 5, int: () => 5 };
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+  });
+
+  it('caller-supplied soulDoorDelta in modifiers takes precedence', () => {
+    // If the UI has already computed and passed a delta (so its
+    // animation matches the engine's effective DC), the resolver
+    // honours it rather than recomputing. This keeps the UI as the
+    // source of truth for what the player saw.
+    const state = makeState({
+      position: 'netzach',
+      zodiacSign: 'pisces', // would auto-inject -2
+      stats: statSheet({ passion: 5 }),
+    });
+    const rng = { d20: () => 5, int: () => 5 };
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: { ...blankMods, soulDoorDelta: 0 }, // explicit 0 override
+      rng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12); // not reduced
+  });
+
+  it('shortcut + Door stack on a single check', () => {
+    // Sagittarius (Temperance, path 25: Tiferet ↔ Yesod — both Doors
+    // are challenge-bearing) on the central-pillar shortcut at Yesod.
+    // Base DC 12, +3 shortcut, -2 Door → effective 13.
+    const state = makeState({
+      position: 'yesod',
+      zodiacSign: 'sagittarius',
+      stats: statSheet({ intuition: 8 }),
+    });
+    const rng = { d20: () => 5, int: () => 5 };
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: { ...blankMods, shortcutPenalty: true },
+      rng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12 + 3 - 2);
   });
 });

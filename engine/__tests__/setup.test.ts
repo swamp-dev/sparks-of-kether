@@ -248,6 +248,60 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
   });
 });
 
+describe('initializeGame — zodiacSign persisted to PlayerState (#244)', () => {
+  // Soul Doors (Epic #240) are class-passive — they apply on every
+  // challenge, not just at setup. The class therefore has to live on
+  // PlayerState, not just PlayerSetup. This block pins the
+  // pass-through: whatever the lobby supplied, the engine state
+  // remembers.
+
+  const fillerB: PlayerSetup = {
+    id: 'p2',
+    name: 'B',
+    soulAspect: 'gevurah',
+    stats: DEFAULT_STATS,
+  };
+
+  it('copies zodiacSign from PlayerSetup to PlayerState when present', () => {
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'chesed',
+          zodiacSign: 'pisces',
+          stats: DEFAULT_STATS,
+        },
+        { ...fillerB, zodiacSign: 'aries' },
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.zodiacSign).toBe('pisces');
+    expect(state.players[1]?.zodiacSign).toBe('aries');
+  });
+
+  it('leaves zodiacSign undefined on PlayerState when absent from setup', () => {
+    // Transitional path: pre-#236 callers (hot-seat, multiplayer-flow
+    // tests, the legacy lobby) still build setups without a sign.
+    // Those players get no Door discount; the resolver auto-inject
+    // is a no-op for them.
+    const state = initializeGame({
+      players: [
+        {
+          id: 'p1',
+          name: 'A',
+          soulAspect: 'chesed',
+          stats: DEFAULT_STATS,
+        },
+        fillerB,
+      ],
+      rng: seededRng(1),
+    });
+    expect(state.players[0]?.zodiacSign).toBeUndefined();
+    expect(state.players[1]?.zodiacSign).toBeUndefined();
+  });
+});
+
 describe('initializeGame — determinism', () => {
   it('same seed produces same deal', () => {
     const a = initializeGame({

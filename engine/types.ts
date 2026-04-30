@@ -1,4 +1,4 @@
-import type { SefirahKey, StatKey } from '@/data';
+import type { SefirahKey, StatKey, ZodiacSignKey } from '@/data';
 
 /**
  * Result discriminated union for fallible engine operations.
@@ -53,6 +53,16 @@ export interface PlayerState {
    * resolution). Each flag counts remaining uses or arms a one-shot.
    */
   readonly pendingAbilities: PlayerAbilityFlags;
+  /**
+   * Zodiac-sign class (Epic #212). Optional during the #212
+   * transition: pre-#236 callers haven't wired the picker yet, so
+   * legacy / hot-seat flows produce signless players. Soul Doors
+   * (Epic #240) read this on every challenge to compute the per-Door
+   * DC discount; signless players get no discount, matching the
+   * pre-#244 behaviour. #237 will make it required when the Soul
+   * Aspect machinery is removed.
+   */
+  readonly zodiacSign?: ZodiacSignKey;
 }
 
 /**
