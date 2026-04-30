@@ -1,5 +1,6 @@
 'use client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { ZodiacSignKey } from '@/data';
 import type { Database, PlayerRow, RoomRow } from './supabase';
 import { generateRoomCode } from './room-code';
 import { query } from './supabase-query';
@@ -296,4 +297,70 @@ export async function kickPlayer(
     return { ok: false, error: { kind: 'no-row-deleted' } };
   }
   return { ok: true, value: { playerId: input.targetPlayerId } };
+}
+
+export interface UpdatePlayerError {
+  readonly kind: 'update-failed';
+  readonly cause: string;
+}
+
+/**
+ * Update the caller's `players.zodiac_sign`. Used by the multiplayer
+ * lobby's ZodiacSignPicker to record the chosen sign in Supabase.
+ *
+ * RLS contract: `players_self_update` (migration 0001) gates updates
+ * to rows where `id = auth.uid()`, so callers can only mutate their
+ * own row. We pass `playerId` explicitly rather than reading
+ * `auth.uid()` here because the browser flow already knows it from
+ * `useLobby.currentPlayerId` and a redundant round-trip is wasted.
+ *
+ * Plain update (no `.select()` chain) for the same PostgREST 12 + RLS
+ * + `Prefer: return=representation` interaction documented in
+ * `createRoom`. The Realtime channel surfaces the new value to other
+ * tabs without us needing the row back.
+ *
+ * Sign uniqueness across players is enforced by
+ * `validateAndBuildSetup` at Begin-time (and the picker disables
+ * already-taken signs client-side). The DB column has no UNIQUE
+ * constraint — two players could in theory race to claim the same
+ * sign, and the host's Begin would reject with `duplicate-zodiac-signs`.
+ */
+export async function setZodiacSign(
+  client: Client,
+  input: { readonly playerId: string; readonly sign: ZodiacSignKey },
+): Promise<Result<{ readonly playerId: string }, UpdatePlayerError>> {
+  const update = await query(client, 'players')
+    .update({ zodiac_sign: input.sign })
+    .eq('id', input.playerId);
+  if (update.error) {
+    return {
+      ok: false,
+      error: { kind: 'update-failed', cause: update.error.message },
+    };
+  }
+  return { ok: true, value: { playerId: input.playerId } };
+}
+
+/**
+ * Update the caller's `players.ready` flag. Used by the multiplayer
+ * lobby's per-player Ready toggle. The host's Begin gate watches every
+ * player's `ready` and `zodiac_sign` (plus the server-side check in
+ * `validateAndBuildSetup`).
+ *
+ * Same RLS / no-`.select()` rationale as `setZodiacSign`.
+ */
+export async function setReady(
+  client: Client,
+  input: { readonly playerId: string; readonly ready: boolean },
+): Promise<Result<{ readonly playerId: string }, UpdatePlayerError>> {
+  const update = await query(client, 'players')
+    .update({ ready: input.ready })
+    .eq('id', input.playerId);
+  if (update.error) {
+    return {
+      ok: false,
+      error: { kind: 'update-failed', cause: update.error.message },
+    };
+  }
+  return { ok: true, value: { playerId: input.playerId } };
 }

@@ -1,13 +1,19 @@
 'use client';
 import Link from 'next/link';
 import { Lobby, type LobbyPlayer } from '@/components/setup/Lobby';
+import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { useLobby } from '@/lib/use-lobby';
 import type { ZodiacSignKey } from '@/data';
 
 /**
  * Room lobby page. Thin renderer over `useLobby(code)` — the hook
- * owns data fetching, the begin-game POST, and the in-flight flag
- * that prevents double-click 409s. See `lib/use-lobby.ts`.
+ * owns data fetching, the begin-game POST, the Realtime players-row
+ * subscription, and the in-flight flag that prevents double-click 409s.
+ * See `lib/use-lobby.ts`.
+ *
+ * #265 wires the per-player ZodiacSignPicker for multiplayer; the
+ * hot-seat path in `app/play/page.tsx` keeps its own local-state
+ * picker (no Supabase round-trip needed there).
  */
 
 interface LobbyPageProps {
@@ -28,6 +34,8 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     beginning,
     refresh,
     beginGame,
+    setZodiacSign,
+    setReady,
   } = useLobby(code);
 
   if (error !== null) {
@@ -70,6 +78,59 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     );
   }
 
+  // The current player's row drives whether we render the picker or
+  // the lobby. `currentPlayerId` can be null briefly between the
+  // anon-auth bootstrap and the first players fetch; in that window
+  // the lobby renders read-only (no toggle, no picker).
+  const currentPlayer =
+    currentPlayerId !== null
+      ? players.find((p) => p.id === currentPlayerId) ?? null
+      : null;
+  const needsSignPick =
+    currentPlayer !== null && currentPlayer.zodiac_sign === null;
+
+  // `taken` mirrors the hot-seat picker's pattern (`app/play/page.tsx`):
+  // a sign already chosen by another player renders disabled in the
+  // grid with the taker's name visible, so two players can't race to
+  // the same sign client-side. The server-side gate
+  // (`validateAndBuildSetup` returns `duplicate-zodiac-signs`) is the
+  // floor — this is the friendlier UX above it.
+  const taken: Partial<Record<ZodiacSignKey, string>> = {};
+  for (const p of players) {
+    if (p.zodiac_sign !== null && p.id !== currentPlayerId) {
+      taken[p.zodiac_sign as ZodiacSignKey] = p.nickname;
+    }
+  }
+
+  const handlePick = (sign: ZodiacSignKey): void => {
+    void setZodiacSign(sign);
+  };
+
+  const handleToggleReady = (playerId: string): void => {
+    if (currentPlayer === null || playerId !== currentPlayer.id) return;
+    // Don't let a player flip ready before they've picked a sign —
+    // mirrors the server-side `missing-zodiac-sign` rejection so the
+    // gate is visible per-player, not just at Begin time.
+    if (currentPlayer.zodiac_sign === null) return;
+    void setReady(!currentPlayer.ready);
+  };
+
+  if (needsSignPick) {
+    return (
+      <main className="min-h-screen p-8 text-veil">
+        <header className="mb-6 text-center">
+          <h1 className="font-display text-3xl tracking-widest">
+            {currentPlayer.nickname} — Choose Sign
+          </h1>
+          <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">
+            {code}
+          </p>
+        </header>
+        <ZodiacSignPicker taken={taken} onPick={handlePick} />
+      </main>
+    );
+  }
+
   const lobbyPlayers: readonly LobbyPlayer[] = players.map((p) => ({
     id: p.id,
     name: p.nickname,
@@ -95,6 +156,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
         {...(currentPlayerId !== null ? { currentPlayerId } : {})}
         beginning={beginning}
         onBegin={beginGame}
+        onToggleReady={handleToggleReady}
       />
 
       <div className="mt-6 text-center">
@@ -107,7 +169,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
           Refresh
         </button>
         <p className="mt-2 text-xs opacity-40">
-          Realtime sync arrives with the next multiplayer ticket.
+          Picks and ready toggles sync across tabs in real time.
         </p>
       </div>
     </main>

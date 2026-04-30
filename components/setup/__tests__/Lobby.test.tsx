@@ -1,11 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { ZodiacSignKey } from '@/data';
 import { Lobby, type LobbyPlayer } from '../Lobby';
+
+// Default-distinct signs per id-suffix so the duplicate-zodiac-signs
+// gate (mirrors `validateAndBuildSetup`) doesn't silently disable
+// Begin in tests that don't care about signs. Tests that DO care
+// override `zodiacSign` explicitly.
+const DEFAULT_SIGNS: readonly ZodiacSignKey[] = [
+  'aries',
+  'leo',
+  'virgo',
+  'pisces',
+  'taurus',
+];
+
+function defaultSignForId(id: string): ZodiacSignKey {
+  const match = /(\d+)/.exec(id);
+  const idx = match ? Number(match[1]) - 1 : 0;
+  return DEFAULT_SIGNS[idx % DEFAULT_SIGNS.length] ?? 'aries';
+}
 
 const player = (id: string, overrides: Partial<LobbyPlayer> = {}): LobbyPlayer => ({
   id,
   name: id.toUpperCase(),
-  zodiacSign: 'aries',
+  zodiacSign: defaultSignForId(id),
   ready: false,
   ...overrides,
 });
@@ -139,6 +158,123 @@ describe('Lobby — Begin button', () => {
     expect(
       (screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled,
     ).toBe(true);
+  });
+
+  it('Begin disabled if two players share the same zodiac sign', () => {
+    // Mirrors `validateAndBuildSetup`'s `duplicate-zodiac-signs`
+    // rejection — the server rejects this shape with a raw error
+    // string, so the host needs the Begin gate (and the matching
+    // hint) to surface the conflict before the click rather than
+    // after.
+    render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[
+          player('p1', { ready: true, zodiacSign: 'aries' }),
+          player('p2', { ready: true, zodiacSign: 'aries' }),
+        ]}
+      />,
+    );
+    expect(
+      (screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+});
+
+describe('Lobby — Begin hint (host only)', () => {
+  it('shows missing-zodiac-sign hint naming the players who have not picked', () => {
+    const { container } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[
+          player('p1', { name: 'Andy', ready: true, zodiacSign: null }),
+          player('p2', { name: 'Bea', ready: true }),
+        ]}
+      />,
+    );
+    const hint = container.querySelector('[data-begin-hint="missing-zodiac-sign"]');
+    expect(hint).not.toBeNull();
+    expect(hint?.textContent).toMatch(/Andy/);
+    expect(hint?.textContent).not.toMatch(/Bea/);
+  });
+
+  it('shows duplicate-zodiac-signs hint when two players share a sign', () => {
+    // Mirrors `validateAndBuildSetup`'s `duplicate-zodiac-signs`
+    // rejection. The host needs to see why Begin is disabled
+    // before clicking — without this hint they'd hit the raw
+    // server error string only after attempting to start.
+    const { container } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[
+          player('p1', { name: 'Andy', ready: true, zodiacSign: 'aries' }),
+          player('p2', { name: 'Bea', ready: true, zodiacSign: 'aries' }),
+        ]}
+      />,
+    );
+    const hint = container.querySelector(
+      '[data-begin-hint="duplicate-zodiac-signs"]',
+    );
+    expect(hint).not.toBeNull();
+  });
+
+  it('shows not-ready hint when all signs are picked but readiness is incomplete', () => {
+    const { container } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[
+          player('p1', { name: 'Andy', ready: false }),
+          player('p2', { name: 'Bea', ready: true }),
+        ]}
+      />,
+    );
+    const hint = container.querySelector('[data-begin-hint="not-ready"]');
+    expect(hint).not.toBeNull();
+    expect(hint?.textContent).toMatch(/Andy/);
+  });
+
+  it('shows too-few-players hint with a single player', () => {
+    const { container } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[player('p1', { ready: true })]}
+      />,
+    );
+    expect(
+      container.querySelector('[data-begin-hint="too-few-players"]'),
+    ).not.toBeNull();
+  });
+
+  it('renders no hint when everyone is ready and signed', () => {
+    const { container } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[
+          player('p1', { ready: true }),
+          player('p2', { ready: true }),
+        ]}
+      />,
+    );
+    expect(container.querySelector('[data-begin-hint]')).toBeNull();
+  });
+
+  it('non-host sees no hint (begin button is hidden)', () => {
+    const { container } = render(
+      <Lobby
+        isHost={false}
+        players={[
+          player('p1', { ready: true, zodiacSign: null }),
+          player('p2', { ready: true }),
+        ]}
+      />,
+    );
+    expect(container.querySelector('[data-begin-hint]')).toBeNull();
   });
 });
 

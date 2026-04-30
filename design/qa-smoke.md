@@ -43,9 +43,9 @@
 - [ ] Room code is visible and easy to read out loud (no ambiguous characters like O vs 0).
 - [ ] Open a second browser (or incognito tab). On home page, enter the code in the join field. Click join.
 - [ ] Second tab arrives at the same lobby. Both players appear in the player list.
-- [ ] Each player can toggle their ready state. Indicator updates within 2s on the other tab.
-
-(Note: the zodiac-sign picker UI is not wired into multiplayer yet. Once the picker lands, add a check here that picks reflect cross-tab within 2s.)
+- [ ] On first arrival in the lobby, each player sees the ZodiacSignPicker (their `zodiac_sign` is null). Picks fire `setZodiacSign` and the row reflects in both tabs within ~2s via Realtime.
+- [ ] A sign already taken by another player renders disabled (with the taker's name) in the second tab's picker.
+- [ ] Each player can toggle their ready state. Indicator updates within 2s on the other tab. The Ready toggle is gated on `zodiac_sign !== null` — a player who hasn't picked sees no toggle action.
 
 ## 4. Lobby Begin happy path
 

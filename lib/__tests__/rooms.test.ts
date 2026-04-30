@@ -4,6 +4,8 @@ import {
   createRoom,
   joinRoom,
   kickPlayer,
+  setReady,
+  setZodiacSign,
 } from '../rooms';
 import type { PlayerRow, RoomRow } from '../supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -496,5 +498,95 @@ describe('kickPlayer', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('no-row-deleted');
+  });
+});
+
+/**
+ * Helper for `setZodiacSign` / `setReady` tests. Both mutations use
+ * `query(client, 'players').update(...).eq('id', playerId)` and await
+ * the chain directly. The stub mirrors that exactly.
+ */
+interface UpdateChainCalls {
+  readonly updates: unknown[];
+  readonly eqArgs: { col: string; val: string }[];
+}
+
+function makeUpdateClient(
+  result: { data?: unknown; error: { message: string } | null },
+  calls: UpdateChainCalls,
+): SupabaseClient {
+  return {
+    from: () => ({
+      update: (row: unknown) => {
+        (calls.updates as unknown[]).push(row);
+        return {
+          eq: (col: string, val: string) => {
+            (calls.eqArgs as { col: string; val: string }[]).push({ col, val });
+            return Promise.resolve({ data: result.data ?? null, error: result.error });
+          },
+        };
+      },
+    }),
+  } as unknown as SupabaseClient;
+}
+
+describe('setZodiacSign', () => {
+  it('issues UPDATE players SET zodiac_sign WHERE id = playerId', async () => {
+    const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
+    const client = makeUpdateClient({ error: null }, calls);
+    const result = await setZodiacSign(client, {
+      playerId: 'p1',
+      sign: 'aries',
+    });
+    expect(result.ok).toBe(true);
+    expect(calls.updates).toEqual([{ zodiac_sign: 'aries' }]);
+    expect(calls.eqArgs).toEqual([{ col: 'id', val: 'p1' }]);
+  });
+
+  it('surfaces a Postgres error as update-failed', async () => {
+    const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
+    const client = makeUpdateClient(
+      { error: { message: 'permission denied' } },
+      calls,
+    );
+    const result = await setZodiacSign(client, {
+      playerId: 'p1',
+      sign: 'leo',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('update-failed');
+    expect(result.error.cause).toMatch(/permission denied/);
+  });
+});
+
+describe('setReady', () => {
+  it('issues UPDATE players SET ready WHERE id = playerId', async () => {
+    const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
+    const client = makeUpdateClient({ error: null }, calls);
+    const result = await setReady(client, { playerId: 'p1', ready: true });
+    expect(result.ok).toBe(true);
+    expect(calls.updates).toEqual([{ ready: true }]);
+    expect(calls.eqArgs).toEqual([{ col: 'id', val: 'p1' }]);
+  });
+
+  it('can clear readiness with ready=false', async () => {
+    const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
+    const client = makeUpdateClient({ error: null }, calls);
+    await setReady(client, { playerId: 'p2', ready: false });
+    expect(calls.updates).toEqual([{ ready: false }]);
+  });
+
+  it('surfaces a Postgres error as update-failed', async () => {
+    const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
+    const client = makeUpdateClient(
+      { error: { message: 'connection reset' } },
+      calls,
+    );
+    const result = await setReady(client, { playerId: 'p1', ready: true });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('update-failed');
+    expect(result.error.cause).toMatch(/connection reset/);
   });
 });

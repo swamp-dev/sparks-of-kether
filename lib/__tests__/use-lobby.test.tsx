@@ -32,6 +32,57 @@ let fetchResponse: { ok: boolean; status: number; jsonBody: unknown } = {
   jsonBody: {},
 };
 
+interface UpdateCall {
+  table: string;
+  row: unknown;
+  eq: { col: string; val: string } | null;
+}
+let updateCalls: UpdateCall[] = [];
+let updateResponse: { error: { message: string } | null } = { error: null };
+
+interface FakeChannel {
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+  fireRow: (event: 'INSERT' | 'UPDATE' | 'DELETE', row: unknown, old?: unknown) => void;
+}
+let channelHandler:
+  | ((payload: { eventType: string; new: unknown; old: unknown }) => void)
+  | null = null;
+let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
+
+function makeFakeChannel(): FakeChannel {
+  const channel: FakeChannel = {
+    on: vi.fn(function (
+      this: FakeChannel,
+      _event: string,
+      _filter: unknown,
+      handler: (payload: {
+        eventType: string;
+        new: unknown;
+        old: unknown;
+      }) => void,
+    ) {
+      channelHandler = handler;
+      return this;
+    }),
+    subscribe: vi.fn(function (
+      this: FakeChannel,
+      cb?: (status: string) => void,
+    ) {
+      // Defer so the React effect can settle. The callback is
+      // optional in the Supabase client's runtime API; the lobby
+      // hook doesn't pass one.
+      if (cb !== undefined) {
+        setTimeout(() => cb(channelSubscribeStatus), 0);
+      }
+      return this;
+    }),
+    fireRow: (event, row, old) =>
+      channelHandler?.({ eventType: event, new: row, old: old ?? null }),
+  };
+  return channel;
+}
+
 vi.mock('../supabase', async (importActual) => {
   const actual = await importActual<typeof SupabaseModule>();
   return {
@@ -41,6 +92,8 @@ vi.mock('../supabase', async (importActual) => {
         getUser: vi.fn(async () => userResult),
         getSession: vi.fn(async () => sessionResult),
       },
+      channel: () => makeFakeChannel(),
+      removeChannel: vi.fn(),
       from: (table: string) => ({
         select: () => ({
           eq: () => {
@@ -50,6 +103,12 @@ vi.mock('../supabase', async (importActual) => {
               return { maybeSingle: async () => roomResponse };
             }
             return { order: async () => playersResponse };
+          },
+        }),
+        update: (row: unknown) => ({
+          eq: (col: string, val: string) => {
+            updateCalls.push({ table, row, eq: { col, val } });
+            return Promise.resolve({ data: null, error: updateResponse.error });
           },
         }),
       }),
@@ -99,6 +158,10 @@ describe('useLobby', () => {
     };
     fetchCalls = [];
     fetchResponse = { ok: true, status: 200, jsonBody: {} };
+    updateCalls = [];
+    updateResponse = { error: null };
+    channelHandler = null;
+    channelSubscribeStatus = 'SUBSCRIBED';
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
@@ -220,6 +283,148 @@ describe('useLobby', () => {
     await waitFor(() => expect(result.current.beginning).toBe(false));
     // Only one POST went out.
     expect(fetchCalls).toHaveLength(1);
+  });
+
+  it('setZodiacSign() updates the players row for the current player', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    let mutation: { ok: boolean } | undefined;
+    await act(async () => {
+      mutation = await result.current.setZodiacSign('aries');
+    });
+    expect(mutation?.ok).toBe(true);
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]).toMatchObject({
+      table: 'players',
+      row: { zodiac_sign: 'aries' },
+      eq: { col: 'id', val: 'p1' },
+    });
+  });
+
+  it('setZodiacSign() returns ok=false when not signed in', async () => {
+    userResult = { data: { user: null } };
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.error).toBeNull());
+
+    let mutation: { ok: boolean } | undefined;
+    await act(async () => {
+      mutation = await result.current.setZodiacSign('aries');
+    });
+    expect(mutation?.ok).toBe(false);
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it('setReady() flips the players.ready flag', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    await act(async () => {
+      await result.current.setReady(true);
+    });
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]).toMatchObject({
+      table: 'players',
+      row: { ready: true },
+      eq: { col: 'id', val: 'p1' },
+    });
+  });
+
+  it('a Realtime UPDATE on the players channel patches that player in state', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+    await waitFor(() => expect(channelHandler).not.toBeNull());
+
+    expect(result.current.players[1]?.zodiac_sign).toBe('leo');
+    channelHandler?.({
+      eventType: 'UPDATE',
+      new: {
+        id: 'p2',
+        room_id: 'room-uuid',
+        nickname: 'Bea',
+        zodiac_sign: 'scorpio',
+        ready: true,
+        seat: 1,
+        joined_at: 't',
+      },
+      old: null,
+    });
+    await waitFor(() => {
+      expect(result.current.players[1]?.zodiac_sign).toBe('scorpio');
+    });
+    // Other players are untouched.
+    expect(result.current.players[0]?.zodiac_sign).toBe('aries');
+  });
+
+  it('a Realtime INSERT appends the new player', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+    await waitFor(() => expect(channelHandler).not.toBeNull());
+
+    expect(result.current.players).toHaveLength(2);
+    channelHandler?.({
+      eventType: 'INSERT',
+      new: {
+        id: 'p3',
+        room_id: 'room-uuid',
+        nickname: 'Cy',
+        zodiac_sign: null,
+        ready: false,
+        seat: 2,
+        joined_at: 't',
+      },
+      old: null,
+    });
+    await waitFor(() => {
+      expect(result.current.players).toHaveLength(3);
+    });
+    // Sorted by seat — Cy lands at index 2.
+    expect(result.current.players[2]?.id).toBe('p3');
+  });
+
+  it('a Realtime DELETE removes the player', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+    await waitFor(() => expect(channelHandler).not.toBeNull());
+
+    channelHandler?.({
+      eventType: 'DELETE',
+      new: null,
+      old: {
+        id: 'p2',
+        room_id: 'room-uuid',
+        nickname: 'Bea',
+        zodiac_sign: 'leo',
+        ready: true,
+        seat: 1,
+        joined_at: 't',
+      },
+    });
+    await waitFor(() => {
+      expect(result.current.players).toHaveLength(1);
+    });
+    expect(result.current.players[0]?.id).toBe('p1');
+  });
+
+  it('Realtime CHANNEL_ERROR sets an error message instead of silently failing', async () => {
+    // Without a status callback the hook silently stops receiving
+    // updates on a CHANNEL_ERROR; the host stares at a Begin that
+    // never lights up. The fix surfaces an error string so the
+    // failure has a paper trail.
+    channelSubscribeStatus = 'CHANNEL_ERROR';
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {
+        /* swallow during this test */
+      });
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    await waitFor(() => {
+      expect(result.current.error).toMatch(/realtime/i);
+    });
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it('refresh() re-fetches room + players', async () => {

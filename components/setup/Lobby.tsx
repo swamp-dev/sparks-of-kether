@@ -58,10 +58,22 @@ export function Lobby({
   beginning = false,
   className,
 }: LobbyProps): JSX.Element {
+  // Mirrors `validateAndBuildSetup` (`lib/start-game.ts`): a duplicate
+  // sign across players is a server-side rejection (`duplicate-zodiac-signs`).
+  // Without this gate, two players who race to pick the same sign during
+  // the ~500ms-2s Realtime propagation window can both end up with
+  // `zodiacSign !== null`, the host clicks Begin, and the server returns
+  // a raw error string. Gating Begin (and surfacing a hint) closes the
+  // race at the UI layer.
+  const pickedSigns = players
+    .map((p) => p.zodiacSign)
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+  const hasDuplicateSigns = new Set(pickedSigns).size < pickedSigns.length;
   const allReady =
     players.length >= 2 &&
     players.length <= 4 &&
-    players.every((p) => p.ready && p.zodiacSign !== null);
+    players.every((p) => p.ready && p.zodiacSign !== null) &&
+    !hasDuplicateSigns;
   const canBegin =
     isHost && allReady && onBegin !== undefined && !beginning;
 
@@ -119,7 +131,7 @@ export function Lobby({
       </ul>
 
       {isHost ? (
-        <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex flex-col items-center gap-2">
           <button
             type="button"
             onClick={canBegin ? onBegin : undefined}
@@ -129,10 +141,101 @@ export function Lobby({
           >
             {beginning ? 'Beginning…' : 'Begin'}
           </button>
+          <BeginHint players={players} />
         </div>
       ) : null}
     </section>
   );
+}
+
+/**
+ * Mirror of `validateAndBuildSetup`'s rejection cases (`lib/start-game.ts`)
+ * — surfaces the same gates the server enforces so the host knows why
+ * Begin is disabled. Without this the host stares at a greyed-out
+ * button and has to guess.
+ *
+ * Order of precedence: too-few/too-many players → missing-zodiac-sign
+ * → duplicate-zodiac-signs → not-ready. The duplicate check sits after
+ * missing-sign (we can only diagnose duplicates once everyone has
+ * picked) and before not-ready (a duplicate is the louder gate — no
+ * amount of readying up will let Begin go through). We only render one
+ * hint at a time to keep the call to action focused.
+ */
+function BeginHint({
+  players,
+}: {
+  players: readonly LobbyPlayer[];
+}): JSX.Element | null {
+  if (players.length < 2) {
+    return (
+      <p
+        data-begin-hint="too-few-players"
+        className="text-xs uppercase tracking-widest opacity-60"
+      >
+        Need at least 2 players
+      </p>
+    );
+  }
+  if (players.length > 4) {
+    return (
+      <p
+        data-begin-hint="too-many-players"
+        className="text-xs uppercase tracking-widest opacity-60"
+      >
+        Cap is 4 players
+      </p>
+    );
+  }
+  const missingSign = players.filter((p) => p.zodiacSign === null);
+  if (missingSign.length > 0) {
+    return (
+      <p
+        data-begin-hint="missing-zodiac-sign"
+        className="text-center text-xs uppercase tracking-widest opacity-60"
+      >
+        Waiting on {missingSign.map((p) => p.name).join(', ')} to choose a sign
+      </p>
+    );
+  }
+  // Duplicate detection: every player has picked a sign at this point;
+  // a duplicate means at least two players collided on the same sign,
+  // which `validateAndBuildSetup` rejects with `duplicate-zodiac-signs`.
+  // The Realtime sync window between picker → DB → peer hook makes this
+  // a routine race in 2-player co-op flow; surfacing it here closes the
+  // gap before the host's click.
+  const pickedSigns = players
+    .map((p) => p.zodiacSign)
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const s of pickedSigns) {
+    if (seen.has(s)) {
+      duplicates.add(s);
+    }
+    seen.add(s);
+  }
+  if (duplicates.size > 0) {
+    return (
+      <p
+        data-begin-hint="duplicate-zodiac-signs"
+        className="text-center text-xs uppercase tracking-widest opacity-60"
+      >
+        Each player needs a unique sign
+      </p>
+    );
+  }
+  const notReady = players.filter((p) => !p.ready);
+  if (notReady.length > 0) {
+    return (
+      <p
+        data-begin-hint="not-ready"
+        className="text-center text-xs uppercase tracking-widest opacity-60"
+      >
+        Waiting on {notReady.map((p) => p.name).join(', ')} to ready up
+      </p>
+    );
+  }
+  return null;
 }
 
 function ReadyIndicator({
