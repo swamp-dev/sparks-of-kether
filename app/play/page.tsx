@@ -1,8 +1,9 @@
 'use client';
 import { useMemo, useState } from 'react';
-import type { SoulAspectKey } from '@/data';
+import type { SoulAspectKey, ZodiacSignKey } from '@/data';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
 import { SoulAspectPicker } from '@/components/setup/SoulAspectPicker';
+import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { Lobby } from '@/components/setup/Lobby';
 import type { LobbyPlayer } from '@/components/setup/Lobby';
 import { PlayScreen } from '@/components/game/PlayScreen';
@@ -14,20 +15,32 @@ import type { StatSheet } from '@/engine/types';
 
 /**
  * The actual play surface. Single-page state machine that walks each
- * player through the setup pipeline (blessing → aspect) for both
- * players in turn, then transitions to the lobby, and on Begin
+ * player through the setup pipeline (blessing → aspect → sign) for
+ * both players in turn, then transitions to the lobby, and on Begin
  * hands off to `PlayScreen`.
+ *
+ * #236 (T7) added the zodiac-sign phase between aspect and the next
+ * player's ritual / lobby. T8 will remove the aspect phase entirely
+ * once the Soul Aspect machinery is gone; until then both pickers
+ * run. PlayerSetup carries both `soulAspect` and `zodiacSign`
+ * through to `initializeGame`.
  *
  * Hot-seat for now (no multiplayer routing). Phase 5 swaps the local
  * state machine for room-based state coming from Supabase.
  */
 
-type SetupSlot =
-  | { readonly id: string; readonly name: string; readonly stats?: StatSheet; readonly soulAspect?: SoulAspectKey };
+interface SetupSlot {
+  readonly id: string;
+  readonly name: string;
+  readonly stats?: StatSheet;
+  readonly soulAspect?: SoulAspectKey;
+  readonly zodiacSign?: ZodiacSignKey;
+}
 
 type Phase =
   | { readonly kind: 'ritual'; readonly playerIndex: 0 | 1 }
   | { readonly kind: 'aspect'; readonly playerIndex: 0 | 1 }
+  | { readonly kind: 'sign'; readonly playerIndex: 0 | 1 }
   | { readonly kind: 'lobby' }
   | { readonly kind: 'play'; readonly setupComplete: PlayerSetup[] };
 
@@ -66,6 +79,16 @@ export default function PlayPage(): JSX.Element {
       next[idx] = { ...slot, soulAspect: aspect };
       return next;
     });
+    setPhase({ kind: 'sign', playerIndex: idx });
+  };
+
+  const finishSign = (idx: 0 | 1, sign: ZodiacSignKey): void => {
+    setSlots((prev) => {
+      const next = [...prev] as [SetupSlot, SetupSlot];
+      const slot = next[idx];
+      next[idx] = { ...slot, zodiacSign: sign };
+      return next;
+    });
     if (idx === 0) {
       setPhase({ kind: 'ritual', playerIndex: 1 });
     } else {
@@ -75,13 +98,32 @@ export default function PlayPage(): JSX.Element {
 
   const beginGame = (): void => {
     const setupComplete: PlayerSetup[] = slots.map((s) => {
-      if (!s.stats || !s.soulAspect) {
-        throw new Error('Lobby Begin reached without complete setup');
+      // Diagnostic-grade error: name the player and the missing
+      // field(s) so a setup-flow regression is debuggable from the
+      // exception alone. The Lobby's `ready` gate should already
+      // prevent this branch — if we reach it, something upstream
+      // bypassed the gate. The single `||` guard doubles as type
+      // narrowing for TS so the return-statement fields are
+      // proven non-undefined.
+      if (
+        s.stats === undefined ||
+        s.soulAspect === undefined ||
+        s.zodiacSign === undefined
+      ) {
+        const missing = [
+          s.stats === undefined ? 'stats' : null,
+          s.soulAspect === undefined ? 'soulAspect' : null,
+          s.zodiacSign === undefined ? 'zodiacSign' : null,
+        ].filter((f): f is string => f !== null);
+        throw new Error(
+          `Lobby Begin reached without complete setup for ${s.name}: missing ${missing.join(', ')}`,
+        );
       }
       return {
         id: s.id,
         name: s.name,
         soulAspect: s.soulAspect,
+        zodiacSign: s.zodiacSign,
         stats: s.stats,
       };
     });
@@ -117,12 +159,44 @@ export default function PlayPage(): JSX.Element {
     );
   }
 
+  if (phase.kind === 'sign') {
+    // #236: zodiac-sign picker (Epic #212 T6). Mounts after the
+    // aspect pick; the chosen sign is plumbed into PlayerSetup.zodiac-
+    // Sign so initializeGame's zodiac-bonus pass picks it up.
+    const taken: Partial<Record<ZodiacSignKey, string>> = {};
+    for (const s of slots) {
+      if (s.zodiacSign) taken[s.zodiacSign] = s.name;
+    }
+    return (
+      <main className="min-h-screen p-8 text-veil">
+        {/*
+          PhaseHeader title is intentionally distinct from the
+          picker's own h2 ("Choose your sign") so e2e selectors that
+          match by heading text don't collide. Mirrors the
+          SoulAspectPicker pattern: PhaseHeader "Choose Soul Aspect"
+          vs. picker "Choose your Soul Aspect".
+        */}
+        <PhaseHeader title={`${slots[phase.playerIndex].name} — Choose Sign`} />
+        <ZodiacSignPicker
+          taken={taken}
+          onPick={(s) => finishSign(phase.playerIndex, s)}
+        />
+      </main>
+    );
+  }
+
   if (phase.kind === 'lobby') {
     const lobbyPlayers: readonly LobbyPlayer[] = slots.map((s) => ({
       id: s.id,
       name: s.name,
       soulAspect: s.soulAspect ?? null,
-      ready: s.stats !== undefined && s.soulAspect !== undefined,
+      // Begin gates on a complete setup: stats + aspect + sign. T8
+      // will drop the aspect requirement when Soul Aspects are
+      // removed entirely.
+      ready:
+        s.stats !== undefined &&
+        s.soulAspect !== undefined &&
+        s.zodiacSign !== undefined,
     }));
     return (
       <main className="min-h-screen p-8 text-veil">

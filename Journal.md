@@ -3621,3 +3621,19 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (68 files / 998 passed / 1 todo), build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** `f3d4938` (impl), `a931a1a` (review fix)
+
+## 2026-04-29T20:58:42-04:00 — #236: T7 — wire ZodiacSignPicker into hot-seat setup pipeline
+
+**Pushed:** New `sign` phase between `aspect` and the next player's ritual / lobby. Both pickers run during the #212 transition; T8 will remove `aspect` entirely. PlayerSetup now carries both `soulAspect` and `zodiacSign` from the hot-seat flow into `initializeGame`.
+
+**Why:** Sub-ticket T7 of Epic #212. Unblocks T8 (#237) — the Soul Aspect machinery removal.
+
+**Notes:**
+- Phase machine: `ritual(p1) → aspect(p1) → sign(p1) → ritual(p2) → aspect(p2) → sign(p2) → lobby → play`. `finishSign` handles the boundary at idx=1 → lobby and idx=0 → ritual(p2).
+- e2e test updated to walk through both pickers; chooses Aries for P1 and Leo for P2.
+- Multiplayer flow (`lib/start-game.ts`) intentionally untouched — adding zodiac sign to the multiplayer path would require a Supabase schema migration, which is out of T7's scope. T8 will migrate the multiplayer path along with the column removal.
+- Code-reviewer first pass found beginGame's error message was non-diagnostic (didn't name player or missing field). Fixed in `2b15e23` along with an e2e blocker that ci:local actually surfaced: the PhaseHeader title and the picker's own h2 both contained "Choose your sign", so the e2e `getByRole('heading', { name: /Choose your sign/i })` got two matches. Mirrored the SoulAspectPicker pattern (PhaseHeader "Choose Sign" vs picker "Choose your sign") to dodge the collision.
+- Re-review's "dead code" call on the new error guard turned out to be load-bearing for TS narrowing; restructured to single-pass narrowing-plus-enumeration in `ed1a232` — same behaviour, cleaner shape.
+- Full `pnpm ci:local`: post-fix, all jobs green.
+
+**Commit(s):** `d555b5e` (impl), `2b15e23` (e2e + diagnostic fix), `ed1a232` (narrowing cleanup)

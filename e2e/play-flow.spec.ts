@@ -4,8 +4,13 @@ import { test, expect } from '@playwright/test';
  * End-to-end integration test for the play flow.
  *
  * Walks through:
- *   home → /play → P1 ritual (10 steps) → P1 aspect pick → P2 ritual
- *   → P2 aspect pick → lobby → Begin → play screen renders
+ *   home → /play → P1 ritual (10 steps) → P1 aspect pick → P1 sign pick
+ *   → P2 ritual → P2 aspect pick → P2 sign pick → lobby → Begin →
+ *   play screen renders
+ *
+ * #236 (T7): added the zodiac-sign phase between aspect and next-
+ * player. T8 will remove the aspect phase entirely; until then both
+ * pickers run.
  *
  * This is the test that exists specifically to catch the integration
  * bugs unit tests can't see — prop-shape mismatches between engine
@@ -65,6 +70,15 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
       .getByRole('button', { name: new RegExp(aspectName, 'i') })
       .first()
       .click();
+    await page.getByRole('button', { name: /^Confirm$/ }).click();
+
+    // #236: zodiac-sign picker comes next.
+    await expect(
+      page.getByRole('heading', { name: /Choose your sign/i }),
+    ).toBeVisible();
+    // P1 picks Aries; P2 picks Leo — both available, both distinct.
+    const signKey = player === 1 ? 'aries' : 'leo';
+    await page.locator(`[data-sign="${signKey}"]`).click();
     await page.getByRole('button', { name: /^Confirm$/ }).click();
   }
 
