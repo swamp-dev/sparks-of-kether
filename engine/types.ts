@@ -150,7 +150,49 @@ export interface GameState {
    * (3) emits the corresponding event. Balance moves are neutral.
    */
   readonly pillarStreak: PillarStreakState;
+  /**
+   * Modifiers staged during a challenge's `prep` sub-phase but not yet
+   * locked in. Empty whenever no challenge is active and during the
+   * `resolve`/`react` arc of the next challenge — cleared when phase
+   * leaves `'challenge'`. Lives on `GameState` (not `TurnSnapshot`)
+   * so it round-trips through the multiplayer Realtime channel:
+   * allies see staged modifiers in real time, which is the
+   * coordination win in `design/encounter-prep-phase.md` § 1.
+   *
+   * No validation, no consumption during prep — cards stay in hand,
+   * Sparks stay held, ally state untouched. Validation and consumption
+   * happen at `prep-confirm` (see `lib/turn-machine.ts`).
+   */
+  readonly pendingModifiers: PendingModifiers;
 }
+
+/**
+ * Modifiers declared but not yet committed during a challenge's prep
+ * sub-phase. See `design/encounter-prep-phase.md` § 4.
+ */
+export interface PendingModifiers {
+  /** Arcanum numbers staged for card-burn. */
+  readonly cardBurns: readonly number[];
+  /**
+   * Sparks staged for spark-burn. `sourcePlayerId` is the player whose
+   * Spark will be consumed at confirm — usually the active player, but
+   * an ally can offer a Spark by agreeing out of band, then the active
+   * player stages it on their behalf.
+   */
+  readonly sparkBurns: readonly {
+    readonly sefirah: SefirahKey;
+    readonly sourcePlayerId: string;
+  }[];
+  /** Ally playerIds staged to assist. Capped at 2 per challenge. */
+  readonly assistRequests: readonly string[];
+}
+
+/** Canonical empty `PendingModifiers` for new games / between challenges. */
+export const EMPTY_PENDING_MODIFIERS: PendingModifiers = {
+  cardBurns: [],
+  sparkBurns: [],
+  assistRequests: [],
+};
 
 /**
  * Pillar-streak position. Two counters move in parallel:

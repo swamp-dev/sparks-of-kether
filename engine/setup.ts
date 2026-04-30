@@ -3,6 +3,7 @@ import type { StatKey, ZodiacSignKey } from '@/data';
 import type { Rng } from './rng';
 import {
   EMPTY_ABILITY_FLAGS,
+  EMPTY_PENDING_MODIFIERS,
   EMPTY_PILLAR_STREAK,
   EMPTY_SHELL_STATE,
 } from './types';
@@ -199,5 +200,6 @@ export function initializeGame(input: InitializeGameInput): GameState {
     shells: EMPTY_SHELL_STATE,
     shellsDeflected: 0,
     pillarStreak: EMPTY_PILLAR_STREAK,
+    pendingModifiers: EMPTY_PENDING_MODIFIERS,
   };
 }

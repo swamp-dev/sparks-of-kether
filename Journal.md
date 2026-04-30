@@ -3718,3 +3718,21 @@ don't reach naturally. Centralised them.
 **Notes:** Force-pushed (with `--force-with-lease`) because the branch was rebased onto post-Track-2 main to resolve a Journal.md merge conflict. The branch was created today and only the parent agent has been pushing to it — no co-author work to overwrite. Pre-push hook (`pnpm ci:local:fast`) passed.
 
 **Commit(s):** `63fcb96`
+
+## 2026-04-29T23:21:00-04:00 — #226: E1 — split challenge phase into prep|resolve|react sub-phases
+
+**Pushed:** Engine keystone for Epic #117 — `lib/turn-machine.ts` reducer split, `engine/types.ts` new `PendingModifiers` field on `GameState`. Top-level `TurnPhase` unchanged; new `ChallengeSubPhase = 'prep' | 'resolve' | 'react'` field on `TurnSnapshot`, plus `lastOutcome?: CheckOutcome` to gate `react-retry` on a failed roll only. Four new `TurnEvent` cases — `prep-add-modifier`, `prep-remove-modifier`, `prep-confirm`, `react-retry` — and the legacy `submit-challenge` arm kept as a deprecated shim until E4 (#229) migrates `useTurn`. 22 new tests (turn-machine: 975 → 997).
+
+**Why:** Sub-ticket E1 of Epic #117. The keystone — E2 (#227 wire format), E4 (#229 useTurn adapter), and E3 (#228 EncounterScreen) all consume the new sub-phase shape. `submit-challenge` engine event will be deleted by E4.
+
+**Notes:**
+- Multi-subagent execution: a general-purpose agent did the TDD work (failing test → impl → edge-case commits), `code-reviewer` ran twice (initial + post-fix re-review), final verification on host.
+- Code-reviewer pass 1 caught **two SIGNIFICANT blockers**:
+  - The agent had touched `lib/use-turn.ts` to keep typecheck green after deleting the engine `submit-challenge` event — design § 8 explicitly forbids E1 modifying `use-turn.ts` (E4 owns it). Worse, the bridge silently dropped the `modifiers` parameter via `void modifiers`, so any hot-seat card-burn declared in `ChallengeModal` would have rolled with zero effect. Fix in `44c41fd`: revert `use-turn.ts` byte-identical to `main`; reintroduce `submit-challenge` as a deprecated `TurnEvent` arm in the reducer that calls `resolveChallenge` with pre-built modifiers directly.
+  - `prep-confirm` was clearing `pendingModifiers` on both pass and fail paths, breaking design § 6's cumulative-stacking semantic. Comment claimed retry "preserved" modifiers; implementation didn't. Fix: only clear on pass; on fail let them survive so `react-retry` returns to prep with the stacked burns visible. Round-trip test pins the semantic by feeding each step's `result.value.next` to the next dispatch (no snapshot pre-loading).
+- Code-reviewer pass 2 (re-review after fix-up) verdict: ship — all six fix items confirmed, no new issues.
+- **Pre-existing engine gap, not introduced by E1:** neither the old `submit-challenge` flow nor the new `prep-confirm` flow moves burned cards from hand to discard pile. `engine/checks.ts:resolveChallenge` reads `cardBurns` as a count only. Players can stack the same arcanum across challenges. Candidate fix: a follow-up against `engine/checks.ts`, or fold into E2 if the wire format makes it natural.
+- **Known gap for E4:** new `TurnReducerError` kinds (`wrong-sub-phase`, `prep-cap-exceeded`, `react-retry-on-pass`) are not handled by `useTurn`'s public surface — they get converted to `SYNTHETIC_*` rejections. E4 should add explicit branches when migrating.
+- Full `pnpm ci:local`: verify ✓ (68 files / 997 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
+
+**Commit(s):** `89800d2` (failing tests), `d350448` (impl), `35eb1de` (edge cases), `44c41fd` (review fixes — revert use-turn.ts + preserve pendingModifiers on fail)

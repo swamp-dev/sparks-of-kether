@@ -1,6 +1,11 @@
 import type { StatKey, ZodiacSignKey } from '@/data';
 import type { GameState, PlayerState, StatSheet } from '@/engine/types';
-import { EMPTY_ABILITY_FLAGS, EMPTY_PILLAR_STREAK, EMPTY_SHELL_STATE } from '@/engine/types';
+import {
+  EMPTY_ABILITY_FLAGS,
+  EMPTY_PENDING_MODIFIERS,
+  EMPTY_PILLAR_STREAK,
+  EMPTY_SHELL_STATE,
+} from '@/engine/types';
 import { initializeGame, type PlayerSetup } from '@/engine/setup';
 import { seededRng } from '@/engine/rng';
 import type { RoomRow } from '@/lib/supabase';
@@ -81,6 +86,7 @@ export function makeState(
     shells: EMPTY_SHELL_STATE,
     shellsDeflected: 0,
     pillarStreak: EMPTY_PILLAR_STREAK,
+    pendingModifiers: EMPTY_PENDING_MODIFIERS,
     ...stateOverrides,
   };
 }

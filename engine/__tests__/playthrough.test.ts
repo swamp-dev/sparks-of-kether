@@ -104,8 +104,11 @@ describe('playthrough — win path (2 players)', () => {
   });
 
   it('is deterministic when actions consume RNG (seed-0 default)', () => {
-    // The action sequence below ends with a submit-challenge that
-    // does NOT pass an explicit `outcome`, so `resolveChallenge`
+    // The action sequence below ends with a submit-challenge ClientAction
+    // (the dispatcher path; #226 split the engine `TurnEvent` into
+    // prep|resolve|react but the wire format still uses this kind
+    // until E2 lands) that does NOT pass an explicit `outcome`, so
+    // `resolveChallenge`
     // rolls a d20 from the scenario's seeded RNG. `scenario.run()`
     // constructs a fresh `seededRng(0)` per call — so the same
     // chain run twice should produce structurally equal states.
