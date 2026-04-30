@@ -428,6 +428,7 @@ function buildChallengeContext(
     availableAllies: allies,
     availableCardBurns: player.hand.length,
     availableSparkBurns: player.sparksHeld.size,
+    playerSign: player.zodiacSign,
     ...(doorDelta !== 0 ? { soulDoorDelta: doorDelta } : {}),
     ...(isShortcut ? { shortcut: true } : {}),
   };

@@ -1010,3 +1010,309 @@ describe('EncounterScreen — prefers-reduced-motion respect', () => {
     }
   });
 });
+
+/**
+ * Avatar verdict + player-response copy (#277). The parent
+ * EncounterScreen picks a variant via the seeded rng and stores it
+ * in component state; PrepPanel renders the player-response above
+ * the Roll button (`[data-player-response]`) and ReactPanel renders
+ * the avatar's verdict in `[data-avatar-verdict]` with the avatar
+ * name in `[data-avatar-name]`.
+ *
+ * Pinning data → DOM mapping for 3 Sefirot × 3 signs (Hermes/Hod ×
+ * Aries pass; Aphrodite/Netzach × Pisces pass; Ares/Gevurah ×
+ * Capricorn fail). A custom rng that always returns the lower bound
+ * makes the picker pick variant 0, which we can pin against the
+ * data file.
+ */
+describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
+  // Custom rng that always picks variant 0 from any range, but
+  // returns 20 for d20 calls (so the pre-roll passes with stat 18).
+  // The picker uses `int(0, length-1)`; rollCheck uses `d20()`.
+  function makePinningRng(d20: number): {
+    int: (min: number, max: number) => number;
+    d20: () => number;
+  } {
+    return {
+      int: (min: number, _max: number): number => min,
+      d20: (): number => d20,
+    };
+  }
+
+  it('renders Hermes verdict for Hod × Aries pass', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = makePinningRng(20);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{
+            sefirah: 'hod',
+            stat: 18,
+            statLabel: 'Intellect',
+            availableAllies: [],
+            availableCardBurns: 0,
+            availableSparkBurns: 0,
+            playerSign: 'aries',
+          }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      // Player-response renders in prep, picked from variant 0.
+      const prepResponse = document.querySelector('[data-player-response]');
+      expect(prepResponse?.textContent).toContain(
+        "Just say what you mean, messenger.",
+      );
+
+      // Roll → resolve animation → react reveal.
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+
+      const verdict = document.querySelector('[data-avatar-verdict]');
+      const avatarName = document.querySelector('[data-avatar-name]');
+      expect(avatarName?.textContent).toBe('Hermes:');
+      expect(verdict?.textContent).toContain(
+        "You charged the answer like a ram",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('renders Aphrodite verdict for Netzach × Pisces pass', () => {
+    vi.useFakeTimers();
+    try {
+      const base = makeFullGame({ playerCount: 2, seed: 1 });
+      const activeIdx = base.players.findIndex(
+        (p) => p.id === base.activePlayerId,
+      );
+      const players = base.players.map((p, idx) =>
+        idx === activeIdx
+          ? { ...p, position: 'netzach' as const, stats: { ...p.stats, passion: 18 } }
+          : p,
+      );
+      const state: GameState = {
+        ...base,
+        players,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+        pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+        lastOutcome: undefined,
+      };
+      const rng = makePinningRng(20);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{
+            sefirah: 'netzach',
+            stat: 18,
+            statLabel: 'Passion',
+            availableAllies: [],
+            availableCardBurns: 0,
+            availableSparkBurns: 0,
+            playerSign: 'pisces',
+          }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      const prepResponse = document.querySelector('[data-player-response]');
+      expect(prepResponse?.textContent).toContain(
+        "I'm in the want already, Aphrodite.",
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+
+      const verdict = document.querySelector('[data-avatar-verdict]');
+      const avatarName = document.querySelector('[data-avatar-name]');
+      expect(avatarName?.textContent).toBe('Aphrodite:');
+      expect(verdict?.textContent).toContain(
+        "You let the want come through you",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('renders Ares fail verdict for Gevurah × Capricorn fail', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = makePinningRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          // Stat 1 vs DC 15 — guaranteed fail.
+          context={{
+            sefirah: 'gevurah',
+            stat: 1,
+            statLabel: 'Strength',
+            availableAllies: [],
+            availableCardBurns: 0,
+            availableSparkBurns: 0,
+            playerSign: 'capricorn',
+          }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      const prepResponse = document.querySelector('[data-player-response]');
+      expect(prepResponse?.textContent).toContain(
+        "Give me the spec, Ares.",
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+
+      const verdict = document.querySelector('[data-avatar-verdict]');
+      const avatarName = document.querySelector('[data-avatar-name]');
+      expect(avatarName?.textContent).toBe('Ares:');
+      expect(verdict?.textContent).toContain(
+        "You planned the discipline.",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('preserves player-response text across react-retry (#277 review-driven)', () => {
+    // The player-response is picked once via lazy useState initializer
+    // with no setter — it must NOT re-pick when the engine loops back
+    // to prep on retry. Only the avatar verdict re-picks (a fresh roll
+    // gets a fresh verdict). Pinning this design-by-construction
+    // guarantee so a future refactor that adds a setter would surface.
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = makePinningRng(1); // d20=1 → fail
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{
+            sefirah: 'gevurah',
+            stat: 1,
+            statLabel: 'Strength',
+            availableAllies: [],
+            availableCardBurns: 0,
+            availableSparkBurns: 0,
+            playerSign: 'capricorn',
+          }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      const responseBefore = document
+        .querySelector('[data-player-response]')
+        ?.textContent?.trim();
+      expect(responseBefore).toBeTruthy();
+
+      // Roll → fail → react sub-state.
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+
+      // Click Retry → engine goes react → prep.
+      const retryBtn = document.querySelector('[data-fail-choice="retry"]');
+      if (!(retryBtn instanceof HTMLButtonElement)) {
+        throw new Error('expected retry button to be present');
+      }
+      act(() => {
+        fireEvent.click(retryBtn);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+
+      const responseAfter = document
+        .querySelector('[data-player-response]')
+        ?.textContent?.trim();
+      expect(responseAfter).toBe(responseBefore);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('falls back to placeholder when context has no playerSign', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = seededRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          // No playerSign — demo / test harness path.
+          context={{ ...baseContext, stat: 18, availableAllies: [] }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      // No player-response in prep when sign is absent.
+      expect(document.querySelector('[data-player-response]')).toBeNull();
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+
+      const verdict = document.querySelector('[data-avatar-verdict]');
+      expect(verdict?.textContent).toBe('The Sefirah responds.');
+      expect(document.querySelector('[data-avatar-name]')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

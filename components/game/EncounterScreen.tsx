@@ -2,6 +2,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sefirahByKey } from '@/data';
 import {
+  avatarNames,
+  type EncounterAvatarKey,
+} from '@/data/avatar-names';
+import {
+  pickPlayerResponse,
+  pickVerdict,
+} from '@/data/sefirah-verdicts';
+import {
   CARD_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
   SPARK_BURN_BONUS,
@@ -204,6 +212,38 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
    */
   const [animatingResolve, setAnimatingResolve] = useState(false);
 
+  // Avatar-voiced verdict / pre-roll player-response copy (#277).
+  // The component owns the picker so the rng is consumed at a known
+  // moment (player-response: once, on first prep entry per encounter
+  // — picked into a ref-backed lazy initializer; verdict: once, on
+  // Roll, alongside `rollCheck`). Both reset on a react→prep loopback
+  // (retry). Cleared in the same useEffect that clears the staged
+  // counters below.
+  //
+  // `avatarKey` is the narrow union excluding Kether/Malkuth — both
+  // are already filtered upstream by the `challenge.kind === 'check'`
+  // guard above (Kether is `'collective'`, Malkuth is `'no-check'`).
+  // The cast is sound because the throw at line ~172 has already
+  // ruled them out.
+  const avatarKey = context.sefirah as EncounterAvatarKey;
+  // Avatar copy requires a player sign. Kether/Malkuth are already
+  // ruled out by the `challenge.kind === 'check'` throw above; no
+  // need to re-check here.
+  const avatarHasCopy = context.playerSign !== undefined;
+  // Pre-roll player line — picked once per encounter. Lazy
+  // initializer pulls from the same rng so deterministic seeds
+  // produce deterministic copy. Rolls back to undefined on retry
+  // (engine react→prep transition).
+  // The setter is unused — the player response is picked once at
+  // mount via the lazy initializer and never re-set; it's read-only
+  // for the encounter's lifetime. (Retry intentionally does NOT
+  // re-pick the player line — see the useEffect below.)
+  const [playerResponse] = useState<string | undefined>(() => {
+    if (!avatarHasCopy || context.playerSign === undefined) return undefined;
+    return pickPlayerResponse(avatarKey, context.playerSign, rng);
+  });
+  const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
+
   // Reset staged counters when the engine sub-phase loops back to
   // 'prep' (a `react-retry`). The engine's `pendingModifiers` carries
   // the cumulative card / spark burns from the failed roll forward;
@@ -227,6 +267,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setResolvedOutcome(null);
       setCommittedModifiers(null);
       setAnimatingResolve(false);
+      // Drop the verdict so the next Roll picks a fresh variant.
+      // Player-response stays put — it's pre-roll flavor for the
+      // current encounter, and re-picking on every retry would
+      // reroll the player's "voice" mid-encounter, which reads
+      // wrong. (#277)
+      setVerdictLine(undefined);
     }
   }, [turn.challengeSubPhase]);
 
@@ -424,6 +470,19 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     }
     setResolvedOutcome(outcome);
     setCommittedModifiers(modifiers);
+    // Pick the avatar's verdict variant alongside the d20 (#277) so
+    // both come from the same rng and replay deterministically under
+    // a seeded test. Skipped when the context has no sign (demo /
+    // tests without a player) — the fallback placeholder renders.
+    if (avatarHasCopy && context.playerSign !== undefined) {
+      const line = pickVerdict(
+        avatarKey,
+        context.playerSign,
+        outcome.pass ? 'pass' : 'fail',
+        rng,
+      );
+      setVerdictLine(line);
+    }
     setAnimatingResolve(true);
     // Lag the engine's already-set 'react' sub-phase by the animation
     // duration so the spin renders before the react choices appear.
@@ -555,6 +614,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           effectiveDC={effectiveDC}
           onRoll={handleRoll}
           onCancel={onCancel}
+          {...(playerResponse !== undefined ? { playerResponse } : {})}
         />
       ) : null}
 
@@ -568,6 +628,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           onContinue={handleContinue}
           onRetry={handleRetry}
           onAccept={handleAccept}
+          {...(avatarHasCopy
+            ? { avatarName: avatarNames[avatarKey].greek }
+            : {})}
+          {...(verdictLine !== undefined ? { verdictLine } : {})}
         />
       ) : null}
     </section>
@@ -597,6 +661,13 @@ interface PrepPanelProps {
   readonly effectiveDC: number;
   readonly onRoll: () => void;
   readonly onCancel: (() => void) | undefined;
+  /**
+   * Pre-roll player line ("You answer: …"), keyed to the player's
+   * sign + the avatar. Picked once per encounter by the parent and
+   * passed through; absent in demo / test contexts that don't carry
+   * a player sign. Renders above the retry-context block.
+   */
+  readonly playerResponse?: string;
 }
 
 function PrepPanel(props: PrepPanelProps): JSX.Element {
@@ -619,9 +690,19 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     effectiveDC,
     onRoll,
     onCancel,
+    playerResponse,
   } = props;
   return (
     <div className="mt-4 space-y-4" data-encounter-prep>
+      {playerResponse !== undefined ? (
+        <p
+          data-player-response
+          className="rounded border border-veil/15 bg-veil/5 px-3 py-2 text-sm italic opacity-80"
+        >
+          {playerResponse}
+        </p>
+      ) : null}
+
       {isRetry ? (
         // Retry context — the player is stacking burns on top of a
         // failed-roll's preserved cumulative count. Surface what's
@@ -836,6 +917,20 @@ interface ReactPanelProps {
   readonly onContinue: () => void;
   readonly onRetry: () => void;
   readonly onAccept: () => void;
+  /**
+   * Greek avatar name (e.g. "Hermes", "Demeter"). Optional — when
+   * absent (demo / tests without a player sign), the placeholder
+   * "The Sefirah responds." line is rendered instead. Roman names
+   * are stored in `data/avatar-names.ts` for future pantheon-rotation
+   * (#276 follow-up).
+   */
+  readonly avatarName?: string;
+  /**
+   * The picked verdict line for this (sefirah, sign, outcome).
+   * Owned by the parent so the picker's rng consumption is colocated
+   * with the d20 roll. Optional — placeholder fallback as above.
+   */
+  readonly verdictLine?: string;
 }
 
 function ReactPanel({
@@ -843,6 +938,8 @@ function ReactPanel({
   onContinue,
   onRetry,
   onAccept,
+  avatarName,
+  verdictLine,
 }: ReactPanelProps): JSX.Element {
   return (
     <div
@@ -868,12 +965,23 @@ function ReactPanel({
         </p>
       </div>
       {/*
-        Per-Sefirah avatar verdict slot. Epic #117 sub-tickets 1-3 will
-        fill in the named avatar copy ("Hermes nods. Speak again.").
-        For now the placeholder line keeps the visual rhythm intact.
+        Per-Sefirah avatar verdict (#277). When the parent supplies
+        `avatarName` + `verdictLine`, render "Hermes: <verdict>".
+        Falls back to the placeholder line when either is absent —
+        keeps the visual rhythm intact for demo / test harnesses
+        that don't pass a player sign through ChallengeContext.
       */}
-      <p data-avatar-verdict className="text-sm italic opacity-60">
-        The Sefirah responds.
+      <p data-avatar-verdict className="text-sm italic opacity-80">
+        {avatarName !== undefined && verdictLine !== undefined ? (
+          <>
+            <span data-avatar-name className="not-italic font-semibold">
+              {avatarName}:
+            </span>{' '}
+            {verdictLine}
+          </>
+        ) : (
+          'The Sefirah responds.'
+        )}
       </p>
       {outcome.pass ? (
         <button

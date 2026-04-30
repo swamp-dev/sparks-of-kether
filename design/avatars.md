@@ -237,8 +237,10 @@ Per-avatar matrix dimensions:
 - **Across 8 avatars (Hermes, Demeter, Athena, Ares, Zeus, Apollo, Aphrodite, Selene):** ~864 lines.
 - (Kether handled separately by #285 Final Threshold; Malkuth has no encounter.)
 
-This document currently records **1 variant per cell** as the calibrated
-first pass. Variants 2 and 3 are a follow-up generation pass.
+This document records **3 variants per cell** for all 8 challenge
+avatars and Hestia — different rhythm, image, angle on the same
+recognition. EncounterScreen picks one uniformly per encounter via
+the seeded engine RNG (#277).
 
 ## 6. Pantheon-rotation architecture (future-proofing)
 

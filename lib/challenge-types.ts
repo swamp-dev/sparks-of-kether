@@ -1,4 +1,4 @@
-import type { SefirahKey } from '@/data';
+import type { SefirahKey, ZodiacSignKey } from '@/data';
 import type { CheckModifiers, CheckOutcome } from '@/engine/checks';
 
 /**
@@ -40,6 +40,15 @@ export interface ChallengeContext {
    * `ResolveChallengeInput.outcome`.
    */
   readonly soulDoorDelta?: number;
+  /**
+   * Zodiac sign of the player taking the check. Used by the
+   * EncounterScreen (#277) to key per-Sefirah avatar verdict copy
+   * and pre-roll player-response lines. Optional because demo /
+   * test harnesses construct contexts without a real player; when
+   * absent, the encounter screen falls back to the placeholder
+   * "The Sefirah responds." line.
+   */
+  readonly playerSign?: ZodiacSignKey;
 }
 
 /**
