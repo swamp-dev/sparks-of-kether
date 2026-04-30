@@ -3655,3 +3655,21 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓, build ✓, e2e ✓, integration ✓.
 
 **Commit(s):** `b186353` (T8 deletion), `e6961d4` (review fixes — joinRoom + 4 stale refs), `bbc0929` (review pass-2 — actually-applied stale-ref fixes)
+
+## 2026-04-29T21:52:24-04:00 — #238: T9 — rewrite mechanics.md Classes section (closes Epic #212)
+
+**Pushed:** Final sub-ticket of Epic #212. `design/mechanics.md` § "Soul Aspects (classes)" replaced with § "Classes (astrological signs)". Setup step 2, Components table, Gifts section, Turn-structure step 3, Separation-decrease list, and Design Notes all updated to reflect the post-T8 reality.
+
+**Why:** Sub-ticket T9 of Epic #212. Closes Epic #212 — the Soul Aspect → Zodiac transition is now fully documented from data layer through user-facing rules.
+
+**Notes:**
+- Pure docs ticket, no code. New § "Classes (astrological signs)" describes:
+  - Dignity-bonus formula (rulership +1, exaltation +2, detriment −1, fall −2; Pluto/Neptune as additional rulerships; Earth class-neutral; combined-then-clamped at [1, 18]; Virgo +3 / Pisces −3 doubled-Mercury anomalies).
+  - Soul Doors mechanic (per-class Doors at the soul card's path endpoints, DC −2 reduction, Pisces single-Door asymmetry, composition with shortcut and roll-side modifiers).
+  - The verbatim "Soul Door open here: DC X → X−2" callout (with parenthetical "(shortcut +3, Door −2)" when both apply).
+- Cross-links to `astrological-classes.md` and `soul-doors.md` for the locked tables — `mechanics.md` stays the player-facing rules entry point; design docs are authoritative for tuning.
+- Dropped the per-Sefirah ability descriptions (Chesed Overflow, Gevurah Sacred No, Tiferet Bridge, Hod Insight, Netzach Persistence, Yesod Recycle) — verified they were design aspirations that never reached the engine; nothing shipped was erased.
+- Code-reviewer first pass caught: line 468 had a stale `(Chesed weakness)` parenthetical (pre-existing debt the rewrite walked past), and the Soul Doors intro stated "two Sefirot" as universal before the Pisces caveat. Both fixed in `ba4bd8d`.
+- Full `pnpm ci:local`: verify ✓ (67 files / 975 passed / 1 todo), build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** `b403643` (rewrite), `ba4bd8d` (review fix)

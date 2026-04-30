@@ -39,7 +39,7 @@ is an implementation choice.
 | Tree board | 1 | 10 Sefirot as nodes, 22 paths as edges |
 | Major Arcana decks | **1 deck (2 players) or 2 decks (3–4 players)** | One card per path. Each is also a path-key. With two decks, two players can hold the same Arcanum. |
 | Player tokens | 1 per player | Current position on the Tree |
-| Stat sheet | 1 per player | 10 stats (one per Sefirah) + Soul Aspect |
+| Stat sheet | 1 per player | 10 stats (one per Sefirah) + zodiac-sign class |
 | Spark tokens | 10 types | One per Sefirah; earned and spent |
 | Illumination tracker | 1 shared | Counter, 0–∞ |
 | Separation tracker | 1 shared | Counter, 0–∞ |
@@ -90,14 +90,23 @@ The ritual names each stat aloud as it is rolled:
 Unlucky rolls are thematic, not a do-over — your soul is particular, and
 the team will cover for what you lack.
 
-### 2. Soul Aspect (class)
+### 2. Class (zodiac sign)
 
-Each player then chooses (or is dealt) one of six **Soul Aspects**, their
-"class." This grants:
-- A **+2 stat bonus** to that Sefirah's stat
-- A **signature ability** (see *Soul Aspects* below)
+Each player then chooses (or is dealt) one of twelve **zodiac signs**,
+their "class." Each sign tilts the player's freshly-rolled stat sheet
+through **planetary dignities** (rulership, exaltation, detriment, fall)
+and opens one or two **Soul Doors** on the Tree.
 
-Soul Aspects may not duplicate across players.
+- **Dignity bonuses** apply additively to the rolled stats, then clamp
+  each stat to [1, 18]. See [`design/astrological-classes.md`](astrological-classes.md)
+  for the full per-sign delta table.
+- **Soul Doors** — the Sefirot at the endpoints of the sign's "soul card"
+  (the zodiacal Major Arcanum mapped to that sign) — reduce the
+  Challenge DC by 2 when the player faces them. See
+  [`design/soul-doors.md`](soul-doors.md) for the full per-class
+  Door table.
+
+Signs may not duplicate across players.
 
 ### 3. Starting hand
 
@@ -138,8 +147,7 @@ The hand-size cap is **6**.
 ### Gifts
 - Gifts during your own turn are free in card cost — circulation is
   the point.
-- Sparks and Soul Aspect abilities (Chesed, in particular) extend
-  *when* you can gift, not the cost itself.
+- Sparks extend *when* you can gift, not the cost itself.
 - **Refusing a gift** raises **Separation +1**. Refusing kindness is
   the cardinal anti-cooperative act.
 - **Receiving a gift while at the hand-size cap** forces a choice: the
@@ -148,8 +156,6 @@ The hand-size cap is **6**.
   Separation cost; the discarded card goes face-up to the discard
   pile and is eligible for future Yesod Spark recovery / discard
   recycle).
-- **Gevurah** — and only Gevurah — may refuse a gift without the
-  +1 Separation cost. Saying "no" is part of Gevurah's domain.
 
 ---
 
@@ -175,7 +181,7 @@ On your turn, in order:
    adjacent Sefirah, OR skip movement to draw 2 cards (*Meditate*).
    Drawing stops at the hand-size cap of 6.
 2. **Challenge** (if you arrived at an uncleared Sefirah). See below.
-3. **Assist** (optional). Use Soul Aspect gifting abilities or spend Sparks.
+3. **Assist** (optional). Spend Sparks to help allies.
 4. **Draw** to refill toward the starting hand size of 4 — capped at 6.
    If the draw pile is empty when you'd draw, the discard pile is
    reshuffled face-down to form a new draw pile first.
@@ -267,7 +273,6 @@ Two shared counters that track the team's moral weight. Both start at zero.
 
 Separation does not decrease naturally. It can only be reduced by:
 - Spending a **Gevurah Spark** (removes 1 Separation)
-- Certain Soul Aspect abilities (see below)
 
 Illumination never decreases.
 
@@ -314,49 +319,78 @@ The Balance pillar is neutral; it neither breaks nor builds the streak.
 
 ---
 
-## Soul Aspects (classes)
+## Classes (astrological signs)
 
-Six classes, each tied to one Sefirah. Drawn from the six "personality
-Sefirot" — not Kether/Chokmah/Binah (too elevated) or Malkuth (the starting
-ground).
+Twelve classes, one per zodiac sign. Each sign tilts the player's stat
+sheet through planetary dignities and opens one or two Soul Doors on
+the Tree. The full per-sign tables are kept out of this doc:
 
-### Chesed — The Giver
-- **+2 Lovingkindness.**
-- *Overflow:* Once per round, gift any card to any player **outside**
-  your normal turn (the timing is the gift, not a card cost).
-- *Weakness:* You cannot refuse gifts. If a gift would push your hand
-  past the cap, you must discard to make room.
+- **Dignity bonuses** — `design/astrological-classes.md` § 4 (per-sign
+  stat-delta breakdown).
+- **Soul Doors** — `design/soul-doors.md` § 3 (per-class Door table).
 
-### Gevurah — The Boundary-Keeper
-- **+2 Strength.**
-- *Discipline:* Once per game, pass one challenge without rolling. Describe
-  what you're sacrificing internally.
-- *Strength: Sacred No.* Gevurah may refuse a gift without the
-  +1 Separation cost. The art of the sacred no is the player's domain.
-- *Weakness:* You cannot initiate gifts — only accept requests.
+This section gives the player-facing summary; the design docs above
+are authoritative for any tuning question.
 
-### Tiferet — The Heart
-- **+2 Harmony.**
-- *Bridge:* Once per round, let two other players combine their cards as if
-  one hand for a single action (assist, gift-chain, challenge).
-- *Weakness:* You cannot advance while any player is trapped below.
+### Dignity bonuses (stat-sheet tilt)
 
-### Hod — The Mind
-- **+2 Intellect.**
-- *Insight:* Before any challenge at your Sefirah, read the next round's
-  challenge DC aloud.
-- *Weakness:* You must announce your strategy before acting.
+For each sign, four planetary dignities (rulership, exaltation,
+detriment, fall) translate to per-stat deltas applied to the rolled
+3d6 stats:
 
-### Netzach — The Feeler
-- **+2 Passion.**
-- *Persistence:* Once per game, retry a failed check without burning a card.
-- *Weakness:* You may not Meditate; you must always Move.
+| Dignity     | Delta to the dignified planet's stat |
+|-------------|--------------------------------------|
+| Rulership   | **+1**                               |
+| Exaltation  | **+2**                               |
+| Detriment   | **−1**                               |
+| Fall        | **−2**                               |
 
-### Yesod — The Dreamer
-- **+2 Intuition.**
-- *Recycle:* Once per round, retrieve one card from the discard pile.
-- *Weakness:* You start one Sefirah *below* Malkuth (narrative: still in the
-  dream of Malkuth). First turn must be to ascend into Malkuth proper.
+Modern co-rulerships (Pluto for Scorpio, Neptune for Pisces) count as
+additional rulerships at **+1**. Earth (Malkuth) has no zodiacal
+dignities, so the **body** stat is class-neutral.
+
+Multiple dignities for the same planet stack additively. Two anomalies
+preserved from the classical tradition: **Virgo** has Mercury both as
+ruler AND exaltation → cumulative **+3** to intellect. **Pisces** has
+Mercury as both detriment AND fall → cumulative **−3** to intellect.
+
+The clamp is applied to the *combined* result, not each bonus
+individually: a 17 rolled stat gaining +3 ends at **18**, not 20.
+
+### Soul Doors (challenge-side advantage)
+
+Each class has a **soul card** — the zodiacal Major Arcanum mapped to
+its sign (the 12 "Simples" of the Hebrew alphabet). The Sefirot at the
+endpoints of that card's path are the class's **Soul Doors** — one or
+two, see below. When a player faces the Challenge at one of their
+Doors, the effective DC is reduced by **2**.
+
+11 of the 12 classes have two Doors. **Pisces is structurally unique**:
+its soul card (The Moon, path 29) connects Netzach ↔ Malkuth, and
+Malkuth has no Challenge — so Pisces has only one Door (Netzach).
+
+The Door reduction stacks additively with the central-pillar **shortcut
+penalty** (+3 DC). A Sagittarius arriving at Yesod via the shortcut
+faces `12 + 3 − 2 = 13`. The Door softens the shortcut tax but does
+not erase it.
+
+Door reduction also stacks with card-burn (+3 to roll), Spark spend
+(+5 to roll), and ally assist (+½ ally stat to roll) — those operate
+on the roll side; the Door operates on the DC side.
+
+The challenge UI surfaces the Door explicitly:
+
+> Soul Door open here: DC `X` → `X−2`
+
+When a shortcut also applies, the breakdown is appended:
+
+> Soul Door open here: DC 12 → 13 (shortcut +3, Door −2)
+
+### Sign uniqueness
+
+Signs may not duplicate across players. The picker shows already-taken
+signs as disabled. The lobby's Begin button is gated until every
+player has a distinct sign.
 
 ---
 
@@ -430,10 +464,10 @@ Things this doc intentionally leaves open:
 - **Exact challenge content** (narrative text, reflection prompts) lives in
   separate content files once written. The *mechanics* above are fixed;
   the *flavor* can evolve.
-- **Physical vs digital enforcement.** Rules like "you cannot refuse gifts"
-  (Chesed weakness) are easy for software to enforce, harder for tabletop.
-  A tabletop version should either trust players or introduce a simple
-  token to mark enforcement. Flagged:
+- **Physical vs digital enforcement.** Rules like the +1 Separation cost
+  for refusing a gift are easy for software to enforce, harder for
+  tabletop. A tabletop version should either trust players or introduce
+  a simple token to mark enforcement. Flagged:
   - [DIGITAL-EASY] Card visibility tiers (hands public at upper Tree)
   - [DIGITAL-EASY] Automatic Shell activation at Separation thresholds
   - [TABLETOP-HANDLED] Gift refusal/acceptance (use a token)
