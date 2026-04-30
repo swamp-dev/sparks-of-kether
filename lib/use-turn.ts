@@ -145,6 +145,14 @@ export interface UseTurnReturn {
     readonly shortcut?: boolean;
   }) => GameState;
   readonly draw: () => GameState;
+  /**
+   * #291: shed one over-cap card from the active player's hand.
+   * Drives the DiscardPrompt UI: each click on a hand card fires
+   * `discard(arcanum)`, which decrements `state.pendingDiscard.count`
+   * and clears the field once count reaches 0. The engine's
+   * `endTurn` then unblocks and the seat advances.
+   */
+  readonly discard: (arcanum: number) => GameState;
   readonly endTurn: () => void;
   /** Force a state replacement — used when an external action mutates state out-of-band. */
   readonly setState: (s: GameState) => void;
@@ -469,6 +477,20 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     return result.value.next.state;
   }, [snapshot, state, opts.rng]);
 
+  const discard = useCallback(
+    (arcanum: number): GameState => {
+      const result = turnReducer(
+        snapshot,
+        { kind: 'discard', arcanum },
+        opts.rng,
+      );
+      if (!result.ok) return state;
+      setSnapshot(result.value.next);
+      return result.value.next.state;
+    },
+    [snapshot, state, opts.rng],
+  );
+
   const endTurn = useCallback((): void => {
     const result = turnReducer(snapshot, { kind: 'end-turn' }, opts.rng);
     if (!result.ok) return;
@@ -505,6 +527,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactRetry,
       acceptChallengeSetback,
       draw,
+      discard,
       endTurn,
       setState: replaceState,
     }),
@@ -524,6 +547,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactRetry,
       acceptChallengeSetback,
       draw,
+      discard,
       endTurn,
       replaceState,
     ],

@@ -267,6 +267,38 @@ export interface GameState {
    * dispatcher synthesizing a value.
    */
   readonly lastOutcome?: CheckOutcome | undefined;
+  /**
+   * Pending hand-size reconciliation owed by the current active
+   * player (#291). Set when Meditate pulls cards over `HAND_CAP`
+   * (the only over-cap path today); cleared when the player has
+   * discarded `count` cards via the `discard` event. The engine's
+   * `endTurn` reducer refuses to advance while this is set with
+   * `count > 0`, so the player cannot escape a Meditate-over-cap
+   * turn without trimming back to the cap.
+   *
+   * Lives on `GameState` (not `PlayerState`) because at most one
+   * player at a time can be over-cap (the active player who just
+   * meditated) — pinning it to the active seat avoids the
+   * book-keeping cost of a per-player field that would be
+   * `undefined` for every other seat.
+   *
+   * `requiredBy: 'end-of-turn'` is the only kind today; the field
+   * exists so a future ticket could add a different reconciliation
+   * trigger (e.g. a Spark that forces an immediate prune) without
+   * overloading the same shape.
+   */
+  readonly pendingDiscard?: PendingDiscard | undefined;
+}
+
+/**
+ * One outstanding hand-size reconciliation. Today only emitted by
+ * `meditate` when the player is at or above `HAND_CAP`; the active
+ * player must shed `count` cards before the engine will let them
+ * end their turn. See `GameState.pendingDiscard` for full context.
+ */
+export interface PendingDiscard {
+  readonly count: number;
+  readonly requiredBy: 'end-of-turn';
 }
 
 /**

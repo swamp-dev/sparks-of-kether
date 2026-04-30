@@ -3819,6 +3819,7 @@ don't reach naturally. Centralised them.
 
 **Commit(s):** `8966f7a` (EncounterScreen + tests), `282fb2d` (PlayScreen swap), `7c25926` (ChallengeModal demote + axe), `0404aa0` (CRITICAL shortcut fix + reduced-motion + discriminated-union + timer cleanup)
 
+<<<<<<< HEAD
 ## 2026-04-30T12:27:22-04:00 — #288: path-32 hit area widened despite short geometry
 
 **Pushed:** Failing test commit + special-case implementation. Path 32's hit overlay no longer trims into the Yesod/Malkuth circles; visible path remains trimmed for cleanliness.
@@ -3847,3 +3848,21 @@ don't reach naturally. Centralised them.
 - Mobile (375 px viewport) was not specifically retested in jsdom — the inline rem value (3.3 rem = 52.8 px overlap on a 96 px card = 45% advance per slot, 6×96 − 5×52.8 = 312 px total) places a 6-card fan inside the design-min 320 px viewport. A visual-regression follow-up at the next screenshot review will confirm the desktop variant.
 
 **Commit(s):** `47fa595` (failing tests), `457b485` (fix)
+
+## 2026-04-30T12:41:19-04:00 — #291: Meditate at cap + EOT discard
+
+**Pushed:** Five-layer slice closing the Meditate-at-cap softlock (no usable paths + full hand had no exit). Engine: `drawNCards` grows an opt-in `overCap` flag, `GameState.pendingDiscard` is added, `endTurn` refuses to advance while the active player owes a trim, new `discard(state, playerId, arcanum)` reducer pushes one card to the discard pile and decrements `pendingDiscard.count` (clears at 0). Turn-machine: meditate routes through the over-cap draw and writes `pendingDiscard`; new `'discard'` TurnEvent; `end-turn` detects the engine's no-advance signal and folds the unchanged state through. Room-actions: dropped the `'hand-full'` rejection from the meditate dispatcher, added a `'discard'` ClientAction case, mirrored the engine's no-advance for end-turn so the multiplayer wire layer doesn't record phantom seat advances. `useTurn` exposes `discard(arcanum)`. UI: new `DiscardPrompt` component renders the active player's hand as "Discard <Arcanum>" buttons with a "Shed N cards" heading; `MeditateButton` is always enabled (no more cap gating); auto-advance timer gated on `pendingDiscard.count === 0`. Updated multiplayer-flow integration test to pin the new behaviour. `design/mechanics.md` Drawing section rewritten for the new contract.
+
+**Why:** Draft 1. Closes the softlock the playtester hit (#291): a player with no playable paths and a full hand had no way to end their turn. New rule per the design discussion: meditation always succeeds, the over-cap excess is reconciled at end-of-turn via a player-picks discard.
+
+**Notes:**
+- **`pendingDiscard` lives on `GameState`, not `PlayerState`.** At most one player at a time can be over-cap (the active player who just meditated), so a per-player field would be `undefined` for every other seat — wasted shape. The ticket flagged this choice as an open question; landed on `GameState`.
+- **Discard target = `HAND_CAP`, not `STARTING_HAND_SIZE`.** The cap is the cap; players who exceed it via Meditate come back to it (not below). The ticket asked me to flag if I found a strong reason for `STARTING_HAND_SIZE` while reading `engine/draws.ts` — I did not.
+- **Engine's `endTurn` returns input state on refusal** (`turned === state` is the no-advance signal). Both the dispatcher in `lib/room-actions.ts` and the turn-machine reducer detect this and pass through unchanged so the UI keeps rendering the DiscardPrompt over `'end'` phase rather than slipping back to `'move'`.
+- **Auto-advance timer gated on `pendingDiscard.count === 0`** so the timer doesn't re-arm on every discard click. The DiscardPrompt is the cadence driver.
+- **TDD layered cleanly:** five failing-test commits preceded their implementations (`engine/__tests__/draws.test.ts`, extension to `engine/__tests__/turn.test.ts`, two new describe blocks in `lib/__tests__/turn-machine.test.ts`, two new describe blocks in `lib/__tests__/room-actions.test.ts`, rewritten test in `components/game/__tests__/PlayScreen.draw.test.tsx`). Two existing tests were rewritten to match the new contract (`use-turn` "meditate caps the hand at HAND_CAP=6" → "draws past the cap and sets pendingDiscard"; multiplayer-flow "meditate at HAND_CAP returns 422" → "succeeds; pendingDiscard set").
+- **Local gates:** `pnpm typecheck` ✓, `pnpm lint` ✓, `pnpm test` ✓ (1097 passed / 1 todo across 70 files). Did not run `pnpm ci:local` per the ticket's hard constraint (parent runs the integration + e2e bundle).
+- **Follow-ups not in scope:** per-card arcanum art on the prompt, Yesod-Spark-recovery hint on the prompt, an end-to-end Playwright spec for the meditate-at-cap → discard → end-turn flow.
+
+**Commit(s):** `c1020b3` (engine tests), `2389cdb` (engine impl), `9950acf` (turn-machine tests), `16f14ec` (turn-machine impl), `1e8db9b` (room-actions tests), `6940914` (room-actions impl), `f17c3ef` (use-turn discard), `fcd5548` (PlayScreen test), `4fb8352` (PlayScreen + DiscardPrompt UI), `9d73eff` (mechanics doc), `af28fcc` (lint cleanup)
+

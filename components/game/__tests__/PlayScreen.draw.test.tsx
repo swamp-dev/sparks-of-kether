@@ -44,12 +44,12 @@ describe('PlayScreen — meditate updates the hand', () => {
   });
 });
 
-describe('PlayScreen — meditate disabled at HAND_CAP', () => {
-  it('disables the Meditate button when the active player holds HAND_CAP cards', () => {
-    // #216 root cause: when a player's hand is already at HAND_CAP=6,
-    // clicking Meditate silently no-ops because `drawNCards` early-
-    // exits. The fix is to gate the click in the UI so the user sees
-    // why the action is unavailable.
+describe('PlayScreen — Meditate at HAND_CAP renders DiscardPrompt (#291)', () => {
+  // #291: pre-fix the Meditate button was disabled at HAND_CAP, which
+  // softlocked players with no usable paths. New contract: Meditate
+  // is always enabled; clicking it draws past the cap and renders a
+  // DiscardPrompt for the over-cap excess.
+  it('enables Meditate at HAND_CAP and renders DiscardPrompt after click', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = state.players.findIndex(
       (p) => p.id === state.activePlayerId,
@@ -63,19 +63,19 @@ describe('PlayScreen — meditate disabled at HAND_CAP', () => {
     render(<PlayScreen initialState={initial} rng={rng} />);
 
     const meditateBtn = screen.getByRole('button', { name: /meditate/i });
-    expect(meditateBtn).toBeDisabled();
-    // The button surfaces *why* via aria-label / title so screen-
-    // reader and hover users both understand the gating.
-    expect(meditateBtn.getAttribute('title')).toMatch(/full|cap/i);
+    expect(meditateBtn).not.toBeDisabled();
 
-    // Sanity: clicking the disabled button does not grow the hand.
-    let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    const before = slots.length;
     act(() => {
       fireEvent.click(meditateBtn);
     });
-    slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    expect(slots.length).toBe(before);
+
+    // After the click the player has 8 cards (over HAND_CAP=6 by 2)
+    // and the DiscardPrompt is on screen telling them to shed 2.
+    const slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    expect(slots.length).toBe(8);
+    const prompt = document.querySelector('[data-discard-prompt]');
+    expect(prompt).not.toBeNull();
+    expect(prompt?.textContent ?? '').toMatch(/2/);
   });
 });
 

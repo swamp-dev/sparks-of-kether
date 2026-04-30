@@ -54,19 +54,34 @@ export function recycleDiscardIntoDeck(
 }
 
 /**
+ * Optional over-cap mode for `drawNCards`. The default (no opts /
+ * `overCap: false`) preserves the pre-#291 behaviour: stop early at
+ * `hardCap`. With `overCap: true`, the helper draws every requested
+ * card regardless of `hardCap` — the Meditate path (#291) takes this
+ * branch when the player is at or above `HAND_CAP` so meditating is
+ * never a softlock. The over-cap excess is reconciled at end-of-turn
+ * via `state.pendingDiscard` (set by the meditate reducer).
+ */
+export interface DrawOptions {
+  readonly overCap?: boolean;
+}
+
+/**
  * Draw up to `count` cards from the deck into `playerId`'s hand,
- * stopping early at `hardCap`. Recycles the discard pile mid-fill
- * when the deck empties (via `recycleDiscardIntoDeck`). Pure: returns
- * a new `GameState`; the input is unchanged.
+ * stopping early at `hardCap` (unless `opts.overCap` is `true`).
+ * Recycles the discard pile mid-fill when the deck empties (via
+ * `recycleDiscardIntoDeck`). Pure: returns a new `GameState`; the
+ * input is unchanged.
  *
  * Used by:
  *   - `lib/turn-machine.ts` end-of-turn `drawToHand` (refill toward
  *     `STARTING_HAND_SIZE`, hardCap = `HAND_CAP`).
  *   - `lib/turn-machine.ts` and `lib/room-actions.ts` meditate path
- *     (draw `MEDITATE_DRAW`, hardCap = `HAND_CAP`).
+ *     (draw `MEDITATE_DRAW`, hardCap = `HAND_CAP`, overCap allowed).
  *
- * Silently no-ops when the player is unknown OR already at `hardCap`
- * OR no cards are available anywhere. Callers that need to surface
+ * Silently no-ops when the player is unknown OR no cards are
+ * available anywhere. With `overCap: false` (default), also no-ops
+ * once the hand reaches `hardCap`. Callers that need to surface
  * "couldn't draw" feedback should compare hand sizes themselves.
  */
 export function drawNCards(
@@ -75,6 +90,7 @@ export function drawNCards(
   count: number,
   hardCap: number,
   rng: Rng,
+  opts: DrawOptions = {},
 ): GameState {
   const pIndex = state.players.findIndex((p) => p.id === playerId);
   // `findIndex` returning ≥ 0 means the player exists at that slot in
@@ -86,7 +102,8 @@ export function drawNCards(
   let deck: readonly number[] = state.deck;
   let discard: readonly number[] = state.discardPile;
   let remaining = count;
-  while (remaining > 0 && pHand.length < hardCap) {
+  const allowOverCap = opts.overCap === true;
+  while (remaining > 0 && (allowOverCap || pHand.length < hardCap)) {
     if (deck.length === 0) {
       if (discard.length === 0) break;
       const recycled = recycleDiscardIntoDeck(deck, discard, rng);

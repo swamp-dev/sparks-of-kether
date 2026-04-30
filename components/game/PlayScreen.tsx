@@ -6,6 +6,7 @@ import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
+import { DiscardPrompt } from '@/components/game/DiscardPrompt';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import type {
   ChallengeContext,
@@ -14,7 +15,7 @@ import type {
 import { FinalThreshold } from '@/components/game/FinalThreshold';
 import type { FinalThresholdResult } from '@/engine/endgame';
 import { isHandVisible } from '@/components/hand/visibility';
-import { HAND_CAP, useTurn, type TurnPhase } from '@/lib/use-turn';
+import { useTurn, type TurnPhase } from '@/lib/use-turn';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -76,6 +77,12 @@ export function PlayScreen({
   // including via the explicit endTurn). No auto-advance during
   // `'challenge'` — that path requires player input by design.
   //
+  // #291: also no auto-advance while pendingDiscard.count > 0 — the
+  // engine's endTurn would refuse anyway, but the explicit gate
+  // here keeps the timer from re-arming on every discard click as
+  // the count decrements. The DiscardPrompt is interactive and
+  // already gates the cadence; let the player drive.
+  //
   // Stable callback ref: `turn.endTurn` is `useCallback` but its dep
   // list includes the engine snapshot, so the function reference
   // changes on every state update. If we depended on it directly the
@@ -87,13 +94,15 @@ export function PlayScreen({
   useLayoutEffect(() => {
     endTurnRef.current = turn.endTurn;
   });
+  const pendingDiscardCount = turn.state.pendingDiscard?.count ?? 0;
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;
+    if (pendingDiscardCount > 0) return undefined;
     const handle = setTimeout(() => {
       endTurnRef.current();
     }, AUTO_ADVANCE_DELAY_MS);
     return (): void => clearTimeout(handle);
-  }, [turn.phase]);
+  }, [turn.phase, pendingDiscardCount]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
@@ -226,10 +235,7 @@ export function PlayScreen({
           </span>
           <div className="flex gap-2">
             {turn.phase === 'move' ? (
-              <MeditateButton
-                handFull={(activePlayer?.hand.length ?? 0) >= HAND_CAP}
-                onMeditate={turn.meditate}
-              />
+              <MeditateButton onMeditate={turn.meditate} />
             ) : null}
             {turn.phase === 'draw' ? (
               <button
@@ -311,6 +317,22 @@ export function PlayScreen({
           />
         </div>
       ) : null}
+
+      {/*
+       * #291: end-of-turn over-cap reconciliation. Renders when the
+       * active player Meditated past HAND_CAP and still owes a trim;
+       * unmounts as soon as count reaches 0 (the engine's discard
+       * reducer clears pendingDiscard at that point). The auto-
+       * advance timer is gated on count === 0, so the player drives
+       * the cadence here.
+       */}
+      {pendingDiscardCount > 0 && activePlayer ? (
+        <DiscardPrompt
+          hand={activePlayer.hand}
+          count={pendingDiscardCount}
+          onDiscard={(arcanum) => turn.discard(arcanum)}
+        />
+      ) : null}
     </main>
   );
 }
@@ -380,19 +402,18 @@ function buildChallengeContext(
 }
 
 /**
- * Meditate button. Disabled when the active player's hand is at
- * HAND_CAP — `drawNCards` early-exits silently in that case (#216).
- * The `title` surfaces the reason for hover + screen-reader users.
+ * Meditate button. Always enabled (#291): clicking from at-or-above
+ * HAND_CAP draws past the cap and renders a DiscardPrompt for the
+ * over-cap excess. The pre-#291 disable-at-cap gating produced a
+ * softlock when the player had no usable paths.
  *
  * `onMeditate` is `() => void` because the button discards the
  * caller's return value (`turn.meditate` returns `GameState`, but
  * the button doesn't use it).
  */
 function MeditateButton({
-  handFull,
   onMeditate,
 }: {
-  handFull: boolean;
   onMeditate: () => void;
 }): JSX.Element {
   return (
@@ -400,13 +421,7 @@ function MeditateButton({
       type="button"
       onClick={() => onMeditate()}
       data-action="meditate"
-      disabled={handFull}
-      title={
-        handFull
-          ? `Hand is full (${HAND_CAP} cards) — play or burn a card first.`
-          : undefined
-      }
-      className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+      className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs"
     >
       Meditate
     </button>

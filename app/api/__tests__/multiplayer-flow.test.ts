@@ -275,21 +275,16 @@ describe('multiplayer flow — start → events integration', () => {
     expect(after - before).toBe(2);
   });
 
-  it('meditate at HAND_CAP returns 422 with action-rejected detail and leaves the snapshot untouched', async () => {
-    // #216 review fix. The dispatcher rejects with
-    // `{ kind: 'meditate', cause: 'hand-full' }` so direct API
-    // callers see an explicit signal rather than a 200 with a
-    // no-op audit row.
+  it('meditate at HAND_CAP succeeds; hand grows over the cap and pendingDiscard is set (#291)', async () => {
+    // #291: pre-fix the dispatcher rejected with hand-full at the
+    // cap, which softlocked players who had no usable paths. New
+    // contract: meditate ALWAYS draws MEDITATE_DRAW; the over-cap
+    // excess (here 2) lands as state.pendingDiscard for the active
+    // player to reconcile via discard ClientActions before end-turn
+    // will advance the seat.
     seedLobby('ABCDEF');
     await callStart('ABCDEF');
 
-    // Force p1's hand to HAND_CAP=6 by replacing the in-memory
-    // snapshot row. The seeded fixture deals 4; we top up via
-    // direct db mutation since there is no in-game flow that
-    // produces a 6-card hand without other side-effects (a real
-    // game would get here via gifting). `snapshot` on the row is
-    // readonly, so we splice in a fresh row rather than mutating
-    // it in place.
     const original = db.game_states[0];
     expect(original).toBeDefined();
     if (!original) return;
@@ -305,21 +300,19 @@ describe('multiplayer flow — start → events integration', () => {
       kind: 'meditate',
       playerId: 'p1',
     });
-    expect(res.status).toBe(422);
-    const body = res.body as {
-      detail: { kind: string; cause: string };
-    };
-    expect(body.detail.kind).toBe('meditate');
-    expect(body.detail.cause).toBe('hand-full');
+    expect(res.status).toBe(200);
 
-    // No game_events row — neither an applied event nor a
-    // `rejected:` audit row. Dispatcher rejections take the same
-    // 422-no-audit path as invalid moves; only the upstream
-    // authorize gate writes audit rows.
-    expect(db.game_events).toHaveLength(0);
-    expect(db.game_states[0]?.last_event_id).toBe(0);
-    expect(db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand)
-      .toEqual([0, 1, 2, 3, 4, 5]);
+    // Hand grew by exactly MEDITATE_DRAW (2) cards; pendingDiscard
+    // pins the over-cap excess.
+    const after = db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toHaveLength(8);
+    expect(db.game_states[0]?.snapshot.pendingDiscard).toEqual({
+      count: 2,
+      requiredBy: 'end-of-turn',
+    });
+    // Event row written for the successful meditate.
+    expect(db.game_events).toHaveLength(1);
+    expect(db.game_events[0]?.event_type).toBe('meditate');
   });
 
   it('full prep → resolve → react cycle through the events route', async () => {

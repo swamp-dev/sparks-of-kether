@@ -937,7 +937,12 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
     expect(result.value.next.state.phase).toBe('end');
   });
 
-  it('respects HAND_CAP (6) — never draws past it', () => {
+  it('draws past HAND_CAP and sets pendingDiscard for the over-cap excess (#291)', () => {
+    // #291: pre-fix the reducer respected HAND_CAP and stopped at it.
+    // That left a softlocked at-cap player with no meditate affordance
+    // (they couldn't draw, and if no path was usable they couldn't
+    // move). New contract: meditate ALWAYS draws MEDITATE_DRAW; the
+    // over-cap excess is reconciled at end-of-turn via pendingDiscard.
     const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4, 5] });
     const state = makeState({}, {
       players: [player],
@@ -949,8 +954,111 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
-    // Hand was 5, cap is 6: meditate draws exactly 1 (not 2).
-    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11]);
+    // Hand was 5, cap is 6: meditate draws BOTH cards (not just one).
+    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11, 12]);
+    // Over-cap excess = hand - HAND_CAP = 7 - 6 = 1.
+    expect(result.value.next.state.pendingDiscard).toEqual({
+      count: 1,
+      requiredBy: 'end-of-turn',
+    });
+  });
+
+  it('meditate at HAND_CAP draws both cards and sets pendingDiscard.count = 2 (#291)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [1, 2, 3, 4, 5, 6],
+    });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    const result = turnReducer({ state: { ...state, phase: 'move' } }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 6, 11, 12]);
+    expect(result.value.next.state.pendingDiscard).toEqual({
+      count: 2,
+      requiredBy: 'end-of-turn',
+    });
+    // Phase still advances to 'end' — discard happens DURING the end
+    // phase (the UI's DiscardPrompt unblocks the auto-advance to the
+    // next turn by way of the engine's endTurn refusal).
+    expect(result.value.next.state.phase).toBe('end');
+  });
+
+  it('meditate under cap leaves pendingDiscard undefined (#291)', () => {
+    // Sanity: existing happy path stays clean — no spurious
+    // pendingDiscard when there is no over-cap excess.
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2] });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    const result = turnReducer({ state: { ...state, phase: 'move' } }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toEqual([1, 2, 11, 12]);
+    expect(result.value.next.state.pendingDiscard).toBeUndefined();
+  });
+});
+
+describe('turnReducer — discard event (#291)', () => {
+  // #291: after a meditate over-cap, the UI sends a `discard` event
+  // per card the player chooses to shed. The reducer routes through
+  // the engine's `discard` reducer; phase stays 'end' so the player
+  // can still hit End Turn.
+  it('discards the named card and decrements pendingDiscard.count', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [1, 2, 3, 4, 5, 6, 11, 12],
+    });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      pendingDiscard: { count: 2, requiredBy: 'end-of-turn' },
+      discardPile: [],
+    });
+    const result = turnReducer(
+      { state: { ...state, phase: 'end' } },
+      { kind: 'discard', arcanum: 12 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 6, 11]);
+    expect(result.value.next.state.pendingDiscard?.count).toBe(1);
+    expect(result.value.next.state.discardPile).toEqual([12]);
+  });
+
+  it('clears pendingDiscard when the final card is discarded', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [1, 2, 3, 4, 5, 6, 11],
+    });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      pendingDiscard: { count: 1, requiredBy: 'end-of-turn' },
+      discardPile: [],
+    });
+    const result = turnReducer(
+      { state: { ...state, phase: 'end' } },
+      { kind: 'discard', arcanum: 11 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.pendingDiscard).toBeUndefined();
   });
 });
 

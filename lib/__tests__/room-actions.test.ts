@@ -567,11 +567,11 @@ describe('applyClientAction — meditate', () => {
     expect(result.newState.deck).toEqual([12, 13]);
   });
 
-  it('rejects with hand-full when the player is already at HAND_CAP=6', () => {
-    // The dispatcher rejects rather than silently applying a no-op so
-    // a direct API caller sees an explicit signal. The route writes a
-    // `rejected:meditate` audit row instead of a phantom `meditate`
-    // event recording an action that drew zero cards.
+  it('succeeds at HAND_CAP=6 — draws over the cap and sets pendingDiscard (#291)', () => {
+    // #291: pre-fix the dispatcher rejected with `hand-full`, which
+    // softlocked players who hit the cap with no usable paths. New
+    // contract: meditate ALWAYS draws MEDITATE_DRAW (capping is now
+    // an end-of-turn responsibility via state.pendingDiscard).
     const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
     const state = makeState(
       {},
@@ -582,31 +582,13 @@ describe('applyClientAction — meditate', () => {
       { kind: 'meditate', playerId: 'p1' },
       seededRng(1),
     );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.kind).toBe('meditate');
-    if (result.error.kind !== 'meditate') return;
-    expect(result.error.cause).toBe('hand-full');
-  });
-
-  it('reports unknown-player BEFORE hand-full — guard order pinned', () => {
-    // Round-3 review pin: ensure the dispatcher checks for player
-    // existence first. If the guards were reordered (or merged), a
-    // ghost playerId could surface as `hand-full` based on someone
-    // else's hand state, which is misleading. The state below has
-    // ONE real player whose hand is at HAND_CAP; meditating as a
-    // ghost must report unknown-player, not hand-full.
-    const realFullHand = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
-    const state = makeState({}, { players: [realFullHand] });
-    const result = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'ghost' },
-      seededRng(1),
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    if (result.error.kind !== 'meditate') return;
-    expect(result.error.cause).toBe('unknown-player');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 6, 10, 11]);
+    expect(result.newState.pendingDiscard).toEqual({
+      count: 2,
+      requiredBy: 'end-of-turn',
+    });
   });
 
   it('rejects with unknown-player when the playerId is not in state.players', () => {
@@ -644,5 +626,92 @@ describe('applyClientAction — meditate', () => {
     // Hand grew by exactly 2 (10 from the deck + one from recycled discard).
     expect(result.newState.players[0]?.hand).toHaveLength(4);
     expect(result.newState.discardPile).toHaveLength(0);
+  });
+});
+
+describe('applyClientAction — discard (#291)', () => {
+  // #291: a player who Meditated over HAND_CAP must shed the over-cap
+  // excess via `discard` ClientActions before the engine will let
+  // their turn end. The dispatcher routes through the engine's
+  // `discard` reducer.
+  it('removes the named card from hand, decrements pendingDiscard.count', () => {
+    const player = makePlayer({
+      id: 'p1',
+      hand: [1, 2, 3, 4, 5, 6, 10, 11],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        pendingDiscard: { count: 2, requiredBy: 'end-of-turn' },
+        discardPile: [],
+        phase: 'end',
+      },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'discard', playerId: 'p1', arcanum: 11 },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 6, 10]);
+    expect(result.newState.discardPile).toEqual([11]);
+    expect(result.newState.pendingDiscard?.count).toBe(1);
+  });
+
+  it('clears pendingDiscard when the final required card is discarded', () => {
+    const player = makePlayer({
+      id: 'p1',
+      hand: [1, 2, 3, 4, 5, 6, 10],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        pendingDiscard: { count: 1, requiredBy: 'end-of-turn' },
+        phase: 'end',
+      },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'discard', playerId: 'p1', arcanum: 10 },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.pendingDiscard).toBeUndefined();
+  });
+});
+
+describe('applyClientAction — end-turn refuses while pendingDiscard pending (#291)', () => {
+  it('does not advance the seat when pendingDiscard.count > 0', () => {
+    // #291: the engine refuses to advance; the dispatcher mirrors
+    // that refusal so the multiplayer wire layer does not record a
+    // phantom seat advance for the next client to apply.
+    const players = [
+      makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6, 10, 11] }),
+      makePlayer({ id: 'p2' }),
+    ];
+    const state = makeState(
+      {},
+      {
+        players,
+        activePlayerId: 'p1',
+        pendingDiscard: { count: 2, requiredBy: 'end-of-turn' },
+        phase: 'end',
+      },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'end-turn', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.activePlayerId).toBe('p1');
+    expect(result.newState.pendingDiscard?.count).toBe(2);
   });
 });

@@ -17,7 +17,7 @@ import {
   HAND_CAP as ENGINE_HAND_CAP,
   STARTING_HAND_SIZE as ENGINE_STARTING_HAND_SIZE,
 } from '@/engine/setup';
-import { endTurn as endTurnReducer } from '@/engine/turn';
+import { discard as discardReducer, endTurn as endTurnReducer } from '@/engine/turn';
 import {
   EMPTY_PENDING_MODIFIERS,
   type ChallengeSubPhase,
@@ -175,6 +175,19 @@ export type TurnEvent =
       readonly shortcut?: boolean;
     }
   | { readonly kind: 'draw' }
+  | {
+      /**
+       * #291: shed one card from the active player's hand. Sent by
+       * the UI's DiscardPrompt when the active player has just
+       * meditated over `HAND_CAP` and now owes a trim. The reducer
+       * routes through `engine/turn.ts:discard`, which decrements
+       * `state.pendingDiscard.count` and clears the field when count
+       * reaches 0. Phase stays `'end'` — the player is still in the
+       * end of their turn; only their hand needs reconciling.
+       */
+      readonly kind: 'discard';
+      readonly arcanum: number;
+    }
   | { readonly kind: 'end-turn' }
   | { readonly kind: 'replace-state'; readonly state: GameState };
 
@@ -379,16 +392,35 @@ export function turnReducer(
       if (phase !== 'move') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
       }
-      // Meditate is a complete turn-action that draws 2 cards (capped
-      // at HAND_CAP) — see `design/mechanics.md` § Drawing & gift
-      // handling. Skips the 'draw' phase entirely: with no card
-      // played, there's nothing to replenish. Surfaced by the
-      // 2026-04-27 hot-seat playtest (#128) — players hit Meditate,
-      // landed in 'draw' phase, hit Draw, and saw no change because
-      // `drawToHand` only refilled toward STARTING_HAND_SIZE which
-      // they already had.
-      const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng);
-      const nextState: GameState = { ...drewState, phase: 'end' };
+      // Meditate is a complete turn-action that draws 2 cards — see
+      // `design/mechanics.md` § Drawing & gift handling. Skips the
+      // 'draw' phase entirely: with no card played, there's nothing
+      // to replenish. Surfaced by the 2026-04-27 hot-seat playtest
+      // (#128) — players hit Meditate, landed in 'draw' phase, hit
+      // Draw, and saw no change because `drawToHand` only refilled
+      // toward STARTING_HAND_SIZE which they already had.
+      //
+      // #291: meditate ALWAYS draws MEDITATE_DRAW (no hand-full
+      // rejection). When the post-draw hand is over HAND_CAP, the
+      // reducer sets `pendingDiscard` to the over-cap excess; the
+      // engine's `endTurn` then refuses to advance the seat until
+      // the active player has shed those cards via `discard` events.
+      // This is the fix for the Meditate-at-cap softlock: the player
+      // who has no usable paths can now Meditate for new cards and
+      // pay the cost as an end-of-turn trim.
+      const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng, {
+        overCap: true,
+      });
+      const drewPlayer = drewState.players.find((p) => p.id === player.id);
+      const overCap = Math.max(0, (drewPlayer?.hand.length ?? 0) - HAND_CAP);
+      const nextState: GameState = {
+        ...drewState,
+        phase: 'end',
+        pendingDiscard:
+          overCap > 0
+            ? { count: overCap, requiredBy: 'end-of-turn' }
+            : undefined,
+      };
       return { ok: true, value: { next: { state: nextState } } };
     }
 
@@ -659,11 +691,33 @@ export function turnReducer(
       return { ok: true, value: { next: { state: stateAfter } } };
     }
 
+    case 'discard': {
+      // #291: shed one over-cap card. The active player must clear
+      // pendingDiscard.count before endTurn will advance the seat.
+      // No phase guard beyond "active player exists" — the only path
+      // that sets pendingDiscard today is meditate-at-cap which lands
+      // in `'end'`, but a future ticket could legitimately fire a
+      // discard mid-turn (e.g. a Yesod ability that prunes a card),
+      // so the reducer is permissive here. The engine's `discard`
+      // is itself defensive (no-op if the card isn't in hand).
+      const after = discardReducer(state, player.id, event.arcanum);
+      return { ok: true, value: { next: { state: after } } };
+    }
+
     case 'end-turn': {
       if (phase !== 'end') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'end', actual: phase } };
       }
+      // #291: if pendingDiscard.count > 0 the engine's endTurn refuses
+      // to advance the seat (returns input state unchanged). Detect
+      // that no-op here and fold the unchanged-state into a
+      // `phase: 'end'` snapshot so the UI keeps rendering the
+      // DiscardPrompt over an `end` phase rather than slipping back
+      // to `move` for the same player.
       const turned = endTurnReducer(state);
+      if (turned === state) {
+        return { ok: true, value: { next: { state: turned } } };
+      }
       const stateAfter: GameState = { ...turned, phase: 'move' };
       return { ok: true, value: { next: { state: stateAfter } } };
     }

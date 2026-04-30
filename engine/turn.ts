@@ -8,6 +8,22 @@ import type { GameState } from './types';
  * present in `state.players` — that's a corruption signal worth
  * surfacing loudly rather than silently resetting to seat 0.
  *
+ * #291: refuses to advance while `state.pendingDiscard.count > 0`.
+ * The Meditate-at-cap path (`lib/turn-machine.ts` and
+ * `lib/room-actions.ts`) draws over `HAND_CAP` and sets
+ * `pendingDiscard.count` equal to the over-cap excess; the active
+ * player must shed those cards via the `discard` event before the
+ * engine will rotate the seat. Without this guard the next player
+ * would inherit a state with a stale `pendingDiscard` plus the
+ * over-cap hand, breaking the engine's "hand size at most HAND_CAP
+ * at turn start" invariant. Returning the input state on the refusal
+ * branch lets the UI keep the discard prompt visible without any
+ * extra book-keeping.
+ *
+ * On the success branch, `pendingDiscard` is cleared (it might have
+ * been resolved to `count: 0` by the discard reducer just before the
+ * end-turn click) so the next turn starts clean.
+ *
  * Used by the events route's `'end-turn'` ClientAction. Single-player
  * code (`useTurn`) calls this through `applyClientAction` too so
  * single-player and multiplayer share the same advancement rule.
@@ -21,6 +37,9 @@ export function endTurn(state: GameState): GameState {
       `endTurn: active player "${state.activePlayerId}" is not in player list`,
     );
   }
+  if (state.pendingDiscard !== undefined && state.pendingDiscard.count > 0) {
+    return state;
+  }
   const nextIdx = (currentIdx + 1) % state.players.length;
   const nextPlayer = state.players[nextIdx];
   if (!nextPlayer) {
@@ -29,5 +48,68 @@ export function endTurn(state: GameState): GameState {
     // without a non-null assertion.
     throw new Error('endTurn: next player slot is empty (length 0?)');
   }
-  return { ...state, activePlayerId: nextPlayer.id };
+  return {
+    ...state,
+    activePlayerId: nextPlayer.id,
+    pendingDiscard: undefined,
+  };
+}
+
+/**
+ * Discard one named card from `playerId`'s hand. Pushes the card to
+ * the discard pile (so it's eligible for Yesod-Spark recovery and the
+ * regular discard recycle), decrements `pendingDiscard.count`, and
+ * clears `pendingDiscard` entirely when count reaches 0.
+ *
+ * Silently no-ops if the player or card is unknown — defense-in-depth
+ * against a stale UI click after the card was already burned by
+ * something else (e.g. a Spark). Returns the input state on no-op so
+ * the React-render contract stays intact.
+ *
+ * **Security gate**: refuses to discard unless `pendingDiscard.count
+ * > 0`. Without this gate an authenticated active player could fire
+ * `{ kind: 'discard', arcanum: X }` at any time and shred their own
+ * hand on demand — `authorize.ts` only gates "caller is the active
+ * player," not "an obligation is pending." The room-actions
+ * dispatcher mirrors this check (defense in depth), but the engine
+ * reducer is the authoritative enforcement point.
+ *
+ * #291: today only emitted by the UI's DiscardPrompt, which renders
+ * when the active player ended a Meditate over-cap and now owes a
+ * trim. The reducer is generic enough that a future ticket could fire
+ * it for a non-Meditate over-cap path without changing this signature.
+ */
+export function discard(
+  state: GameState,
+  playerId: string,
+  arcanum: number,
+): GameState {
+  if (state.pendingDiscard === undefined || state.pendingDiscard.count <= 0) {
+    return state;
+  }
+  const pIndex = state.players.findIndex((p) => p.id === playerId);
+  if (pIndex === -1) return state;
+  const player = state.players[pIndex]!;
+  const cardIdx = player.hand.findIndex((n) => n === arcanum);
+  if (cardIdx === -1) return state;
+  const nextHand = [
+    ...player.hand.slice(0, cardIdx),
+    ...player.hand.slice(cardIdx + 1),
+  ];
+  const nextDiscardPile = [...state.discardPile, arcanum];
+  // Decrement pendingDiscard.count; clear when it hits 0 so the
+  // subsequent end-turn isn't blocked.
+  const remaining = (state.pendingDiscard?.count ?? 0) - 1;
+  const nextPendingDiscard =
+    state.pendingDiscard !== undefined && remaining > 0
+      ? { ...state.pendingDiscard, count: remaining }
+      : undefined;
+  return {
+    ...state,
+    players: state.players.map((p, idx) =>
+      idx === pIndex ? { ...player, hand: nextHand } : p,
+    ),
+    discardPile: nextDiscardPile,
+    pendingDiscard: nextPendingDiscard,
+  };
 }

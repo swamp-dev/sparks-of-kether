@@ -6,7 +6,7 @@ import type { CheckOutcome } from '@/engine/types';
 import { drawNCards, MEDITATE_DRAW } from '@/engine/draws';
 import type { Rng } from '@/engine/rng';
 import { HAND_CAP } from '@/engine/setup';
-import { endTurn } from '@/engine/turn';
+import { discard, endTurn } from '@/engine/turn';
 import type { GameState, MoveRejection } from '@/engine/types';
 import {
   turnReducer,
@@ -69,6 +69,16 @@ export type ClientAction =
       readonly playerId: string;
     }
   | {
+      /**
+       * #291: shed one card from the active player's hand. Sent by
+       * the UI's DiscardPrompt after a Meditate-at-cap. Wire-format
+       * sibling of the `discard` TurnEvent in `lib/turn-machine.ts`.
+       */
+      readonly kind: 'discard';
+      readonly playerId: string;
+      readonly arcanum: number;
+    }
+  | {
       readonly kind: 'end-turn';
       readonly playerId: string;
     };
@@ -77,7 +87,7 @@ export type ApplyActionRejection =
   | { readonly kind: 'move'; readonly cause: MoveRejection }
   | { readonly kind: 'prep'; readonly cause: TurnReducerError }
   | { readonly kind: 'challenge'; readonly cause: string }
-  | { readonly kind: 'meditate'; readonly cause: 'hand-full' | 'unknown-player' }
+  | { readonly kind: 'meditate'; readonly cause: 'unknown-player' }
   | { readonly kind: 'unknown-action' };
 
 export type ApplyActionResult =
@@ -157,12 +167,15 @@ export function applyClientAction(
     }
     case 'meditate': {
       // Mirrors the meditate path in `lib/turn-machine.ts` so server-
-      // and client-applied state agree. Reject loudly rather than
-      // silently no-opping — a direct API caller (bot, replay tool,
-      // future CLI) needs an explicit signal when the action could
-      // not draw cards. Production callers go through `authorize`
-      // first, so `unknown-player` here is a programming error or a
-      // bypass; surfacing it cleanly costs nothing and matches the
+      // and client-applied state agree.
+      //
+      // #291: meditate ALWAYS draws MEDITATE_DRAW (no hand-full
+      // rejection). The over-cap excess is reconciled at end-of-turn
+      // via state.pendingDiscard.
+      //
+      // The unknown-player guard remains: production callers go
+      // through `authorize` first, so this is a programming error or
+      // a bypass — surfacing it cleanly costs nothing and matches the
       // `MoveRejection.unknown-player` precedent.
       const player = state.players.find((p) => p.id === action.playerId);
       if (!player) {
@@ -171,23 +184,45 @@ export function applyClientAction(
           error: { kind: 'meditate', cause: 'unknown-player' },
         };
       }
-      if (player.hand.length >= HAND_CAP) {
-        return { ok: false, error: { kind: 'meditate', cause: 'hand-full' } };
-      }
       const drewState = drawNCards(
         state,
         action.playerId,
         MEDITATE_DRAW,
         HAND_CAP,
         rng,
+        { overCap: true },
       );
+      const drewPlayer = drewState.players.find((p) => p.id === action.playerId);
+      const overCap = Math.max(0, (drewPlayer?.hand.length ?? 0) - HAND_CAP);
       // Meditate is a complete turn-action: phase advances to 'end'
       // (matches `turnReducer`'s meditate case).
-      const newState: GameState = { ...drewState, phase: 'end' };
+      const newState: GameState = {
+        ...drewState,
+        phase: 'end',
+        pendingDiscard:
+          overCap > 0
+            ? { count: overCap, requiredBy: 'end-of-turn' }
+            : undefined,
+      };
       return { ok: true, newState };
+    }
+    case 'discard': {
+      // #291: shed one over-cap card. Mirrors the `discard` event in
+      // turn-machine. The engine's `discard` reducer is itself
+      // defensive (no-op if the card isn't in hand or the player is
+      // unknown), so the dispatcher can stay terse.
+      const after = discard(state, action.playerId, action.arcanum);
+      return { ok: true, newState: after };
     }
     case 'end-turn': {
       const turned = endTurn(state);
+      // #291: detect the engine's no-advance signal (engine returns
+      // input state when pendingDiscard.count > 0). Pass through
+      // unchanged so the multiplayer wire layer does NOT record a
+      // phantom seat advance — the active player still owes a trim.
+      if (turned === state) {
+        return { ok: true, newState: turned };
+      }
       // Mirror the reducer: end-turn rotates seat AND resets phase
       // to 'move' for the new active player.
       const newState: GameState = { ...turned, phase: 'move' };

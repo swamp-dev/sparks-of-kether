@@ -108,7 +108,12 @@ describe('useTurn — meditate draw mechanics', () => {
     expect(result.current.phase).toBe('end');
   });
 
-  it('meditate caps the hand at HAND_CAP=6', () => {
+  it('meditate at HAND_CAP draws past the cap and sets pendingDiscard (#291)', () => {
+    // #291: pre-fix this test pinned a no-op (drawNCards early-exited
+    // at hardCap). New contract: meditate ALWAYS draws MEDITATE_DRAW;
+    // the over-cap excess (here 2) lands as pendingDiscard for the
+    // active player to reconcile via the UI's DiscardPrompt before
+    // the engine will let the seat advance.
     const { result } = freshHook();
     const initial = result.current.state;
     const six = {
@@ -123,9 +128,12 @@ describe('useTurn — meditate draw mechanics', () => {
     act(() => {
       result.current.meditate();
     });
-    // Already at cap; meditate is a no-op for cards (state still
-    // transitions to 'end').
-    expect(result.current.state.players[0]?.hand.length).toBe(6);
+    // Hand grew to 8 (over HAND_CAP=6 by 2 cards).
+    expect(result.current.state.players[0]?.hand.length).toBe(8);
+    expect(result.current.state.pendingDiscard).toEqual({
+      count: 2,
+      requiredBy: 'end-of-turn',
+    });
     expect(result.current.phase).toBe('end');
   });
 

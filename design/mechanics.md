@@ -139,7 +139,17 @@ The hand-size cap is **6**.
 - End-of-turn draw replenishes hand toward the starting size of 4 — but
   never above the cap of 6 (a player who has been gifted up to 6 skips
   the draw entirely).
-- Meditate (the alternative to a move) draws 2 cards, but stops at 6.
+- Meditate (the alternative to a move) **always** draws 2 cards — even
+  from a hand already at the cap. If the post-draw hand exceeds the
+  6-card cap, the player must **discard down to 6** before their turn
+  ends: the player picks which cards to shed (no forced random pick),
+  and the discarded cards go face-up to the discard pile (eligible for
+  Yesod-Spark recovery and the ordinary recycle). The trim happens
+  *after* all other end-of-turn effects, which lets a player burn
+  cards mid-turn voluntarily if they would rather stay under cap.
+  Rationale: meditation must always succeed — without it a player
+  with no usable paths and a full hand softlocks (no draw, no move,
+  no end of turn).
 - If the draw pile is empty when a card is needed, the discard pile is
   reshuffled face-down to become the new draw pile. The game runs as
   long as cards exist anywhere in the system.
