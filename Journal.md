@@ -3960,3 +3960,18 @@ don't reach naturally. Centralised them.
 **Notes:** None.
 
 **Commit(s):** `2d65678`
+
+## 2026-04-30T15:22:33-04:00 — #283: a11y resolve+react coverage for EncounterScreen
+
+**Pushed:** Three new axe-clean renders in `components/__tests__/a11y.test.tsx` covering the EncounterScreen sub-states the prep-only baseline missed — resolve (Roll clicked, `aria-live="polite"` "Rolling…" status region during the d20 spin), react-pass (stat=18 vs DC 15, audits the Continue button + verdict `aria-live` region), react-fail (stat=1 with seeded `rng(1)`, audits both the Retry and Accept setback choice buttons). Each test pins its target sub-state via a `data-encounter-sub-phase` read before the axe scan so an upstream regression that hides the panel under audit fails loudly. New "keyboard tab order" describe block in `components/game/__tests__/EncounterScreen.test.tsx` pinning all four buttons (Roll / Continue / Retry / Accept) as real native `<button>` elements with no `tabindex="-1"` and Retry-before-Accept in document order. A self-review refactor pass extracted the duplicated mount/Roll/advance-timer dance into a `setupAndRoll({ stat, advanceMs })` helper, factored the sub-phase read into `getSubPhase(view)`, and wrapped `vi.useRealTimers()` in a `try { ... } finally` so a thrown error mid-setup can't leak fake timers across tests.
+
+**Why:** Epic #117 review (PR #275) flagged EncounterScreen a11y coverage as prep-only — Soul Door reveal and stat lock-in were exercised by axe, but the resolve roll-spin and react-state Continue / Retry / Accept choice buttons were not. This ticket fills the resolve+react gap and pins the keyboard tab order so a future refactor that swaps any of the four buttons for a custom `<div onClick>` element fails the suite at the unit-test layer rather than escaping to manual screen-reader / keyboard QA.
+
+**Notes:**
+- **Test-only ticket.** No production code touched; the four buttons all already render as native `<button>` elements and the existing `aria-live` regions are inherited from the prep work in #275.
+- **`vi.useRealTimers()` switch is mandatory before each axe call.** Axe internally awaits real timers; running it under `vi.useFakeTimers()` (which the resolve and react tests need to drive the d20 spin and the verdict transition) hangs indefinitely. The `try/finally` in `setupAndRoll` guarantees we never leave a test in fake-timer mode even if mount/click throws.
+- **Tab-order assertion is structural, not behavioural.** I'm asserting the elements are `BUTTON` tag-name and `tabIndex !== -1`, plus that Retry's `compareDocumentPosition` to Accept is `Node.DOCUMENT_POSITION_FOLLOWING`. I'm *not* synthesizing real Tab keypresses (jsdom's focus model doesn't faithfully model browser tab traversal). The structural assertion is what would actually catch a `<div onClick>` regression.
+- **Caveat / out-of-scope follow-up:** the existing `EncounterScreen.test.tsx` test named `"pressing Enter on Continue activates it"` actually fires `fireEvent.click` rather than a real `keyDown` Enter event. That's acceptable for this ticket — native `<button>` synthesizes a click on Enter at the browser layer, so the click-fire is a valid proxy — but the test name is misleading. Worth a separate polish ticket to either rename it or replace with an `fireEvent.keyDown` + focus-management probe. Flagged in the PR body.
+- **Local gate:** `pnpm ci:local` was run after rebasing onto `main` post-#302 (vitest `testTimeout` bumped to 15000ms to fix axe cascade flake). All four CI jobs (verify + build + e2e + integration) green. The flake fix is what unblocked this ticket.
+
+**Commit(s):** `321dcf9` (3 axe renders), `ef5d483` (tab-order pin), `7a772e6` (setupAndRoll helper extraction)

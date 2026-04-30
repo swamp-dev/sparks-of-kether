@@ -1,5 +1,5 @@
-import { describe, it } from 'vitest';
-import { render, renderHook } from '@testing-library/react';
+import { describe, it, vi } from 'vitest';
+import { act, fireEvent, render, renderHook } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import type { AxeResults } from 'axe-core';
 import { TreeBoard } from '@/components/tree/TreeBoard';
@@ -147,6 +147,203 @@ describe('a11y — major UI surfaces', () => {
       />,
     );
     expectNoViolations(await axe(container));
+  });
+
+  /**
+   * #283: extend axe coverage past prep to the resolve and react sub-
+   * states. Each block has a distinct `aria-live="polite"` region and
+   * outcome-specific affordances (the spinning d20 + "Rolling…" status
+   * in resolve; the Continue / Retry / Accept choice buttons in react)
+   * that prep-only coverage couldn't catch.
+   *
+   * Setup uses fake timers to drive the resolve animation
+   * deterministically, then `vi.useRealTimers()` *before* invoking
+   * `axe(...)` — axe internally awaits microtasks / timers and hangs
+   * indefinitely if fake timers aren't drained first. We pair the
+   * fake-timer dance with `stat` tuning to force outcomes against
+   * Gevurah DC 15:
+   *   - stat 18 → guaranteed pass (even a d20=1 totals 19 ≥ 15).
+   *   - stat 1  → with the seeded `rng(1)` the first d20 face is
+   *               below 14, so 1 + face < 15 → fail.
+   *
+   * For the resolve test we Roll, leave fake timers un-advanced (so
+   * the UI is mid-animation), switch to real timers, and audit. For
+   * the react tests we advance past the 800ms animation window first,
+   * then switch and audit.
+   */
+  describe('EncounterScreen (resolve + react sub-states, #283)', () => {
+    function buildPrepState(): ReturnType<typeof makeFullGame> {
+      const base = makeFullGame({ playerCount: 2, seed: 1 });
+      const activeIdx = base.players.findIndex(
+        (p) => p.id === base.activePlayerId,
+      );
+      const players = base.players.map((p, idx) =>
+        idx === activeIdx
+          ? { ...p, position: 'gevurah' as const, hand: [0, 1, 2] }
+          : { ...p, position: 'gevurah' as const },
+      );
+      return {
+        ...base,
+        players,
+        phase: 'challenge' as const,
+        challengeSubPhase: 'prep' as const,
+        pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+        lastOutcome: undefined,
+      };
+    }
+
+    /**
+     * Mount EncounterScreen, click Roll, advance the resolve animation
+     * by `advanceMs` ms, then return the rendered view at that
+     * sub-state. Using fake timers throughout so the resolve→react
+     * lag is deterministic.
+     *
+     * The caller is responsible for switching to real timers before
+     * calling `axe()` (axe internally awaits real timers and hangs on
+     * fake ones) and for unmounting the view. We expose the helper
+     * rather than auto-cleaning so the caller can pin the sub-state
+     * before the scan.
+     */
+    function setupAndRoll(opts: {
+      readonly stat: number;
+      readonly advanceMs: number;
+    }): { readonly view: ReturnType<typeof render> } {
+      const state = buildPrepState();
+      const rng = seededRng(1);
+      const { result, rerender: rerenderHook } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const player = state.players.find((p) => p.id === state.activePlayerId);
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{
+            sefirah: 'gevurah',
+            stat: opts.stat,
+            statLabel: 'Strength',
+            availableAllies: [],
+            availableCardBurns: 3,
+            availableSparkBurns: 2,
+          }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={() => undefined}
+          {...(player ? { player } : {})}
+        />
+      );
+      const view = render(<Wrapper />);
+      act(() => {
+        fireEvent.click(view.getByRole('button', { name: /^Roll$/ }));
+      });
+      if (opts.advanceMs > 0) {
+        act(() => {
+          vi.advanceTimersByTime(opts.advanceMs);
+        });
+      }
+      rerenderHook();
+      view.rerender(<Wrapper />);
+      return { view };
+    }
+
+    function getSubPhase(view: ReturnType<typeof render>): string | null {
+      return (
+        view.container
+          .querySelector('[data-encounter-screen]')
+          ?.getAttribute('data-encounter-sub-phase') ?? null
+      );
+    }
+
+    it('resolve sub-state (animatingResolve, aria-live region) is axe-clean', async () => {
+      vi.useFakeTimers();
+      let view: ReturnType<typeof render> | null = null;
+      try {
+        // advanceMs=0 — leave the resolve animation mid-flight so we
+        // audit the `aria-live="polite"` "Rolling…" status region.
+        ({ view } = setupAndRoll({ stat: 18, advanceMs: 0 }));
+        const sub = getSubPhase(view);
+        // Sanity: confirm we're auditing the resolve panel, not prep
+        // or react. An upstream regression that flips the panel under
+        // test would otherwise leave the suite silently green.
+        if (sub !== 'resolve') {
+          throw new Error(`expected resolve sub-state, got ${sub}`);
+        }
+      } finally {
+        // axe internally awaits real timers; switching back here also
+        // ensures fake timers don't leak across tests if the setup
+        // above threw.
+        vi.useRealTimers();
+      }
+      try {
+        expectNoViolations(await axe(view.container));
+      } finally {
+        view.unmount();
+      }
+    });
+
+    it('react sub-state (pass — Continue button, aria-live verdict) is axe-clean', async () => {
+      vi.useFakeTimers();
+      let view: ReturnType<typeof render> | null = null;
+      try {
+        ({ view } = setupAndRoll({ stat: 18, advanceMs: 800 }));
+        const sub = getSubPhase(view);
+        if (sub !== 'react') {
+          throw new Error(`expected react sub-state, got ${sub}`);
+        }
+        // Pin: this is the pass branch — Continue button, no Retry /
+        // Accept. Drives the axe scan over the pass-specific button.
+        const verdict = view.container.querySelector('[data-result="pass"]');
+        if (verdict === null) {
+          throw new Error('expected a pass verdict in the react panel');
+        }
+      } finally {
+        vi.useRealTimers();
+      }
+      try {
+        expectNoViolations(await axe(view.container));
+      } finally {
+        view.unmount();
+      }
+    });
+
+    it('react sub-state (fail — Retry / Accept setback choice) is axe-clean', async () => {
+      vi.useFakeTimers();
+      let view: ReturnType<typeof render> | null = null;
+      try {
+        // Stat 1 vs DC 15 — with the seeded rng(1) the first d20 face
+        // is well below 14, so the total falls short. We assert
+        // `data-result="fail"` before scanning, so a counter-example
+        // would surface as a clear failure rather than silent miscoverage.
+        ({ view } = setupAndRoll({ stat: 1, advanceMs: 800 }));
+        const sub = getSubPhase(view);
+        if (sub !== 'react') {
+          throw new Error(`expected react sub-state, got ${sub}`);
+        }
+        const verdict = view.container.querySelector('[data-result="fail"]');
+        if (verdict === null) {
+          throw new Error(
+            'expected a fail verdict in the react panel (seeded rng must have rolled below DC)',
+          );
+        }
+        // Pin: both choice buttons must be in the DOM for this scan to
+        // be meaningful — without both, axe wouldn't catch a regression
+        // that hides one branch.
+        if (
+          view.container.querySelector('[data-fail-choice="retry"]') === null ||
+          view.container.querySelector('[data-fail-choice="accept"]') === null
+        ) {
+          throw new Error(
+            'expected both Retry and Accept setback buttons in the fail react panel',
+          );
+        }
+      } finally {
+        vi.useRealTimers();
+      }
+      try {
+        expectNoViolations(await axe(view.container));
+      } finally {
+        view.unmount();
+      }
+    });
   });
 
   it('ChallengeModal (Gevurah, with stat sheet) is axe-clean', async () => {
