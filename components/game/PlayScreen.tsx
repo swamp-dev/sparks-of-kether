@@ -26,7 +26,12 @@ import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
  * `useTurn` state machine. This is the integration that turns the
  * engine + UI library into something a human can actually play.
  *
- * Single-screen orchestrator (no multiplayer routing yet — Phase 5):
+ * Hot-seat by default; multiplayer when the optional `roomCode` prop
+ * is supplied (#278). The roomCode flips the rendered EncounterScreen
+ * into multiplayer mode so each staged modifier dispatches a per-step
+ * `prep-add-modifier` event over the wire (design § 7).
+ *
+ * Single-screen orchestrator:
  *   - Tree (current player's valid moves highlighted)
  *   - Hand (visibility-aware, owner sees own; others by upper-Tree rule)
  *   - StatSheet for the active player (active stat highlighted during a check)
@@ -46,6 +51,24 @@ interface PlayScreenProps {
   readonly initialState: GameState;
   readonly rng: Rng;
   readonly className?: string;
+  /**
+   * Multiplayer room code. When set, this PlayScreen instance is
+   * embedded in a Supabase-backed room and the rendered
+   * `EncounterScreen` flips its `mode` to `'multiplayer'` — each
+   * staged modifier dispatches a `prep-add-modifier` /
+   * `prep-remove-modifier` event through `useTurn` so allies see
+   * staging in real time (design/encounter-prep-phase.md § 7).
+   *
+   * When absent, mode defaults to `'hot-seat'` and the hot-seat
+   * `submitChallenge` wrapper synthesizes burns at Roll time. The
+   * code itself is currently only used as a presence signal — no
+   * data-fetching is wired here yet; the upstream caller (e.g. a
+   * future `/rooms/[code]/play` route) is responsible for plumbing
+   * room state into `initialState`. The full real-Realtime e2e is
+   * blocked on #325 (joinRoom RLS fix) and a `/rooms/[code]/play`
+   * route landing.
+   */
+  readonly roomCode?: string;
 }
 
 /**
@@ -63,6 +86,7 @@ export function PlayScreen({
   initialState,
   rng,
   className,
+  roomCode,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
   const [thresholdResult, setThresholdResult] =
@@ -327,26 +351,44 @@ export function PlayScreen({
         // outer padding below `sm:` so the dialog reaches the edges,
         // and let the modal itself shrink via its own className.
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-ground/80 p-0 sm:p-4">
-          <EncounterScreen
-            // Hot-seat: the orchestrator runs on a single device so
-            // we collapse prep-staging into one Roll click via the
-            // `submitChallenge` wrapper. Multiplayer wiring (Phase 5)
-            // flips this to 'multiplayer' so each modifier goes over
-            // the wire and other players see the staging in real
-            // time.
-            mode="hot-seat"
-            context={challengeContext}
-            rng={rng}
-            turn={turn}
-            onResolved={handleChallengeResolved}
-            // #134: embedded stat sheet so players can see their
-            // full stat row without dismissing the dialog.
-            player={activePlayer}
-            // #38: on `sm:` and up the dialog stays centred at 28rem;
-            // below that it fills the screen so a 320 px viewport
-            // gets a usable dialog without horizontal scrolling.
-            className="min-h-screen w-full sm:min-h-fit sm:max-w-md"
-          />
+          {/*
+           * #278: mode is derived from `roomCode`. Multiplayer routes
+           * each modifier change over the wire as a per-step
+           * `prep-add-modifier` event so allies see staging in real
+           * time; hot-seat collapses staging into one Roll click via
+           * the `submitChallenge` wrapper. EncounterScreen's
+           * discriminated-union props require `player` in
+           * multiplayer mode; we pass it unconditionally because
+           * `activePlayer` is in scope and the hot-seat branch
+           * accepts it too (it powers the embedded StatSheet either
+           * way).
+           */}
+          {roomCode !== undefined ? (
+            <EncounterScreen
+              mode="multiplayer"
+              context={challengeContext}
+              rng={rng}
+              turn={turn}
+              onResolved={handleChallengeResolved}
+              player={activePlayer}
+              // #38: on `sm:` and up the dialog stays centred at 28rem;
+              // below that it fills the screen so a 320 px viewport
+              // gets a usable dialog without horizontal scrolling.
+              className="min-h-screen w-full sm:min-h-fit sm:max-w-md"
+            />
+          ) : (
+            <EncounterScreen
+              mode="hot-seat"
+              context={challengeContext}
+              rng={rng}
+              turn={turn}
+              onResolved={handleChallengeResolved}
+              // #134: embedded stat sheet so players can see their
+              // full stat row without dismissing the dialog.
+              player={activePlayer}
+              className="min-h-screen w-full sm:min-h-fit sm:max-w-md"
+            />
+          )}
         </div>
       ) : null}
 
