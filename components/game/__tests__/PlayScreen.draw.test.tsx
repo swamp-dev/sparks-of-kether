@@ -16,19 +16,6 @@ import { seededRng } from '@/engine/rng';
  * cap is 6).
  */
 
-/** Re-derive the soul-aspect-by-id map the way `makeFullGame` does. */
-function aspectMap(
-  state: ReturnType<typeof makeFullGame>,
-): Record<string, 'chesed' | 'gevurah' | 'tiferet' | 'hod'> {
-  const aspects = ['chesed', 'gevurah', 'tiferet', 'hod'] as const;
-  const map: Record<string, typeof aspects[number]> = {};
-  for (const [idx, p] of state.players.entries()) {
-    const aspect = aspects[idx % aspects.length];
-    if (aspect) map[p.id] = aspect;
-  }
-  return map;
-}
-
 describe('PlayScreen — meditate updates the hand', () => {
   it('renders two more card slots after clicking Meditate', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
@@ -41,13 +28,7 @@ describe('PlayScreen — meditate updates the hand', () => {
     const initial = { ...state, players: trimmedPlayers };
     const rng = seededRng(2);
 
-    render(
-      <PlayScreen
-        initialState={initial}
-        soulAspectByPlayer={aspectMap(state)}
-        rng={rng}
-      />,
-    );
+    render(<PlayScreen initialState={initial} rng={rng} />);
 
     // Pre-meditate hand: 2 cards.
     let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
@@ -79,13 +60,7 @@ describe('PlayScreen — meditate disabled at HAND_CAP', () => {
     const initial = { ...state, players: cappedPlayers };
     const rng = seededRng(2);
 
-    render(
-      <PlayScreen
-        initialState={initial}
-        soulAspectByPlayer={aspectMap(state)}
-        rng={rng}
-      />,
-    );
+    render(<PlayScreen initialState={initial} rng={rng} />);
 
     const meditateBtn = screen.getByRole('button', { name: /meditate/i });
     expect(meditateBtn).toBeDisabled();

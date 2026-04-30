@@ -129,7 +129,7 @@ export async function createRoom(
       id: userId,
       room_id: room.id,
       nickname,
-      soul_aspect: null,
+      zodiac_sign: null,
       ready: false,
       seat: 0,
     });
@@ -197,7 +197,7 @@ export async function joinRoom(
 
   const players = await client
     .from('players')
-    .select('id, room_id, nickname, soul_aspect, ready, seat, joined_at')
+    .select('id, room_id, nickname, zodiac_sign, ready, seat, joined_at')
     .eq('room_id', room.id);
   if (players.error) {
     return {
@@ -230,7 +230,7 @@ export async function joinRoom(
     id: userId,
     room_id: room.id,
     nickname,
-    soul_aspect: null,
+    zodiac_sign: null,
     ready: false,
     seat: nextSeat,
   });

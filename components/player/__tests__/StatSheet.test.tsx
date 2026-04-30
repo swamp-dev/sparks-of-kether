@@ -55,55 +55,18 @@ describe('StatSheet — content', () => {
   });
 });
 
-describe('StatSheet — Soul Aspect bonus', () => {
-  it('adds +2 to the bonus stat and renders a (+2) badge', () => {
-    const player = makePlayer({
-      stats: statSheet({ harmony: 12 }),
-    });
-    const { container } = render(
-      <StatSheet player={player} soulAspect="tiferet" />,
-    );
-    // Tiferet's bonus stat is `harmony`; total = 12 + 2 = 14.
-    const value = container.querySelector('[data-stat-value="harmony"]');
-    expect(value?.textContent).toBe('14');
-    const bonusBadge = container.querySelector('[data-stat-bonus="harmony"]');
-    expect(bonusBadge).not.toBeNull();
-    // No badge on other stats.
-    expect(container.querySelector('[data-stat-bonus="strength"]')).toBeNull();
-  });
-
-  it('shows the Soul Aspect title in the header', () => {
-    const player = makePlayer();
-    const { container } = render(
-      <StatSheet player={player} soulAspect="hod" />,
-    );
-    // The badge carries the aspect's data attribute and renders the
-    // configured title text from data/soul-aspects.ts. The test stays
-    // resilient by checking the data-attr — the title text is owned
-    // by the data layer and may be re-tuned independently.
-    expect(container.querySelector('[data-soul-aspect="hod"]')).not.toBeNull();
-  });
-
-  it('compact mode also reflects the Soul Aspect bonus on the matching stat', () => {
-    const player = makePlayer({ stats: statSheet({ harmony: 12 }) });
-    const { container } = render(
-      <StatSheet player={player} soulAspect="tiferet" mode="compact" />,
-    );
-    // Bonus must be applied in BOTH modes; compact branch is a
-    // separate code path so guard against a regression there.
-    expect(
-      container.querySelector('[data-stat-value="harmony"]')?.textContent,
-    ).toBe('14');
-    // The compact tooltip surfaces the source.
-    const harmonyChip = container.querySelector('[data-stat-row="harmony"]');
-    expect(harmonyChip?.getAttribute('title')).toMatch(/Soul Aspect \+2/);
-  });
-
-  it('renders without a Soul Aspect (no bonus, no badge)', () => {
-    const player = makePlayer({ stats: statSheet({ harmony: 12 }) });
+describe('StatSheet — class-bonus folding', () => {
+  it('renders the stat value as supplied (class bonuses pre-applied at setup time)', () => {
+    // Soul Aspects (#237) and the +2 in-component bonus stack are
+    // gone. Class-derived deltas are folded into `player.stats` at
+    // `engine/setup.initializeGame` time, so the StatSheet is purely
+    // presentational over the supplied stats.
+    const player = makePlayer({ stats: statSheet({ harmony: 14 }) });
     const { container } = render(<StatSheet player={player} />);
+    expect(container.querySelector('[data-stat-value="harmony"]')?.textContent).toBe('14');
+    // No legacy bonus badge or soul-aspect data-attribute should remain.
     expect(container.querySelector('[data-stat-bonus="harmony"]')).toBeNull();
-    expect(container.querySelector('[data-stat-value="harmony"]')?.textContent).toBe('12');
+    expect(container.querySelector('[data-soul-aspect]')).toBeNull();
   });
 });
 

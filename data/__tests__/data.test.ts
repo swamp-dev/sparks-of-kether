@@ -4,7 +4,6 @@ import {
   arcana,
   letters,
   paths,
-  soulAspects,
   sefirahByKey,
   sefirahByNumber,
   arcanumByNumber,
@@ -13,7 +12,7 @@ import {
   pathByArcanum,
   arcanumByPath,
 } from '@/data';
-import type { LetterClass, StatKey } from '@/data/types';
+import type { LetterClass } from '@/data/types';
 
 describe('sefirot', () => {
   it('exports exactly 10 records', () => {
@@ -211,26 +210,3 @@ describe('paths', () => {
   });
 });
 
-describe('soul aspects', () => {
-  it('exports exactly 6 records', () => {
-    expect(soulAspects).toHaveLength(6);
-  });
-
-  it('keys are the six personality Sefirot (not kether/chokmah/binah/malkuth)', () => {
-    const keys = soulAspects.map((a) => a.key).sort();
-    expect(keys).toEqual(['chesed', 'gevurah', 'hod', 'netzach', 'tiferet', 'yesod']);
-  });
-
-  it('each aspect points to its matching Sefirah', () => {
-    for (const a of soulAspects) {
-      expect(a.sefirahKey).toBe(a.key);
-    }
-  });
-
-  it("each aspect's bonusStat matches the linked Sefirah's stat", () => {
-    const expected = new Map<string, StatKey>(sefirot.map((s) => [s.key, s.stat]));
-    for (const a of soulAspects) {
-      expect(a.bonusStat).toBe(expected.get(a.sefirahKey));
-    }
-  });
-});

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Lobby, type LobbyPlayer } from '@/components/setup/Lobby';
 import { useLobby } from '@/lib/use-lobby';
-import type { SoulAspectKey } from '@/data';
+import type { ZodiacSignKey } from '@/data';
 
 /**
  * Room lobby page. Thin renderer over `useLobby(code)` — the hook
@@ -73,7 +73,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   const lobbyPlayers: readonly LobbyPlayer[] = players.map((p) => ({
     id: p.id,
     name: p.nickname,
-    soulAspect: p.soul_aspect as SoulAspectKey | null,
+    zodiacSign: p.zodiac_sign as ZodiacSignKey | null,
     ready: p.ready,
   }));
 

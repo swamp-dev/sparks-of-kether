@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { sefirahByKey } from '@/data';
-import type { SefirahKey, SoulAspectKey } from '@/data';
+import type { SefirahKey } from '@/data';
 import {
   CARD_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
@@ -115,8 +115,6 @@ interface ChallengeModalProps {
    * compat with `/demo/challenge` (#134).
    */
   readonly player?: PlayerState;
-  /** Soul Aspect for the embedded `StatSheet`'s +2 bonus row (#134). */
-  readonly soulAspect?: SoulAspectKey;
   readonly className?: string;
 }
 
@@ -126,7 +124,6 @@ export function ChallengeModal({
   onResolved,
   onCancel,
   player,
-  soulAspect,
   className,
 }: ChallengeModalProps): JSX.Element {
   const sefirahData = useMemo(() => sefirahByKey(context.sefirah), [context.sefirah]);
@@ -306,7 +303,6 @@ export function ChallengeModal({
             player={player}
             mode="compact"
             activeStat={sefirahData.stat}
-            {...(soulAspect !== undefined ? { soulAspect } : {})}
           />
         </div>
       ) : null}

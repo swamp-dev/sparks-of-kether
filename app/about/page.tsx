@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ColorBloom } from '@/components/atmosphere/ColorBloom';
 import homeShot from '@/assets/marketing/home-desktop.png';
-import soulAspectShot from '@/assets/marketing/demo-soul-aspect-desktop.png';
 import ritualShot from '@/assets/marketing/demo-ritual-desktop.png';
 import treeShot from '@/assets/marketing/demo-tree-desktop.png';
 import metersShot from '@/assets/marketing/demo-meters-desktop.png';
@@ -88,11 +87,6 @@ export default function AboutPage(): JSX.Element {
           A walk through the surfaces in the order a player meets them.
         </p>
         <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
-          <GalleryItem
-            src={soulAspectShot}
-            alt="Soul Aspect picker — choose your role"
-            caption="Choose your role. Heart, Boundary-Keeper, Giver, Mind, Feeler, or Dreamer — six aspects keyed to the Sefirot of personality."
-          />
           <GalleryItem
             src={ritualShot}
             alt="Blessing Ritual — the opening rolls"

@@ -114,7 +114,8 @@ describe('playthrough — win path (2 players)', () => {
     const make = (): GameState => {
       const base = makeFullGame({ playerCount: 2, seed: 11 });
       // Place p1 at gevurah (uncleared so the challenge fires) with
-      // the standard +2 strength bonus from soul aspect.
+      // the default Aries-class strength stat (zodiac dignity already
+      // applied at game start: Mars rulership +1).
       const players = base.players.map((p, i) =>
         i === 0
           ? { ...p, position: 'gevurah' as const, hand: [...p.hand] }

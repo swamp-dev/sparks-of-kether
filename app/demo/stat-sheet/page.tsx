@@ -27,33 +27,30 @@ export default function StatSheetDemoPage(): JSX.Element {
     clearedSefirot: new Set(['malkuth', 'yesod']),
     sparksHeld: new Set(['malkuth', 'yesod', 'tiferet']),
     pendingAbilities: EMPTY_ABILITY_FLAGS,
+    zodiacSign: 'aries',
   };
   return (
     <main className="min-h-screen p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Stat Sheet</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
-        Character panel — 10 stats, Soul Aspect bonus, Sparks held. The
-        gold-ringed row is the stat being checked this turn.
+        Character panel — 10 stats and Sparks held. The gold-ringed row
+        is the stat being checked this turn. Class-derived bonuses are
+        folded into the stat values at game start.
       </p>
 
       <Section title="Expanded — active challenge: Harmony">
         <div className="max-w-md rounded-lg border border-veil/20 bg-ground/50 p-4">
-          <StatSheet player={player} soulAspect="tiferet" activeStat="harmony" />
+          <StatSheet player={player} activeStat="harmony" />
         </div>
       </Section>
 
       <Section title="Compact — orchestrator row">
         <div className="rounded-lg border border-veil/20 bg-ground/50 p-3">
-          <StatSheet
-            player={player}
-            soulAspect="tiferet"
-            mode="compact"
-            activeStat="harmony"
-          />
+          <StatSheet player={player} mode="compact" activeStat="harmony" />
         </div>
       </Section>
 
-      <Section title="Expanded — no Soul Aspect (raw stats)">
+      <Section title="Expanded — no active stat highlight">
         <div className="max-w-md rounded-lg border border-veil/20 bg-ground/50 p-4">
           <StatSheet player={player} />
         </div>

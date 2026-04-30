@@ -51,7 +51,6 @@ A walk through the surfaces in the order a player meets them.
 
 | | |
 |---|---|
-| ![Soul Aspect picker](assets/marketing/demo-soul-aspect-desktop.png) | **Choose your role.** Heart, Boundary-Keeper, Giver, Mind, Feeler, or Dreamer — six aspects keyed to the Sefirot of personality. Each grants a +2 stat and a once-per-game ability. |
 | ![Blessing Ritual](assets/marketing/demo-ritual-desktop.png) | **The opening ritual.** Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat. The atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible. |
 | ![Tree of Life board](assets/marketing/demo-tree-desktop.png) | **The board.** Ten Sefirot connected by twenty-two paths — the geometry the team traverses together. |
 | ![Play surface](assets/marketing/play-desktop.png) | **The play surface.** Board, hand, and shared meters all in view. |

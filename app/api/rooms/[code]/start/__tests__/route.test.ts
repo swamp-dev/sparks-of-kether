@@ -112,7 +112,7 @@ const validPlayers = [
     id: 'host-uid',
     room_id: 'room-uuid',
     nickname: 'Andy',
-    soul_aspect: 'chesed',
+    zodiac_sign: 'aries',
     ready: true,
     seat: 0,
     joined_at: 't',
@@ -121,7 +121,7 @@ const validPlayers = [
     id: 'p2',
     room_id: 'room-uuid',
     nickname: 'Bea',
-    soul_aspect: 'gevurah',
+    zodiac_sign: 'leo',
     ready: true,
     seat: 1,
     joined_at: 't',
@@ -186,11 +186,11 @@ describe('POST /api/rooms/[code]/start', () => {
     expect(snapshotInserts).toHaveLength(0);
   });
 
-  it('returns 422 when a player has no soul_aspect', async () => {
+  it('returns 422 when a player has no zodiac_sign', async () => {
     playersResponse = {
       data: [
         validPlayers[0],
-        { ...validPlayers[1], soul_aspect: null },
+        { ...validPlayers[1], zodiac_sign: null },
       ],
       error: null,
     };
@@ -201,7 +201,7 @@ describe('POST /api/rooms/[code]/start', () => {
     const body = (await res.json()) as {
       reason: { kind: string; playerIds: string[] };
     };
-    expect(body.reason.kind).toBe('missing-soul-aspect');
+    expect(body.reason.kind).toBe('missing-zodiac-sign');
     expect(body.reason.playerIds).toEqual(['p2']);
     expect(snapshotInserts).toHaveLength(0);
   });
@@ -254,11 +254,11 @@ describe('POST /api/rooms/[code]/start', () => {
     expect(snapshotInserts).toHaveLength(0);
   });
 
-  it('returns 422 duplicate-soul-aspects when two players share an aspect', async () => {
+  it('returns 422 duplicate-zodiac-signs when two players share a sign', async () => {
     playersResponse = {
       data: [
         validPlayers[0],
-        { ...validPlayers[1], soul_aspect: 'chesed' }, // same as host
+        { ...validPlayers[1], zodiac_sign: 'aries' }, // same as host
       ],
       error: null,
     };
@@ -267,7 +267,7 @@ describe('POST /api/rooms/[code]/start', () => {
     });
     expect(res.status).toBe(422);
     const body = (await res.json()) as { reason: { kind: string } };
-    expect(body.reason.kind).toBe('duplicate-soul-aspects');
+    expect(body.reason.kind).toBe('duplicate-zodiac-signs');
     expect(snapshotInserts).toHaveLength(0);
   });
 

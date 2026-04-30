@@ -53,7 +53,6 @@ const ROUTES: readonly Route[] = [
   { path: '/demo/meters', slug: 'demo-meters' },
   { path: '/demo/ritual', slug: 'demo-ritual' },
   { path: '/demo/shell-panel', slug: 'demo-shell-panel' },
-  { path: '/demo/soul-aspect', slug: 'demo-soul-aspect' },
   { path: '/demo/stat-sheet', slug: 'demo-stat-sheet' },
   { path: '/demo/tokens', slug: 'demo-tokens' },
   { path: '/demo/tree', slug: 'demo-tree' },

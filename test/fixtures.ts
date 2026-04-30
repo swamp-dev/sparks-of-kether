@@ -1,4 +1,4 @@
-import type { SoulAspectKey, StatKey } from '@/data';
+import type { StatKey, ZodiacSignKey } from '@/data';
 import type { GameState, PlayerState, StatSheet } from '@/engine/types';
 import { EMPTY_ABILITY_FLAGS, EMPTY_PILLAR_STREAK, EMPTY_SHELL_STATE } from '@/engine/types';
 import { initializeGame, type PlayerSetup } from '@/engine/setup';
@@ -30,6 +30,11 @@ export function statSheet(overrides: Partial<Record<StatKey, number>> = {}): Sta
 /**
  * Fresh player with minimum-viable defaults. Everything is overridable;
  * omit to accept the default.
+ *
+ * `zodiacSign` defaults to `'aries'` since #237 made it required on
+ * PlayerState — pick something neutral for fixtures that don't care
+ * about the class. Tests that want to exercise specific dignity or
+ * Soul Door behaviour should override.
  */
 export function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
   return {
@@ -41,6 +46,7 @@ export function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
     clearedSefirot: new Set(),
     sparksHeld: new Set(),
     pendingAbilities: EMPTY_ABILITY_FLAGS,
+    zodiacSign: 'aries',
     ...overrides,
   };
 }
@@ -80,31 +86,18 @@ export function makeState(
 }
 
 /**
- * Default Soul Aspects assigned in seat order when callers of
- * `makeFullGame` don't specify their own. The current MVP cap is
- * 4 players, so we enumerate the first four Sefirot in design's
- * preferred reading order. Real games allow any arrangement; this
- * is just the deterministic test default.
- *
- * **Yesod intentionally excluded** (#99): per `design/mechanics.md`
- * § Soul Aspects, Yesod's weakness is "you start one Sefirah below
- * Malkuth" — but `engine/setup.ts:initializeGame` places every
- * player at Malkuth regardless of Soul Aspect. Until the engine
- * implements that offset, fixtures using Yesod would silently
- * misrepresent the starting position. Tests that explicitly want
- * Yesod can still opt in by passing `soulAspects: [..., 'yesod']`.
- *
- * **Netzach also excluded**: kept in line with the actual MVP cap.
- * `playerCount` is typed `2 | 3 | 4` and the slice never reaches
- * index 4. If the cap ever grows to 5+ players, extend this array
- * alongside the type — phantom entries that never get selected
- * are surface area without value.
+ * Default zodiac signs assigned in seat order when callers of
+ * `makeFullGame` don't specify their own. Length matches the MVP
+ * cap (4 players); seats beyond that aren't allowed by
+ * `engine/setup.deckCountFor`. The picks are net-neutral or mildly
+ * positive in the dignity table so tests don't get surprise stat
+ * shifts: Aries (net 0), Leo (net 0), Libra (net 0), Cancer (net 0).
  */
-const DEFAULT_SOUL_ASPECT_ORDER: readonly SoulAspectKey[] = [
-  'chesed',
-  'gevurah',
-  'tiferet',
-  'hod',
+const DEFAULT_ZODIAC_SIGN_ORDER: readonly ZodiacSignKey[] = [
+  'aries',
+  'leo',
+  'libra',
+  'cancer',
 ];
 
 export interface MakeRoomOverrides {
@@ -154,11 +147,11 @@ export function makeRoom(overrides: MakeRoomOverrides = {}): RoomRow {
 export interface MakeFullGameInput {
   readonly playerCount: 2 | 3 | 4;
   /**
-   * Soul Aspects to assign in seat order. Must equal `playerCount`
+   * Zodiac signs to assign in seat order. Must equal `playerCount`
    * length and contain unique entries. Defaults to the first
-   * `playerCount` of `DEFAULT_SOUL_ASPECT_ORDER`.
+   * `playerCount` of `DEFAULT_ZODIAC_SIGN_ORDER`.
    */
-  readonly soulAspects?: readonly SoulAspectKey[];
+  readonly zodiacSigns?: readonly ZodiacSignKey[];
   /** RNG seed for deterministic deck shuffling. */
   readonly seed: number;
 }
@@ -166,14 +159,14 @@ export interface MakeFullGameInput {
 /**
  * Wrapper around `engine/setup.initializeGame` that produces a fully-
  * dealt `GameState` with deterministic RNG. Useful for tests that
- * need a real starting position (deck shuffled, hands dealt, soul-
- * aspect bonuses applied) rather than the empty zero-state from
+ * need a real starting position (deck shuffled, hands dealt, zodiac
+ * dignity deltas applied) rather than the empty zero-state from
  * `makeState`.
  *
  * Player IDs are seat-indexed (`p1`, `p2`, ...). Seat 0 is `p1` and
  * is the starting active player per `initializeGame`'s convention.
- * Stats default to `DEFAULT_STATS` for every player; the Soul Aspect
- * bonus applies on top.
+ * Stats default to `DEFAULT_STATS` for every player; the zodiac
+ * dignity bonuses apply on top.
  *
  * Throws on `playerCount` outside 2..4 — same range as
  * `engine/setup.deckCountFor`.
@@ -187,22 +180,22 @@ export function makeFullGame(input: MakeFullGameInput): GameState {
       `makeFullGame: playerCount must be 2, 3, or 4 — got ${playerCount}`,
     );
   }
-  const aspects =
-    input.soulAspects ?? DEFAULT_SOUL_ASPECT_ORDER.slice(0, playerCount);
-  if (aspects.length !== playerCount) {
+  const signs =
+    input.zodiacSigns ?? DEFAULT_ZODIAC_SIGN_ORDER.slice(0, playerCount);
+  if (signs.length !== playerCount) {
     throw new Error(
-      `makeFullGame: soulAspects length ${aspects.length} does not match playerCount ${playerCount}`,
+      `makeFullGame: zodiacSigns length ${signs.length} does not match playerCount ${playerCount}`,
     );
   }
-  if (new Set(aspects).size !== aspects.length) {
+  if (new Set(signs).size !== signs.length) {
     throw new Error(
-      `makeFullGame: soulAspects must be unique across players`,
+      `makeFullGame: zodiacSigns must be unique across players`,
     );
   }
-  const setups: PlayerSetup[] = aspects.map((aspect, idx) => ({
+  const setups: PlayerSetup[] = signs.map((sign, idx) => ({
     id: `p${idx + 1}`,
     name: `Player ${idx + 1}`,
-    soulAspect: aspect,
+    zodiacSign: sign,
     stats: DEFAULT_STATS,
   }));
   return initializeGame({ players: setups, rng: seededRng(seed) });

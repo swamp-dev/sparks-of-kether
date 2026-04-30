@@ -1,5 +1,5 @@
-import { arcana, soulAspectByKey } from '@/data';
-import type { SoulAspectKey, StatKey, ZodiacSignKey } from '@/data';
+import { arcana } from '@/data';
+import type { StatKey, ZodiacSignKey } from '@/data';
 import type { Rng } from './rng';
 import {
   EMPTY_ABILITY_FLAGS,
@@ -11,22 +11,20 @@ import { zodiacBonus } from './zodiac-bonus';
 
 /**
  * Per-player setup input — what the lobby has gathered before dealing.
- * Stats come from the Sefirot-blessing ritual (#27); soulAspect from
- * the Soul Aspect picker (#28); zodiacSign from the new astrological-
- * class picker (Epic #212). Class bonuses are NOT yet folded into
- * `stats` — `initializeGame` applies them and clamps to [1, 18].
+ * Stats come from the Sefirot-blessing ritual (#27); zodiacSign from
+ * the astrological-class picker (Epic #212). Class bonuses are NOT
+ * yet folded into `stats` — `initializeGame` applies them and clamps
+ * to [1, 18].
  *
- * `zodiacSign` is optional during the #212 transition: callers that
- * haven't yet wired the picker (hot-seat, multiplayer-flow tests, the
- * legacy lobby) keep their existing Soul-Aspect-only behaviour. T7
- * (#236) wires the orchestration; T8 (#237) makes it required and
- * removes Soul Aspects.
+ * Soul Aspects (`soulAspect: SoulAspectKey`) were removed in #237 (T8)
+ * after the Zodiac picker (#236 T7) became the sole class-selection
+ * UI. The dignity-derived per-stat deltas now carry the full class-
+ * bonus weight; no Soul-Aspect +2 stack on top.
  */
 export interface PlayerSetup {
   readonly id: string;
   readonly name: string;
-  readonly soulAspect: SoulAspectKey;
-  readonly zodiacSign?: ZodiacSignKey;
+  readonly zodiacSign: ZodiacSignKey;
   readonly stats: StatSheet;
 }
 
@@ -34,8 +32,7 @@ export interface PlayerSetup {
  * Stat clamp range. Per `design/astrological-classes.md` § 6 D5:
  * "Sign bonus is applied additively to the rolled 3d6 stat at game
  * start, capped to a floor of 1 and ceiling of 18 (matching 3d6's
- * natural range)." Applied to the *combined* class-bonus result so
- * Soul Aspect + Zodiac stack additively before clamping.
+ * natural range)." Applied to the *combined* class-bonus result.
  */
 const STAT_FLOOR = 1;
 const STAT_CEILING = 18;
@@ -76,32 +73,25 @@ export function deckCountFor(playerCount: number): 1 | 2 {
 }
 
 /**
- * Apply class bonuses (Soul Aspect +2 to its bonus stat, plus zodiac
- * deltas if a sign is picked) additively to the rolled stats and
- * clamp each stat to [STAT_FLOOR, STAT_CEILING].
+ * Apply zodiac dignity deltas additively to the rolled stats and
+ * clamp each stat to [STAT_FLOOR, STAT_CEILING] per design D5.
  *
  * The clamp is applied to the *combined* result, not each bonus
- * individually — so a 17 rolled stat gaining +2 (Soul Aspect) +3
- * (Virgo Mercury double-count) ends at 18, not at 17 + 5 = 22.
+ * individually — so a 17 rolled stat gaining +3 (Virgo Mercury
+ * double-count) ends at 18, not at 17 + 3 = 20.
  *
- * **Behaviour change vs pre-#234**: the old `applySoulAspectBonus`
- * did not clamp, so a player who rolled 17 for their Soul Aspect's
- * bonus stat could end up at 19. That latent over-cap is now
- * clamped to 18 — design D5 pins the 1–18 range.
+ * Pre-#237 this also applied a Soul Aspect +2 bonus on top; that
+ * stack was removed when Soul Aspects were retired (Epic #212 T8).
  */
 function applyClassBonuses(
   stats: StatSheet,
-  soulAspect: SoulAspectKey,
-  zodiacSign: ZodiacSignKey | undefined,
+  zodiacSign: ZodiacSignKey,
 ): StatSheet {
-  const aspectBonusStat = soulAspectByKey(soulAspect).bonusStat;
-  const zodiacDeltas: Partial<StatSheet> =
-    zodiacSign !== undefined ? zodiacBonus(zodiacSign) : {};
+  const zodiacDeltas = zodiacBonus(zodiacSign);
   const out: Partial<Record<StatKey, number>> = {};
   for (const stat of Object.keys(stats) as StatKey[]) {
-    const aspectAdd = stat === aspectBonusStat ? 2 : 0;
     const zodiacAdd = zodiacDeltas[stat] ?? 0;
-    const raw = stats[stat] + aspectAdd + zodiacAdd;
+    const raw = stats[stat] + zodiacAdd;
     out[stat] = Math.max(STAT_FLOOR, Math.min(STAT_CEILING, raw));
   }
   return out as StatSheet;
@@ -146,13 +136,8 @@ export interface InitializeGameInput {
  *   1. Build the draw pile by shuffling N copies of the 22 Major
  *      Arcana (N from `deckCountFor(playerCount)`).
  *   2. Deal `STARTING_HAND_SIZE` cards to each player from the top.
- *   3. Place every player at Malkuth, apply the Soul Aspect's +2
- *      bonus, initialize counter / shell / streak fields to empty.
- *
- * Note: Yesod's "start one below Malkuth" weakness from
- * `data/soul-aspects.ts` is flavor for now — the engine doesn't model
- * a sub-Malkuth waypoint. When that ticket lands, this function is
- * the natural place to special-case the Yesod player's `position`.
+ *   3. Place every player at Malkuth, apply the zodiac dignity
+ *      deltas, initialize counter / shell / streak fields to empty.
  */
 export function initializeGame(input: InitializeGameInput): GameState {
   const { players, rng } = input;
@@ -170,10 +155,10 @@ export function initializeGame(input: InitializeGameInput): GameState {
   const playerStates: PlayerState[] = players.map((p, idx) => {
     const start = idx * STARTING_HAND_SIZE;
     const hand = shuffled.slice(start, start + STARTING_HAND_SIZE);
-    // Apply Soul Aspect +2 + zodiac deltas (if any), clamp to [1, 18].
-    // Lookup helpers throw on unknown keys, so a bad soulAspect or
-    // zodiacSign fails loudly rather than silently NaN-ing the result.
-    const stats = applyClassBonuses(p.stats, p.soulAspect, p.zodiacSign);
+    // Apply zodiac dignity deltas, clamp to [1, 18]. Lookup helpers
+    // throw on unknown keys, so a bad zodiacSign fails loudly rather
+    // than silently NaN-ing the result.
+    const stats = applyClassBonuses(p.stats, p.zodiacSign);
     return {
       id: p.id,
       name: p.name,
@@ -183,10 +168,9 @@ export function initializeGame(input: InitializeGameInput): GameState {
       clearedSefirot: new Set(),
       sparksHeld: new Set(),
       pendingAbilities: EMPTY_ABILITY_FLAGS,
-      // #244: persist the zodiac sign so the challenge resolver can
-      // compute Soul Door DC reductions on every check, not just at
-      // setup. Optional during the #212 transition (see PlayerState).
-      ...(p.zodiacSign !== undefined && { zodiacSign: p.zodiacSign }),
+      // Soul Doors (Epic #240) read this on every challenge to
+      // compute the per-Door DC discount. Required since #237 (T8).
+      zodiacSign: p.zodiacSign,
     };
   });
 

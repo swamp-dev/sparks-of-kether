@@ -25,8 +25,8 @@
 - [ ] Click "Hot-seat" → arrive at the play setup screen.
 - [ ] Player 1 Sefirot blessing ritual: 10 steps, one per Sefirah. Each step shows the Sefirah's name in Hebrew + English, the stat being blessed, and a die-roll affordance.
 - [ ] Each blessing step accepts a roll without "stuck" UI (button visually disables during animation, re-enables when ready).
-- [ ] After P1 ritual: Soul Aspect picker shows all 6 personality Sefirot. Selecting one advances to P2.
-- [ ] Player 2 ritual + aspect pick: same flow, no leaks of P1 state visible.
+- [ ] After P1 ritual: zodiac-sign picker shows all 12 signs. Selecting one advances to P2.
+- [ ] Player 2 ritual + sign pick: same flow, no leaks of P1 state visible.
 - [ ] Lobby renders both players. Both show as "ready" (since hot-seat auto-readies).
 - [ ] Click "Begin" → play screen mounts. Tree of Life renders. Both player tokens visible at Malkuth.
 - [ ] Make a move: select an arcanum, then a destination. Within 2 seconds the player token sits on the destination node; no duplicate token visible at the source; the played card no longer in hand.
@@ -45,11 +45,11 @@
 - [ ] Second tab arrives at the same lobby. Both players appear in the player list.
 - [ ] Each player can toggle their ready state. Indicator updates within 2s on the other tab.
 
-(Note: the Soul Aspect picker UI is not wired into multiplayer yet. Once the picker lands, add a check here that picks reflect cross-tab within 2s.)
+(Note: the zodiac-sign picker UI is not wired into multiplayer yet. Once the picker lands, add a check here that picks reflect cross-tab within 2s.)
 
 ## 4. Lobby Begin happy path
 
-- [ ] In a 2-player lobby with both ready and both having distinct Soul Aspects, the host's "Begin" button is enabled.
+- [ ] In a 2-player lobby with both ready and both having distinct zodiac signs, the host's "Begin" button is enabled.
 - [ ] Non-host's "Begin" button is disabled (or hidden).
 - [ ] Click Begin → button shows "Beginning…" and disables.
 - [ ] Within 2s, the lobby reflects `state: 'playing'` (visible somehow — game-page transition or status indicator).
@@ -58,7 +58,7 @@
 ## 5. Lobby error paths
 
 - [ ] Try to start a 1-player lobby (open one tab, click Begin) — server returns 422 `too-few-players`. Error visible, not silent.
-- [ ] Have two players pick the same Soul Aspect. Begin returns 422 `duplicate-soul-aspects`. Error visible.
+- [ ] Have two players pick the same zodiac sign. Begin returns 422 `duplicate-zodiac-signs`. Error visible.
 - [ ] Try to access `/rooms/ZZZZZZ/lobby` (a code that does not exist). Page shows a clean "no room" error, not a crash.
 
 ## 6. Demo pages (each renders without crash)
@@ -70,7 +70,6 @@
 - [ ] `/demo/meters` — Illumination + Separation meters render. Test edge cases (0/15, 14/15) by adjusting the props if exposed.
 - [ ] `/demo/ritual` — Sefirot blessing ritual step. Roll button works.
 - [ ] `/demo/shell-panel` — Shell indicators for all 10 Shells. Dormant / active / banished states visible.
-- [ ] `/demo/soul-aspect` — Soul Aspect picker. All 6 personality Sefirot render.
 - [ ] `/demo/stat-sheet` — Player stat sheet. All 10 stats render with correct labels.
 - [ ] `/demo/tokens` — Player tokens, Spark tokens, Shell tokens, d20. All render at correct color/size.
 - [ ] `/demo/tree` — Tree of Life board. All 10 Sefirot nodes render. All 22 paths render. No overlapping labels.
@@ -92,7 +91,7 @@
 - [ ] Home page legible without horizontal scroll.
 - [ ] Lobby is usable on a phone (player list + ready toggle reachable).
 - [ ] Tree of Life on the play screen at least *fits*; pinch-zoom may be needed but the layout should not break.
-- [ ] Modals (challenge, soul aspect, etc.) take the full viewport on phone.
+- [ ] Modals (challenge, etc.) take the full viewport on phone.
 
 ## 10. Navigation + recovery
 

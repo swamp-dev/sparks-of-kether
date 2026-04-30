@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { sefirahByKey, tryPathByNumber } from '@/data';
-import type { SoulAspectKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
@@ -43,7 +42,6 @@ import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
 
 interface PlayScreenProps {
   readonly initialState: GameState;
-  readonly soulAspectByPlayer: Readonly<Record<string, SoulAspectKey>>;
   readonly rng: Rng;
   readonly className?: string;
 }
@@ -61,7 +59,6 @@ export const AUTO_ADVANCE_DELAY_MS = 1500;
 
 export function PlayScreen({
   initialState,
-  soulAspectByPlayer,
   rng,
   className,
 }: PlayScreenProps): JSX.Element {
@@ -277,12 +274,7 @@ export function PlayScreen({
       <aside aria-label="Game status" className="flex flex-col gap-6 text-veil">
         {activePlayer ? (
           <div className="rounded border border-veil/20 bg-ground/40 p-4">
-            <StatSheet
-              player={activePlayer}
-              {...(soulAspectByPlayer[activePlayer.id] !== undefined
-                ? { soulAspect: soulAspectByPlayer[activePlayer.id] }
-                : {})}
-            />
+            <StatSheet player={activePlayer} />
           </div>
         ) : null}
         <div className="rounded border border-veil/20 bg-ground/40 p-4">
@@ -319,9 +311,6 @@ export function PlayScreen({
             // `activePlayer` is defined (see `showChallenge`), so the
             // direct prop is safe here.
             player={activePlayer}
-            {...(soulAspectByPlayer[activePlayer.id] !== undefined
-              ? { soulAspect: soulAspectByPlayer[activePlayer.id] }
-              : {})}
             // #38: on `sm:` and up the modal stays centred at 28rem;
             // below that it fills the screen so a 320 px viewport
             // gets a usable dialog without horizontal scrolling.
@@ -360,12 +349,9 @@ function buildChallengeContext(
   // #245 / Epic #240: compute the Door delta here (where we already
   // have the player + sefirah) so the modal can render the "Soul Door
   // open here" callout and pass the delta through to CheckModifiers.
-  // Signless players (#212 transition) get 0; the modal's
-  // `showSoulDoor` guard skips the callout in that case.
-  const doorDelta =
-    player.zodiacSign !== undefined
-      ? soulDoorDcDelta(player.zodiacSign, sefirahData.key)
-      : 0;
+  // zodiacSign is required on PlayerState since #237 (T8); the modal's
+  // `showSoulDoor` guard skips the callout when the delta is 0.
+  const doorDelta = soulDoorDcDelta(player.zodiacSign, sefirahData.key);
   return {
     sefirah: sefirahData.key,
     stat: player.stats[sefirahData.stat],

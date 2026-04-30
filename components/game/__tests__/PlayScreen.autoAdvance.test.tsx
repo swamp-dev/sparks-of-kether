@@ -32,18 +32,8 @@ describe('PlayScreen — auto-advance turn', () => {
 
   it('auto-advances to the next player after the end-phase delay', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const aspects = ['chesed', 'gevurah'] as const;
-    const soulAspectByPlayer: Record<string, typeof aspects[number]> = {};
-    for (const [idx, p] of state.players.entries()) {
-      const a = aspects[idx % aspects.length];
-      if (a) soulAspectByPlayer[p.id] = a;
-    }
     const { container } = render(
-      <PlayScreen
-        initialState={state}
-        soulAspectByPlayer={soulAspectByPlayer}
-        rng={seededRng(2)}
-      />,
+      <PlayScreen initialState={state} rng={seededRng(2)} />,
     );
 
     // Initially the first player is active.
@@ -74,18 +64,8 @@ describe('PlayScreen — auto-advance turn', () => {
 
   it('clicking End Turn manually cancels the pending auto-advance (no double-fire)', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const aspects = ['chesed', 'gevurah'] as const;
-    const soulAspectByPlayer: Record<string, typeof aspects[number]> = {};
-    for (const [idx, p] of state.players.entries()) {
-      const a = aspects[idx % aspects.length];
-      if (a) soulAspectByPlayer[p.id] = a;
-    }
     const { container } = render(
-      <PlayScreen
-        initialState={state}
-        soulAspectByPlayer={soulAspectByPlayer}
-        rng={seededRng(2)}
-      />,
+      <PlayScreen initialState={state} rng={seededRng(2)} />,
     );
 
     const main = container.querySelector('[data-play-screen]');

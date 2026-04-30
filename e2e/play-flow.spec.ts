@@ -4,13 +4,11 @@ import { test, expect } from '@playwright/test';
  * End-to-end integration test for the play flow.
  *
  * Walks through:
- *   home → /play → P1 ritual (10 steps) → P1 aspect pick → P1 sign pick
- *   → P2 ritual → P2 aspect pick → P2 sign pick → lobby → Begin →
- *   play screen renders
+ *   home → /play → P1 ritual (10 steps) → P1 sign pick →
+ *   P2 ritual → P2 sign pick → lobby → Begin → play screen renders
  *
- * #236 (T7): added the zodiac-sign phase between aspect and next-
- * player. T8 will remove the aspect phase entirely; until then both
- * pickers run.
+ * #237 (Epic #212 T8): the Soul Aspect phase has been removed; the
+ * zodiac-sign pick alone supplies the player's class.
  *
  * This is the test that exists specifically to catch the integration
  * bugs unit tests can't see — prop-shape mismatches between engine
@@ -38,7 +36,7 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
   // multiplayer "New game" button (which depends on Supabase).
   await page.getByRole('link', { name: /Hot-seat/i }).click();
 
-  // Walk both players through the blessing ritual + aspect pick.
+  // Walk both players through the blessing ritual + sign pick.
   for (let player = 1; player <= 2; player++) {
     await expect(
       page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
@@ -52,27 +50,14 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
 
     // #215: the ritual now pauses on a Summary screen so the user
     // sees their final stats before advancing. Click Continue to
-    // transition to the Soul Aspect picker.
+    // transition to the zodiac-sign picker.
     await expect(
       page.getByRole('heading', { name: /The Tree has spoken/i }),
     ).toBeVisible();
     await page.getByRole('button', { name: /^Continue$/ }).click();
 
-    await expect(
-      page.getByRole('heading', { name: /Choose your Soul Aspect/i }),
-    ).toBeVisible();
-
-    // Pick the first available aspect (avoids the one taken by P1).
-    // Player 1 takes The Heart (Tiferet); Player 2 takes The Giver
-    // (Chesed) — both available at their respective steps.
-    const aspectName = player === 1 ? 'The Heart' : 'The Giver';
-    await page
-      .getByRole('button', { name: new RegExp(aspectName, 'i') })
-      .first()
-      .click();
-    await page.getByRole('button', { name: /^Confirm$/ }).click();
-
-    // #236: zodiac-sign picker comes next.
+    // #236: zodiac-sign picker. (#237 removed the intermediate Soul
+    // Aspect picker; the sign pick alone supplies the class.)
     await expect(
       page.getByRole('heading', { name: /Choose your sign/i }),
     ).toBeVisible();

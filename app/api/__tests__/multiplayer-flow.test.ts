@@ -98,7 +98,7 @@ function seedLobby(code: string): void {
     id: 'p1',
     room_id: 'room-uuid',
     nickname: 'Alex',
-    soul_aspect: 'chesed',
+    zodiac_sign: 'aries',
     ready: true,
     seat: 0,
     joined_at: 't',
@@ -107,7 +107,7 @@ function seedLobby(code: string): void {
     id: 'p2',
     room_id: 'room-uuid',
     nickname: 'Bea',
-    soul_aspect: 'gevurah',
+    zodiac_sign: 'leo',
     ready: true,
     seat: 1,
     joined_at: 't',
@@ -329,7 +329,7 @@ describe('multiplayer flow — start → events integration', () => {
     const expected = makeFullGame({
       playerCount: 2,
       seed: 1,
-      soulAspects: ['chesed', 'gevurah'],
+      zodiacSigns: ['aries', 'leo'],
     });
     const serialized = serializeGameState(expected);
     expect(serialized.activePlayerId).toBe(expected.activePlayerId);

@@ -431,5 +431,4 @@ medium-impact polish.
 
 <!-- code-ref: components/setup/BlessingRitual.tsx -->
 <!-- code-ref: components/meters/TeamMeters.tsx -->
-<!-- code-ref: components/setup/SoulAspectPicker.tsx -->
 <!-- code-ref: components/hand/CardBack.tsx -->

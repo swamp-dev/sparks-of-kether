@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeRoom, makeFullGame, DEFAULT_STATS } from '../fixtures';
+import { makeRoom, makeFullGame } from '../fixtures';
 import { scenario, ScenarioFailedError } from '../scenario';
 
 describe('makeRoom', () => {
@@ -39,9 +39,9 @@ describe('makeFullGame', () => {
     // Counters start at zero.
     expect(state.illumination).toBe(0);
     expect(state.separation).toBe(0);
-    // Soul aspects unique by default.
-    const aspects = state.players.map((p) => p.id);
-    expect(new Set(aspects).size).toBe(state.players.length);
+    // Zodiac signs unique by default.
+    const signs = state.players.map((p) => p.zodiacSign);
+    expect(new Set(signs).size).toBe(state.players.length);
   });
 
   it('is deterministic for the same seed', () => {
@@ -61,22 +61,17 @@ describe('makeFullGame', () => {
     expect(a.deck).not.toEqual(b.deck);
   });
 
-  it('honors a custom soulAspects ordering', () => {
+  it('honors a custom zodiacSigns ordering', () => {
     const state = makeFullGame({
       playerCount: 2,
       seed: 1,
-      soulAspects: ['gevurah', 'chesed'],
+      zodiacSigns: ['aries', 'leo'],
     });
-    // The Soul Aspect bonus is +2 to a stat keyed by aspect; we use
-    // the bonus-stat differential as a robust signal that the
-    // mapping landed in the expected seat order.
-    const p0 = state.players[0];
-    const p1 = state.players[1];
-    expect(p0).toBeDefined();
-    expect(p1).toBeDefined();
-    // Gevurah → +2 strength, Chesed → +2 lovingkindness.
-    expect(p0!.stats.strength).toBe(DEFAULT_STATS.strength + 2);
-    expect(p1!.stats.lovingkindness).toBe(DEFAULT_STATS.lovingkindness + 2);
+    // The seat-by-seat zodiacSign pass-through is the simplest signal
+    // that the mapping landed in the expected seat order; the dignity
+    // bonuses are exercised in `engine/__tests__/setup.test.ts`.
+    expect(state.players[0]?.zodiacSign).toBe('aries');
+    expect(state.players[1]?.zodiacSign).toBe('leo');
   });
 
   it('rejects out-of-range player counts (1 or 5+)', () => {

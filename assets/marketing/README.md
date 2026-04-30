@@ -20,7 +20,6 @@ NOT automatic — see "Refreshing the pack" below.
 | `demo-cards-desktop.png` | `demo-cards-desktop-chromium-linux.png` | The 22 Major Arcana grid — clearest "this is a card game" surface. |
 | `demo-ritual-desktop.png` | `demo-ritual-desktop-chromium-linux.png` | The Blessing Ritual scene mid-step — atmospheric Sefirah-keyed bloom + ledger. |
 | `demo-meters-desktop.png` | `demo-meters-desktop-chromium-linux.png` | TeamMeters with gradient fills + pillar columns. Compact "look at the polish" shot. |
-| `demo-soul-aspect-desktop.png` | `demo-soul-aspect-desktop-chromium-linux.png` | Soul Aspect picker — the choose-your-class surface, with Sefirah-keyed accents. |
 
 ## Size budget
 
@@ -44,7 +43,7 @@ When wave-4 polish lands and the visual regression baselines update
 # From repo root
 for src in home-desktop play-desktop demo-tree-desktop \
            demo-cards-desktop demo-ritual-desktop \
-           demo-meters-desktop demo-soul-aspect-desktop \
+           demo-meters-desktop \
            home-mobile; do
   cp "e2e/visual-regression.spec.ts-snapshots/${src}-chromium-linux.png" \
      "assets/marketing/${src}.png"

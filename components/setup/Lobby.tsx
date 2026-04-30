@@ -1,22 +1,25 @@
 'use client';
-import { soulAspectByKey } from '@/data';
-import type { SoulAspectKey } from '@/data';
+import { zodiacSignByKey } from '@/data';
+import type { ZodiacSignKey } from '@/data';
 
 /**
  * Lobby — between-setup-and-play screen. Shows each player's name +
- * chosen Soul Aspect + a readiness indicator. The host starts the
+ * chosen zodiac sign + a readiness indicator. The host starts the
  * game when everyone is ready.
  *
  * Pure presentation. The host's "Begin" click fires `onBegin()`; the
  * orchestrator runs the engine's `initializeGame` to produce the
  * starting `GameState` and transitions the room out of lobby.
+ *
+ * Soul Aspects were retired in #237 (Epic #212 T8); the Lobby now
+ * surfaces the player's zodiac-sign class instead.
  */
 
 export interface LobbyPlayer {
   readonly id: string;
   readonly name: string;
   /** May be null while the player is still picking. */
-  readonly soulAspect: SoulAspectKey | null;
+  readonly zodiacSign: ZodiacSignKey | null;
   readonly ready: boolean;
 }
 
@@ -37,12 +40,13 @@ interface LobbyProps {
   readonly className?: string;
 }
 
-// Title lookup goes through `soulAspectByKey` (throws on miss) so a
-// SoulAspectKey added to the type without a matching data entry
+// Title lookup goes through `zodiacSignByKey` (throws on miss) so a
+// ZodiacSignKey added to the type without a matching data entry
 // fails loudly rather than rendering "undefined" as the player's
-// chosen aspect.
-function aspectTitleFor(key: SoulAspectKey): string {
-  return soulAspectByKey(key).title;
+// chosen sign.
+function signLabelFor(key: ZodiacSignKey): string {
+  const sign = zodiacSignByKey(key);
+  return `${sign.glyph} ${sign.name}`;
 }
 
 export function Lobby({
@@ -57,7 +61,7 @@ export function Lobby({
   const allReady =
     players.length >= 2 &&
     players.length <= 4 &&
-    players.every((p) => p.ready && p.soulAspect !== null);
+    players.every((p) => p.ready && p.zodiacSign !== null);
   const canBegin =
     isHost && allReady && onBegin !== undefined && !beginning;
 
@@ -83,7 +87,7 @@ export function Lobby({
       <ul role="list" data-lobby-players className="space-y-2">
         {players.map((p) => {
           const isCurrent = p.id === currentPlayerId;
-          const aspectTitle = p.soulAspect ? aspectTitleFor(p.soulAspect) : null;
+          const signLabel = p.zodiacSign ? signLabelFor(p.zodiacSign) : null;
           return (
             <li
               key={p.id}
@@ -101,7 +105,7 @@ export function Lobby({
                   ) : null}
                 </span>
                 <span className="text-xs opacity-70">
-                  {aspectTitle ?? 'Choosing aspect…'}
+                  {signLabel ?? 'Choosing sign…'}
                 </span>
               </div>
               <ReadyIndicator

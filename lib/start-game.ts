@@ -1,4 +1,4 @@
-import type { SoulAspectKey } from '@/data';
+import type { ZodiacSignKey } from '@/data';
 import type { PlayerSetup } from '@/engine/setup';
 import type { StatSheet } from '@/engine/types';
 import type { PlayerRow, RoomRow } from './supabase';
@@ -8,10 +8,9 @@ import type { PlayerRow, RoomRow } from './supabase';
  * `design/mechanics.md` § Stat sheet, players normally roll their
  * Sefirot blessings to build a custom sheet — but the multiplayer
  * blessing UI doesn't exist yet, so for now everyone starts with
- * 10 in every stat. The Soul Aspect's +2 bonus still applies on top
- * via `engine/setup.initializeGame`'s class-bonus step (which also
- * applies any picked zodiac sign's deltas, post-#234). Per-Sefirah
- * blessings are a follow-up ticket.
+ * 10 in every stat. The picked zodiac sign's dignity deltas still
+ * apply on top via `engine/setup.initializeGame`'s class-bonus step.
+ * Per-Sefirah blessings are a follow-up ticket.
  */
 const DEFAULT_MP_STATS: StatSheet = {
   unity: 10,
@@ -35,12 +34,12 @@ export type StartGameError =
   | { readonly kind: 'too-few-players'; readonly count: number }
   | { readonly kind: 'too-many-players'; readonly count: number }
   | {
-      readonly kind: 'missing-soul-aspect';
+      readonly kind: 'missing-zodiac-sign';
       readonly playerIds: readonly string[];
     }
   | {
-      readonly kind: 'duplicate-soul-aspects';
-      readonly aspects: readonly SoulAspectKey[];
+      readonly kind: 'duplicate-zodiac-signs';
+      readonly signs: readonly ZodiacSignKey[];
     };
 
 export type Result<T, E> =
@@ -65,8 +64,8 @@ export interface ValidatedSetup {
  *   1. Caller must be the room's host.
  *   2. Room must be in `lobby` state (not playing/finished).
  *   3. Player count must be 2..4 (matches `deckCountFor`).
- *   4. Every player must have a soul_aspect set.
- *   5. Soul Aspects must be unique across players (design rule).
+ *   4. Every player must have a zodiac_sign set.
+ *   5. Zodiac signs must be unique across players (design rule).
  *
  * Returns players in seat order so seat 0 is the active starting
  * player — consistent with `initializeGame`'s `players[0].id`
@@ -102,31 +101,31 @@ export function validateAndBuildSetup(
   const sorted = [...players].sort((a, b) => a.seat - b.seat);
 
   const missing = sorted
-    .filter((p) => p.soul_aspect === null)
+    .filter((p) => p.zodiac_sign === null)
     .map((p) => p.id);
   if (missing.length > 0) {
     return {
       ok: false,
-      error: { kind: 'missing-soul-aspect', playerIds: missing },
+      error: { kind: 'missing-zodiac-sign', playerIds: missing },
     };
   }
 
-  // Every player has soul_aspect non-null at this point. Cast is
+  // Every player has zodiac_sign non-null at this point. Cast is
   // safe — the filter above caught the nulls.
-  const aspects = sorted.map((p) => p.soul_aspect as SoulAspectKey);
-  const aspectSet = new Set(aspects);
-  if (aspectSet.size !== aspects.length) {
+  const signs = sorted.map((p) => p.zodiac_sign as ZodiacSignKey);
+  const signSet = new Set(signs);
+  if (signSet.size !== signs.length) {
     return {
       ok: false,
-      error: { kind: 'duplicate-soul-aspects', aspects },
+      error: { kind: 'duplicate-zodiac-signs', signs },
     };
   }
 
   const setups: PlayerSetup[] = sorted.map((p) => ({
     id: p.id,
     name: p.nickname,
-    // Cast is safe — we filtered out null aspects above.
-    soulAspect: p.soul_aspect as SoulAspectKey,
+    // Cast is safe — we filtered out null signs above.
+    zodiacSign: p.zodiac_sign as ZodiacSignKey,
     stats: DEFAULT_MP_STATS,
   }));
 

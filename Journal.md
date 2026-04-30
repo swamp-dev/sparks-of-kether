@@ -3637,3 +3637,21 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: post-fix, all jobs green.
 
 **Commit(s):** `d555b5e` (impl), `2b15e23` (e2e + diagnostic fix), `ed1a232` (narrowing cleanup)
+
+## 2026-04-29T21:41:08-04:00 — #237: T8 — remove Soul Aspect machinery (closes #212 transition)
+
+**Pushed:** Wholesale Soul Aspect removal across the codebase. 42 files touched. The 12-class zodiac-sign system (Epic #212 + #240) now carries full class-bonus weight; Soul Aspects are gone end-to-end.
+
+**Why:** Sub-ticket T8 of Epic #212. Closes the Soul-Aspect → Zodiac transition. Unblocks T9 (#238 mechanics doc rewrite) — the final piece of #212.
+
+**Notes:**
+- Scale and scope: deleted `data/soul-aspects.ts`, `SoulAspectPicker.tsx` + tests, `app/demo/soul-aspect/page.tsx`, `SoulAspectKey`/`SoulAspect` types. Tightened `PlayerSetup.zodiacSign` and `PlayerState.zodiacSign` from optional to required. Dropped the conditional spread guards I added during the transition in #244 / #260. New migration `0004_zodiac_sign.sql` drops the `soul_aspect` column and adds `zodiac_sign text` (nullable).
+- Hot-seat phase machine now flows `ritual → sign → ritual → sign → lobby → play` with no aspect step. Multiplayer: `validateAndBuildSetup` reads `zodiac_sign` from `PlayerRow` and emits `missing-zodiac-sign` / `duplicate-zodiac-signs` error variants. Lobby surfaces the player's sign via glyph + name through `zodiacSignByKey`.
+- Multi-subagent execution (per user direction this session): mechanical conversion delegated to a general-purpose agent; review delegated to `code-reviewer`; final verification ran on the host. Agent-side typecheck and unit tests came back green; the host still ran code-review + full `pnpm ci:local` + journal + push, per the per-PR checklist.
+- Code-reviewer pass 1 caught one CRITICAL: `lib/rooms.ts:233` `joinRoom` was still inserting `soul_aspect: null` after the migration drops the column. Every multiplayer join would error against PostgREST post-deploy. TypeScript missed it because `query()` casts to untyped SupabaseClient. Fixed in `e6961d4`. Plus four SIGNIFICANT stale-doc cleanups.
+- Code-reviewer pass 2 caught that my pass-1 commit's claimed edits to `playthrough.test.ts:117`, `design/qa-smoke.md`, and `engine/types.ts:20` hadn't actually landed (Edit tool ghost-success). Re-applied via Read-then-Edit in `bbc0929`. Pass-3 confirmed clean.
+- Multiplayer-lobby UI doesn't have a sign-picker yet (T7 only wired the picker into hot-seat). validateAndBuildSetup now rejects with `missing-zodiac-sign`. This is a deliberate gap; a follow-up ticket should wire the multiplayer lobby's sign picker.
+- Visual regression: `about` (desktop/tablet/mobile) and `demo-stat-sheet` (mobile) baselines regenerated since the Soul Aspect picker gallery + StatSheet's +2 bonus block were both removed. Three stale `demo-soul-aspect-*` snapshot baselines and one orphaned marketing PNG deleted.
+- Full `pnpm ci:local`: verify ✓, build ✓, e2e ✓, integration ✓.
+
+**Commit(s):** `b186353` (T8 deletion), `e6961d4` (review fixes — joinRoom + 4 stale refs), `bbc0929` (review pass-2 — actually-applied stale-ref fixes)

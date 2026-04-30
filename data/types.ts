@@ -246,30 +246,7 @@ export interface Path {
   readonly pillarsCrossed: readonly [Pillar, Pillar];
 }
 
-// ──────────────── Soul Aspects ────────────────
-
-/**
- * The six "personality" Sefirot — Chesed through Yesod — each carry a
- * class in the player-role sense. Kether/Chokmah/Binah are "too
- * elevated" and Malkuth is the starting waypoint; none of those are
- * playable classes.
- */
-export type SoulAspectKey =
-  | 'chesed'
-  | 'gevurah'
-  | 'tiferet'
-  | 'hod'
-  | 'netzach'
-  | 'yesod';
-
-export interface SoulAspect {
-  readonly key: SoulAspectKey;
-  readonly sefirahKey: SefirahKey;
-  /** Stat that receives the +2 class bonus. */
-  readonly bonusStat: StatKey;
-  readonly title: string;
-  readonly flavor: string;
-  readonly abilityName: string;
-  readonly abilityDescription: string;
-  readonly weaknessDescription: string;
-}
+// Soul Aspects removed in #237 (Epic #212 T8). Replaced by the
+// 12-class astrological-sign system grounded in `ZodiacSignKey` and
+// the dignity table; players' classes now flow from #212/#240's
+// data layer (`zodiacSigns`, `signDignities`, `soulDoorsBySign`).

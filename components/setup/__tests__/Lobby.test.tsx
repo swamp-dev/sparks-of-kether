@@ -5,27 +5,27 @@ import { Lobby, type LobbyPlayer } from '../Lobby';
 const player = (id: string, overrides: Partial<LobbyPlayer> = {}): LobbyPlayer => ({
   id,
   name: id.toUpperCase(),
-  soulAspect: 'tiferet',
+  zodiacSign: 'aries',
   ready: false,
   ...overrides,
 });
 
 describe('Lobby — rendering', () => {
-  it('renders one row per player with name and aspect title', () => {
+  it('renders one row per player with name and sign label', () => {
     const { container } = render(
       <Lobby
         players={[
-          player('p1', { name: 'Andy', soulAspect: 'tiferet' }),
-          player('p2', { name: 'Bea', soulAspect: 'gevurah' }),
+          player('p1', { name: 'Andy', zodiacSign: 'aries' }),
+          player('p2', { name: 'Bea', zodiacSign: 'leo' }),
         ]}
       />,
     );
     const rows = container.querySelectorAll('[data-lobby-row]');
     expect(rows.length).toBe(2);
     expect(rows[0]?.textContent).toMatch(/Andy/);
-    expect(rows[0]?.textContent).toMatch(/The Heart/); // Tiferet title
+    expect(rows[0]?.textContent).toMatch(/Aries/);
     expect(rows[1]?.textContent).toMatch(/Bea/);
-    expect(rows[1]?.textContent).toMatch(/The Boundary-Keeper/);
+    expect(rows[1]?.textContent).toMatch(/Leo/);
   });
 
   it('marks the (you) tag for the current player', () => {
@@ -43,11 +43,11 @@ describe('Lobby — rendering', () => {
     ).not.toMatch(/\(you\)/i);
   });
 
-  it('shows "Choosing aspect…" when soulAspect is null', () => {
+  it('shows "Choosing sign…" when zodiacSign is null', () => {
     const { container } = render(
-      <Lobby players={[player('p1', { soulAspect: null })]} />,
+      <Lobby players={[player('p1', { zodiacSign: null })]} />,
     );
-    expect(container.textContent).toMatch(/Choosing aspect/);
+    expect(container.textContent).toMatch(/Choosing sign/);
   });
 });
 
@@ -125,13 +125,13 @@ describe('Lobby — Begin button', () => {
     ).toBe(true);
   });
 
-  it('Begin disabled if any player has not chosen an aspect', () => {
+  it('Begin disabled if any player has not chosen a sign', () => {
     render(
       <Lobby
         isHost
         onBegin={vi.fn()}
         players={[
-          player('p1', { ready: true, soulAspect: null }),
+          player('p1', { ready: true, zodiacSign: null }),
           player('p2', { ready: true }),
         ]}
       />,

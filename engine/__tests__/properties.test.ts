@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import type { SefirahKey, SoulAspectKey } from '@/data';
+import type { SefirahKey, ZodiacSignKey } from '@/data';
 import { acceptSetback, resolveChallenge } from '@/engine/checks';
 import type { CheckOutcome } from '@/engine/checks';
 import { applyMove } from '@/engine/movement';
@@ -20,13 +20,14 @@ import { makeFullGame } from '@/test/fixtures';
  * with 100 generated cases.
  */
 
-const ALL_SOUL_ASPECTS: readonly SoulAspectKey[] = [
-  'chesed',
-  'gevurah',
-  'tiferet',
-  'hod',
-  'netzach',
-  'yesod',
+// Net-neutral or mildly positive picks per `test/fixtures.ts`
+// convention — we sample 4 distinct signs without replacement so
+// generated states satisfy `makeFullGame`'s uniqueness check.
+const SAMPLE_ZODIAC_SIGNS: readonly ZodiacSignKey[] = [
+  'aries',
+  'leo',
+  'libra',
+  'cancer',
 ];
 
 const ALL_CLEARABLE_SEFIROT: readonly SefirahKey[] = [
@@ -43,33 +44,32 @@ const ALL_CLEARABLE_SEFIROT: readonly SefirahKey[] = [
 /**
  * Arbitrary that produces a fully-dealt 2..4 player GameState built
  * via `makeFullGame`. Every generated state is engine-valid (deck
- * shuffled, hands dealt, soul-aspect bonuses applied) so the
+ * shuffled, hands dealt, zodiac dignity deltas applied) so the
  * properties under test are not trivially passing on degenerate
  * inputs.
  *
- * Soul aspects are sampled without replacement from the 6 personality
- * Sefirot — `validateAndBuildSetup` enforces uniqueness, and
- * `initializeGame` would throw if the data layer reported a missing
- * key. We sample from the known list so generated states always
- * round-trip cleanly.
+ * Zodiac signs are sampled without replacement from a 4-sign net-
+ * neutral pool — `makeFullGame` enforces uniqueness across seats.
+ * We sample from a known list so generated states always round-trip
+ * cleanly.
  */
 function gameStateArb(): fc.Arbitrary<GameState> {
   return fc
     .record({
       playerCount: fc.constantFrom(2, 3, 4),
       seed: fc.integer({ min: 1, max: 1_000_000 }),
-      // Pick a permutation of soul aspects for the seats. We slice
+      // Pick a permutation of zodiac signs for the seats. We slice
       // after the fact to match playerCount.
-      aspectOrder: fc.shuffledSubarray(ALL_SOUL_ASPECTS as SoulAspectKey[], {
+      signOrder: fc.shuffledSubarray(SAMPLE_ZODIAC_SIGNS as ZodiacSignKey[], {
         minLength: 4,
         maxLength: 4,
       }),
     })
-    .map(({ playerCount, seed, aspectOrder }) =>
+    .map(({ playerCount, seed, signOrder }) =>
       makeFullGame({
         playerCount: playerCount as 2 | 3 | 4,
         seed,
-        soulAspects: aspectOrder.slice(0, playerCount),
+        zodiacSigns: signOrder.slice(0, playerCount),
       }),
     );
 }

@@ -198,17 +198,15 @@ export function resolveChallenge(
   // the caller hasn't supplied one. UI callers (ChallengeModal) set
   // their own so the pre-roll animation matches the engine's DC; the
   // explicit-override branch (modifiers.soulDoorDelta !== undefined)
-  // honours that. Signless players (#212 transition) auto-resolve to
-  // delta 0, matching pre-#244 behaviour.
+  // honours that. Since #237 (T8) zodiacSign is always present, so
+  // the auto-inject always produces a real delta (0 if the sefirah
+  // isn't a Door for this class).
   const resolvedModifiers: CheckModifiers =
     modifiers.soulDoorDelta !== undefined
       ? modifiers
       : {
           ...modifiers,
-          soulDoorDelta:
-            player.zodiacSign !== undefined
-              ? soulDoorDcDelta(player.zodiacSign, sefirah)
-              : 0,
+          soulDoorDelta: soulDoorDcDelta(player.zodiacSign, sefirah),
         };
   const outcome =
     input.outcome ??

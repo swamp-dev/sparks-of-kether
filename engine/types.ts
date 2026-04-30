@@ -17,7 +17,7 @@ export type Result<T, E> =
  * A single player's state during a game. Immutable — engine reducers
  * return new `PlayerState` instances rather than mutating in place.
  *
- * Fields added in later tickets (stats, sparks, soul aspect) live in
+ * Fields added in later tickets (stats, sparks, zodiac sign) live in
  * separate type extensions; this module keeps only what the movement
  * engine needs, so those additions don't churn this file.
  */
@@ -54,15 +54,12 @@ export interface PlayerState {
    */
   readonly pendingAbilities: PlayerAbilityFlags;
   /**
-   * Zodiac-sign class (Epic #212). Optional during the #212
-   * transition: pre-#236 callers haven't wired the picker yet, so
-   * legacy / hot-seat flows produce signless players. Soul Doors
-   * (Epic #240) read this on every challenge to compute the per-Door
-   * DC discount; signless players get no discount, matching the
-   * pre-#244 behaviour. #237 will make it required when the Soul
-   * Aspect machinery is removed.
+   * Zodiac-sign class (Epic #212). Required since #237 (T8) — the
+   * Soul Aspect transition is complete and every player flow now
+   * funnels through the zodiac picker. Soul Doors (Epic #240) read
+   * this on every challenge to compute the per-Door DC discount.
    */
-  readonly zodiacSign?: ZodiacSignKey;
+  readonly zodiacSign: ZodiacSignKey;
 }
 
 /**

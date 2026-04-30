@@ -16,7 +16,6 @@ import { arcana } from './arcana';
 import { letters } from './letters';
 import { paths } from './paths';
 import { sefirot } from './sefirot';
-import { soulAspects } from './soul-aspects';
 import { zodiacSigns } from './zodiac-signs';
 import { signDignities } from './dignities';
 import { soulDoorsBySign } from './soul-doors';
@@ -29,8 +28,6 @@ import type {
   Sefirah,
   SefirahKey,
   SignDignities,
-  SoulAspect,
-  SoulAspectKey,
   StatKey,
   ZodiacSign,
   ZodiacSignKey,
@@ -40,7 +37,6 @@ export { sefirot } from './sefirot';
 export { letters } from './letters';
 export { arcana } from './arcana';
 export { paths } from './paths';
-export { soulAspects } from './soul-aspects';
 export { zodiacSigns } from './zodiac-signs';
 export { signDignities } from './dignities';
 export { soulDoorsBySign } from './soul-doors';
@@ -54,9 +50,6 @@ const sefirotByNumberIndex = new Map<number, Sefirah>(sefirot.map((s) => [s.numb
 const lettersByKeyIndex = new Map<LetterKey, HebrewLetter>(letters.map((l) => [l.key, l]));
 const arcanaByNumberIndex = new Map<number, Arcanum>(arcana.map((a) => [a.number, a]));
 const pathsByNumberIndex = new Map<number, Path>(paths.map((p) => [p.number, p]));
-const soulAspectsByKeyIndex = new Map<SoulAspectKey, SoulAspect>(
-  soulAspects.map((a) => [a.key, a]),
-);
 
 // ──────────────── Lookups ────────────────
 
@@ -120,15 +113,6 @@ export function arcanumByPath(pathNumber: number): Arcanum {
 export function pathByArcanum(arcanumNumber: number): Path {
   const arc = arcanumByNumber(arcanumNumber);
   return pathByNumber(arc.pathNumber);
-}
-
-/** Soul Aspect → the aspect record. */
-export function soulAspectByKey(key: SoulAspectKey): SoulAspect {
-  const found = soulAspectsByKeyIndex.get(key);
-  if (!found) {
-    throw new Error(`Unknown Soul Aspect key: ${key}`);
-  }
-  return found;
 }
 
 const zodiacSignsByKeyIndex = new Map<ZodiacSignKey, ZodiacSign>(

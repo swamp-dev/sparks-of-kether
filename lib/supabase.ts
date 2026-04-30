@@ -25,7 +25,7 @@ export interface PlayerRow {
   readonly id: string;
   readonly room_id: string;
   readonly nickname: string;
-  readonly soul_aspect: string | null;
+  readonly zodiac_sign: string | null;
   readonly ready: boolean;
   readonly seat: number;
   readonly joined_at: string;

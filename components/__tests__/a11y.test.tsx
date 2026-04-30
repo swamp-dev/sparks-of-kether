@@ -9,7 +9,7 @@ import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { ChallengeModal } from '@/components/challenge/ChallengeModal';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
-import { SoulAspectPicker } from '@/components/setup/SoulAspectPicker';
+import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { Lobby } from '@/components/setup/Lobby';
 import { makePlayer, makeState } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
@@ -76,9 +76,7 @@ describe('a11y — major UI surfaces', () => {
 
   it('StatSheet (compact) is axe-clean', async () => {
     const player = makePlayer({ id: 'p1', sparksHeld: new Set(['gevurah']) });
-    const { container } = render(
-      <StatSheet player={player} mode="compact" soulAspect="gevurah" />,
-    );
+    const { container } = render(<StatSheet player={player} mode="compact" />);
     expectNoViolations(await axe(container));
   });
 
@@ -87,12 +85,7 @@ describe('a11y — major UI surfaces', () => {
     // sheet's DOM doesn't linger and add false signal to this scan.
     const player = makePlayer({ id: 'p1', sparksHeld: new Set(['gevurah']) });
     const { container } = render(
-      <StatSheet
-        player={player}
-        mode="expanded"
-        soulAspect="gevurah"
-        activeStat="strength"
-      />,
+      <StatSheet player={player} mode="expanded" activeStat="strength" />,
     );
     expectNoViolations(await axe(container));
   });
@@ -137,10 +130,10 @@ describe('a11y — major UI surfaces', () => {
     expectNoViolations(await axe(container));
   });
 
-  it('SoulAspectPicker (with one taken aspect) is axe-clean', async () => {
+  it('ZodiacSignPicker (with one taken sign) is axe-clean', async () => {
     const { container } = render(
-      <SoulAspectPicker
-        taken={{ chesed: 'Andy' }}
+      <ZodiacSignPicker
+        taken={{ aries: 'Andy' }}
         onPick={() => undefined}
       />,
     );
@@ -149,8 +142,8 @@ describe('a11y — major UI surfaces', () => {
 
   it('Lobby (host view, mixed-ready players) is axe-clean', async () => {
     const players = [
-      { id: 'p1', name: 'Andy', soulAspect: 'chesed' as const, ready: true },
-      { id: 'p2', name: 'Bea', soulAspect: 'gevurah' as const, ready: false },
+      { id: 'p1', name: 'Andy', zodiacSign: 'aries' as const, ready: true },
+      { id: 'p2', name: 'Bea', zodiacSign: 'leo' as const, ready: false },
     ];
     const { container } = render(
       <Lobby

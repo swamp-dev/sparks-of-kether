@@ -1,8 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
-import type { SoulAspectKey, ZodiacSignKey } from '@/data';
+import type { ZodiacSignKey } from '@/data';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
-import { SoulAspectPicker } from '@/components/setup/SoulAspectPicker';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { Lobby } from '@/components/setup/Lobby';
 import type { LobbyPlayer } from '@/components/setup/Lobby';
@@ -15,15 +14,14 @@ import type { StatSheet } from '@/engine/types';
 
 /**
  * The actual play surface. Single-page state machine that walks each
- * player through the setup pipeline (blessing → aspect → sign) for
- * both players in turn, then transitions to the lobby, and on Begin
- * hands off to `PlayScreen`.
+ * player through the setup pipeline (blessing → sign) for both
+ * players in turn, then transitions to the lobby, and on Begin hands
+ * off to `PlayScreen`.
  *
- * #236 (T7) added the zodiac-sign phase between aspect and the next
- * player's ritual / lobby. T8 will remove the aspect phase entirely
- * once the Soul Aspect machinery is gone; until then both pickers
- * run. PlayerSetup carries both `soulAspect` and `zodiacSign`
- * through to `initializeGame`.
+ * #237 (Epic #212 T8) removed the Soul Aspect phase. The flow is now
+ * ritual(p1) → sign(p1) → ritual(p2) → sign(p2) → lobby → play. The
+ * zodiac-sign pick alone supplies the player's class; dignity-derived
+ * stat deltas land at `initializeGame` time.
  *
  * Hot-seat for now (no multiplayer routing). Phase 5 swaps the local
  * state machine for room-based state coming from Supabase.
@@ -33,13 +31,11 @@ interface SetupSlot {
   readonly id: string;
   readonly name: string;
   readonly stats?: StatSheet;
-  readonly soulAspect?: SoulAspectKey;
   readonly zodiacSign?: ZodiacSignKey;
 }
 
 type Phase =
   | { readonly kind: 'ritual'; readonly playerIndex: 0 | 1 }
-  | { readonly kind: 'aspect'; readonly playerIndex: 0 | 1 }
   | { readonly kind: 'sign'; readonly playerIndex: 0 | 1 }
   | { readonly kind: 'lobby' }
   | { readonly kind: 'play'; readonly setupComplete: PlayerSetup[] };
@@ -69,16 +65,6 @@ export default function PlayPage(): JSX.Element {
       next[idx] = { ...slot, stats };
       return next;
     });
-    setPhase({ kind: 'aspect', playerIndex: idx });
-  };
-
-  const finishAspect = (idx: 0 | 1, aspect: SoulAspectKey): void => {
-    setSlots((prev) => {
-      const next = [...prev] as [SetupSlot, SetupSlot];
-      const slot = next[idx];
-      next[idx] = { ...slot, soulAspect: aspect };
-      return next;
-    });
     setPhase({ kind: 'sign', playerIndex: idx });
   };
 
@@ -105,14 +91,9 @@ export default function PlayPage(): JSX.Element {
       // bypassed the gate. The single `||` guard doubles as type
       // narrowing for TS so the return-statement fields are
       // proven non-undefined.
-      if (
-        s.stats === undefined ||
-        s.soulAspect === undefined ||
-        s.zodiacSign === undefined
-      ) {
+      if (s.stats === undefined || s.zodiacSign === undefined) {
         const missing = [
           s.stats === undefined ? 'stats' : null,
-          s.soulAspect === undefined ? 'soulAspect' : null,
           s.zodiacSign === undefined ? 'zodiacSign' : null,
         ].filter((f): f is string => f !== null);
         throw new Error(
@@ -122,7 +103,6 @@ export default function PlayPage(): JSX.Element {
       return {
         id: s.id,
         name: s.name,
-        soulAspect: s.soulAspect,
         zodiacSign: s.zodiacSign,
         stats: s.stats,
       };
@@ -143,26 +123,11 @@ export default function PlayPage(): JSX.Element {
     );
   }
 
-  if (phase.kind === 'aspect') {
-    const taken: Partial<Record<SoulAspectKey, string>> = {};
-    for (const s of slots) {
-      if (s.soulAspect) taken[s.soulAspect] = s.name;
-    }
-    return (
-      <main className="min-h-screen p-8 text-veil">
-        <PhaseHeader title={`${slots[phase.playerIndex].name} — Choose Soul Aspect`} />
-        <SoulAspectPicker
-          taken={taken}
-          onPick={(a) => finishAspect(phase.playerIndex, a)}
-        />
-      </main>
-    );
-  }
-
   if (phase.kind === 'sign') {
     // #236: zodiac-sign picker (Epic #212 T6). Mounts after the
-    // aspect pick; the chosen sign is plumbed into PlayerSetup.zodiac-
-    // Sign so initializeGame's zodiac-bonus pass picks it up.
+    // blessing ritual; the chosen sign is plumbed into
+    // PlayerSetup.zodiacSign so initializeGame's zodiac-bonus pass
+    // picks it up.
     const taken: Partial<Record<ZodiacSignKey, string>> = {};
     for (const s of slots) {
       if (s.zodiacSign) taken[s.zodiacSign] = s.name;
@@ -172,9 +137,7 @@ export default function PlayPage(): JSX.Element {
         {/*
           PhaseHeader title is intentionally distinct from the
           picker's own h2 ("Choose your sign") so e2e selectors that
-          match by heading text don't collide. Mirrors the
-          SoulAspectPicker pattern: PhaseHeader "Choose Soul Aspect"
-          vs. picker "Choose your Soul Aspect".
+          match by heading text don't collide.
         */}
         <PhaseHeader title={`${slots[phase.playerIndex].name} — Choose Sign`} />
         <ZodiacSignPicker
@@ -189,14 +152,9 @@ export default function PlayPage(): JSX.Element {
     const lobbyPlayers: readonly LobbyPlayer[] = slots.map((s) => ({
       id: s.id,
       name: s.name,
-      soulAspect: s.soulAspect ?? null,
-      // Begin gates on a complete setup: stats + aspect + sign. T8
-      // will drop the aspect requirement when Soul Aspects are
-      // removed entirely.
-      ready:
-        s.stats !== undefined &&
-        s.soulAspect !== undefined &&
-        s.zodiacSign !== undefined,
+      zodiacSign: s.zodiacSign ?? null,
+      // Begin gates on a complete setup: stats + sign.
+      ready: s.stats !== undefined && s.zodiacSign !== undefined,
     }));
     return (
       <main className="min-h-screen p-8 text-veil">
@@ -235,20 +193,7 @@ function PlaySession({
     () => initializeGame({ players: setupComplete, rng: playRng }),
     [setupComplete, playRng],
   );
-  const soulAspectByPlayer = useMemo(() => {
-    const map: Record<string, SoulAspectKey> = {};
-    for (const p of setupComplete) {
-      map[p.id] = p.soulAspect;
-    }
-    return map;
-  }, [setupComplete]);
-  return (
-    <PlayScreen
-      initialState={initialState}
-      soulAspectByPlayer={soulAspectByPlayer}
-      rng={playRng}
-    />
-  );
+  return <PlayScreen initialState={initialState} rng={playRng} />;
 }
 
 function PhaseHeader({ title }: { title: string }): JSX.Element {

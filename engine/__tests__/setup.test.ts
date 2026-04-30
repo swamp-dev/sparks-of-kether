@@ -2,15 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { deckCountFor, initializeGame, STARTING_HAND_SIZE } from '../setup';
 import { seededRng } from '../rng';
 import type { PlayerSetup } from '../setup';
-import type { SoulAspectKey } from '@/data';
+import type { ZodiacSignKey } from '@/data';
 import { DEFAULT_STATS } from '@/test/fixtures';
 
 function setup(count: number): PlayerSetup[] {
-  const aspects: SoulAspectKey[] = ['chesed', 'gevurah', 'tiferet', 'hod'];
+  // Net-neutral or mildly positive picks per fixture convention so
+  // tests don't get surprise stat shifts on default setups.
+  const signs: ZodiacSignKey[] = ['aries', 'leo', 'libra', 'cancer'];
   return Array.from({ length: count }, (_, i) => ({
     id: `p${i + 1}`,
     name: `Player ${i + 1}`,
-    soulAspect: aspects[i] ?? 'tiferet',
+    zodiacSign: signs[i] ?? 'aries',
     stats: DEFAULT_STATS,
   }));
 }
@@ -84,31 +86,6 @@ describe('initializeGame — starting state', () => {
       expect(p.sparksHeld.size).toBe(0);
     }
   });
-
-  it('applies the Soul Aspect +2 bonus to the matching stat', () => {
-    // Tiferet bonus = harmony. Chesed bonus = lovingkindness.
-    const state = initializeGame({
-      players: [
-        {
-          id: 'p1',
-          name: 'A',
-          soulAspect: 'tiferet',
-          stats: { ...DEFAULT_STATS, harmony: 12 },
-        },
-        {
-          id: 'p2',
-          name: 'B',
-          soulAspect: 'chesed',
-          stats: { ...DEFAULT_STATS, lovingkindness: 11 },
-        },
-      ],
-      rng: seededRng(1),
-    });
-    expect(state.players[0]?.stats.harmony).toBe(14);
-    expect(state.players[1]?.stats.lovingkindness).toBe(13);
-    // Other stats are untouched.
-    expect(state.players[0]?.stats.unity).toBe(DEFAULT_STATS.unity);
-  });
 });
 
 describe('initializeGame — zodiac sign bonuses (#234)', () => {
@@ -116,19 +93,18 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
   const filler: PlayerSetup = {
     id: 'filler',
     name: 'F',
-    soulAspect: 'gevurah',
+    zodiacSign: 'leo',
     stats: DEFAULT_STATS,
   };
 
   it('applies the zodiac bonus additively to the rolled stats when zodiacSign is set', () => {
     // Virgo: ruler + exalt Mercury → +3 intellect; -1 lovingkindness;
-    // -2 passion. Plus Tiferet aspect: +2 harmony.
+    // -2 passion.
     const state = initializeGame({
       players: [
         {
           id: 'p1',
           name: 'A',
-          soulAspect: 'tiferet',
           zodiacSign: 'virgo',
           stats: {
             ...DEFAULT_STATS,
@@ -145,7 +121,6 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
     expect(state.players[0]?.stats.intellect).toBe(13); // 10 + 3
     expect(state.players[0]?.stats.lovingkindness).toBe(9); // 10 - 1
     expect(state.players[0]?.stats.passion).toBe(8); // 10 - 2
-    expect(state.players[0]?.stats.harmony).toBe(12); // 10 + 2 from soul aspect
     expect(state.players[0]?.stats.body).toBe(DEFAULT_STATS.body); // unchanged
   });
 
@@ -157,14 +132,12 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
         {
           id: 'high',
           name: 'High',
-          soulAspect: 'tiferet',
           zodiacSign: 'virgo',
           stats: { ...DEFAULT_STATS, intellect: 16 },
         },
         {
           id: 'low',
           name: 'Low',
-          soulAspect: 'tiferet',
           zodiacSign: 'pisces',
           stats: { ...DEFAULT_STATS, intellect: 3 },
         },
@@ -181,7 +154,6 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
         {
           id: 'p1',
           name: 'A',
-          soulAspect: 'tiferet',
           zodiacSign: 'scorpio',
           stats: { ...DEFAULT_STATS, unity: 10 },
         },
@@ -198,7 +170,6 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
         {
           id: 'p1',
           name: 'A',
-          soulAspect: 'tiferet',
           zodiacSign: 'pisces',
           stats: { ...DEFAULT_STATS, insight: 10 },
         },
@@ -207,44 +178,6 @@ describe('initializeGame — zodiac sign bonuses (#234)', () => {
       rng: seededRng(1),
     });
     expect(state.players[0]?.stats.insight).toBe(11);
-  });
-
-  it('zodiacSign is optional: existing players-without-sign behave identically to before', () => {
-    // Sanity: when zodiacSign is absent, only the Soul Aspect bonus
-    // applies. Mirrors the earlier "Soul Aspect +2 bonus" test.
-    const state = initializeGame({
-      players: [
-        {
-          id: 'p1',
-          name: 'A',
-          soulAspect: 'tiferet',
-          stats: { ...DEFAULT_STATS, harmony: 12 },
-        },
-        filler,
-      ],
-      rng: seededRng(1),
-    });
-    expect(state.players[0]?.stats.harmony).toBe(14);
-    expect(state.players[0]?.stats.intellect).toBe(DEFAULT_STATS.intellect);
-  });
-
-  it('clamps the Soul Aspect bonus too (17 + 2 = 19 → cap 18)', () => {
-    // Behavior change: pre-#234, stats could exceed 18 via Soul
-    // Aspect alone (3d6 max 18 + 2 = 20). Now clamped to 18 to
-    // match the 1–18 range pinned by D5.
-    const state = initializeGame({
-      players: [
-        {
-          id: 'p1',
-          name: 'A',
-          soulAspect: 'tiferet',
-          stats: { ...DEFAULT_STATS, harmony: 17 },
-        },
-        filler,
-      ],
-      rng: seededRng(1),
-    });
-    expect(state.players[0]?.stats.harmony).toBe(18);
   });
 });
 
@@ -258,17 +191,16 @@ describe('initializeGame — zodiacSign persisted to PlayerState (#244)', () => 
   const fillerB: PlayerSetup = {
     id: 'p2',
     name: 'B',
-    soulAspect: 'gevurah',
+    zodiacSign: 'leo',
     stats: DEFAULT_STATS,
   };
 
-  it('copies zodiacSign from PlayerSetup to PlayerState when present', () => {
+  it('copies zodiacSign from PlayerSetup to PlayerState', () => {
     const state = initializeGame({
       players: [
         {
           id: 'p1',
           name: 'A',
-          soulAspect: 'chesed',
           zodiacSign: 'pisces',
           stats: DEFAULT_STATS,
         },
@@ -278,27 +210,6 @@ describe('initializeGame — zodiacSign persisted to PlayerState (#244)', () => 
     });
     expect(state.players[0]?.zodiacSign).toBe('pisces');
     expect(state.players[1]?.zodiacSign).toBe('aries');
-  });
-
-  it('leaves zodiacSign undefined on PlayerState when absent from setup', () => {
-    // Transitional path: pre-#236 callers (hot-seat, multiplayer-flow
-    // tests, the legacy lobby) still build setups without a sign.
-    // Those players get no Door discount; the resolver auto-inject
-    // is a no-op for them.
-    const state = initializeGame({
-      players: [
-        {
-          id: 'p1',
-          name: 'A',
-          soulAspect: 'chesed',
-          stats: DEFAULT_STATS,
-        },
-        fillerB,
-      ],
-      rng: seededRng(1),
-    });
-    expect(state.players[0]?.zodiacSign).toBeUndefined();
-    expect(state.players[1]?.zodiacSign).toBeUndefined();
   });
 });
 
