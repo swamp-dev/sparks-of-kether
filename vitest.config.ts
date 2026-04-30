@@ -10,6 +10,16 @@ export default defineConfig({
     // from 'vitest'. Keeping it off avoids the "half-configured" trap
     // (globals flag + explicit imports is confusing for contributors).
     setupFiles: ['./test/setup.ts'],
+    // Default vitest testTimeout (5s) is too tight for our DOM/axe tests
+    // when coverage instrumentation is enabled. The TreeBoard axe-clean
+    // scan in particular runs ~6-9s under v8 coverage instrumentation in
+    // jsdom. When that ONE test hits the 5s wall, axe-core gets left in
+    // its "running" internal state, and EVERY subsequent axe test in the
+    // file cascade-fails with "Axe is already running. Use `await
+    // axe.run()` to wait for the previous run to finish before starting
+    // a new run." 15s gives a comfortable margin for instrumentation
+    // overhead without hiding genuinely-runaway tests.
+    testTimeout: 15000,
     // Playwright owns e2e/; that single glob is sufficient. Do NOT add
     // `**/*.spec.ts` here — it would silently swallow any future unit
     // test named `*.spec.ts` under engine/ or lib/.
