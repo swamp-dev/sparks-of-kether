@@ -165,7 +165,22 @@ export function TreeBoard({
           // #213: trimmed coordinates for the invisible hit-line.
           // The visible line still runs a→b; only the click target
           // is shrunk to live in the gap between the node circles.
-          const hit = trimEndpoints(a, b, NODE_RADIUS);
+          //
+          // #288: path 32 (Yesod ↔ Malkuth) is intrinsically short —
+          // its endpoints are 70 viewBox units apart, so the standard
+          // trim leaves only 14 units of clickable hit-line, well
+          // below WCAG 2.5.5's tap-target floor at typical render
+          // scales. Skip the trim for this one path's hit overlay so
+          // the tap target spans the full distance. Safe because the
+          // node circles paint *after* the path layer and intercept
+          // clicks first — clicks inside the visible Yesod or Malkuth
+          // circle still register on the node, not on path 32. The
+          // visible <line> below remains a→b for every path; only the
+          // invisible hit overlay differs here.
+          const hit =
+            path.number === 32
+              ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y }
+              : trimEndpoints(a, b, NODE_RADIUS);
           const letter = letterByKey(path.letterKey);
           const fromName = sefirahByKey(path.from).englishName;
           const toName = sefirahByKey(path.to).englishName;
@@ -389,6 +404,11 @@ export function TreeBoard({
  * If the segment is shorter than `2 × inset` (no real-world Tree path
  * is, but defensively), returns the midpoint for both endpoints — the
  * hit-line collapses to a degenerate point rather than inverting.
+ *
+ * Note: path 32 (Yesod↔Malkuth, length 70) trims down to only 14 units
+ * of hit-line — geometrically valid but below any useful tap target.
+ * The call site special-cases path 32 to skip this trim (see #288);
+ * SVG paint order keeps node clicks landing on the nodes regardless.
  */
 function trimEndpoints(
   a: NodeLayout,

@@ -292,24 +292,51 @@ describe('TreeBoard — path hit-target widening (#130)', () => {
   // stole every click. The fix: trim each hit-line endpoint inward
   // by NODE_RADIUS so the interactive zone lives strictly in the
   // gap between nodes.
+  //
+  // #288: path 32 is now special-cased and un-trimmed (see the
+  // ">=30 viewBox units" test above). The general trim contract is
+  // pinned by the path-25 case here and the path-13 case in the
+  // "trim is applied to every path" test below.
   it('hit-line endpoints are trimmed by NODE_RADIUS so they live between the nodes (#213)', () => {
-    // Path 32 is the central-pillar Yesod ↔ Malkuth path.
-    // Yesod sits at (200, 490); Malkuth at (200, 560). NODE_RADIUS
-    // is 28, so the trimmed hit-line should run between y=518 and
-    // y=532 — strictly in the 14-unit gap between the nodes (the
+    // Path 25 is the central-pillar Tiferet ↔ Yesod path.
+    // Tiferet sits at (200, 340); Yesod at (200, 490). NODE_RADIUS
+    // is 28, so the trimmed hit-line should run between y=368 and
+    // y=462 — strictly in the 94-unit gap between the nodes (the
     // direction depends on the path's `from`/`to` ordering, which
     // is data-defined; the test is direction-agnostic).
+    const { container } = render(<TreeBoard />);
+    const hit25 = container.querySelector('[data-path-hit="25"]');
+    expect(hit25).not.toBeNull();
+    const y1 = Number(hit25?.getAttribute('y1'));
+    const y2 = Number(hit25?.getAttribute('y2'));
+    const x1 = Number(hit25?.getAttribute('x1'));
+    const x2 = Number(hit25?.getAttribute('x2'));
+    expect(x1).toBeCloseTo(200, 0);
+    expect(x2).toBeCloseTo(200, 0);
+    expect(Math.min(y1, y2)).toBeCloseTo(368, 0);
+    expect(Math.max(y1, y2)).toBeCloseTo(462, 0);
+  });
+
+  // #288: even with the #213 trim fix intact, path 32 (Yesod ↔
+  // Malkuth) is intrinsically short — its endpoints are 70 viewBox
+  // units apart, so subtracting two NODE_RADIUS=28 trims leaves only
+  // 14 units of clickable hit-line. That's well below WCAG 2.5.5's
+  // tap-target minimum at typical render scales. The fix: special-
+  // case path 32's hit overlay so it spans the full Yesod-to-Malkuth
+  // distance (the visible path remains trimmed for cleanliness, and
+  // SVG paint order keeps node clicks landing on the nodes).
+  it('path 32 (Malkuth↔Yesod) has a tappable hit area at least 30 viewBox units tall', () => {
     const { container } = render(<TreeBoard />);
     const hit32 = container.querySelector('[data-path-hit="32"]');
     expect(hit32).not.toBeNull();
     const y1 = Number(hit32?.getAttribute('y1'));
     const y2 = Number(hit32?.getAttribute('y2'));
-    const x1 = Number(hit32?.getAttribute('x1'));
-    const x2 = Number(hit32?.getAttribute('x2'));
-    expect(x1).toBeCloseTo(200, 0);
-    expect(x2).toBeCloseTo(200, 0);
-    expect(Math.min(y1, y2)).toBeCloseTo(518, 0);
-    expect(Math.max(y1, y2)).toBeCloseTo(532, 0);
+    // Path 32 runs vertically along the central pillar; its primary
+    // axis is y. The fix un-trims the hit overlay so it spans the
+    // full Yesod-to-Malkuth distance (70 viewBox units). Pin tightly
+    // to that — a partial-trim regression (e.g. trim of 20 → 30 units)
+    // would still pass a loose `>= 30` threshold but fail this.
+    expect(Math.abs(y2 - y1)).toBeCloseTo(70, 0);
   });
 
   it('hit-line uses linecap=butt so the rounded end-cap does not extend back into the node (#213)', () => {
