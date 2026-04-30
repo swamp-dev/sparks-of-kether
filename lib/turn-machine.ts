@@ -200,6 +200,12 @@ export type TurnReducerError =
     }
   | { readonly kind: 'no-active-player' }
   | { readonly kind: 'prep-cap-exceeded'; readonly cap: number }
+  | { readonly kind: 'card-not-in-hand'; readonly arcanum: number }
+  | {
+      readonly kind: 'spark-not-held';
+      readonly sefirah: SefirahKey;
+      readonly sourcePlayerId: string;
+    }
   | { readonly kind: 'react-retry-on-pass' }
   | { readonly kind: 'move-rejected'; readonly cause: MoveRejection }
   | { readonly kind: 'challenge-rejected'; readonly cause: ChallengeRejection };
@@ -227,14 +233,29 @@ function activePlayer(state: GameState) {
 
 /**
  * Translate a `PendingModifiers` blob into engine `CheckModifiers`,
- * filtering out anything whose stage-time presupposition has since
- * changed (card not in hand, spark not held, ally moved off the
- * Sefirah). Surviving assist-requests are translated into the ally's
- * stat keyed to the challenged Sefirah; the engine then halves
- * (rounded down) when summing.
+ * AND determine which arcana / sparks to consume from the challenger's
+ * hand / sparksHeld at confirm time (#281). Validation that the
+ * staged item is still available is done up-front; assists may be
+ * dropped if the ally has moved off-Sefirah.
  *
- * Returns the `CheckModifiers` and the list of modifiers that were
- * dropped, in the order they appeared in `PendingModifiers`.
+ * Cumulative-on-retry semantic (#281). On a failed prep-confirm the
+ * staged burns persist into the next prep — the player sees "3 cards
+ * burned, +9 modifier" and decides whether to stack more. Those
+ * already-consumed cards are no longer in `challenger.hand`, but they
+ * still count toward the `CheckModifiers.cardBurns` total because
+ * design § 6 says retry burns are cumulative. They are NOT re-consumed
+ * (caller filters the consume-list to in-hand entries only) and NOT
+ * surfaced as `dropped` (an absence-from-hand at confirm time means
+ * the engine already paid for that burn on a prior failed roll, not
+ * that the player is bluffing). The same logic applies to sparks.
+ *
+ * Surviving assist-requests are translated into the ally's stat keyed
+ * to the challenged Sefirah; the engine then halves (rounded down)
+ * when summing.
+ *
+ * Returns the `CheckModifiers`, the assist drops (the only drop kind
+ * we still surface), and ordered lists of arcana / sparks for the
+ * `prep-confirm` reducer case to consume from state.
  */
 function translatePendingModifiers(
   state: GameState,
@@ -243,17 +264,25 @@ function translatePendingModifiers(
 ): {
   readonly modifiers: CheckModifiers;
   readonly dropped: readonly PrepModifier[];
+  /** Arcana to remove from `challenger.hand` and append to `discardPile`. */
+  readonly cardsToConsume: readonly number[];
+  /** Sparks to remove from each source player's `sparksHeld`. */
+  readonly sparksToConsume: readonly {
+    readonly sefirah: SefirahKey;
+    readonly sourcePlayerId: string;
+  }[];
 } {
   const pending = state.pendingModifiers;
   const sefirahRecord = sefirahByKey(sefirah);
   const dropped: PrepModifier[] = [];
 
-  // card-burn: card must still be in the active player's hand.
-  let cardBurns = 0;
-  // Track which arcanum-numbers have already "consumed" a hand slot,
-  // so two staged copies of the same card don't both succeed when
-  // the player only has one in hand. Mirrors the consumption that
-  // happens at resolve time.
+  // card-burn: cumulative count credited (length of staged list); only
+  // entries still in hand are queued for consumption. Track which
+  // arcanum-numbers have already "consumed" a hand slot so two staged
+  // copies of the same card don't both consume when the player only
+  // has one in hand.
+  const cardBurns = pending.cardBurns.length;
+  const cardsToConsume: number[] = [];
   const handByArcanum = new Map<number, number>();
   for (const card of challenger.hand) {
     handByArcanum.set(card, (handByArcanum.get(card) ?? 0) + 1);
@@ -261,17 +290,20 @@ function translatePendingModifiers(
   for (const arcanum of pending.cardBurns) {
     const remaining = handByArcanum.get(arcanum) ?? 0;
     if (remaining > 0) {
-      cardBurns += 1;
+      cardsToConsume.push(arcanum);
       handByArcanum.set(arcanum, remaining - 1);
-    } else {
-      dropped.push({ kind: 'card-burn', arcanum });
     }
+    // else: previously consumed by a prior failed prep-confirm. Still
+    // counts toward `cardBurns` (cumulative), not consumed again, not
+    // surfaced as `dropped`. See JSDoc above.
   }
 
-  // spark-burn: source player must still hold the named Spark. Allow
-  // multiple staged sparks on the same (sefirah, sourcePlayerId) pair
-  // by tracking remaining held sparks per source.
-  let sparkBurns = 0;
+  // spark-burn: same shape as card-burn (cumulative count, consume
+  // only those still held). Track per-source ledger so two staged
+  // copies of the same (sefirah, sourcePlayerId) don't both consume
+  // when the source only holds the spark once.
+  const sparkBurns = pending.sparkBurns.length;
+  const sparksToConsume: { readonly sefirah: SefirahKey; readonly sourcePlayerId: string }[] = [];
   const sparkLedger = new Map<string, Set<SefirahKey>>();
   for (const burn of pending.sparkBurns) {
     let held = sparkLedger.get(burn.sourcePlayerId);
@@ -281,20 +313,18 @@ function translatePendingModifiers(
       sparkLedger.set(burn.sourcePlayerId, held);
     }
     if (held.has(burn.sefirah)) {
-      sparkBurns += 1;
+      sparksToConsume.push({ sefirah: burn.sefirah, sourcePlayerId: burn.sourcePlayerId });
       held.delete(burn.sefirah);
-    } else {
-      dropped.push({
-        kind: 'spark-burn',
-        sefirah: burn.sefirah,
-        sourcePlayerId: burn.sourcePlayerId,
-      });
     }
+    // else: previously consumed (retry semantic, mirrors cards above).
   }
 
   // assist-request: ally must still be alive (currently always — no
   // death yet) and stand at the same Sefirah as the challenger.
   // Translate to ½ ally stat (the engine floors when summing).
+  // Drops are still surfaced — assist drops have no consumption side
+  // effect to confuse and "ally walked off" is a real UX-relevant
+  // event ("your assist went away because Bea moved").
   const assistStats: number[] = [];
   for (const allyId of pending.assistRequests) {
     const ally = state.players.find((p) => p.id === allyId);
@@ -311,7 +341,81 @@ function translatePendingModifiers(
     sparkBurns,
     shortcutPenalty: false,
   };
-  return { modifiers, dropped };
+  return { modifiers, dropped, cardsToConsume, sparksToConsume };
+}
+
+/**
+ * Apply the consumption side of a `prep-confirm` (#281). Removes the
+ * named arcana from the challenger's `hand` (one arcanum per match,
+ * earliest occurrence first) and appends them to `discardPile`.
+ * Removes the named sparks from each source player's `sparksHeld`.
+ *
+ * Pure — returns a new `GameState`. Never mutates input. If the
+ * to-consume lists are empty, returns `state` unchanged (same
+ * reference) so callers don't pay for a no-op rebuild.
+ */
+function consumeBurns(
+  state: GameState,
+  challengerId: string,
+  cardsToConsume: readonly number[],
+  sparksToConsume: readonly { readonly sefirah: SefirahKey; readonly sourcePlayerId: string }[],
+): GameState {
+  if (cardsToConsume.length === 0 && sparksToConsume.length === 0) {
+    return state;
+  }
+
+  // Card consumption: remove from challenger.hand, append to
+  // discardPile. Multi-pass over the same hand because we may need
+  // to remove multiple arcana — splicing one at a time keeps the
+  // "earliest occurrence" semantic for repeated arcana.
+  let updatedPlayers = state.players;
+  let updatedDiscard = state.discardPile;
+  if (cardsToConsume.length > 0) {
+    const challenger = updatedPlayers.find((p) => p.id === challengerId);
+    if (challenger) {
+      const newHand = [...challenger.hand];
+      for (const arcanum of cardsToConsume) {
+        const idx = newHand.indexOf(arcanum);
+        if (idx >= 0) newHand.splice(idx, 1);
+      }
+      updatedPlayers = updatedPlayers.map((p) =>
+        p.id === challengerId ? { ...p, hand: newHand } : p,
+      );
+      updatedDiscard = [...updatedDiscard, ...cardsToConsume];
+    }
+  }
+
+  // Spark consumption: remove from sparksHeld; append to spentSparks.
+  // Mirrors the endgame spark-spent flow (engine/endgame.ts) so
+  // Illumination tracking (cleared+spent counts) remains consistent.
+  // Note we do NOT emit a `spark-spent` event for the +1 Illumination
+  // delta — challenge spark burns are a stat-check spend, not a Final
+  // Threshold spend, and design/mechanics.md doesn't credit them with
+  // an Illumination tick. (The challenge already grants +1 on pass via
+  // `spark-earned`; double-crediting via `spark-spent` would be wrong.)
+  let updatedSpentSparks = state.spentSparks;
+  if (sparksToConsume.length > 0) {
+    for (const burn of sparksToConsume) {
+      const source = updatedPlayers.find((p) => p.id === burn.sourcePlayerId);
+      if (!source) continue;
+      const newSparksHeld = new Set(source.sparksHeld);
+      newSparksHeld.delete(burn.sefirah);
+      updatedPlayers = updatedPlayers.map((p) =>
+        p.id === burn.sourcePlayerId ? { ...p, sparksHeld: newSparksHeld } : p,
+      );
+      updatedSpentSparks = [
+        ...updatedSpentSparks,
+        { playerId: burn.sourcePlayerId, sefirah: burn.sefirah },
+      ];
+    }
+  }
+
+  return {
+    ...state,
+    players: updatedPlayers,
+    discardPile: updatedDiscard,
+    spentSparks: updatedSpentSparks,
+  };
 }
 
 /**
@@ -438,24 +542,63 @@ export function turnReducer(
       const pending = state.pendingModifiers;
       let nextPending: PendingModifiers;
       switch (event.modifier.kind) {
-        case 'card-burn':
+        case 'card-burn': {
+          // #281 trust boundary: the staged arcanum must be in the
+          // active player's hand right now AND not over-staged. The
+          // confirm-time path treats absent-from-hand entries as
+          // "previously consumed by a failed roll" (cumulative retry
+          // semantic), which is correct for cards that were validated
+          // when first staged. Without this stage-time check, a
+          // fabricated arcanum (never in hand) would slip through the
+          // retry inference and silently inflate the d20 modifier.
+          const arcanum = event.modifier.arcanum;
+          const heldCount = player.hand.filter((c) => c === arcanum).length;
+          const alreadyStaged = pending.cardBurns.filter(
+            (c) => c === arcanum,
+          ).length;
+          if (alreadyStaged >= heldCount) {
+            return {
+              ok: false,
+              reason: { kind: 'card-not-in-hand', arcanum },
+            };
+          }
           nextPending = {
             ...pending,
-            cardBurns: [...pending.cardBurns, event.modifier.arcanum],
+            cardBurns: [...pending.cardBurns, arcanum],
           };
           break;
-        case 'spark-burn':
+        }
+        case 'spark-burn': {
+          // #281 trust boundary: same shape as card-burn. The (sefirah,
+          // sourcePlayerId) slot is binary (held or not), so "already
+          // staged" is enough to reject — no second copy can be
+          // legitimately added.
+          const { sefirah: spkSefirah, sourcePlayerId } = event.modifier;
+          const source = state.players.find((p) => p.id === sourcePlayerId);
+          const sourceHolds = source?.sparksHeld.has(spkSefirah) ?? false;
+          const alreadyStaged = pending.sparkBurns.some(
+            (b) =>
+              b.sourcePlayerId === sourcePlayerId && b.sefirah === spkSefirah,
+          );
+          if (!sourceHolds || alreadyStaged) {
+            return {
+              ok: false,
+              reason: {
+                kind: 'spark-not-held',
+                sefirah: spkSefirah,
+                sourcePlayerId,
+              },
+            };
+          }
           nextPending = {
             ...pending,
             sparkBurns: [
               ...pending.sparkBurns,
-              {
-                sefirah: event.modifier.sefirah,
-                sourcePlayerId: event.modifier.sourcePlayerId,
-              },
+              { sefirah: spkSefirah, sourcePlayerId },
             ],
           };
           break;
+        }
         case 'assist-request':
           if (pending.assistRequests.length >= MAX_ASSIST_REQUESTS) {
             return {
@@ -561,11 +704,12 @@ export function turnReducer(
           reason: { kind: 'wrong-sub-phase', expected: 'prep', actual: challengeSubPhase },
         };
       }
-      const { modifiers: translated, dropped } = translatePendingModifiers(
-        state,
-        player,
-        event.sefirah,
-      );
+      const {
+        modifiers: translated,
+        dropped,
+        cardsToConsume,
+        sparksToConsume,
+      } = translatePendingModifiers(state, player, event.sefirah);
       // Hot-seat override (#229 / E4). When `directAssistStats` is
       // supplied, replace the translated assistStats wholesale —
       // staged `assist-request`s are silently dropped from the
@@ -610,9 +754,23 @@ export function turnReducer(
       // the player loses the rhythm of "3 cards burned, +9
       // modifier; stage another".
       const passed = result.value.outcome.pass;
+      // #281: consume the staged cards / sparks. Sunk-cost — burns are
+      // paid whether the roll passes or fails (design § "Card burn":
+      // "the card goes to discard"). Consume on top of the engine's
+      // resolved state so pass-side mutations (Sefirah cleared,
+      // sparksHeld += new spark) compose with the consumption (hand
+      // shrinks by the burned arcana). On a retry-and-confirm, the
+      // already-consumed cards are NOT in `cardsToConsume`
+      // (translatePendingModifiers filters to in-hand entries).
+      const consumed = consumeBurns(
+        result.value.newState,
+        player.id,
+        cardsToConsume,
+        sparksToConsume,
+      );
       const baseState = passed
-        ? { ...result.value.newState, pendingModifiers: EMPTY_PENDING_MODIFIERS }
-        : result.value.newState;
+        ? { ...consumed, pendingModifiers: EMPTY_PENDING_MODIFIERS }
+        : consumed;
       const stateAfter: GameState = {
         ...baseState,
         phase: 'challenge',

@@ -290,18 +290,21 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   });
 
   it('prepRemoveModifier removes by value-equality', () => {
+    // Hand after move(14): [7, 11, 14] — arcanum 3 was consumed
+    // by the move into binah. Stage two in-hand burns and remove
+    // the first by value.
     const { result } = hookViaMoveIntoPrep();
-    act(() => {
-      result.current.prepAddModifier({ kind: 'card-burn', arcanum: 3 });
-    });
     act(() => {
       result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
     });
-    expect(result.current.pendingModifiers?.cardBurns).toEqual([3, 7]);
     act(() => {
-      result.current.prepRemoveModifier({ kind: 'card-burn', arcanum: 3 });
+      result.current.prepAddModifier({ kind: 'card-burn', arcanum: 11 });
     });
-    expect(result.current.pendingModifiers?.cardBurns).toEqual([7]);
+    expect(result.current.pendingModifiers?.cardBurns).toEqual([7, 11]);
+    act(() => {
+      result.current.prepRemoveModifier({ kind: 'card-burn', arcanum: 7 });
+    });
+    expect(result.current.pendingModifiers?.cardBurns).toEqual([11]);
   });
 
   it('prepConfirm transitions to react sub-phase and returns a ChallengeSuccess', () => {
@@ -420,20 +423,24 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
     });
 
     // Per-step path: stage two card-burns one at a time, then
-    // confirm. The wrapper's card-synthesis order is the order
-    // they appear in the player's hand (first N): so for
-    // hand=[3, 7, 11, 14] and cardBurns=2 the synthesised events
-    // are arcanum=3 then arcanum=7.
+    // confirm. The wrapper's card-synthesis order is the order they
+    // appear in the player's hand (first N) AT THE TIME OF
+    // submitChallenge. Pre-prep, `move(14)` (chokmah ↔ binah, Daleth
+    // path, arcanumNumber=3) consumes arcanum 3 from hand, leaving
+    // [7, 11, 14]. So for cardBurns=2 the synthesized events are
+    // arcanum=7 then arcanum=11. (#281 made the in-hand vs.
+    // gone-from-hand distinction load-bearing because consumption
+    // now happens at confirm.)
     act(() => {
       harnessPerStep.result.current.prepAddModifier({
         kind: 'card-burn',
-        arcanum: 3,
+        arcanum: 7,
       });
     });
     act(() => {
       harnessPerStep.result.current.prepAddModifier({
         kind: 'card-burn',
-        arcanum: 7,
+        arcanum: 11,
       });
     });
     act(() => {
@@ -492,15 +499,9 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
   it('wrapper synthesises spark-burn events from sparksHeld and stages them on prep', () => {
     // Hold two sparks. The wrapper should synthesise two
     // `spark-burn` PrepModifier events, stage them on
-    // `pendingModifiers`, then prep-confirm.
-    //
-    // Note: as of E1, the engine's `resolveChallenge` credits
-    // spark burns toward the d20 score but does NOT remove the
-    // sparks from `sparksHeld` (consumption is a future-ticket
-    // concern, see `design/encounter-prep-phase.md` § 4 and the
-    // engine's `translatePendingModifiers`). So this test pins
-    // only the staging-and-confirm path; consumption-on-resolve
-    // is engine work outside E4.
+    // `pendingModifiers`, then prep-confirm. The engine then
+    // (as of #281) removes the burned sparks from `sparksHeld`
+    // at confirm-time alongside the d20-modifier credit.
     //
     // Hand needs arcanum 3 so the move(14) (chokmah ↔ binah,
     // arcanum 3) is legal. The sparkBurns count (2) is the
@@ -537,9 +538,16 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
     }
     // Challenge succeeded → Sefirah cleared, confirming the
     // engine saw the sparkBurn contribution.
-    expect(
-      result.current.state.players[0]?.clearedSefirot.has('binah'),
-    ).toBe(true);
+    const player = result.current.state.players[0];
+    expect(player?.clearedSefirot.has('binah')).toBe(true);
+    // #281: burned sparks are removed from `sparksHeld`. Both
+    // chokmah and malkuth were burned; both must be gone. (The
+    // passed challenge earns a `binah` spark — that's separate
+    // from the consumption being pinned here.)
+    expect(player?.sparksHeld.has('chokmah')).toBe(false);
+    expect(player?.sparksHeld.has('malkuth')).toBe(false);
+    expect(player?.sparksHeld.has('binah')).toBe(true);
+    expect(player?.sparksHeld.size).toBe(1);
   });
 });
 

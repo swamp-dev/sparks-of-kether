@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seededRng } from '@/engine/rng';
-import type { TurnPhase } from '@/engine/types';
+import type { CheckOutcome, TurnPhase } from '@/engine/types';
 import { turnReducer, type TurnSnapshot } from '../turn-machine';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
@@ -240,6 +240,136 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
     expect(result.reason.kind).toBe('wrong-sub-phase');
   });
 
+  it('rejects card-burn for an arcanum that is not in hand (#281 trust boundary)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [3, 7, 12],
+    });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'card-burn', arcanum: 99 },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('card-not-in-hand');
+  });
+
+  it('rejects a second card-burn for the same arcanum when only one copy is in hand', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [3, 7, 12],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        // First copy already staged.
+        pendingModifiers: { cardBurns: [7], sparkBurns: [], assistRequests: [] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'card-burn', arcanum: 7 },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('card-not-in-hand');
+  });
+
+  it('allows a second card-burn for an arcanum that is held twice in hand', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [7, 7, 12],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        pendingModifiers: { cardBurns: [7], sparkBurns: [], assistRequests: [] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'card-burn', arcanum: 7 },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.pendingModifiers.cardBurns).toEqual([7, 7]);
+  });
+
+  it('rejects spark-burn for a (sefirah, source) the source player does not hold (#281 trust boundary)', () => {
+    const ally = makePlayer({
+      id: 'p2',
+      position: 'gevurah',
+      sparksHeld: new Set(['hod']),
+    });
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState(
+      {},
+      { players: [player, ally], activePlayerId: 'p1' },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        // Ally holds 'hod', not 'binah'.
+        modifier: { kind: 'spark-burn', sefirah: 'binah', sourcePlayerId: 'p2' },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('spark-not-held');
+  });
+
+  it('rejects a second spark-burn for the same (sefirah, source) slot', () => {
+    const ally = makePlayer({
+      id: 'p2',
+      position: 'gevurah',
+      sparksHeld: new Set(['hod']),
+    });
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState(
+      {},
+      {
+        players: [player, ally],
+        activePlayerId: 'p1',
+        pendingModifiers: {
+          cardBurns: [],
+          sparkBurns: [{ sefirah: 'hod', sourcePlayerId: 'p2' }],
+          assistRequests: [],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'spark-burn', sefirah: 'hod', sourcePlayerId: 'p2' },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('spark-not-held');
+  });
+
   it('caps assistRequests at 2 — third add is rejected', () => {
     const allyA = makePlayer({ id: 'p2', position: 'gevurah' });
     const allyB = makePlayer({ id: 'p3', position: 'gevurah' });
@@ -457,11 +587,18 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     expect(result.value.meta?.challenge.outcome.pass).toBe(false);
   });
 
-  it('drops invalid card-burn (no longer in hand) and surfaces it in meta.dropped', () => {
+  it('treats a staged card-burn no longer in hand as previously consumed (cumulative retry semantic, #281)', () => {
+    // Pre-#281, an arcanum staged in pendingModifiers but absent from
+    // hand was reported as `dropped` and stripped from the d20
+    // modifier. With consumption (#281) the only legitimate way for
+    // that to happen is a prior failed prep-confirm that already
+    // consumed the card — so the engine credits it toward the
+    // cumulative `cardBurns` count (design § 6 retry semantics) and
+    // does NOT surface it as dropped.
     const player = makePlayer({
       id: 'p1',
       position: 'gevurah',
-      hand: [], // hand empty — staged card 7 is invalid
+      hand: [], // empty — staged card 7 was consumed by a prior failed roll
     });
     const state = makeState(
       {},
@@ -482,8 +619,8 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
         outcome: {
           rolled: 18,
           statContribution: 10,
-          modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
-          total: 28,
+          modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
+          total: 31,
           effectiveDC: 15,
           pass: true,
         },
@@ -492,9 +629,15 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.meta?.dropped).toEqual([
-      { kind: 'card-burn', arcanum: 7 },
-    ]);
+    // Card-burn drops are no longer surfaced (see translatePendingModifiers
+    // JSDoc). meta.dropped only carries assist drops now.
+    expect(
+      result.value.meta?.dropped.filter((d) => d.kind === 'card-burn'),
+    ).toEqual([]);
+    // Hand stays empty (nothing to consume) and discard is untouched —
+    // the engine knew the card was already gone.
+    expect(result.value.next.state.players[0]?.hand).toEqual([]);
+    expect(result.value.next.state.discardPile).toEqual([]);
   });
 
   it('drops invalid assist-request (ally not at same Sefirah) and surfaces it in meta.dropped', () => {
@@ -680,6 +823,357 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.meta?.challenge.outcome.effectiveDC).toBe(15);
+  });
+});
+
+describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
+  // The bug: pre-fix, prep-confirm read cardBurns as a count to compute
+  // the d20 modifier but never moved the actual arcana from hand to
+  // discardPile, letting players "spend" the same card across multiple
+  // challenges with no real cost. design/mechanics.md § "Card burn":
+  // "(The card goes to discard; you cannot use it to travel.)"
+  // Sunk-cost — burns are paid whether the roll passes or fails.
+  it('moves staged cardBurn arcana from player.hand to state.discardPile on pass', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [3, 7, 11],
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 12 },
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        discardPile: [99],
+        pendingModifiers: {
+          cardBurns: [3, 7],
+          sparkBurns: [],
+          assistRequests: [],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        outcome: {
+          rolled: 18,
+          statContribution: 12,
+          modifierBreakdown: { assist: 0, cardBurn: 6, sparkBurn: 0 },
+          total: 36,
+          effectiveDC: 15,
+          pass: true,
+        },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players[0];
+    // Cards 3 and 7 consumed; 11 still in hand. Hand sorting preserved
+    // for the survivor — the consumption is a removal-by-value, not a
+    // re-deal.
+    expect(after?.hand).toEqual([11]);
+    // Discard grew by 2; pre-existing entry [99] preserved.
+    expect(result.value.next.state.discardPile).toEqual([99, 3, 7]);
+  });
+
+  it('moves staged cardBurn arcana from hand to discardPile on FAIL (sunk cost)', () => {
+    // design/mechanics.md § "Card burn": "(The card goes to discard;
+    // you cannot use it to travel.)" The cards are paid at confirm,
+    // not refunded on fail. This is the asymmetric design choice that
+    // makes burns a real strategic tradeoff — the player pays whether
+    // the d20 lands favorably or not.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [3, 7, 11],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        discardPile: [],
+        pendingModifiers: {
+          cardBurns: [3, 7],
+          sparkBurns: [],
+          assistRequests: [],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        outcome: {
+          rolled: 1,
+          statContribution: 10,
+          modifierBreakdown: { assist: 0, cardBurn: 6, sparkBurn: 0 },
+          total: 17,
+          effectiveDC: 25, // forced fail
+          pass: false,
+        },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.lastOutcome?.pass).toBe(false);
+    // Hand and discard mutated as if the burn paid out, even though
+    // the roll failed.
+    expect(result.value.next.state.players[0]?.hand).toEqual([11]);
+    expect(result.value.next.state.discardPile).toEqual([3, 7]);
+    // pendingModifiers.cardBurns preserved so retry sees the cumulative
+    // stack (design § 6) — assertion guards the engine isn't accidentally
+    // double-clearing the staging on fail.
+    expect(result.value.next.state.pendingModifiers.cardBurns).toEqual([3, 7]);
+  });
+
+  it('does NOT re-consume previously-consumed cards on react-retry → prep-confirm', () => {
+    // Round-trip the full retry loop: stage [3, 7], confirm (fail), the
+    // engine consumes both. react-retry brings the player back to prep
+    // with pendingModifiers.cardBurns=[3, 7] preserved but hand=[11].
+    // The player stages a fresh card 11 and confirms again. The engine
+    // must consume only 11 (the new one); 3 and 7 are already gone.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [3, 7, 11],
+    });
+    let snap: TurnSnapshot = {
+      state: {
+        ...makeState({}, { players: [player] }),
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+        pendingModifiers: {
+          cardBurns: [3, 7],
+          sparkBurns: [],
+          assistRequests: [],
+        },
+      },
+    };
+
+    // First confirm: forced fail.
+    const FAIL: CheckOutcome = {
+      rolled: 1,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 6, sparkBurn: 0 },
+      total: 17,
+      effectiveDC: 25,
+      pass: false,
+    };
+    const c1 = turnReducer(
+      snap,
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      RNG,
+    );
+    expect(c1.ok).toBe(true);
+    if (!c1.ok) return;
+    snap = c1.value.next;
+    expect(snap.state.players[0]?.hand).toEqual([11]);
+    expect(snap.state.discardPile).toEqual([3, 7]);
+
+    // Retry → prep with cumulative [3, 7] still staged.
+    const retry = turnReducer(snap, { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    snap = retry.value.next;
+    expect(snap.state.challengeSubPhase).toBe('prep');
+    expect(snap.state.pendingModifiers.cardBurns).toEqual([3, 7]);
+
+    // Stage a 3rd card on the smaller hand.
+    const add = turnReducer(
+      snap,
+      { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 11 } },
+      RNG,
+    );
+    expect(add.ok).toBe(true);
+    if (!add.ok) return;
+    snap = add.value.next;
+    expect(snap.state.pendingModifiers.cardBurns).toEqual([3, 7, 11]);
+
+    // Second confirm: forced pass. The d20 modifier credits all 3
+    // burns (cumulative length × 3 = +9) — verified via the supplied
+    // outcome — and only card 11 (the only one still in hand) is
+    // consumed. Hand drops to [], discard becomes [3, 7, 11].
+    const PASS: CheckOutcome = {
+      rolled: 18,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 9, sparkBurn: 0 },
+      total: 37,
+      effectiveDC: 15,
+      pass: true,
+    };
+    const c2 = turnReducer(
+      snap,
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: PASS },
+      RNG,
+    );
+    expect(c2.ok).toBe(true);
+    if (!c2.ok) return;
+    snap = c2.value.next;
+    expect(snap.state.players[0]?.hand).toEqual([]);
+    expect(snap.state.discardPile).toEqual([3, 7, 11]);
+    // Player cleared the Sefirah on the passing retry.
+    expect(snap.state.players[0]?.clearedSefirot.has('gevurah')).toBe(true);
+  });
+
+  it('credits cumulative cardBurns length toward the rolled modifier (no engine outcome supplied)', () => {
+    // Same retry scenario as above but lets the engine compute the
+    // outcome (no `outcome` field on the event). Pinning that the d20
+    // modifier sees cumulative count 3, not just the in-hand survivors
+    // count 1 — design § 6 retry semantic.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 10 },
+      hand: [11], // 3 and 7 already consumed by a prior failed roll
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        pendingModifiers: {
+          cardBurns: [3, 7, 11],
+          sparkBurns: [],
+          assistRequests: [],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'gevurah' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Cumulative card-burn modifier: 3 burns × +3 = +9 in the breakdown.
+    expect(result.value.meta?.challenge.outcome.modifierBreakdown.cardBurn).toBe(9);
+    // Only the one in-hand card was consumed.
+    expect(result.value.next.state.players[0]?.hand).toEqual([]);
+    expect(result.value.next.state.discardPile).toEqual([11]);
+  });
+
+  it('moves staged sparkBurn from sparksHeld to spentSparks on confirm', () => {
+    // Same shape as cards: the engine reads sparkBurns as a count for
+    // the +5 modifier but pre-#281 never removed the spark from
+    // sparksHeld. Pin that the source player's spark is consumed and
+    // recorded in spentSparks (mirrors the endgame spark-spent flow).
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      sparksHeld: new Set(['hod', 'netzach']),
+      stats: { ...DEFAULT_STATS_FOR_TEST, strength: 10 },
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        pendingModifiers: {
+          cardBurns: [],
+          sparkBurns: [
+            { sefirah: 'hod', sourcePlayerId: 'p1' },
+          ],
+          assistRequests: [],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        outcome: {
+          rolled: 18,
+          statContribution: 10,
+          modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 5 },
+          total: 33,
+          effectiveDC: 15,
+          pass: true,
+        },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const after = result.value.next.state.players[0];
+    // Hod consumed; netzach untouched.
+    expect(after?.sparksHeld.has('hod')).toBe(false);
+    expect(after?.sparksHeld.has('netzach')).toBe(true);
+    // The newly-earned gevurah spark from clearing the challenge IS in
+    // sparksHeld (added by resolveChallenge on pass) — independent of
+    // the consumption side.
+    expect(after?.sparksHeld.has('gevurah')).toBe(true);
+    // Spent ledger updated.
+    expect(result.value.next.state.spentSparks).toContainEqual({
+      playerId: 'p1',
+      sefirah: 'hod',
+    });
+  });
+
+  it('hot-seat wrapper consumes cards via the same prep-confirm path', () => {
+    // The hot-seat `submitChallenge` wrapper synthesizes
+    // prep-add-modifier events from the head of the player's hand,
+    // then calls prep-confirm with `directAssistStats` /
+    // `shortcutPenalty` overrides. Card consumption flows through the
+    // same reducer case as the multiplayer per-step path, so the fix
+    // covers both. This test pins that integration.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [3, 7, 11],
+    });
+    let snap: TurnSnapshot = {
+      state: {
+        ...makeState({}, { players: [player] }),
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    };
+    // Stage two card-burns the same way the wrapper would.
+    const stage1 = turnReducer(
+      snap,
+      { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 3 } },
+      RNG,
+    );
+    expect(stage1.ok).toBe(true);
+    if (!stage1.ok) return;
+    snap = stage1.value.next;
+    const stage2 = turnReducer(
+      snap,
+      { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 7 } },
+      RNG,
+    );
+    expect(stage2.ok).toBe(true);
+    if (!stage2.ok) return;
+    snap = stage2.value.next;
+
+    // Confirm with the wrapper's hatch fields (directAssistStats=[],
+    // shortcutPenalty=false). Consumption still applies.
+    const confirm = turnReducer(
+      snap,
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        directAssistStats: [],
+        shortcutPenalty: false,
+        outcome: {
+          rolled: 18,
+          statContribution: 10,
+          modifierBreakdown: { assist: 0, cardBurn: 6, sparkBurn: 0 },
+          total: 34,
+          effectiveDC: 15,
+          pass: true,
+        },
+      },
+      RNG,
+    );
+    expect(confirm.ok).toBe(true);
+    if (!confirm.ok) return;
+    expect(confirm.value.next.state.players[0]?.hand).toEqual([11]);
+    expect(confirm.value.next.state.discardPile).toEqual([3, 7]);
   });
 });
 
