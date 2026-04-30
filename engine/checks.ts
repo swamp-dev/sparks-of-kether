@@ -1,4 +1,4 @@
-import { sefirahByKey } from '@/data';
+import { sefirahByKey, tryPathByNumber } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
@@ -260,16 +260,91 @@ export interface SetbackInput {
 
 /**
  * Absorb the cost of a failed challenge the player chose not to retry.
- * Emits a `check-failed-accepted` event — the counter bump (+1, or +2
- * for shortcut failures) happens through `applyEvent` so all rules
- * stay in `events.ts`. Position rollback (push back one Sefirah)
- * happens at the movement layer, not here.
+ *
+ * Two effects are folded into a single state update:
+ *
+ *   1. Counter tick — emits a `check-failed-accepted` event so the
+ *      Separation bump (+1, or +2 on shortcut failures) goes through
+ *      `applyEvent`. Counter rules stay in `events.ts`.
+ *   2. Position rollback (#280) — on a shortcut failure
+ *      (`shortcut === true`) the player is pushed back one Sefirah,
+ *      per `design/mechanics.md` § Shortcuts. The origin Sefirah is
+ *      the other endpoint of the path the player just travelled, read
+ *      from `player.lastArrivalPathNumber` (set by `applyMove` in #275).
+ *      Cleared after the rollback so a subsequent challenge at the
+ *      origin doesn't silently re-read as a shortcut from the old
+ *      path's perspective.
+ *
+ * The rollback is deliberately NOT routed through `applyMove`. A
+ * forced setback push must not consume a card from hand, push to
+ * the discard pile, or trigger move-downward / pillar-streak side
+ * effects — those are properties of a player-driven, card-played
+ * arrival.
+ *
+ * Defensive: if `shortcut` is true but `lastArrivalPathNumber` is
+ * absent (transitional snapshot, externally-injected state), the
+ * position is left unchanged. The +2 Separation tick still applies.
  */
 export function acceptSetback(state: GameState, input: SetbackInput): GameState {
-  return applyEvent(state, {
+  const shortcut = input.shortcut ?? false;
+  const afterCounterTick = applyEvent(state, {
     kind: 'check-failed-accepted',
     playerId: input.playerId,
     sefirah: input.sefirah,
-    shortcut: input.shortcut ?? false,
+    shortcut,
   });
+
+  if (!shortcut) {
+    return afterCounterTick;
+  }
+
+  return rollbackPosition(afterCounterTick, input.playerId);
+}
+
+/**
+ * Push a player back to the Sefirah they came from, deriving the
+ * origin from `player.lastArrivalPathNumber` and clearing that field.
+ * Other players are untouched. Returns the input state unchanged when
+ * the target player is missing or has no recorded arrival path —
+ * callers (`acceptSetback`) treat the position-update as best-effort
+ * so the +2 Separation tick still lands on a malformed snapshot.
+ */
+function rollbackPosition(state: GameState, playerId: string): GameState {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return state;
+
+  const arrivalPathNumber = player.lastArrivalPathNumber;
+  if (arrivalPathNumber === undefined) return state;
+
+  const path = tryPathByNumber(arrivalPathNumber);
+  if (!path) return state;
+
+  // The origin is the OTHER endpoint of the path. Path is bidirectional
+  // and `from`/`to` follow traditional top-down numbering, but the
+  // player could have travelled either direction. If the recorded
+  // arrival path doesn't actually touch the player's current position
+  // (a corrupted/injected state — `applyMove` always lands on an
+  // endpoint), no-op the position change rather than guess.
+  let origin: SefirahKey;
+  if (path.from === player.position) {
+    origin = path.to;
+  } else if (path.to === player.position) {
+    origin = path.from;
+  } else {
+    return state;
+  }
+
+  const updatedPlayer: PlayerState = {
+    ...player,
+    position: origin,
+    // Clear: the rollback is not a player-driven arrival, so the
+    // next challenge at `origin` should NOT consult this field for
+    // shortcut derivation. Future moves will re-set it via applyMove.
+    lastArrivalPathNumber: undefined,
+  };
+
+  return {
+    ...state,
+    players: state.players.map((p) => (p.id === playerId ? updatedPlayer : p)),
+  };
 }

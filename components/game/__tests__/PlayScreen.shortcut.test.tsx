@@ -180,6 +180,93 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
     }
   });
 
+  // ──────── #280: position rollback on shortcut failure ────────
+  //
+  // design/mechanics.md § Shortcuts: a shortcut-path failure pushes
+  // the player back to the Sefirah they came from. Pre-#280 only the
+  // +2 Separation tick fired; the player remained parked at the
+  // destination. This test pins the rollback at the integration
+  // boundary — the engine state mutation surfaces in TreeBoard's
+  // `aria-label` text on the active player's token.
+  it('rolls the active player back to the origin Sefirah when accepting a shortcut failure', () => {
+    vi.useFakeTimers();
+    try {
+      const initial = makePrepState({
+        destination: 'yesod',
+        arrivalPath: 25, // shortcut Tiferet→Yesod
+      });
+      const rng = seededRng(1);
+      render(<PlayScreen initialState={initial} rng={rng} />);
+
+      // Resolve the prep modifiers + roll the d20.
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
+      const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
+      if (!acceptBtn) {
+        throw new Error(
+          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+        );
+      }
+      act(() => {
+        fireEvent.click(acceptBtn as HTMLButtonElement);
+      });
+
+      // After the rollback, the active player's token aria-label
+      // should read "... at Beauty" (Tiferet) — not "at Foundation"
+      // (Yesod). aria-label is the most stable surface for the
+      // engine-side position change at the integration boundary.
+      const activeToken = document.querySelector(
+        '[data-active="true"]',
+      );
+      expect(activeToken?.getAttribute('aria-label')).toMatch(/at Beauty/);
+      expect(activeToken?.getAttribute('aria-label')).not.toMatch(/at Foundation/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does NOT roll back the active player on a non-shortcut failure', () => {
+    vi.useFakeTimers();
+    try {
+      const initial = makePrepState({
+        destination: 'yesod',
+        arrivalPath: 30, // NOT a shortcut (Hod ↔ Yesod)
+      });
+      const rng = seededRng(7);
+      render(<PlayScreen initialState={initial} rng={rng} />);
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
+      const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
+      if (!acceptBtn) {
+        throw new Error(
+          'test setup: the seeded Roll passed (no accept button). Adjust seed or stats so the roll fails.',
+        );
+      }
+      act(() => {
+        fireEvent.click(acceptBtn as HTMLButtonElement);
+      });
+
+      // Non-shortcut: the player stays at Yesod (Foundation).
+      const activeToken = document.querySelector(
+        '[data-active="true"]',
+      );
+      expect(activeToken?.getAttribute('aria-label')).toMatch(/at Foundation/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('Separation rises by 1 when arrival was via a non-shortcut path (control)', () => {
     vi.useFakeTimers();
     try {

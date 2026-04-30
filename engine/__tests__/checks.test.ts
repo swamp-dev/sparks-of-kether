@@ -362,6 +362,180 @@ describe('acceptSetback', () => {
     const next = acceptSetback(state, { playerId: 'p1', sefirah: 'yesod', shortcut: true });
     expect(next.separation).toBe(2);
   });
+
+  // ──────── #280: position rollback on shortcut failure ────────
+  //
+  // design/mechanics.md § Shortcuts: "Failing a shortcut challenge:
+  // +2 Separation (not +1), and you drop back to the previous
+  // Sefirah." Pre-#280 the +2 tick worked but the position rollback
+  // was a TODO at the movement layer.
+  //
+  // Design choice: a dedicated rollback path (NOT routing through
+  // applyMove) — applyMove would burn a card from hand, push to the
+  // discard pile, and trigger move-downward / pillar-streak side
+  // effects that are inappropriate for a forced setback push.
+  // The rollback only writes `position` and clears
+  // `lastArrivalPathNumber` so a subsequent challenge at the origin
+  // Sefirah does NOT silently re-read as a shortcut from the old
+  // path's perspective.
+
+  it('shortcut failure pushes the player back to the Sefirah they came from', () => {
+    // Path 25 (Tiferet ↔ Yesod) is a shortcut. Player arrived at
+    // Yesod via path 25 (origin = Tiferet). Shortcut failure must
+    // revert position to Tiferet.
+    const state = makeState({
+      position: 'yesod',
+      lastArrivalPathNumber: 25,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('tiferet');
+  });
+
+  it('shortcut rollback clears lastArrivalPathNumber so origin challenge does not re-read as shortcut', () => {
+    // Without this, a subsequent challenge at Tiferet would
+    // erroneously consult path 25's pillarsCrossed (balance/balance)
+    // and apply a phantom +3 DC penalty. Cleanest fix: clear the
+    // field — the rollback wasn't a player-driven arrival.
+    const state = makeState({
+      position: 'yesod',
+      lastArrivalPathNumber: 25,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.lastArrivalPathNumber).toBeUndefined();
+  });
+
+  it('shortcut failure tick of +2 Separation is preserved alongside the rollback', () => {
+    // Regression guard for #275: the rollback path must not
+    // accidentally drop the Separation tick.
+    const state = makeState({
+      position: 'yesod',
+      lastArrivalPathNumber: 25,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.separation).toBe(2);
+  });
+
+  it('non-shortcut failure does NOT move the player', () => {
+    // Regression guard: only shortcut failures push back. Path 30
+    // (Hod ↔ Yesod) is severity/balance — not a shortcut.
+    const state = makeState({
+      position: 'yesod',
+      lastArrivalPathNumber: 30,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: false,
+    });
+    expect(next.players[0]?.position).toBe('yesod');
+    expect(next.players[0]?.lastArrivalPathNumber).toBe(30);
+  });
+
+  it('shortcut failure with no recorded arrival path leaves position untouched (defensive)', () => {
+    // PlayerState.lastArrivalPathNumber is optional; if a snapshot
+    // somehow lands in challenge phase without it (transitional
+    // pre-#275 row, or an externally-injected state) the rollback
+    // has no origin to push back to. Better to no-op the position
+    // change than crash — the +2 Separation tick still applies.
+    const state = makeState({ position: 'yesod' });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('yesod');
+    expect(next.separation).toBe(2);
+  });
+
+  it('rollback works for path 13 (Kether ↔ Tiferet) — back to Tiferet', () => {
+    // Path 13 is the Kether-side shortcut. Player at Kether after
+    // travelling path 13 from Tiferet → rollback puts them at Tiferet.
+    const state = makeState({
+      position: 'kether',
+      lastArrivalPathNumber: 13,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'kether',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('tiferet');
+  });
+
+  it('rollback works for path 32 (Yesod ↔ Malkuth) — back to Malkuth', () => {
+    // Path 32 (Yesod ↔ Malkuth) is also balance/balance. Failing
+    // at Yesod after travelling up from Malkuth should push back
+    // to Malkuth.
+    const state = makeState({
+      position: 'yesod',
+      lastArrivalPathNumber: 32,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('malkuth');
+  });
+
+  it('shortcut failure with arrival path that does not touch current position is a no-op (defensive)', () => {
+    // Defensive: if a corrupted/injected snapshot has the player
+    // at Hod with `lastArrivalPathNumber: 25` (Tiferet ↔ Yesod —
+    // doesn't touch Hod), we cannot infer a sensible origin.
+    // No-op the position change; +2 Separation still ticks.
+    const state = makeState({
+      position: 'hod',
+      lastArrivalPathNumber: 25,
+    });
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'hod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('hod');
+    expect(next.separation).toBe(2);
+  });
+
+  it('rollback only touches the active player (other players untouched)', () => {
+    // Regression guard for the multi-player case: the rollback
+    // must scope to the player whose challenge failed. Sibling
+    // players at the same Sefirah (assistants) keep their position.
+    const ally = makePlayer({
+      id: 'p2',
+      name: 'Bo',
+      position: 'yesod',
+      lastArrivalPathNumber: 25,
+    });
+    const state = makeState(
+      {},
+      {
+        players: [
+          makePlayer({ position: 'yesod', lastArrivalPathNumber: 25 }),
+          ally,
+        ],
+      },
+    );
+    const next = acceptSetback(state, {
+      playerId: 'p1',
+      sefirah: 'yesod',
+      shortcut: true,
+    });
+    expect(next.players[0]?.position).toBe('tiferet');
+    expect(next.players[1]?.position).toBe('yesod');
+    expect(next.players[1]?.lastArrivalPathNumber).toBe(25);
+  });
 });
 
 // ──────────────── resolveChallenge × Soul Doors (#244) ────────────────
