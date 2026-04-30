@@ -31,7 +31,7 @@ this repo.
 | Language | TypeScript strict mode |
 | Package manager | pnpm |
 | Node | 20 LTS |
-| Styling | Tailwind + per-Sefirah color tokens (typography stack: [`docs/typography.md`](docs/typography.md)) |
+| Styling | Tailwind + per-Sefirah color tokens (typography: [`docs/typography.md`](docs/typography.md); motion & atmosphere: [`docs/motion.md`](docs/motion.md)) |
 | Client state | Zustand |
 | Backend | Supabase (Postgres + Realtime + anonymous auth) |
 | Testing | Vitest + React Testing Library + Playwright |
@@ -220,6 +220,8 @@ SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot (saves ~70s)
 | What do the Tarot cards correspond to? | `reference/arcana.md` |
 | How do the symbolic systems cross-index? | `reference/correspondences.md` |
 | What does each screen look like? | `docs/screens.md` |
+| How does typography work (display / body / Hebrew)? | `docs/typography.md` |
+| How do motion tokens / glow scale / atmosphere layers work? | `docs/motion.md` |
 | What was built, by whom, what surprised them? | `Journal.md` |
 | What work is queued? | GitHub issues (milestone: _MVP: Playable web version_) |
 | What's the master plan? | Epic issue #1 |

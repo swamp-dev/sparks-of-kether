@@ -9,6 +9,9 @@
 html,
 body {
   min-height: 100%;
-  background-color: theme('colors.ground');
+  /* #311: body sits on the deepest indigo (`void`); the Substrate
+     component layers bloom + grain on top. `ground` remains the
+     surface tone for cards / panels rendered above the substrate. */
+  background-color: theme('colors.void');
   color: theme('colors.veil');
 }
