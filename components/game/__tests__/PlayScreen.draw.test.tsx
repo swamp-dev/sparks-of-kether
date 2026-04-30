@@ -78,3 +78,55 @@ describe('PlayScreen — meditate disabled at HAND_CAP', () => {
     expect(slots.length).toBe(before);
   });
 });
+
+describe('PlayScreen — full hand visibility (#290)', () => {
+  // #290: a player whose hand is at HAND_CAP=6 (e.g. just meditated
+  // from a hand of 4) must see all 6 cards rendered in the fan.
+  // The earlier bug clipped the visible count at 4.
+  it('renders all 6 card slots when the active player holds HAND_CAP cards', () => {
+    const state = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = state.players.findIndex(
+      (p) => p.id === state.activePlayerId,
+    );
+    const cappedPlayers = state.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: [0, 2, 5, 13, 18, 21] } : p,
+    );
+    const initial = { ...state, players: cappedPlayers };
+    const rng = seededRng(2);
+
+    render(<PlayScreen initialState={initial} rng={rng} />);
+
+    const slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    expect(slots.length).toBe(6);
+  });
+
+  it('reveals all newly-drawn cards after Meditate from a 4-card hand', () => {
+    // Reproduces the user-visible regression: STARTING_HAND_SIZE is
+    // 4, Meditate draws +2 (to 6 = HAND_CAP). Newly-drawn cards must
+    // appear in the DOM, not be silently clipped at the previous count.
+    const state = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = state.players.findIndex(
+      (p) => p.id === state.activePlayerId,
+    );
+    const fourCardPlayers = state.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: p.hand.slice(0, 4) } : p,
+    );
+    const initial = { ...state, players: fourCardPlayers };
+    const rng = seededRng(2);
+
+    render(<PlayScreen initialState={initial} rng={rng} />);
+
+    // Pre-meditate: 4 cards.
+    let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    expect(slots.length).toBe(4);
+
+    const meditateBtn = screen.getByRole('button', { name: /meditate/i });
+    act(() => {
+      fireEvent.click(meditateBtn);
+    });
+
+    // Post-meditate: all 6 must be in the DOM.
+    slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    expect(slots.length).toBe(6);
+  });
+});

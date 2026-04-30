@@ -270,3 +270,69 @@ describe('Hand — empty state (#208)', () => {
     expect(container.textContent).toMatch(/0 cards/);
   });
 });
+
+describe('Hand — full hand at HAND_CAP (#290)', () => {
+  // #290: when a player draws beyond STARTING_HAND_SIZE (4) — e.g.
+  // via Meditate while already holding 4 cards — the new cards must
+  // render. The bug report: "all cards in hand must be visible
+  // (currently caps at 4)". HAND_CAP is 6, so the fan must render
+  // every slot up to 6.
+  it('renders all 6 cards when the hand is at HAND_CAP=6', () => {
+    const sixCards = [0, 2, 5, 13, 18, 21] as const;
+    const { container } = render(
+      <Hand hand={sixCards} visible={true} />,
+    );
+    const slots = container.querySelectorAll('[data-card-slot]');
+    expect(slots.length).toBe(6);
+    // Every arcanum number is exposed on its slot — no quiet drop
+    // of the 5th and 6th cards.
+    const arcana = Array.from(slots).map((s) => s.getAttribute('data-arcanum'));
+    expect(arcana).toEqual(['0', '2', '5', '13', '18', '21']);
+  });
+
+  it('renders all 5 cards at hand size 5 (between starting size and cap)', () => {
+    const { container } = render(
+      <Hand hand={[0, 2, 5, 13, 21]} visible={true} />,
+    );
+    const slots = container.querySelectorAll('[data-card-slot]');
+    expect(slots.length).toBe(5);
+  });
+
+  it('renders all 6 cards face-down when hidden at HAND_CAP', () => {
+    const { container } = render(
+      <Hand hand={[0, 2, 5, 13, 18, 21]} visible={false} />,
+    );
+    const backs = container.querySelectorAll('[data-card="back"]');
+    expect(backs.length).toBe(6);
+  });
+
+  it('overlap is sized to card width, not parent width (no % marginLeft)', () => {
+    // #290 root cause: `marginLeft: '-55%'` resolves against the
+    // parent's content-box width per CSS spec — NOT against the
+    // card's own width. With a 576 px parent (max-w-xl) that becomes
+    // -316 px per card, which collapses 5/6 cards into a stack and
+    // pushes their content past the `overflow-x-hidden` boundary
+    // so only the first 4 are visible. The overlap must be sized
+    // in card-relative units (rem, em, or fixed px) so the fan
+    // scales with the card itself, not the container.
+    const { container } = render(
+      <Hand hand={[0, 2, 5, 13, 18, 21]} visible={true} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    // First card has no marginLeft inline style at all (anchors the
+    // fan). Asserting the empty string instead of '0px' avoids
+    // brittleness around how React/jsdom serialise a numeric `0`.
+    expect(slots[0]?.style.marginLeft).toBe('');
+    // Every subsequent card has a non-percentage negative margin.
+    for (let i = 1; i < slots.length; i++) {
+      const ml = slots[i]?.style.marginLeft ?? '';
+      expect(
+        ml.endsWith('%'),
+        `slot ${i} marginLeft "${ml}" must not be a percentage`,
+      ).toBe(false);
+      expect(ml.startsWith('-')).toBe(true);
+    }
+  });
+});

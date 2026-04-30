@@ -3832,3 +3832,18 @@ don't reach naturally. Centralised them.
 - Process note: I amended the impl commit to fold in the snapshot update before realizing the project rule against amending applies broadly to unpushed commits too. Recovery via `git reset --soft` was also blocked. The two-commit story (`a4a8e27` failing test → `e28321d` impl with snapshot) is intact and tells the right TDD story; the snapshot regen is logically part of the impl. Flagging for the parent agent.
 
 **Commit(s):** `a4a8e27` (failing test), `e28321d` (impl + snapshot regen)
+
+## 2026-04-30T12:30:51-04:00 — #290: hand visibility — all cards render at HAND_CAP
+
+**Pushed:** Failing tests (component + integration) plus the fix. Bug lived in `components/hand/Hand.tsx` exactly where Phase 1 hypothesised at the constant level, but at the *expression* of the overlap rather than at any caller-side container constraint: `marginLeft: '-55%'` resolves against the parent (the `max-w-xl` 576 px Hand container set by `PlayScreen`), not the card width — so each subsequent slot slid −316 px instead of −53/79 px, collapsing 5/6-card hands into a stack and pushing the rightmost slots past the existing `overflow-x-hidden` clip. The fix sizes the overlap in card-relative rem (`-3.3rem` mobile, `sm:!ml-[-4.95rem]` Tailwind utility for the wider `sm:w-36` card) so the fan scales with the card itself across breakpoints.
+
+**Why:** Newly-drawn cards from Meditate were invisible because the hand display capped at 4. The author's intent (comment: "−55% advances 45% of card width per card") matched what an overlap of 55% of *the card* would do, but CSS percentage margin is anchored to the parent — a long-standing CSS gotcha that bit hard once the container went wider than the card.
+
+**Notes:**
+- Three new component tests in `components/hand/__tests__/Hand.test.tsx`: a 6-card render assertion, a 5-card assertion, a 6-card-hidden (face-down) assertion, plus the load-bearing one — `style.marginLeft` on every slot must not end with `%`. That last one is the only one that actually flipped red→green; the count-based ones pass even with the bug because all 6 buttons render in the DOM, jsdom just doesn't compute layout.
+- Two new integration tests in `components/game/__tests__/PlayScreen.draw.test.tsx`: 6-card hand renders 6 slots, and the user-visible regression "Meditate from a 4-card hand exposes 6 slots after the click".
+- The Tailwind class `sm:!ml-[-4.95rem]` is a literal string (JIT-detectable). The `!important` modifier is required so the responsive utility overrides the inline rem base set on the same element. No matchMedia subscription needed.
+- Pre-push hook ran cleanly. typecheck ✓, lint ✓, full vitest suite ✓ (1089 passed / 1 todo).
+- Mobile (375 px viewport) was not specifically retested in jsdom — the inline rem value (3.3 rem = 52.8 px overlap on a 96 px card = 45% advance per slot, 6×96 − 5×52.8 = 312 px total) places a 6-card fan inside the design-min 320 px viewport. A visual-regression follow-up at the next screenshot review will confirm the desktop variant.
+
+**Commit(s):** `47fa595` (failing tests), `457b485` (fix)

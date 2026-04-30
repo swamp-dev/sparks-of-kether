@@ -45,15 +45,27 @@ interface HandProps {
 
 const MAX_FAN_DEG = 12;
 /**
- * Card overlap when the hand is open. Cards render at `w-24` (96 px)
- * on narrow viewports and `w-36` (144 px) on `sm:` and up (#38).
- * Overlap is a percentage of card width so the fan stays proportional
- * across breakpoints — `-55%` advances 45% of card width per card,
- * which keeps a 6-card hand inside a 320 px viewport (96 + 5 × 43.2
- * = 312 px) and inside a 576 px max-w-xl on desktop (144 + 5 × 64.8
- * = 468 px).
+ * Card overlap when the hand is open. Cards render at `w-24` (96 px =
+ * 6 rem) on narrow viewports and `w-36` (144 px = 9 rem) on `sm:` and
+ * up (#38). Each subsequent card overlaps its predecessor by 55% of
+ * the card's width, which advances 45% of card width per slot and
+ * keeps a 6-card hand inside a 320 px viewport (96 + 5 × 43.2 = 312
+ * px) and a 576 px max-w-xl on desktop (144 + 5 × 64.8 = 468 px).
+ *
+ * #290: previously expressed as `marginLeft: '-55%'`, but CSS resolves
+ * a percentage margin against the **parent's** content-box width, not
+ * against the element itself. With a 576 px parent that became
+ * −316 px per card — collapsing 5/6-card hands into a stack and
+ * pushing the rightmost slots past the `overflow-x-hidden` clip, so
+ * the player saw only the first 4 cards. The overlap is now expressed
+ * in card-relative units (rem), tracking the responsive `w-24
+ * sm:w-36` card width via a Tailwind responsive utility on each slot.
+ *
+ * 6 rem × 0.55 = 3.3 rem (mobile, set inline below)
+ * 9 rem × 0.55 = 4.95 rem (sm:, set as a Tailwind utility — must be
+ *   a literal string for JIT detection, see slot className)
  */
-const CARD_OVERLAP_PCT = '-55%';
+const CARD_OVERLAP_REM_BASE = '-3.3rem';
 
 export function Hand({
   hand,
@@ -223,21 +235,39 @@ export function Hand({
             style={{
               transform: `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`,
               transformOrigin: 'bottom center',
-              marginLeft: i === 0 ? 0 : CARD_OVERLAP_PCT,
+              // #290: marginLeft is set in card-relative rem units so
+              // the overlap tracks the card's intrinsic width rather
+              // than the parent. The first card anchors the fan with
+              // no marginLeft set at all (omitted from the style
+              // object); every subsequent card overlaps by 55% of
+              // card width via the responsive base/sm pair below.
+              ...(i === 0 ? {} : { marginLeft: CARD_OVERLAP_REM_BASE }),
               padding: 0,
               border: isSelected ? '2px solid #d4af37' : 'none',
               borderRadius: 12,
               background: 'transparent',
               cursor: interactive ? 'pointer' : 'default',
             }}
+            // sm: breakpoint widens the card from w-24 (6 rem) to
+            // w-36 (9 rem). The overlap must scale with it; the
+            // responsive utility class (with `!important`) swaps to
+            // the larger negative margin from `sm:` upward and
+            // overrides the rem base set inline above — without an
+            // additional inline-style branch that would require a
+            // matchMedia subscription. Tailwind's JIT needs the class
+            // to be a literal string; `-4.95rem` is 9rem × 0.55 (see
+            // overlap doc above the constant).
+            className={
+              i === 0 ? undefined : 'sm:!ml-[-4.95rem]'
+            }
           >
             {visible ? (
               // #38: responsive width — `w-24` on narrow (96 px),
               // `w-36` on `sm:` and up (144 px). The 24/36 pair plus
-              // `CARD_OVERLAP_PCT = -55%` keeps a 6-card fan inside
-              // a 320 px viewport without horizontal scroll. #132's
-              // "1.5× scale for arm's length" still applies on
-              // desktop.
+              // the `-3.3rem` / `sm:-4.95rem` overlap (#290) keeps a
+              // 6-card fan inside a 320 px viewport without
+              // horizontal scroll. #132's "1.5× scale for arm's
+              // length" still applies on desktop.
               <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
             ) : (
               <CardBack className="w-24 sm:w-36" />
