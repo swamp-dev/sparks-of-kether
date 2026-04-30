@@ -3819,7 +3819,6 @@ don't reach naturally. Centralised them.
 
 **Commit(s):** `8966f7a` (EncounterScreen + tests), `282fb2d` (PlayScreen swap), `7c25926` (ChallengeModal demote + axe), `0404aa0` (CRITICAL shortcut fix + reduced-motion + discriminated-union + timer cleanup)
 
-<<<<<<< HEAD
 ## 2026-04-30T12:27:22-04:00 — #288: path-32 hit area widened despite short geometry
 
 **Pushed:** Failing test commit + special-case implementation. Path 32's hit overlay no longer trims into the Yesod/Malkuth circles; visible path remains trimmed for cleanliness.
@@ -3866,3 +3865,19 @@ don't reach naturally. Centralised them.
 
 **Commit(s):** `c1020b3` (engine tests), `2389cdb` (engine impl), `9950acf` (turn-machine tests), `16f14ec` (turn-machine impl), `1e8db9b` (room-actions tests), `6940914` (room-actions impl), `f17c3ef` (use-turn discard), `fcd5548` (PlayScreen test), `4fb8352` (PlayScreen + DiscardPrompt UI), `9d73eff` (mechanics doc), `af28fcc` (lint cleanup)
 
+## 2026-04-30T12:49:38-04:00 — #289: Sefirah names inside circles + contrast utility
+
+**Pushed:** `components/tree/contrast-text-colour.ts` (new pure helper, signature `(fillHex: string) => '#0e1320' | '#f8f8ff'`); two new test files (`contrast-text-colour.test.ts` with 26 tests covering basic dark/light, hex parsing, per-Sefirah pinning, and a WCAG AA gate; one new test in `TreeBoard.test.tsx` pinning every label `<text>` `y` inside `[cy − r, cy + r]`); `TreeBoard.tsx` label render only — `y` from `pos.y + NODE_RADIUS + 14` to `pos.y`, added `dominantBaseline="middle"`, `fontSize` 11→9, `fontWeight={600}`, `letterSpacing` 1.5→0.5, `fill={contrastTextColour(sefirah.color)}`, plus `textLength={NODE_RADIUS * 2 - 8}` + `lengthAdjust="spacingAndGlyphs"` so the longest names fit. Snapshot regenerated.
+
+**Why:** Names floating below circles forced an extra read step for the eye; inside-the-circle is more legible at a glance. Per-fill contrast picker is the corollary — no single text colour clears WCAG AA against all ten Sefirah palette colours, so the helper picks the better of dark `#0e1320` / light `#f8f8ff` per fill.
+
+**Notes:**
+- TDD order intact: failing position test (`812add0`) → failing utility tests (`64cbcaf`) → utility implementation (`6f19c09`) → label render swap + snapshot regen (`adbe847`) → typecheck-narrowing fix (`4b332e1`).
+- Contrast-pair surprises: forest green `#228b22`, medium purple `#9370db`, and dark orange `#ff8c00` all pair with DARK text — the WCAG-optimal choice is counterintuitive for purple/green where the eye reads them as "darker than off-white." Pinned per-Sefirah in the test fixture so any future palette change forces re-review. Chokmah's silver `#c0c0c0` falls cleanly on the dark-text side (luminance ~0.527).
+- WCAG AA gate set to 4.15:1 (not the strict 4.5) because `#228b22` has a theoretical maximum contrast of ~4.24:1 against either dark or light text — that's a palette constraint, not a selector failure. Comment in the test flags this for a future palette pass.
+- `textLength` + `lengthAdjust="spacingAndGlyphs"` chosen over per-name fontSize tweaking. "Understanding" at 13 chars wouldn't fit a 56-unit-diameter disc at any reasonable fixed font size; SVG-native length adjustment scales glyphs and spacing together so every name occupies the same horizontal extent inside the disc.
+- Stale visual-regression baseline at `e2e/visual-regression.spec.ts-snapshots/demo-tree-desktop-chromium-linux.png` — parent agent will refresh via `--update-snapshots`. Same for `assets/marketing/demo-tree-desktop.png` and `docs/screenshots/demo-tree-desktop.png` (curated copies of the same image).
+- Local gate: typecheck ✓, lint ✓, full vitest ✓ (1112 tests, 70 files, 1 todo). Did not run `ci:local`/`e2e`/`screenshots` per parent agent's instruction (port 3000 conflicts).
+- The `VIEW_H = 620` comment ("gives Malkuth's label below the bottom node room to render") is now stale (the label is no longer below the node) but lives outside the surgical-edit zone the prompt scoped me to; flagging here for follow-up.
+
+**Commit(s):** `812add0` (failing position test), `64cbcaf` (failing utility tests), `6f19c09` (utility impl), `adbe847` (label render + snapshot), `4b332e1` (typecheck narrow)

@@ -13,7 +13,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     <radialgradient
       cx="50%"
       cy="40%"
-      id="tree-bg-:r7:"
+      id="tree-bg-:r8:"
       r="70%"
     >
       <stop
@@ -27,7 +27,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
     </radialgradient>
   </defs>
   <rect
-    fill="url(#tree-bg-:r7:)"
+    fill="url(#tree-bg-:r8:)"
     height="620"
     width="400"
   />
@@ -1316,14 +1316,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#f8f8ff"
+        dominant-baseline="middle"
+        fill="#0e1320"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="9"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="200"
-        y="102"
+        y="60"
       >
         Crown
       </text>
@@ -1346,14 +1348,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#f8f8ff"
+        dominant-baseline="middle"
+        fill="#0e1320"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="9"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="320"
-        y="192"
+        y="150"
       >
         Wisdom
       </text>
@@ -1376,14 +1380,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
+        dominant-baseline="middle"
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="7"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="80"
-        y="192"
+        y="150"
       >
         Understanding
       </text>
@@ -1406,14 +1412,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
+        dominant-baseline="middle"
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="9"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="320"
-        y="322"
+        y="280"
       >
         Mercy
       </text>
@@ -1436,14 +1444,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
+        dominant-baseline="middle"
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="8"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="80"
-        y="322"
+        y="280"
       >
         Severity
       </text>
@@ -1466,14 +1476,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#f8f8ff"
+        dominant-baseline="middle"
+        fill="#0e1320"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="9"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="200"
-        y="382"
+        y="340"
       >
         Beauty
       </text>
@@ -1496,14 +1508,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#f8f8ff"
+        dominant-baseline="middle"
+        fill="#0e1320"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="9"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="320"
-        y="472"
+        y="430"
       >
         Victory
       </text>
@@ -1526,14 +1540,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#f8f8ff"
+        dominant-baseline="middle"
+        fill="#0e1320"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="8"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="80"
-        y="472"
+        y="430"
       >
         Splendor
       </text>
@@ -1556,14 +1572,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
-        fill="#f8f8ff"
+        dominant-baseline="middle"
+        fill="#0e1320"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="7"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="200"
-        y="532"
+        y="490"
       >
         Foundation
       </text>
@@ -1586,14 +1604,16 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
       />
       <text
+        dominant-baseline="middle"
         fill="#f8f8ff"
         font-family="var(--font-display), serif"
-        font-size="11"
-        letter-spacing="1.5"
+        font-size="9"
+        font-weight="600"
+        letter-spacing="0.5"
         style="text-transform: uppercase;"
         text-anchor="middle"
         x="200"
-        y="602"
+        y="560"
       >
         Kingdom
       </text>

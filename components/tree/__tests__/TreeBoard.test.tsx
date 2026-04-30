@@ -124,6 +124,48 @@ describe('TreeBoard', () => {
     expect(nodesIdx).toBeGreaterThan(labelsIdx);
   });
 
+  // #289: Sefirah English-name labels were rendered BELOW each
+  // circle (y = cy + NODE_RADIUS + 14), forcing the eye to make two
+  // saccades — one to the colour disc, one to the name underneath.
+  // Pull the label INSIDE the circle so identification is single-
+  // glance. Each label <text>'s `y` must sit within the vertical
+  // span of its node's circle ([cy - r, cy + r]), and the
+  // `dominantBaseline` must place the text centred so the visual
+  // baseline matches `cy` rather than offsetting by the font box.
+  it('renders each Sefirah label INSIDE its circle (#289)', () => {
+    const { container } = render(<TreeBoard />);
+    const NODE_RADIUS = 28;
+    const layout: Record<string, { cy: number }> = {
+      kether: { cy: 60 },
+      chokmah: { cy: 150 },
+      binah: { cy: 150 },
+      chesed: { cy: 280 },
+      gevurah: { cy: 280 },
+      tiferet: { cy: 340 },
+      netzach: { cy: 430 },
+      hod: { cy: 430 },
+      yesod: { cy: 490 },
+      malkuth: { cy: 560 },
+    };
+    for (const sefirah of sefirot) {
+      const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
+      expect(node, `node for ${sefirah.key}`).not.toBeNull();
+      const text = node?.querySelector('text');
+      expect(text, `label text for ${sefirah.key}`).not.toBeNull();
+      const yAttr = text?.getAttribute('y');
+      expect(yAttr, `y attr on ${sefirah.key} label`).not.toBeNull();
+      const y = Number(yAttr);
+      const entry = layout[sefirah.key];
+      expect(entry, `layout for ${sefirah.key}`).toBeDefined();
+      const cy = entry?.cy ?? 0;
+      expect(y).toBeGreaterThanOrEqual(cy - NODE_RADIUS);
+      expect(y).toBeLessThanOrEqual(cy + NODE_RADIUS);
+      // dominant-baseline must centre the glyph box on `y` so the
+      // visual centre matches the geometric centre of the circle.
+      expect(text?.getAttribute('dominant-baseline')).toBe('middle');
+    }
+  });
+
   it('matches snapshot (geometry stability guard)', () => {
     const { container } = render(<TreeBoard />);
     expect(container.firstChild).toMatchSnapshot();

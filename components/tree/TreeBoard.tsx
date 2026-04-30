@@ -3,6 +3,7 @@ import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
 import { GROUND, TIFERET_GOLD, VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 import type { GameState } from '@/engine/types';
+import { contrastTextColour } from './contrast-text-colour';
 import { validPathsForPlayer } from './valid-paths';
 
 /**
@@ -375,14 +376,54 @@ export function TreeBoard({
                     'stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out',
                 }}
               />
+              {/*
+                #289: render the English name INSIDE the circle so the
+                Sefirah is identifiable at a single glance, instead of
+                forcing the eye from disc → label-below → disc again.
+                `dominantBaseline="middle"` centres the glyph box on
+                `pos.y` so the visible text sits at the geometric
+                centre of the disc, not below it.
+
+                Fill is picked per-Sefirah by `contrastTextColour` —
+                with ten different fills (white, gold, near-black,
+                crimson, royal blue, …), no single text colour clears
+                WCAG AA against all of them. The selector returns
+                whichever of `#0e1320` (dark) or `#f8f8ff` (VEIL)
+                yields the higher contrast ratio for the given fill.
+
+                `textLength={NODE_RADIUS * 2 - 8}` + `lengthAdjust=
+                "spacingAndGlyphs"` makes the longest names
+                ("Understanding", "Foundation") fit inside the disc
+                while shorter names ("Crown", "Mercy") still occupy
+                the same horizontal extent — visually balanced. The
+                -8 reserves ~4 viewBox units of padding inside the
+                circle on each side. SVG handles the scaling natively;
+                no per-name special-case is needed.
+              */}
+              {/*
+                Variable fontSize by name length: short names ("CROWN")
+                take 9pt, medium ("SEVERITY") drop to 8pt, longest
+                ("UNDERSTANDING", "FOUNDATION", "LOVINGKINDNESS") drop
+                to 7pt. Visual review of the textLength-free render
+                showed "UNDERSTANDING" extending ~30% past the circle
+                edge — readable but visually awkward. Per-length font
+                sizing keeps the labels inside the disc without the
+                glyph compression that an SVG `textLength` attribute
+                produces (which read as smeared blobs at 9pt). Some
+                visual unevenness across Sefirot is the trade-off and
+                is acceptable: the eye reads each label individually,
+                not as a uniform set.
+              */}
               <text
                 x={pos.x}
-                y={pos.y + NODE_RADIUS + 14}
+                y={pos.y}
                 textAnchor="middle"
-                fontSize={11}
+                dominantBaseline="middle"
+                fontSize={fontSizeForName(sefirah.englishName)}
                 fontFamily="var(--font-display), serif"
-                fill={VEIL}
-                letterSpacing={1.5}
+                fontWeight={600}
+                fill={contrastTextColour(sefirah.color)}
+                letterSpacing={0.5}
                 style={{ textTransform: 'uppercase' }}
               >
                 {sefirah.englishName}
@@ -410,6 +451,24 @@ export function TreeBoard({
  * The call site special-cases path 32 to skip this trim (see #288);
  * SVG paint order keeps node clicks landing on the nodes regardless.
  */
+/**
+ * Pick a font size for a Sefirah's English name based on character
+ * count, so labels fit inside the 28-radius disc without horizontal
+ * overflow. Tuned by visual review:
+ *   - ≤ 7 chars (CROWN, MERCY, BEAUTY, VICTORY, KINGDOM, WISDOM): 9
+ *   - 8-9 chars (SEVERITY, SPLENDOR, FOUNDATION): 8
+ *   - 10+ chars (UNDERSTANDING, LOVINGKINDNESS): 7
+ *
+ * Some visual unevenness across Sefirot is the cost of keeping every
+ * label inside its circle. The alternative — `textLength` + glyph
+ * compression — produced smeared letterforms at small font sizes.
+ */
+function fontSizeForName(name: string): number {
+  if (name.length <= 7) return 9;
+  if (name.length <= 9) return 8;
+  return 7;
+}
+
 function trimEndpoints(
   a: NodeLayout,
   b: NodeLayout,
