@@ -195,7 +195,10 @@ export function applyClientAction(
       const drewPlayer = drewState.players.find((p) => p.id === action.playerId);
       const overCap = Math.max(0, (drewPlayer?.hand.length ?? 0) - HAND_CAP);
       // Meditate is a complete turn-action: phase advances to 'end'
-      // (matches `turnReducer`'s meditate case).
+      // (matches `turnReducer`'s meditate case). #292: stamp
+      // `lastAction: 'meditate'` for parity with the hot-seat reducer
+      // so server- and client-applied state agree on the discriminator
+      // PlayScreen's auto-advance timer reads.
       const newState: GameState = {
         ...drewState,
         phase: 'end',
@@ -203,6 +206,7 @@ export function applyClientAction(
           overCap > 0
             ? { count: overCap, requiredBy: 'end-of-turn' }
             : undefined,
+        lastAction: 'meditate',
       };
       return { ok: true, newState };
     }

@@ -3881,3 +3881,19 @@ don't reach naturally. Centralised them.
 - The `VIEW_H = 620` comment ("gives Malkuth's label below the bottom node room to render") is now stale (the label is no longer below the node) but lives outside the surgical-edit zone the prompt scoped me to; flagging here for follow-up.
 
 **Commit(s):** `812add0` (failing position test), `64cbcaf` (failing utility tests), `6f19c09` (utility impl), `adbe847` (label render + snapshot), `4b332e1` (typecheck narrow)
+
+## 2026-04-30T13:17:52-04:00 — #292: manual End Turn after Meditate
+
+**Pushed:** New `lastAction: 'move-draw' | 'meditate'` field on `GameState`. The hot-seat `turnReducer` stamps `'meditate'` on the meditate transition and `'move-draw'` on the post-Move Draw transition; `endTurn` clears the field on seat rotation. `PlayScreen`'s auto-advance `useEffect` now skips the timer when `lastAction === 'meditate'` so the meditator can read the cards they just drew before manually clicking End Turn. The Move + Draw flow still auto-advances per #131. A polite aria-live callout ("Review the cards you drew, then click End turn when ready.") appears in the action panel during the post-Meditate end phase so screen-reader users know the turn is paused awaiting input. `lib/room-actions.ts` mirrors the `lastAction: 'meditate'` stamp for multiplayer parity (the multiplayer wire layer's PlayScreen wiring is still in progress, but parity here keeps server- and client-applied state aligned).
+
+**Why:** Draft 1. After Meditate, drawn cards became invisible in the hot-seat: phase landed in `'end'`, the #131 auto-advance fired after 1.5 s, and the active-player UI flipped to the next player before the meditator could see what they drew. The fix is a discriminator the timer can gate on, distinguishing "Move + Draw" (already-seen state, OK to flip) from "Meditate" (just drew new cards, pause for review).
+
+**Notes:**
+- **`lastAction` lives on `GameState`** (not `PlayerState` or `TurnSnapshot`) for the same multiplayer-wire-format reason as `phase`, `challengeSubPhase`, and `pendingDiscard` — so a server push round-trips the discriminator and a spectator client sees the same gating signal.
+- **The under-cap Meditate is the load-bearing case for `lastAction`.** At-cap Meditate also sets `pendingDiscard.count > 0`, which the existing #291 gate already catches. Without `lastAction`, an under-cap Meditate would auto-advance because `pendingDiscard` stays undefined.
+- **`endTurn` clears `lastAction`** alongside `pendingDiscard` so the next seat starts clean. Caught by the failing test "end-turn clears lastAction so the next seat starts clean" — without that line, `lastAction: 'meditate'` would survive seat rotation and (because the next player's first action is a Move which doesn't set lastAction) would silently bleed into the next turn's end phase.
+- **TDD: failing tests landed first** (`e26c971`): three new turn-machine tests + one new PlayScreen test. The two existing PlayScreen auto-advance tests (which used Meditate purely as a way to reach `'end'` phase) were re-anchored to the Move + Draw flow in the same commit — under the new contract Meditate no longer arms the timer, so testing "the timer fires" and "manual click cancels the timer" both need a path that still arms one.
+- **Pre-push hook ran cleanly** on the implementation commits: typecheck ✓, lint ✓, full vitest suite ✓ (1111 passed / 1 todo across 70 files). Did not run `pnpm ci:local` per the ticket's hard constraint (parent runs the integration + e2e bundle).
+- **Surprise:** the existing engine `endTurn` reducer in `engine/turn.ts` was passing through unrecognized state fields, so the "next seat inherits stale lastAction" failure mode was real until the explicit `lastAction: undefined` line was added. The third turn-machine test caught this on first run.
+
+**Commit(s):** `e26c971` (failing tests), `0db18d8` (impl: types + reducer + PlayScreen + aria-live), `71f3f97` (room-actions parity)

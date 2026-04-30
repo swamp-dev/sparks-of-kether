@@ -288,6 +288,30 @@ export interface GameState {
    * overloading the same shape.
    */
   readonly pendingDiscard?: PendingDiscard | undefined;
+  /**
+   * Discriminator for the most recent action that landed the active
+   * player in `phase: 'end'` (#292). Read by the UI's auto-advance
+   * timer (`PlayScreen.tsx`) to distinguish:
+   *
+   *   - `'move-draw'` — Move + Draw arrival. The player has already
+   *     seen the move land and the draw resolve; the timer flips
+   *     the seat after `AUTO_ADVANCE_DELAY_MS`. (#131 cadence.)
+   *   - `'meditate'`  — Meditate arrival. The player just drew up to
+   *     two new cards and needs time to look at them before the seat
+   *     rotates. The timer is suppressed; End Turn must be clicked
+   *     manually.
+   *
+   * Cleared by `endTurn` when the seat rotates so the next player
+   * starts with `undefined`. `undefined` outside `'end'` phase too —
+   * the field only carries signal at end-of-turn.
+   *
+   * Lives on `GameState` (not on `PlayerState` or `TurnSnapshot`) so
+   * the multiplayer wire layer round-trips it through the persisted
+   * snapshot. A spectator client viewing the active player's
+   * end-of-turn screen sees the same gating signal the active client
+   * uses to decide whether to render an animated "drew N cards" hint.
+   */
+  readonly lastAction?: 'move-draw' | 'meditate' | undefined;
 }
 
 /**

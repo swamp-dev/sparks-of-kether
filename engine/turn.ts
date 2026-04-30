@@ -22,7 +22,9 @@ import type { GameState } from './types';
  *
  * On the success branch, `pendingDiscard` is cleared (it might have
  * been resolved to `count: 0` by the discard reducer just before the
- * end-turn click) so the next turn starts clean.
+ * end-turn click) so the next turn starts clean. `lastAction` (#292)
+ * is also cleared so the next seat starts with no end-of-turn intent
+ * carried over from the prior player.
  *
  * Used by the events route's `'end-turn'` ClientAction. Single-player
  * code (`useTurn`) calls this through `applyClientAction` too so
@@ -52,6 +54,7 @@ export function endTurn(state: GameState): GameState {
     ...state,
     activePlayerId: nextPlayer.id,
     pendingDiscard: undefined,
+    lastAction: undefined,
   };
 }
 

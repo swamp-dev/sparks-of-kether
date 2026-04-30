@@ -83,6 +83,17 @@ export function PlayScreen({
   // the count decrements. The DiscardPrompt is interactive and
   // already gates the cadence; let the player drive.
   //
+  // #292: also no auto-advance after Meditate. Meditate transitions
+  // straight to `'end'` after drawing up to two new cards; if the
+  // timer fired the seat would rotate before the meditator could
+  // see what they drew. The reducer stamps `state.lastAction =
+  // 'meditate'` for that path; gate the timer on `'move-draw'` (the
+  // Move + Draw arrival, which is what #131 was designed for).
+  // Note: an at-cap Meditate ALSO sets `pendingDiscard.count > 0`,
+  // so the #291 gate above already catches that branch — but Meditate
+  // *under* cap leaves pendingDiscard undefined while still wanting
+  // the no-auto-advance behaviour, which is what `lastAction` covers.
+  //
   // Stable callback ref: `turn.endTurn` is `useCallback` but its dep
   // list includes the engine snapshot, so the function reference
   // changes on every state update. If we depended on it directly the
@@ -95,14 +106,16 @@ export function PlayScreen({
     endTurnRef.current = turn.endTurn;
   });
   const pendingDiscardCount = turn.state.pendingDiscard?.count ?? 0;
+  const lastAction = turn.state.lastAction;
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;
     if (pendingDiscardCount > 0) return undefined;
+    if (lastAction === 'meditate') return undefined;
     const handle = setTimeout(() => {
       endTurnRef.current();
     }, AUTO_ADVANCE_DELAY_MS);
     return (): void => clearTimeout(handle);
-  }, [turn.phase, pendingDiscardCount]);
+  }, [turn.phase, pendingDiscardCount, lastAction]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
@@ -259,6 +272,25 @@ export function PlayScreen({
             ) : null}
           </div>
         </div>
+        {/*
+         * #292: post-Meditate a11y callout. The auto-advance timer
+         * is suppressed for this path so the player can read the
+         * cards they just drew; the aria-live region nudges screen-
+         * reader users that the turn is paused awaiting their input.
+         * `polite` (not `assertive`) so it queues behind any
+         * in-progress announcement (e.g. the move resolution) rather
+         * than interrupting it.
+         */}
+        {turn.phase === 'end' && lastAction === 'meditate' ? (
+          <div
+            role="status"
+            aria-live="polite"
+            data-meditate-callout
+            className="w-full max-w-xl rounded border border-veil/20 bg-ground/40 px-4 py-2 text-xs italic opacity-80"
+          >
+            Review the cards you drew, then click End turn when ready.
+          </div>
+        ) : null}
         {activePlayer ? (
           <Hand
             hand={activePlayer.hand}

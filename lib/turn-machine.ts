@@ -420,6 +420,10 @@ export function turnReducer(
           overCap > 0
             ? { count: overCap, requiredBy: 'end-of-turn' }
             : undefined,
+        // #292: stamp the end-phase entry so PlayScreen's auto-advance
+        // timer can suppress for Meditate (player needs time to read
+        // the cards they just drew) while still firing for Move + Draw.
+        lastAction: 'meditate',
       };
       return { ok: true, value: { next: { state: nextState } } };
     }
@@ -687,7 +691,15 @@ export function turnReducer(
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'draw', actual: phase } };
       }
       const drewState = drawToHand(state, player.id, rng);
-      const stateAfter: GameState = { ...drewState, phase: 'end' };
+      const stateAfter: GameState = {
+        ...drewState,
+        phase: 'end',
+        // #292: tag the Move + Draw arrival in 'end' so PlayScreen's
+        // auto-advance timer fires (the canonical #131 cadence). The
+        // sibling Meditate case stamps `'meditate'` instead, which the
+        // UI gates the timer on.
+        lastAction: 'move-draw',
+      };
       return { ok: true, value: { next: { state: stateAfter } } };
     }
 

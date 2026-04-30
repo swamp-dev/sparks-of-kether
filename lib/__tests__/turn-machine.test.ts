@@ -1009,6 +1009,83 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
   });
 });
 
+describe('turnReducer — lastAction discriminator on entry to end phase (#292)', () => {
+  // #292: the auto-advance timer (PlayScreen.tsx) needs to distinguish
+  // a "Move + Draw" arrival in `'end'` (which auto-advances per #131)
+  // from a "Meditate" arrival in `'end'` (which does NOT auto-advance —
+  // the player needs time to see the cards they just drew). The
+  // reducer stamps `lastAction` on the resulting state so the UI can
+  // gate the timer without re-deriving intent from the diff.
+  it('meditate sets lastAction = "meditate"', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2] });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    const result = turnReducer({ state: { ...state, phase: 'move' } }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('end');
+    expect(result.value.next.state.lastAction).toBe('meditate');
+  });
+
+  it('move + draw lands in end phase with lastAction = "move-draw"', () => {
+    // Move into an already-cleared Sefirah (skips challenge, lands in
+    // 'draw'); then Draw, which transitions to 'end'. The end-phase
+    // arrival via this path must be tagged so the auto-advance fires.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21],
+      clearedSefirot: new Set(['yesod']),
+    });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    // Move from malkuth → yesod via path 32 (already cleared → draw).
+    const moved = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    expect(moved.value.next.state.phase).toBe('draw');
+    // Then Draw → 'end' phase, with lastAction = 'move-draw'.
+    const drewResult = turnReducer(moved.value.next, { kind: 'draw' }, RNG);
+    expect(drewResult.ok).toBe(true);
+    if (!drewResult.ok) return;
+    expect(drewResult.value.next.state.phase).toBe('end');
+    expect(drewResult.value.next.state.lastAction).toBe('move-draw');
+  });
+
+  it('end-turn clears lastAction so the next seat starts clean', () => {
+    // Once the seat rotates, the discriminator from the prior turn must
+    // not bleed into the next player's state.
+    const initial = makeFullGame({ playerCount: 2, seed: 7 });
+    const result = turnReducer(
+      {
+        state: {
+          ...initial,
+          phase: 'end',
+          lastAction: 'meditate',
+        },
+      },
+      { kind: 'end-turn' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+});
+
 describe('turnReducer — discard event (#291)', () => {
   // #291: after a meditate over-cap, the UI sends a `discard` event
   // per card the player chooses to shed. The reducer routes through
