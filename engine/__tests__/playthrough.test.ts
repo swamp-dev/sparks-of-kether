@@ -104,16 +104,16 @@ describe('playthrough — win path (2 players)', () => {
   });
 
   it('is deterministic when actions consume RNG (seed-0 default)', () => {
-    // The action sequence below ends with a submit-challenge ClientAction
-    // (the dispatcher path; #226 split the engine `TurnEvent` into
-    // prep|resolve|react but the wire format still uses this kind
-    // until E2 lands) that does NOT pass an explicit `outcome`, so
-    // `resolveChallenge`
-    // rolls a d20 from the scenario's seeded RNG. `scenario.run()`
-    // constructs a fresh `seededRng(0)` per call — so the same
-    // chain run twice should produce structurally equal states.
-    // Without this, the previous version of the test only proved
-    // `makeFullGame` is deterministic (already covered by T0).
+    // The action sequence below calls `scenario.submitChallenge(...)`,
+    // which now (post #227 / E2) translates internally into a
+    // `prep-confirm` `ClientAction` chain — see
+    // `test/scenario.ts:translateSubmitChallenge`. With no explicit
+    // `outcome`, the engine rolls a d20 from the scenario's seeded
+    // RNG. `scenario.run()` constructs a fresh `seededRng(0)` per
+    // call — so the same chain run twice should produce structurally
+    // equal states. Without this, the previous version of the test
+    // only proved `makeFullGame` is deterministic (already covered
+    // by T0).
     const make = (): GameState => {
       const base = makeFullGame({ playerCount: 2, seed: 11 });
       // Place p1 at gevurah (uncleared so the challenge fires) with
@@ -124,7 +124,17 @@ describe('playthrough — win path (2 players)', () => {
           ? { ...p, position: 'gevurah' as const, hand: [...p.hand] }
           : p,
       );
-      return { ...base, players };
+      // Post-#227 review fix: phase / challengeSubPhase are on
+      // GameState now, and the dispatcher reads them directly. Pin
+      // phase to 'challenge'/'prep' so the scenario's `prep-confirm`
+      // dispatch matches the engine's gate without a `move` event
+      // first.
+      return {
+        ...base,
+        players,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      };
     };
     const stateA = make();
     const stateB = make();

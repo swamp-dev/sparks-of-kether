@@ -201,5 +201,11 @@ export function initializeGame(input: InitializeGameInput): GameState {
     shellsDeflected: 0,
     pillarStreak: EMPTY_PILLAR_STREAK,
     pendingModifiers: EMPTY_PENDING_MODIFIERS,
+    // Phase machinery now lives on `GameState` (post-#227 review
+    // fix). New games start in 'move' with no challenge sub-phase
+    // and no prior outcome.
+    phase: 'move',
+    challengeSubPhase: undefined,
+    lastOutcome: undefined,
   };
 }

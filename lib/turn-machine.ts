@@ -7,7 +7,6 @@ import {
   type ChallengeRejection,
   type ChallengeSuccess,
   type CheckModifiers,
-  type CheckOutcome,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
 import {
@@ -21,11 +20,22 @@ import {
 import { endTurn as endTurnReducer } from '@/engine/turn';
 import {
   EMPTY_PENDING_MODIFIERS,
+  type ChallengeSubPhase,
+  type CheckOutcome,
   type GameState,
   type MoveRejection,
   type PendingModifiers,
   type Result,
+  type TurnPhase,
 } from '@/engine/types';
+
+// Re-exported so existing callers (`lib/use-turn.ts`, `lib/room-actions.ts`,
+// component code) can keep importing these types from
+// `lib/turn-machine` unchanged. The canonical home is `engine/types.ts`
+// post-#227 review fix; the types lifted there because the multiplayer
+// dispatcher needed them on `GameState` to close the `react-retry`
+// synthesized-`lastOutcome` exploit.
+export type { ChallengeSubPhase, TurnPhase };
 
 /**
  * Pure turn-loop state machine.
@@ -60,19 +70,6 @@ import {
  * challenge resolver when no pre-rolled `outcome` is supplied.
  */
 
-export type TurnPhase = 'move' | 'challenge' | 'draw' | 'end';
-
-/**
- * Active sub-phase WITHIN a challenge encounter. Defined when (and only
- * when) `phase === 'challenge'`. Cycles `prep → resolve → react`;
- * cleared when the reducer transitions phase out of `'challenge'`.
- *
- * `'resolve'` is the kernel call itself — the post-kernel snapshot is
- * `'react'` — so `'resolve'` rarely appears as a steady-state value
- * outside the reducer's own tick.
- */
-export type ChallengeSubPhase = 'prep' | 'resolve' | 'react';
-
 // Re-exported from engine/setup so the hand-size constants have a
 // single source of truth (#56). Legacy callers that import from here
 // keep working unchanged; new engine-layer call sites go straight
@@ -85,22 +82,21 @@ export const MEDITATE_DRAW = ENGINE_MEDITATE_DRAW;
 /** Maximum simultaneous assist-requests per challenge (design § 7). */
 export const MAX_ASSIST_REQUESTS = 2;
 
+/**
+ * Snapshot fold for the turn reducer. Post-#227 review fix the
+ * snapshot is purely a wrapper around `GameState` — `phase`,
+ * `challengeSubPhase`, and `lastOutcome` all live on `GameState`
+ * directly. The wrapper is kept (instead of inlining `GameState`
+ * everywhere) so the reducer signature has a stable extension
+ * point if a future field genuinely doesn't belong on
+ * `GameState` (e.g. UI-only animation state).
+ *
+ * Reading shorthand: `snapshot.state.phase`, `snapshot.state.challengeSubPhase`,
+ * `snapshot.state.lastOutcome`. The reducer never writes to a separate
+ * snapshot-level copy — there is none.
+ */
 export interface TurnSnapshot {
   readonly state: GameState;
-  readonly phase: TurnPhase;
-  /**
-   * Active sub-phase under `phase === 'challenge'`. Undefined for any
-   * other top-level phase. Set to `'prep'` on entry to `'challenge'`;
-   * advances to `'react'` on a `prep-confirm`; loops back to `'prep'`
-   * on a `react-retry`. Cleared when phase leaves `'challenge'`.
-   */
-  readonly challengeSubPhase?: ChallengeSubPhase;
-  /**
-   * Outcome of the last challenge resolution while in `'react'`. Used
-   * by `react-retry` to gate retry on a failed roll only — the success
-   * path can't retry. Cleared on retry / on phase leaving `'challenge'`.
-   */
-  readonly lastOutcome?: CheckOutcome;
 }
 
 /**
@@ -298,24 +294,17 @@ export function turnReducer(
   event: TurnEvent,
   rng: Rng,
 ): TurnReducerResult {
-  const { state, phase, challengeSubPhase } = snapshot;
+  const { state } = snapshot;
+  const { phase, challengeSubPhase } = state;
 
   if (event.kind === 'replace-state') {
     // Force-replace: used when an external action (multiplayer
-    // server push) mutates state out-of-band. Phase + sub-phase are
-    // preserved since the external action does not know about them.
-    const next: TurnSnapshot = { state: event.state, phase };
-    if (challengeSubPhase !== undefined) {
-      return {
-        ok: true,
-        value: {
-          next: snapshot.lastOutcome !== undefined
-            ? { ...next, challengeSubPhase, lastOutcome: snapshot.lastOutcome }
-            : { ...next, challengeSubPhase },
-        },
-      };
-    }
-    return { ok: true, value: { next } };
+    // server push) mutates state out-of-band. The replacement state
+    // brings its own phase / sub-phase / lastOutcome — they live on
+    // GameState now (post-#227 fix), so a server-pushed snapshot
+    // already carries the canonical machinery and we don't need to
+    // splice the prior snapshot's view back over it.
+    return { ok: true, value: { next: { state: event.state } } };
   }
 
   const player = activePlayer(state);
@@ -354,19 +343,19 @@ export function turnReducer(
         const cleanState: GameState = {
           ...newState,
           pendingModifiers: EMPTY_PENDING_MODIFIERS,
+          phase: 'challenge',
+          challengeSubPhase: 'prep',
+          lastOutcome: undefined,
         };
-        return {
-          ok: true,
-          value: {
-            next: {
-              state: cleanState,
-              phase: 'challenge',
-              challengeSubPhase: 'prep',
-            },
-          },
-        };
+        return { ok: true, value: { next: { state: cleanState } } };
       }
-      return { ok: true, value: { next: { state: newState, phase: nextPhase } } };
+      const nextState: GameState = {
+        ...newState,
+        phase: nextPhase,
+        challengeSubPhase: undefined,
+        lastOutcome: undefined,
+      };
+      return { ok: true, value: { next: { state: nextState } } };
     }
 
     case 'meditate': {
@@ -381,8 +370,9 @@ export function turnReducer(
       // landed in 'draw' phase, hit Draw, and saw no change because
       // `drawToHand` only refilled toward STARTING_HAND_SIZE which
       // they already had.
-      const nextState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng);
-      return { ok: true, value: { next: { state: nextState, phase: 'end' } } };
+      const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng);
+      const nextState: GameState = { ...drewState, phase: 'end' };
+      return { ok: true, value: { next: { state: nextState } } };
     }
 
     case 'prep-add-modifier': {
@@ -430,9 +420,12 @@ export function turnReducer(
         ok: true,
         value: {
           next: {
-            state: { ...state, pendingModifiers: nextPending },
-            phase: 'challenge',
-            challengeSubPhase: 'prep',
+            state: {
+              ...state,
+              pendingModifiers: nextPending,
+              phase: 'challenge',
+              challengeSubPhase: 'prep',
+            },
           },
         },
       };
@@ -497,9 +490,12 @@ export function turnReducer(
         ok: true,
         value: {
           next: {
-            state: { ...state, pendingModifiers: nextPending },
-            phase: 'challenge',
-            challengeSubPhase: 'prep',
+            state: {
+              ...state,
+              pendingModifiers: nextPending,
+              phase: 'challenge',
+              challengeSubPhase: 'prep',
+            },
           },
         },
       };
@@ -543,18 +539,19 @@ export function turnReducer(
       // the player loses the rhythm of "3 cards burned, +9
       // modifier; stage another".
       const passed = result.value.outcome.pass;
-      const stateAfter: GameState = passed
+      const baseState = passed
         ? { ...result.value.newState, pendingModifiers: EMPTY_PENDING_MODIFIERS }
         : result.value.newState;
+      const stateAfter: GameState = {
+        ...baseState,
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: result.value.outcome,
+      };
       return {
         ok: true,
         value: {
-          next: {
-            state: stateAfter,
-            phase: 'challenge',
-            challengeSubPhase: 'react',
-            lastOutcome: result.value.outcome,
-          },
+          next: { state: stateAfter },
           meta: { challenge: result.value, dropped },
         },
       };
@@ -569,8 +566,11 @@ export function turnReducer(
       }
       // Success path can't retry — re-rolling a passed challenge
       // would let the player consume burns to win something they
-      // already won. Gate on `lastOutcome.pass`.
-      if (snapshot.lastOutcome === undefined || snapshot.lastOutcome.pass) {
+      // already won. Gate on `state.lastOutcome.pass` (post-#227 fix:
+      // lastOutcome lives on GameState so the multiplayer dispatcher
+      // reads truth from the persisted snapshot, not a synthesized
+      // value).
+      if (state.lastOutcome === undefined || state.lastOutcome.pass) {
         return { ok: false, reason: { kind: 'react-retry-on-pass' } };
       }
       // Loop back to prep. `pendingModifiers` is preserved because
@@ -580,20 +580,18 @@ export function turnReducer(
       // case above). The player stacks new burns on top of the
       // cumulative count from the failed attempt (design § 6:
       // "the failed-roll history visible so the player can stack
-      // additional burns on top"). `lastOutcome` is cleared by
-      // virtue of the new snapshot omitting it, so a second
-      // `react-retry` before a new resolve will be rejected by the
-      // sub-phase guard.
-      return {
-        ok: true,
-        value: {
-          next: {
-            state,
-            phase: 'challenge',
-            challengeSubPhase: 'prep',
-          },
-        },
+      // additional burns on top"). `lastOutcome` is cleared so a
+      // second `react-retry` before a new resolve will be rejected
+      // by the sub-phase guard above (challengeSubPhase is now
+      // 'prep') AND, defensively, by the lastOutcome === undefined
+      // branch of the gate.
+      const stateAfter: GameState = {
+        ...state,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+        lastOutcome: undefined,
       };
+      return { ok: true, value: { next: { state: stateAfter } } };
     }
 
     case 'submit-challenge': {
@@ -623,26 +621,35 @@ export function turnReducer(
       }
       // Match the legacy contract: pass → 'draw' with no sub-phase;
       // fail → stay in 'challenge', exposing the new `react`
-      // sub-phase + `lastOutcome` so legacy callers can upgrade
-      // piecewise. `pendingModifiers` is cleared on both paths
-      // (the prep stack was not used by this code path anyway —
-      // modifiers came pre-built from the modal).
+      // sub-phase + `lastOutcome` (now on GameState — see the
+      // #227 review fix) so legacy callers can upgrade piecewise.
+      // `pendingModifiers` is cleared on both paths (the prep stack
+      // was not used by this code path anyway — modifiers came
+      // pre-built from the modal).
       const passed = result.value.outcome.pass;
-      const stateAfter: GameState = {
+      const baseState: GameState = {
         ...result.value.newState,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
       };
-      const next: TurnSnapshot = passed
-        ? { state: stateAfter, phase: 'draw' }
+      const stateAfter: GameState = passed
+        ? {
+            ...baseState,
+            phase: 'draw',
+            challengeSubPhase: undefined,
+            lastOutcome: undefined,
+          }
         : {
-            state: stateAfter,
+            ...baseState,
             phase: 'challenge',
             challengeSubPhase: 'react',
             lastOutcome: result.value.outcome,
           };
       return {
         ok: true,
-        value: { next, meta: { challenge: result.value, dropped: [] } },
+        value: {
+          next: { state: stateAfter },
+          meta: { challenge: result.value, dropped: [] },
+        },
       };
     }
 
@@ -655,23 +662,34 @@ export function turnReducer(
         sefirah: event.sefirah,
         shortcut: event.shortcut ?? false,
       });
-      // Phase leaves 'challenge' → clear prep machinery.
-      const cleared: GameState = { ...next, pendingModifiers: EMPTY_PENDING_MODIFIERS };
-      return { ok: true, value: { next: { state: cleared, phase: 'draw' } } };
+      // Phase leaves 'challenge' → clear prep machinery and the
+      // sub-phase / lastOutcome (now on GameState).
+      const cleared: GameState = {
+        ...next,
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
+        phase: 'draw',
+        challengeSubPhase: undefined,
+        lastOutcome: undefined,
+      };
+      return { ok: true, value: { next: { state: cleared } } };
     }
 
     case 'draw': {
       if (phase !== 'draw') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'draw', actual: phase } };
       }
-      return { ok: true, value: { next: { state: drawToHand(state, player.id, rng), phase: 'end' } } };
+      const drewState = drawToHand(state, player.id, rng);
+      const stateAfter: GameState = { ...drewState, phase: 'end' };
+      return { ok: true, value: { next: { state: stateAfter } } };
     }
 
     case 'end-turn': {
       if (phase !== 'end') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'end', actual: phase } };
       }
-      return { ok: true, value: { next: { state: endTurnReducer(state), phase: 'move' } } };
+      const turned = endTurnReducer(state);
+      const stateAfter: GameState = { ...turned, phase: 'move' };
+      return { ok: true, value: { next: { state: stateAfter } } };
     }
   }
 }

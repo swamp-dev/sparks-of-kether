@@ -322,6 +322,303 @@ describe('multiplayer flow — start → events integration', () => {
       .toEqual([0, 1, 2, 3, 4, 5]);
   });
 
+  it('full prep → resolve → react cycle through the events route', async () => {
+    // E2 (#227) integration test. The active player (p1) is preset at
+    // an uncleared check Sefirah (Gevurah), then drives:
+    //   1. prep-add-modifier (card-burn, arcanum 5) → snapshot's
+    //      pendingModifiers.cardBurns grows; sub-phase still 'prep'
+    //      from the engine's perspective.
+    //   2. prep-confirm with a forced-pass outcome → resolveChallenge
+    //      fires; Gevurah cleared, Spark earned. The route persists
+    //      only GameState (no challengeSubPhase / lastOutcome on the
+    //      wire), so we assert on the cleared Sefirah / earned Spark
+    //      as the proof that the kernel ran.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    // Pre-position p1: at gevurah, uncleared, hand has card 5, stat
+    // strength = 12 so the forced-pass outcome is internally
+    // consistent. Splice the snapshot row directly — mirrors the
+    // existing meditate-at-cap test's pattern.
+    //
+    // Post-#227 review fix: `phase` and `challengeSubPhase` live on
+    // `GameState` directly (not synthesized by the dispatcher), so
+    // the snapshot must already be in `'challenge'`/`'prep'` for the
+    // first `prep-add-modifier` to land. (The natural flow would
+    // also work — `move` to gevurah → reducer transitions phase —
+    // but the test wants to avoid the extra event.)
+    const original = db.game_states[0];
+    expect(original).toBeDefined();
+    if (!original) return;
+    const players = original.snapshot.players.map((p) =>
+      p.id === 'p1'
+        ? {
+            ...p,
+            position: 'gevurah' as const,
+            hand: [5],
+            stats: { ...p.stats, strength: 12 },
+          }
+        : p,
+    );
+    db.game_states[0] = {
+      ...original,
+      snapshot: {
+        ...original.snapshot,
+        players,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    };
+
+    // Step 1: stage a card-burn.
+    const stage = await callEvent('ABCDEF', {
+      kind: 'prep-add-modifier',
+      playerId: 'p1',
+      modifier: { kind: 'card-burn', arcanum: 5 },
+    });
+    expect(stage.status).toBe(200);
+    expect(db.game_events).toHaveLength(1);
+    expect(db.game_events[0]?.event_type).toBe('prep-add-modifier');
+    expect(db.game_states[0]?.snapshot.pendingModifiers.cardBurns).toEqual([5]);
+
+    // Step 2: confirm with a forced-pass outcome.
+    const confirm = await callEvent('ABCDEF', {
+      kind: 'prep-confirm',
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      outcome: {
+        rolled: 18,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
+        total: 33,
+        effectiveDC: 16,
+        pass: true,
+      },
+    });
+    expect(confirm.status).toBe(200);
+    expect(db.game_events).toHaveLength(2);
+    expect(db.game_events[1]?.event_type).toBe('prep-confirm');
+    const passedSnapshot = db.game_states[0]?.snapshot;
+    const passedP1 = passedSnapshot?.players.find((p) => p.id === 'p1');
+    // Serialized snapshot uses arrays for the Set-shaped fields (see
+    // lib/supabase.ts:serializeGameState) so assertions go through
+    // `.includes(...)`, not `.has(...)`.
+    expect(passedP1?.clearedSefirot).toContain('gevurah');
+    expect(passedP1?.sparksHeld).toContain('gevurah');
+    // Pass clears the prep stack so the next encounter starts fresh.
+    expect(passedSnapshot?.pendingModifiers.cardBurns).toEqual([]);
+    expect(db.game_states[0]?.last_event_id).toBe(2);
+  });
+
+  it('non-active player attempting prep-add-modifier writes a rejected:prep-add-modifier audit row', async () => {
+    // E2 (#227) authorize-gate cover. The dispatcher must keep
+    // honoring the active-player-only contract for the new prep
+    // actions; the audit row's event_type prefix is built from
+    // `action.kind` so new kinds are covered automatically by the
+    // existing `rejected:${action.kind}` pattern.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    const before = db.game_states[0];
+    expect(before).toBeDefined();
+    if (!before) return;
+    const beforeSnapshot = before.snapshot;
+
+    callerId = 'p2';
+    const res = await callEvent('ABCDEF', {
+      kind: 'prep-add-modifier',
+      playerId: 'p2',
+      modifier: { kind: 'card-burn', arcanum: 5 },
+    });
+    expect(res.status).toBe(403);
+
+    expect(db.game_events).toHaveLength(1);
+    const audit = db.game_events.find(
+      (e) => e.event_type === 'rejected:prep-add-modifier',
+    );
+    expect(audit).toBeDefined();
+    expect(audit?.player_id).toBe('p2');
+
+    // Snapshot untouched.
+    expect(db.game_states[0]?.last_event_id).toBe(0);
+    expect(db.game_states[0]?.snapshot.pendingModifiers).toEqual(
+      beforeSnapshot.pendingModifiers,
+    );
+    expect(db.game_states[0]?.snapshot.activePlayerId).toBe('p1');
+  });
+
+  it('full prep → confirm(fail) → react-retry → confirm(pass) cycle through the events route', async () => {
+    // E2 (#227) review-fix integration test: drives the full failed-
+    // resolve / retry-loop through `POST /events`. Pre-#227 review
+    // fix the dispatcher synthesized `lastOutcome` for `react-retry`
+    // — this test exercises the natural flow that produces a real
+    // `lastOutcome` on `GameState`, which the dispatcher now reads
+    // directly. If the synthesis ever comes back, the retry would
+    // accept against a synthetic outcome that doesn't match the
+    // real one, and we'd see drift in the post-cycle assertions.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    // Pre-position p1: at gevurah, uncleared, hand has card 5,
+    // strength = 12. Pin phase machinery to challenge/prep so the
+    // first prep-add-modifier lands without an explicit `move`.
+    const original = db.game_states[0];
+    expect(original).toBeDefined();
+    if (!original) return;
+    const players = original.snapshot.players.map((p) =>
+      p.id === 'p1'
+        ? {
+            ...p,
+            position: 'gevurah' as const,
+            hand: [5],
+            stats: { ...p.stats, strength: 12 },
+          }
+        : p,
+    );
+    db.game_states[0] = {
+      ...original,
+      snapshot: {
+        ...original.snapshot,
+        players,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    };
+
+    // Step 1: stage card 5.
+    const stage = await callEvent('ABCDEF', {
+      kind: 'prep-add-modifier',
+      playerId: 'p1',
+      modifier: { kind: 'card-burn', arcanum: 5 },
+    });
+    expect(stage.status).toBe(200);
+
+    // Step 2: confirm with a forced-fail outcome. State should land
+    // in challenge/react with lastOutcome.pass=false and the staged
+    // card-burn preserved.
+    const fail = await callEvent('ABCDEF', {
+      kind: 'prep-confirm',
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      outcome: {
+        rolled: 1,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
+        total: 16,
+        effectiveDC: 25,
+        pass: false,
+      },
+    });
+    expect(fail.status).toBe(200);
+    const afterFail = db.game_states[0]?.snapshot;
+    expect(afterFail?.phase).toBe('challenge');
+    expect(afterFail?.challengeSubPhase).toBe('react');
+    expect(afterFail?.lastOutcome?.pass).toBe(false);
+    expect(afterFail?.pendingModifiers.cardBurns).toEqual([5]);
+
+    // Step 3: react-retry. Pre-fix the dispatcher synthesized a
+    // failed `lastOutcome` here; post-fix it reads the real one
+    // from snapshot. State should land back in challenge/prep with
+    // pendingModifiers preserved.
+    const retry = await callEvent('ABCDEF', {
+      kind: 'react-retry',
+      playerId: 'p1',
+    });
+    expect(retry.status).toBe(200);
+    const afterRetry = db.game_states[0]?.snapshot;
+    expect(afterRetry?.phase).toBe('challenge');
+    expect(afterRetry?.challengeSubPhase).toBe('prep');
+    expect(afterRetry?.lastOutcome).toBeUndefined();
+    expect(afterRetry?.pendingModifiers.cardBurns).toEqual([5]);
+
+    // Step 4: confirm with a forced-pass outcome. Sefirah cleared,
+    // Spark earned, prep stack cleared.
+    const pass = await callEvent('ABCDEF', {
+      kind: 'prep-confirm',
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      outcome: {
+        rolled: 18,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
+        total: 33,
+        effectiveDC: 16,
+        pass: true,
+      },
+    });
+    expect(pass.status).toBe(200);
+    const afterPass = db.game_states[0]?.snapshot;
+    const passedP1 = afterPass?.players.find((p) => p.id === 'p1');
+    expect(passedP1?.clearedSefirot).toContain('gevurah');
+    expect(passedP1?.sparksHeld).toContain('gevurah');
+    expect(afterPass?.pendingModifiers.cardBurns).toEqual([]);
+    // 4 events appended.
+    expect(db.game_events).toHaveLength(4);
+    expect(db.game_states[0]?.last_event_id).toBe(4);
+  });
+
+  it('full prep → confirm(fail) → accept-setback cycle through the events route', async () => {
+    // E2 (#227) review-fix integration test: drives the alternate
+    // post-fail branch (`accept-setback` instead of `react-retry`).
+    // Confirms separation ticks +1 and the snapshot teardown clears
+    // both `lastOutcome` and `challengeSubPhase`.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    const original = db.game_states[0];
+    expect(original).toBeDefined();
+    if (!original) return;
+    const players = original.snapshot.players.map((p) =>
+      p.id === 'p1'
+        ? {
+            ...p,
+            position: 'gevurah' as const,
+            hand: [],
+            stats: { ...p.stats, strength: 8 },
+          }
+        : p,
+    );
+    db.game_states[0] = {
+      ...original,
+      snapshot: {
+        ...original.snapshot,
+        players,
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    };
+    const initialSep = db.game_states[0]?.snapshot.separation ?? 0;
+
+    // Confirm with a forced-fail.
+    const fail = await callEvent('ABCDEF', {
+      kind: 'prep-confirm',
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      outcome: {
+        rolled: 1,
+        statContribution: 8,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 9,
+        effectiveDC: 22,
+        pass: false,
+      },
+    });
+    expect(fail.status).toBe(200);
+
+    // Accept setback.
+    const setback = await callEvent('ABCDEF', {
+      kind: 'accept-setback',
+      playerId: 'p1',
+      sefirah: 'gevurah',
+    });
+    expect(setback.status).toBe(200);
+    const after = db.game_states[0]?.snapshot;
+    expect(after?.separation).toBe(initialSep + 1);
+    expect(after?.phase).toBe('draw');
+    expect(after?.challengeSubPhase).toBeUndefined();
+    expect(after?.lastOutcome).toBeUndefined();
+  });
+
   it('serialized snapshot round-trips through engine state correctly', async () => {
     // Sanity check on the makeFullGame setup we use for the start
     // route's initial state. Confirms the in-memory shim's snapshot

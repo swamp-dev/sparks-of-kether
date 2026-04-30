@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seededRng } from '@/engine/rng';
+import type { TurnPhase } from '@/engine/types';
 import { turnReducer, type TurnSnapshot } from '../turn-machine';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
@@ -7,14 +8,21 @@ import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
  * Pure-reducer tests. Cover the full event × phase matrix so the
  * hook tests can stay focused on React glue. Properties from #93
  * could plug into this surface without `renderHook`.
+ *
+ * Post-#227 review fix: `phase`, `challengeSubPhase`, and `lastOutcome`
+ * live on `GameState` directly (not on `TurnSnapshot`). Tests build
+ * a `TurnSnapshot` by spreading the desired phase machinery onto the
+ * underlying state.
  */
 
-function snapshotAt(phase: TurnSnapshot['phase']): TurnSnapshot {
+function snapshotAt(phase: TurnPhase): TurnSnapshot {
   const state = makeFullGame({ playerCount: 2, seed: 1 });
   if (phase === 'challenge') {
-    return { state, phase, challengeSubPhase: 'prep' };
+    return {
+      state: { ...state, phase, challengeSubPhase: 'prep' },
+    };
   }
-  return { state, phase };
+  return { state: { ...state, phase } };
 }
 
 const RNG = seededRng(1);
@@ -75,7 +83,7 @@ describe('turnReducer — phase transitions', () => {
     const result = turnReducer(before, { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('end');
     // State changed (cards drew); not identity-preserved anymore.
     expect(result.value.next.state).not.toBe(before.state);
   });
@@ -85,12 +93,12 @@ describe('turnReducer — phase transitions', () => {
     // Yesod has a check; not yet cleared in a fresh game.
     const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
     const state = makeState({}, { players: [player] });
-    const before: TurnSnapshot = { state, phase: 'move' };
+    const before: TurnSnapshot = { state: { ...state, phase: 'move' } };
     const result = turnReducer(before, { kind: 'move', pathNumber: 32 }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('challenge');
-    expect(result.value.next.challengeSubPhase).toBe('prep');
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.challengeSubPhase).toBe('prep');
     expect(result.value.next.state.players[0]?.position).toBe('yesod');
   });
 
@@ -103,41 +111,41 @@ describe('turnReducer — phase transitions', () => {
     });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'move' },
+      { state: { ...state, phase: 'move' } },
       { kind: 'move', pathNumber: 32 },
       RNG,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('draw');
-    expect(result.value.next.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
   });
 
   it('accept-setback from challenge react sub-phase → draw + +1 separation + cleared sub-phase', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
     const state = makeState({}, { players: [player], separation: 3 });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'react' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
       { kind: 'accept-setback', sefirah: 'gevurah' },
       RNG,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('draw');
-    expect(result.value.next.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.separation).toBe(4);
   });
 
   it('end-turn from end → move phase + active player rotates', () => {
     const initial = makeFullGame({ playerCount: 2, seed: 7 });
     const result = turnReducer(
-      { state: initial, phase: 'end' },
+      { state: { ...initial, phase: 'end' } },
       { kind: 'end-turn' },
       RNG,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('move');
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.activePlayerId).not.toBe(
       initial.activePlayerId,
     );
@@ -153,7 +161,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
     });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 7 } },
       RNG,
     );
@@ -162,8 +170,8 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
     expect(result.value.next.state.pendingModifiers.cardBurns).toEqual([7]);
     // Hand untouched.
     expect(result.value.next.state.players[0]?.hand).toEqual([3, 7, 12]);
-    expect(result.value.next.phase).toBe('challenge');
-    expect(result.value.next.challengeSubPhase).toBe('prep');
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.challengeSubPhase).toBe('prep');
   });
 
   it('appends a spark-burn with sourcePlayerId without consuming the spark', () => {
@@ -179,7 +187,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
       { players: [player, ally], activePlayerId: 'p1' },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-add-modifier',
         modifier: { kind: 'spark-burn', sefirah: 'hod', sourcePlayerId: 'p2' },
@@ -205,7 +213,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
       { players: [player, ally], activePlayerId: 'p1' },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-add-modifier',
         modifier: { kind: 'assist-request', allyId: 'p2' },
@@ -223,7 +231,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'react' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
       { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 7 } },
       RNG,
     );
@@ -242,9 +250,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
       { players: [player, allyA, allyB, allyC], activePlayerId: 'p1' },
     );
     let snap: TurnSnapshot = {
-      state,
-      phase: 'challenge',
-      challengeSubPhase: 'prep',
+      state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' },
     };
     const r1 = turnReducer(
       snap,
@@ -297,7 +303,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-remove-modifier',
         modifier: { kind: 'card-burn', arcanum: 7 },
@@ -320,7 +326,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-remove-modifier',
         modifier: { kind: 'card-burn', arcanum: 99 },
@@ -346,7 +352,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-remove-modifier',
         modifier: { kind: 'assist-request', allyId: 'p2' },
@@ -364,7 +370,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'react' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
       {
         kind: 'prep-remove-modifier',
         modifier: { kind: 'card-burn', arcanum: 7 },
@@ -396,7 +402,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-confirm',
         sefirah: 'gevurah',
@@ -413,8 +419,8 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('challenge');
-    expect(result.value.next.challengeSubPhase).toBe('react');
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.challengeSubPhase).toBe('react');
     expect(result.value.meta?.challenge.outcome.pass).toBe(true);
     expect(
       result.value.next.state.players[0]?.clearedSefirot.has('gevurah'),
@@ -428,7 +434,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-confirm',
         sefirah: 'gevurah',
@@ -445,9 +451,9 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('challenge');
-    expect(result.value.next.challengeSubPhase).toBe('react');
-    expect(result.value.next.lastOutcome?.pass).toBe(false);
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.challengeSubPhase).toBe('react');
+    expect(result.value.next.state.lastOutcome?.pass).toBe(false);
     expect(result.value.meta?.challenge.outcome.pass).toBe(false);
   });
 
@@ -469,7 +475,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-confirm',
         sefirah: 'gevurah',
@@ -510,7 +516,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-confirm',
         sefirah: 'gevurah',
@@ -536,7 +542,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'react' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
       { kind: 'prep-confirm', sefirah: 'gevurah' },
       RNG,
     );
@@ -576,18 +582,20 @@ describe('turnReducer — react sub-phase: react-retry', () => {
     };
     const result = turnReducer(
       {
-        state,
-        phase: 'challenge',
-        challengeSubPhase: 'react',
-        lastOutcome: failedOutcome,
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: failedOutcome,
+        },
       },
       { kind: 'react-retry' },
       RNG,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.challengeSubPhase).toBe('prep');
-    expect(result.value.next.lastOutcome).toBeUndefined();
+    expect(result.value.next.state.challengeSubPhase).toBe('prep');
+    expect(result.value.next.state.lastOutcome).toBeUndefined();
     // cardBurns preserved — player is stacking on top.
     expect(result.value.next.state.pendingModifiers.cardBurns).toEqual([3]);
   });
@@ -605,10 +613,12 @@ describe('turnReducer — react sub-phase: react-retry', () => {
     };
     const result = turnReducer(
       {
-        state,
-        phase: 'challenge',
-        challengeSubPhase: 'react',
-        lastOutcome: passedOutcome,
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: passedOutcome,
+        },
       },
       { kind: 'react-retry' },
       RNG,
@@ -622,7 +632,7 @@ describe('turnReducer — react sub-phase: react-retry', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       { kind: 'react-retry' },
       RNG,
     );
@@ -631,8 +641,14 @@ describe('turnReducer — react sub-phase: react-retry', () => {
 });
 
 describe('turnReducer — replace-state event', () => {
-  it('preserves phase + sub-phase + replaces state wholesale', () => {
+  it('replaces state wholesale, including the replacement state\'s phase machinery', () => {
+    // Post-#227 review fix `phase` lives on `GameState`, so the
+    // replace-state branch is now a wholesale state swap — the
+    // replacement carries its own canonical phase, sub-phase, and
+    // lastOutcome. Pin that the dispatcher-side reducer trusts the
+    // replacement instead of carrying over the prior snapshot's view.
     const before = snapshotAt('challenge');
+    // Replacement was started fresh, so phase defaults to 'move'.
     const replacement = makeFullGame({ playerCount: 3, seed: 99 });
     const result = turnReducer(
       before,
@@ -642,33 +658,41 @@ describe('turnReducer — replace-state event', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.next.state).toBe(replacement);
-    expect(result.value.next.phase).toBe('challenge');
-    expect(result.value.next.challengeSubPhase).toBe('prep');
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
   });
 
-  it('preserves lastOutcome when replacing state during react sub-phase', () => {
-    // The replace-state branch's preservation of `lastOutcome` is
-    // load-bearing: a multiplayer server push that arrives mid-react
-    // (e.g. another player's discard wipe) must not silently clear
-    // the failed-roll outcome — that would let the active player
-    // call `react-retry` against a clean snapshot and ALSO lose the
-    // visual cue that the prior roll failed. Pin the path.
+  it('replaces state wholesale during react sub-phase, preserving the replacement state\'s lastOutcome', () => {
+    // The replace-state branch is now a wholesale state swap: post-#227
+    // review fix, `phase`, `challengeSubPhase`, and `lastOutcome` all
+    // live on `GameState`, so a server-pushed snapshot already carries
+    // the canonical phase machinery. The reducer trusts the
+    // replacement and stops trying to splice the prior snapshot's
+    // view back over it. The contract this test pins: when the
+    // replacement state is in react with a failed lastOutcome, the
+    // post-replace snapshot reflects exactly that — react phase,
+    // failed lastOutcome — so the active player's UI can still call
+    // `react-retry` based on truth, not a synthesized hint.
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const failedOutcome = {
+      rolled: 1,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 11,
+      effectiveDC: 15,
+      pass: false,
+    };
     const before: TurnSnapshot = {
-      state: makeState({}, { players: [player], activePlayerId: 'p1' }),
-      phase: 'challenge',
-      challengeSubPhase: 'react',
-      lastOutcome: {
-        rolled: 1,
-        statContribution: 10,
-        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
-        total: 11,
-        effectiveDC: 15,
-        pass: false,
+      state: {
+        ...makeState({}, { players: [player], activePlayerId: 'p1' }),
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: failedOutcome,
       },
     };
-    // Replacement state is a fresh game with extra revealed cards so
-    // we can assert the swap actually happened end-to-end.
+    // Replacement state carries the same phase machinery (server
+    // push of the same authoritative state); revealedCards adds the
+    // observable diff we assert on.
     const replacement: typeof before.state = {
       ...before.state,
       revealedCards: new Set([5, 9]),
@@ -680,9 +704,9 @@ describe('turnReducer — replace-state event', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('challenge');
-    expect(result.value.next.challengeSubPhase).toBe('react');
-    expect(result.value.next.lastOutcome?.pass).toBe(false);
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.challengeSubPhase).toBe('react');
+    expect(result.value.next.state.lastOutcome?.pass).toBe(false);
     expect(result.value.next.state).toBe(replacement);
     expect(Array.from(result.value.next.state.revealedCards).sort()).toEqual([5, 9]);
   });
@@ -693,9 +717,11 @@ describe('turnReducer — replace-state event', () => {
     // original. Catches a regression that would re-snapshot from
     // the wrong state value.
     const original = makeFullGame({ playerCount: 2, seed: 1 });
-    const replacement = makeFullGame({ playerCount: 4, seed: 99 }); // 4 players
+    // Replacement is in 'end' phase so the next `end-turn` event lands.
+    const replacementBase = makeFullGame({ playerCount: 4, seed: 99 }); // 4 players
+    const replacement = { ...replacementBase, phase: 'end' as const };
     const replaced = turnReducer(
-      { state: original, phase: 'end' },
+      { state: { ...original, phase: 'end' } },
       { kind: 'replace-state', state: replacement },
       RNG,
     );
@@ -724,13 +750,17 @@ describe('turnReducer — no-active-player guard', () => {
     });
     // Pick a phase that would otherwise allow each event so we know
     // the rejection is due to no-active-player, not wrong-phase.
-    const phase: TurnSnapshot['phase'] =
+    const phase: TurnPhase =
       event.kind === 'move' || event.kind === 'meditate'
         ? 'move'
         : event.kind === 'draw'
           ? 'draw'
           : 'end';
-    const result = turnReducer({ state: corruptState, phase }, event, RNG);
+    const result = turnReducer(
+      { state: { ...corruptState, phase } },
+      event,
+      RNG,
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('no-active-player');
@@ -751,13 +781,13 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
       deck: [11, 12, 13, 14],
       discardPile: [],
     });
-    const result = turnReducer({ state, phase: 'move' }, { kind: 'meditate' }, RNG);
+    const result = turnReducer({ state: { ...state, phase: 'move' } }, { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
     expect(after?.hand).toEqual([1, 2, 3, 4, 11, 12]);
     // Phase advances directly to 'end' — no separate Draw click.
-    expect(result.value.next.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('end');
   });
 
   it('respects HAND_CAP (6) — never draws past it', () => {
@@ -768,7 +798,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
       deck: [11, 12, 13],
       discardPile: [],
     });
-    const result = turnReducer({ state, phase: 'move' }, { kind: 'meditate' }, RNG);
+    const result = turnReducer({ state: { ...state, phase: 'move' } }, { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
@@ -792,7 +822,7 @@ describe("turnReducer — draw event refills the active player's hand", () => {
       deck: [11, 12, 13, 14],
       discardPile: [],
     });
-    const result = turnReducer({ state, phase: 'draw' }, { kind: 'draw' }, RNG);
+    const result = turnReducer({ state: { ...state, phase: 'draw' } }, { kind: 'draw' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const next = result.value.next.state;
@@ -815,7 +845,7 @@ describe("turnReducer — draw event refills the active player's hand", () => {
       deck: [11],
       discardPile: [],
     });
-    const result = turnReducer({ state, phase: 'draw' }, { kind: 'draw' }, RNG);
+    const result = turnReducer({ state: { ...state, phase: 'draw' } }, { kind: 'draw' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const next = result.value.next.state;
@@ -827,7 +857,7 @@ describe("turnReducer — draw event refills the active player's hand", () => {
     expect(after).not.toBe(player);
     // Phase must advance off 'draw' regardless — that's the signal
     // that "the click was processed."
-    expect(result.value.next.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('end');
   });
 });
 
@@ -855,19 +885,21 @@ describe('turnReducer — sub-phase teardown when phase leaves challenge', () =>
     };
     const result = turnReducer(
       {
-        state,
-        phase: 'challenge',
-        challengeSubPhase: 'react',
-        lastOutcome: failedOutcome,
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: failedOutcome,
+        },
       },
       { kind: 'accept-setback', sefirah: 'gevurah' },
       RNG,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.phase).toBe('draw');
-    expect(result.value.next.challengeSubPhase).toBeUndefined();
-    expect(result.value.next.lastOutcome).toBeUndefined();
+    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastOutcome).toBeUndefined();
     expect(result.value.next.state.pendingModifiers).toEqual({
       cardBurns: [],
       sparkBurns: [],
@@ -897,7 +929,7 @@ describe('turnReducer — edge cases: prep-remove-modifier value-equality', () =
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-remove-modifier',
         modifier: { kind: 'spark-burn', sefirah: 'hod', sourcePlayerId: 'p3' },
@@ -929,7 +961,7 @@ describe('turnReducer — edge cases: prep-remove-modifier value-equality', () =
       },
     );
     const result = turnReducer(
-      { state, phase: 'challenge', challengeSubPhase: 'prep' },
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       {
         kind: 'prep-remove-modifier',
         modifier: { kind: 'spark-burn', sefirah: 'netzach', sourcePlayerId: 'p2' },
@@ -984,17 +1016,19 @@ describe('turnReducer — edge cases: react-retry preserves prep state on top of
     );
     const result = turnReducer(
       {
-        state,
-        phase: 'challenge',
-        challengeSubPhase: 'react',
-        lastOutcome: failedOutcome,
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: failedOutcome,
+        },
       },
       { kind: 'react-retry' },
       RNG,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.challengeSubPhase).toBe('prep');
+    expect(result.value.next.state.challengeSubPhase).toBe('prep');
     // Cumulative count survives.
     expect(result.value.next.state.pendingModifiers.cardBurns).toEqual([3, 7]);
   });
@@ -1025,9 +1059,11 @@ describe('turnReducer — edge cases: full pass → accept-setback teardown is i
       },
     });
     let snap: TurnSnapshot = {
-      state: makeState({}, { players: [player] }),
-      phase: 'challenge',
-      challengeSubPhase: 'prep',
+      state: {
+        ...makeState({}, { players: [player] }),
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
     };
     const confirm = turnReducer(
       snap,
@@ -1057,9 +1093,9 @@ describe('turnReducer — edge cases: full pass → accept-setback teardown is i
     );
     expect(setback.ok).toBe(true);
     if (!setback.ok) return;
-    expect(setback.value.next.phase).toBe('draw');
-    expect(setback.value.next.challengeSubPhase).toBeUndefined();
-    expect(setback.value.next.lastOutcome).toBeUndefined();
+    expect(setback.value.next.state.phase).toBe('draw');
+    expect(setback.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(setback.value.next.state.lastOutcome).toBeUndefined();
     expect(setback.value.next.state.pendingModifiers).toEqual({
       cardBurns: [],
       sparkBurns: [],
@@ -1084,9 +1120,11 @@ describe('turnReducer — edge cases: prep-confirm fail preserves pendingModifie
       hand: [3, 7, 11],
     });
     let snap: TurnSnapshot = {
-      state: makeState({}, { players: [player], activePlayerId: 'p1' }),
-      phase: 'challenge',
-      challengeSubPhase: 'prep',
+      state: {
+        ...makeState({}, { players: [player], activePlayerId: 'p1' }),
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
     };
 
     // Stage card 3.
@@ -1135,9 +1173,9 @@ describe('turnReducer — edge cases: prep-confirm fail preserves pendingModifie
     // After fail: in react with the failed outcome, AND the
     // pendingModifiers stack survives (this is the assertion the
     // pre-fix reducer would fail — it cleared the stack).
-    expect(snap.phase).toBe('challenge');
-    expect(snap.challengeSubPhase).toBe('react');
-    expect(snap.lastOutcome?.pass).toBe(false);
+    expect(snap.state.phase).toBe('challenge');
+    expect(snap.state.challengeSubPhase).toBe('react');
+    expect(snap.state.lastOutcome?.pass).toBe(false);
     expect(snap.state.pendingModifiers.cardBurns).toEqual([3, 7]);
 
     // Retry → back to prep, stack still intact.
@@ -1145,8 +1183,8 @@ describe('turnReducer — edge cases: prep-confirm fail preserves pendingModifie
     expect(retry.ok).toBe(true);
     if (!retry.ok) return;
     snap = retry.value.next;
-    expect(snap.phase).toBe('challenge');
-    expect(snap.challengeSubPhase).toBe('prep');
+    expect(snap.state.phase).toBe('challenge');
+    expect(snap.state.challengeSubPhase).toBe('prep');
     expect(snap.state.pendingModifiers.cardBurns).toEqual([3, 7]);
 
     // Stage another card on top of the surviving stack.

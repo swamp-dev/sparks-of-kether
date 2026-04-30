@@ -3,7 +3,14 @@ import type { SefirahKey } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
 import { soulDoorDcDelta } from './soul-door-bonus';
-import type { GameState, PlayerState, Result } from './types';
+import type { CheckOutcome, GameState, PlayerState, Result } from './types';
+
+// Re-exported so existing callers keep importing `CheckOutcome` from
+// `engine/checks` unchanged. The interface lives in `engine/types.ts`
+// to break the circular import that would arise if `GameState`
+// referenced `CheckOutcome` (the #227 review fix put `lastOutcome`
+// onto `GameState`).
+export type { CheckOutcome };
 
 // ──────────────── Modifier constants ────────────────
 
@@ -41,19 +48,6 @@ export interface CheckModifiers {
    * Magnitude locked at -2 in `design/soul-doors.md` § 7 D1.
    */
   readonly soulDoorDelta?: number;
-}
-
-export interface CheckOutcome {
-  readonly rolled: number;
-  readonly statContribution: number;
-  readonly modifierBreakdown: {
-    readonly assist: number;
-    readonly cardBurn: number;
-    readonly sparkBurn: number;
-  };
-  readonly total: number;
-  readonly effectiveDC: number;
-  readonly pass: boolean;
 }
 
 export type ChallengeRejection =

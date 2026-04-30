@@ -3736,3 +3736,22 @@ don't reach naturally. Centralised them.
 - Full `pnpm ci:local`: verify ✓ (68 files / 997 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
 
 **Commit(s):** `89800d2` (failing tests), `d350448` (impl), `35eb1de` (edge cases), `44c41fd` (review fixes — revert use-turn.ts + preserve pendingModifiers on fail)
+
+## 2026-04-30T01:07:00-04:00 — #227: E2 — multiplayer dispatcher for prep-stage actions
+
+**Pushed:** Wire format for prep → resolve → react in multiplayer. Adds four new `ClientAction` kinds (`prep-add-modifier`, `prep-remove-modifier`, `prep-confirm`, `react-retry`) and dispatcher cases in `lib/room-actions.ts`; removes the legacy `submit-challenge` `ClientAction` end-to-end (engine `TurnEvent` shim still exists until E4 lands). Includes a structural follow-up: moves `phase`, `challengeSubPhase`, and `lastOutcome` from `TurnSnapshot` onto `GameState` so the wire layer reads truth from the persisted state instead of forging snapshot fields. `TurnSnapshot` becomes `{ state }` only.
+
+**Why:** Sub-ticket E2 of Epic #117. Wire format was the simpler half; the structural change came out of code review (see Notes).
+
+**Notes:**
+- Multi-subagent execution: a general-purpose agent did the dispatcher work (commits `45fb2b8` + `a770d4f`), `code-reviewer` ran twice, structural follow-up + final verification on host.
+- **Code-reviewer pass 1 (after the initial dispatcher commit) flagged a deviation:** the `submit-challenge` `ClientAction` was kept as a `@deprecated` shim because the brief incorrectly listed `test/scenario.ts` as out-of-scope. Lifted that boundary; `a770d4f` removed the shim and rewrote `scenario.submitChallenge` to chain `prep-add-modifier` per modifier + `prep-confirm`.
+- **Code-reviewer pass 2 surfaced a CRITICAL exploit:** `react-retry` dispatcher synthesized `lastOutcome: { pass: false }` because `lastOutcome` lived only on `TurnSnapshot`, not `GameState`. A malicious authenticated active player could fire `react-retry` cold or after a passed challenge to bypass the engine's "can't retry on pass" gate. Fix in `f4a85be`: move `phase`, `challengeSubPhase`, `lastOutcome` all onto `GameState`. Reducer maintains them in lockstep at every transition. Dispatcher reads from state directly; synthesis block deleted. The new `react-retry-on-pass` security test is genuinely load-bearing — drives a real `prep-confirm(pass)` then attempts retry; pre-fix would have succeeded due to forged outcome, post-fix rejects with `react-retry-on-pass`.
+- **Plus two SIGNIFICANT fixes folded into `f4a85be`:**
+  - `scenario.submitChallenge` now THROWS on non-empty `assistStats` instead of silent drop (a test-infrastructure trap).
+  - Multiplayer integration test extended with `prep → confirm(fail) → react-retry → confirm(pass)` and `prep → confirm(fail) → accept-setback` cycles through the events route.
+- **Code-reviewer pass 3 (re-review of structural fix) verdict: ship.** All six items pass; one MINOR note about defensive cleanup in `end-turn` for unreachable phase-graph edges.
+- **Side effect on E4:** E4's branch (`feat/229-encounter-hot-seat-collapse`) is in flight in a parallel worktree. After this merges, E4 must rebase. Conflicts predicted in `lib/turn-machine.ts` (E4's `directAssistStats` + `shortcutPenalty` overrides on `prep-confirm` overlap with E2's reducer rewrite) and `lib/use-turn.ts` (E4's surface additions vs E2's snapshot-shape change). Semantics are orthogonal; manual resolution required.
+- Full `pnpm ci:local`: verify ✓ (68 files / 1035 passed / 1 todo), build ✓, e2e ✓ (58 passed / 42 skipped), integration ✓.
+
+**Commit(s):** `45fb2b8` (dispatcher cases), `a770d4f` (remove deprecated `submit-challenge` ClientAction + scenario.ts rewrite), `f4a85be` (CRITICAL fix: move phase/sub-phase/lastOutcome onto GameState; +SIGNIFICANT fixes)

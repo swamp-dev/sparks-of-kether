@@ -8,12 +8,16 @@ import type {
   ChallengeSuccess,
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
-import type { GameState, MoveRejection, Result } from '@/engine/types';
+import type {
+  GameState,
+  MoveRejection,
+  Result,
+  TurnPhase,
+} from '@/engine/types';
 import {
   HAND_CAP as MACHINE_HAND_CAP,
   STARTING_HAND_SIZE as MACHINE_STARTING_HAND_SIZE,
   turnReducer,
-  type TurnPhase,
   type TurnSnapshot,
 } from './turn-machine';
 
@@ -25,7 +29,7 @@ import {
  * See `./turn-machine.ts` for the phase contract and event semantics.
  */
 
-export type { TurnPhase } from './turn-machine';
+export type { TurnPhase } from '@/engine/types';
 export const STARTING_HAND_SIZE = MACHINE_STARTING_HAND_SIZE;
 export const HAND_CAP = MACHINE_HAND_CAP;
 
@@ -90,11 +94,16 @@ const SYNTHETIC_CHALLENGE_REJECTION: ChallengeRejection = {
 
 export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const [snapshot, setSnapshot] = useState<TurnSnapshot>(() => ({
+    // GameState now carries `phase` directly (post-#227 review fix);
+    // `initializeGame` defaults it to 'move'. Tests / callers that
+    // construct an `initialState` without going through `initializeGame`
+    // are responsible for setting `phase` themselves — `makeState`
+    // does so by default.
     state: opts.initialState,
-    phase: 'move',
   }));
 
-  const { state, phase } = snapshot;
+  const { state } = snapshot;
+  const { phase } = state;
 
   const activePlayerIndex = state.players.findIndex(
     (p) => p.id === state.activePlayerId,

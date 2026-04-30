@@ -33,9 +33,10 @@ export type AuthorizationResult =
  *     already enforces this against `auth.uid()` before calling, but
  *     authorize is also called in unit tests and from any future
  *     in-process consumer, so the check belongs here too.
- *   - All current actions (`move`, `submit-challenge`, `accept-setback`,
- *     `end-turn`) are turn-locked: the caller must be the active
- *     player.
+ *   - All current actions (`move`, `prep-add-modifier`,
+ *     `prep-remove-modifier`, `prep-confirm`, `react-retry`,
+ *     `accept-setback`, `meditate`, `end-turn`) are turn-locked: the
+ *     caller must be the active player.
  *
  * Forward-compat: out-of-turn abilities (Spark spends, Soul Aspect
  * gifts, ally assists per `design/mechanics.md` § Sparks and Soul

@@ -15,13 +15,32 @@ const actions: { kind: ClientAction['kind']; build: (id: string) => ClientAction
     build: (id) => ({ kind: 'move', playerId: id, pathNumber: 13 }),
   },
   {
-    kind: 'submit-challenge',
+    kind: 'prep-add-modifier',
     build: (id) => ({
-      kind: 'submit-challenge',
+      kind: 'prep-add-modifier',
+      playerId: id,
+      modifier: { kind: 'card-burn', arcanum: 5 },
+    }),
+  },
+  {
+    kind: 'prep-remove-modifier',
+    build: (id) => ({
+      kind: 'prep-remove-modifier',
+      playerId: id,
+      modifier: { kind: 'card-burn', arcanum: 5 },
+    }),
+  },
+  {
+    kind: 'prep-confirm',
+    build: (id) => ({
+      kind: 'prep-confirm',
       playerId: id,
       sefirah: 'gevurah',
-      modifiers: { assistStats: [], cardBurns: 0, sparkBurns: 0, shortcutPenalty: false },
     }),
+  },
+  {
+    kind: 'react-retry',
+    build: (id) => ({ kind: 'react-retry', playerId: id }),
   },
   {
     kind: 'accept-setback',

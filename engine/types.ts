@@ -1,6 +1,58 @@
 import type { SefirahKey, StatKey, ZodiacSignKey } from '@/data';
 
 /**
+ * Result of a single d20 challenge resolution. Lives in `engine/types.ts`
+ * (not `engine/checks.ts`) so `GameState.lastOutcome` can carry it
+ * without forcing a circular import. The full check-modifier inputs
+ * (`CheckModifiers`, `ChallengeSuccess`, etc.) still live in
+ * `engine/checks.ts` — only the post-roll outcome moved here.
+ */
+export interface CheckOutcome {
+  readonly rolled: number;
+  readonly statContribution: number;
+  readonly modifierBreakdown: {
+    readonly assist: number;
+    readonly cardBurn: number;
+    readonly sparkBurn: number;
+  };
+  readonly total: number;
+  readonly effectiveDC: number;
+  readonly pass: boolean;
+}
+
+/**
+ * Top-level turn phase. Lives on `GameState` (not `TurnSnapshot`) so
+ * the multiplayer wire layer round-trips it through the persisted
+ * snapshot row — the dispatcher in `lib/room-actions.ts` reads the
+ * truth from state directly instead of synthesizing a value, which
+ * is what allowed the pre-#227-fix `react-retry` exploit (a malicious
+ * active player could fire `react-retry` cold by sending an action
+ * the dispatcher would happily fold against a fake snapshot).
+ *
+ *   move      — player can `move` (apply path) or `meditate`.
+ *   challenge — entered after `move` lands on an uncleared `'check'`
+ *               Sefirah. See `challengeSubPhase` for the inner cycle.
+ *   draw      — refill toward `STARTING_HAND_SIZE`, capped at HAND_CAP.
+ *   end       — advance to next player; phase resets to `move`.
+ */
+export type TurnPhase = 'move' | 'challenge' | 'draw' | 'end';
+
+/**
+ * Active sub-phase WITHIN a challenge encounter. Defined when (and only
+ * when) `phase === 'challenge'`. Cycles `prep → resolve → react`;
+ * cleared (set to `undefined`) when the reducer transitions phase out
+ * of `'challenge'`.
+ *
+ * `'resolve'` is the kernel call itself — the post-kernel snapshot is
+ * `'react'` — so `'resolve'` rarely appears as a steady-state value
+ * outside the reducer's own tick.
+ *
+ * Lives on `GameState` (not `TurnSnapshot`) for the same reason as
+ * `phase`: the multiplayer dispatcher must read truth, not synthesize.
+ */
+export type ChallengeSubPhase = 'prep' | 'resolve' | 'react';
+
+/**
  * Result discriminated union for fallible engine operations.
  *
  * Engine functions never throw on "expected" failures (invalid move,
@@ -164,6 +216,41 @@ export interface GameState {
    * happen at `prep-confirm` (see `lib/turn-machine.ts`).
    */
   readonly pendingModifiers: PendingModifiers;
+  /**
+   * Top-level turn phase. Promoted onto `GameState` (from the prior
+   * `TurnSnapshot`-only home) by the #227 review fix so the
+   * multiplayer dispatcher reads truth from the persisted snapshot
+   * row instead of synthesizing a value. The pre-fix dispatcher
+   * synthesized `phase: 'challenge'` plus a fake `lastOutcome` for
+   * every prep-stage action, which let a malicious active player
+   * fire `react-retry` cold (no prior `prep-confirm`) or after a
+   * passed challenge — the engine's "can't retry on pass" gate was
+   * being bypassed by the synthesized failed `lastOutcome`.
+   *
+   * Maintained by the reducer in lockstep with the snapshot's view
+   * (`TurnSnapshot.phase` simply reads this field).
+   *
+   * Default for a freshly-initialized game is `'move'`
+   * (see `engine/setup.ts:initializeGame`).
+   */
+  readonly phase: TurnPhase;
+  /**
+   * Active sub-phase within a challenge encounter. Defined iff
+   * `phase === 'challenge'`. Lives on `GameState` (not `TurnSnapshot`)
+   * for the same reason as `phase`: the wire-format dispatcher must
+   * read truth, not synthesize.
+   */
+  readonly challengeSubPhase?: ChallengeSubPhase | undefined;
+  /**
+   * Outcome of the most recent challenge resolution while in
+   * `'react'` sub-phase. Used by `react-retry` to gate retry on a
+   * failed roll only — the success path can't retry. Cleared on
+   * retry / on phase leaving `'challenge'`. Lives on `GameState`
+   * (not `TurnSnapshot`) so the wire layer can persist the truth
+   * the engine needs to evaluate the gate, instead of the
+   * dispatcher synthesizing a value.
+   */
+  readonly lastOutcome?: CheckOutcome | undefined;
 }
 
 /**

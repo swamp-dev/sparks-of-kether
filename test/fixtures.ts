@@ -87,6 +87,13 @@ export function makeState(
     shellsDeflected: 0,
     pillarStreak: EMPTY_PILLAR_STREAK,
     pendingModifiers: EMPTY_PENDING_MODIFIERS,
+    // Phase machinery on GameState (post-#227 review fix). Defaults
+    // mirror `engine/setup.initializeGame`. Tests that want to drive
+    // phase / sub-phase / lastOutcome explicitly pass them in
+    // `stateOverrides`.
+    phase: 'move',
+    challengeSubPhase: undefined,
+    lastOutcome: undefined,
     ...stateOverrides,
   };
 }
