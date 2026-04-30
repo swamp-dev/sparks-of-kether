@@ -51,9 +51,9 @@ A walk through the surfaces in the order a player meets them.
 
 | | |
 |---|---|
-| ![Blessing Ritual](assets/marketing/demo-ritual-desktop.png) | **The opening ritual.** Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat. The atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible. |
+| ![Blessing Ritual](assets/marketing/demo-ritual-desktop.png) | **The opening ritual.** Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat, then pick your zodiac class — its dignities tilt your starting stats. The atmosphere shifts hue with the active Sefirah; a running ledger keeps the build visible. |
 | ![Tree of Life board](assets/marketing/demo-tree-desktop.png) | **The board.** Ten Sefirot connected by twenty-two paths — the geometry the team traverses together. |
-| ![Play surface](assets/marketing/play-desktop.png) | **The play surface.** Board, hand, and shared meters all in view. |
+| ![Play surface](assets/marketing/play-desktop.png) | **The play surface.** Board, hand, and shared meters all in view; class-derived stat bonuses are folded in by start of play. |
 | ![Team Meters](assets/marketing/demo-meters-desktop.png) | **Illumination vs Separation.** The two team-wide counters that decide the run. Pillar-streak columns track which side of the Tree the team has been favouring. |
 | ![Major Arcana grid](assets/marketing/demo-cards-desktop.png) | **22 path-keys.** A symbolic-minimalist deck of the Major Arcana — each card a key, each key a path between Sefirot. |
 

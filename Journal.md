@@ -3693,3 +3693,28 @@ don't reach naturally. Centralised them.
 **Notes:** `pnpm test --run tests/docs` re-checked — 93 doc-link assertions still pass. Prose-only patch; no image moved.
 
 **Commit(s):** `2a40aea`
+
+## 2026-04-29T23:06:32-04:00 — #266: Marketing pack refreshed post-zodiac+Soul-Doors
+
+**Pushed:** Refreshed visual-regression baselines, refreshed 7 curated marketing assets, added 4 new ones (challenge / shell-panel / stat-sheet / about), updated README + about-page captions to mention zodiac classes.
+
+**Why:** Pack was captured pre-Epic #212 (zodiac classes) + Epic #240 (Soul Doors); the demo-stat-sheet baseline still showed the Soul Aspect bonus column and the demo-tree baseline still carried Hebrew labels. The about page also lacked a Challenge gallery item.
+
+**Notes:**
+- Six visual-regression baselines drifted organically from main and were rewritten by `--update-snapshots`: `demo-stat-sheet-{desktop,tablet,mobile}` (T8 #237 removed the Soul Aspect bonus column / copy line; Harmony stat now reads 13 vs prior 15) and `demo-tree-{desktop,tablet,mobile}` (#219 dropped Hebrew labels). Three more (`about-{desktop,tablet,mobile}`) were intentionally regenerated to pick up the new fifth GalleryItem on the about page. The other 33 baselines were already byte-identical to current renders. Playwright's `--update-snapshots` does NOT rewrite a baseline whose diff is below `maxDiffPixelRatio: 0.005` (set in `e2e/visual-regression.spec.ts`); only deleting the baseline first forces a true regen. Worth knowing for future drift hunts — a visually stale baseline can pass the threshold silently.
+- About page got a 5th GalleryItem (demo-challenge-desktop) for variety — class-derived stat bonuses are most legible mid-challenge. Refreshed about-{desktop,tablet,mobile} baselines accordingly.
+- Marketing pack now totals ~1016 KiB across 11 PNGs. The README size budget was tightened from "under 1 MB" (ambiguous: SI vs binary) to "under 1024 KiB (~1.0 MB)" so the next refresh hits a defined cap. We are 8 KiB under.
+- Code review: self-review on the diff (no Task tool available in this sub-agent context). One revision: caption "set its dignities" was replaced with "its dignities tilt your starting stats" in both README and about page — first version was astrology jargon, second is plain English (and "starting stats" is more accurate than "final numbers" since stats can change mid-game).
+- Full `pnpm ci:local`: verify ✓, build ✓, e2e ✓ (58 passed + 42 visual-regression skipped via PLAYWRIGHT_BROWSERS_INSTALLED gate), integration ✓.
+
+**Commit(s):** `38a5d15` (baselines), `cc20c18` (docs+about), `385047d` (marketing pack); rebased onto post-Track-2 main with review fixes folded into a follow-up commit.
+
+## 2026-04-29T23:15:48-04:00 — #266: review fixes + post-rebase Journal cleanup
+
+**Pushed:** Three review-driven prose patches and a Journal-merge cleanup. Tightened the marketing-pack size budget from "under **1 MB total**" to "under **1024 KiB (~1.0 MB binary)**" so the next refresh hits a defined cap. Replaced caption "tilt your final numbers" with "tilt your starting stats" in both README gallery and `/about` — bonuses apply once at game start, then stats can change mid-game; "final" was misleading. Cleaned up the Journal merge from the rebase onto post-Track-2 main: the original entry now correctly orders 6 organic-drift baselines + 3 intentional about-page regenerations (was understated as "only 6") and cites the `maxDiffPixelRatio` config location at `e2e/visual-regression.spec.ts` so future drift hunts have an actionable pointer.
+
+**Why:** Parent agent's `code-reviewer` pass surfaced two Significant findings (size-budget ambiguity, `--update-snapshots` note not actionable) and one Minor (caption precision). Track 1 sub-agent had no `code-reviewer` Skill in its sandbox; the parent caught these on the second pass.
+
+**Notes:** Force-pushed (with `--force-with-lease`) because the branch was rebased onto post-Track-2 main to resolve a Journal.md merge conflict. The branch was created today and only the parent agent has been pushing to it — no co-author work to overwrite. Pre-push hook (`pnpm ci:local:fast`) passed.
+
+**Commit(s):** `63fcb96`

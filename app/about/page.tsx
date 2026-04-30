@@ -6,6 +6,7 @@ import ritualShot from '@/assets/marketing/demo-ritual-desktop.png';
 import treeShot from '@/assets/marketing/demo-tree-desktop.png';
 import metersShot from '@/assets/marketing/demo-meters-desktop.png';
 import cardsShot from '@/assets/marketing/demo-cards-desktop.png';
+import challengeShot from '@/assets/marketing/demo-challenge-desktop.png';
 
 /**
  * Marketing landing surface. Server-rendered, no client state — the
@@ -90,7 +91,7 @@ export default function AboutPage(): JSX.Element {
           <GalleryItem
             src={ritualShot}
             alt="Blessing Ritual — the opening rolls"
-            caption="The opening ritual. Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat. Atmosphere shifts hue with the active Sefirah."
+            caption="The opening ritual. Walk Kether to Malkuth, rolling 3d6 for each Sefirah's stat, then pick your zodiac class — its dignities tilt your starting stats. Atmosphere shifts hue with the active Sefirah."
           />
           <GalleryItem
             src={treeShot}
@@ -101,6 +102,11 @@ export default function AboutPage(): JSX.Element {
             src={metersShot}
             alt="Team meters — Illumination vs Separation"
             caption="Illumination vs Separation. The two team-wide counters that decide the run; pillar-streak columns track which side of the Tree the team has favoured."
+          />
+          <GalleryItem
+            src={challengeShot}
+            alt="Challenge modal — Severity, mid-resolve"
+            caption="The tense moment. Each challenge surfaces the DC, the stat being checked, the allies who can assist, and the burn-card / burn-spark dials before the d20 lands."
           />
           <GalleryItem
             src={cardsShot}

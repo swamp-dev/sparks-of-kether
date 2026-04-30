@@ -20,13 +20,18 @@ NOT automatic — see "Refreshing the pack" below.
 | `demo-cards-desktop.png` | `demo-cards-desktop-chromium-linux.png` | The 22 Major Arcana grid — clearest "this is a card game" surface. |
 | `demo-ritual-desktop.png` | `demo-ritual-desktop-chromium-linux.png` | The Blessing Ritual scene mid-step — atmospheric Sefirah-keyed bloom + ledger. |
 | `demo-meters-desktop.png` | `demo-meters-desktop-chromium-linux.png` | TeamMeters with gradient fills + pillar columns. Compact "look at the polish" shot. |
+| `demo-challenge-desktop.png` | `demo-challenge-desktop-chromium-linux.png` | The Challenge Modal mid-resolve — DC, allies, burn-card / burn-spark dials, projected total. The "this is the tense moment" shot. |
+| `demo-shell-panel-desktop.png` | `demo-shell-panel-desktop-chromium-linux.png` | Per-Sefirah Shell pressure across three states — dormant, two active, mixed (with banished). Shows the shadow mechanic at a glance. |
+| `demo-stat-sheet-desktop.png` | `demo-stat-sheet-desktop-chromium-linux.png` | Character panel — 10 stats with class-derived bonuses folded in, expanded and compact rows side by side. |
+| `about-desktop.png` | `about-desktop-chromium-linux.png` | The `/about` marketing page on desktop — full pitch surface with hero, prose, gallery, and CTAs. |
 
 ## Size budget
 
-Keep this directory under **1 MB total**. Above that, marketing
-assets should move to git LFS or an external CDN — committing
-multiple megabytes of binary into the main repo bloats clones for
-everyone. Current size: ~640 KB across 8 PNGs.
+Keep this directory under **1024 KiB (~1.0 MB binary) total**. Above
+that, marketing assets should move to git LFS or an external CDN —
+committing multiple megabytes of binary into the main repo bloats
+clones for everyone. Current size: ~1016 KiB across 11 PNGs (8 KiB
+under the cap).
 
 If the source baseline for a copy doesn't exist on disk, the
 baseline hasn't been generated yet — run
@@ -44,7 +49,9 @@ When wave-4 polish lands and the visual regression baselines update
 for src in home-desktop play-desktop demo-tree-desktop \
            demo-cards-desktop demo-ritual-desktop \
            demo-meters-desktop \
-           home-mobile; do
+           home-mobile \
+           demo-challenge-desktop demo-shell-panel-desktop \
+           demo-stat-sheet-desktop about-desktop; do
   cp "e2e/visual-regression.spec.ts-snapshots/${src}-chromium-linux.png" \
      "assets/marketing/${src}.png"
 done
