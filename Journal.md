@@ -3975,3 +3975,17 @@ don't reach naturally. Centralised them.
 - **Local gate:** `pnpm ci:local` was run after rebasing onto `main` post-#302 (vitest `testTimeout` bumped to 15000ms to fix axe cascade flake). All four CI jobs (verify + build + e2e + integration) green. The flake fix is what unblocked this ticket.
 
 **Commit(s):** `321dcf9` (3 axe renders), `ef5d483` (tab-order pin), `7a772e6` (setupAndRoll helper extraction)
+
+
+## 2026-04-30T16:24:26-04:00 — #307: a11y test follow-ups (NPE guard + real Enter keydown)
+
+**Pushed:** Two test-only fixes addressing MINOR findings from the retro review of PR #306 (#283 a11y coverage). (1) `components/__tests__/a11y.test.tsx` — three tests in the `EncounterScreen (resolve + react sub-states)` describe block restructured from the `let view: ... | null = null` + separate-`try`-blocks shape to a single try/finally. The old shape masked `setupAndRoll` errors behind a misleading `Cannot read properties of null` thrown from the second block; the new shape lets the original error surface cleanly. Inner `vi.useRealTimers()` calls let axe scan with real timers; the outer `finally` is the safety net that guarantees fake timers never leak across tests. (2) `components/game/__tests__/EncounterScreen.test.tsx` — the test "pressing Enter on the focused Continue button activates it" was firing `fireEvent.click` with a comment falsely claiming jsdom synthesizes click from Enter on native `<button>`. It does not. Rewritten to actually fire `userEvent.keyboard('{Enter}')`, with `vi.useRealTimers()` moved *before* `userEvent.setup()` because `userEvent` snapshots the timer impl at construction time.
+
+**Why:** Address two MINOR findings from retro review of PR #306 (#283 a11y).
+
+**Notes:**
+- The inner `vi.useRealTimers()` / outer `finally` redundancy is intentional. Inner calls are what enable axe to run; the outer `finally` is a safety net for thrown-mid-setup paths so subsequent tests aren't poisoned with leaked fake timers.
+- The userEvent timer-snapshot quirk (must call `vi.useRealTimers()` *before* `userEvent.setup()`) is a jsdom / `@testing-library/user-event` constraint, not a project bug — calling it after setup leaves userEvent's internal scheduler bound to the fake timer impl and `keyboard()` hangs.
+- Code-reviewer subagent already approved both fixes ("ship it").
+
+**Commit(s):** `138d040`, `f1aa5b9`

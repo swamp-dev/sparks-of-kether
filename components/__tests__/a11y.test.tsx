@@ -255,11 +255,10 @@ describe('a11y — major UI surfaces', () => {
 
     it('resolve sub-state (animatingResolve, aria-live region) is axe-clean', async () => {
       vi.useFakeTimers();
-      let view: ReturnType<typeof render> | null = null;
       try {
         // advanceMs=0 — leave the resolve animation mid-flight so we
         // audit the `aria-live="polite"` "Rolling…" status region.
-        ({ view } = setupAndRoll({ stat: 18, advanceMs: 0 }));
+        const { view } = setupAndRoll({ stat: 18, advanceMs: 0 });
         const sub = getSubPhase(view);
         // Sanity: confirm we're auditing the resolve panel, not prep
         // or react. An upstream regression that flips the panel under
@@ -267,24 +266,25 @@ describe('a11y — major UI surfaces', () => {
         if (sub !== 'resolve') {
           throw new Error(`expected resolve sub-state, got ${sub}`);
         }
-      } finally {
-        // axe internally awaits real timers; switching back here also
-        // ensures fake timers don't leak across tests if the setup
-        // above threw.
+        // axe internally awaits real timers; switch back *before*
+        // calling axe. If `setupAndRoll` above threw, the outer
+        // `finally` still restores real timers and the original
+        // error surfaces unchanged (no null-view obfuscation).
         vi.useRealTimers();
-      }
-      try {
-        expectNoViolations(await axe(view.container));
+        try {
+          expectNoViolations(await axe(view.container));
+        } finally {
+          view.unmount();
+        }
       } finally {
-        view.unmount();
+        vi.useRealTimers();
       }
     });
 
     it('react sub-state (pass — Continue button, aria-live verdict) is axe-clean', async () => {
       vi.useFakeTimers();
-      let view: ReturnType<typeof render> | null = null;
       try {
-        ({ view } = setupAndRoll({ stat: 18, advanceMs: 800 }));
+        const { view } = setupAndRoll({ stat: 18, advanceMs: 800 });
         const sub = getSubPhase(view);
         if (sub !== 'react') {
           throw new Error(`expected react sub-state, got ${sub}`);
@@ -295,25 +295,25 @@ describe('a11y — major UI surfaces', () => {
         if (verdict === null) {
           throw new Error('expected a pass verdict in the react panel');
         }
+        vi.useRealTimers();
+        try {
+          expectNoViolations(await axe(view.container));
+        } finally {
+          view.unmount();
+        }
       } finally {
         vi.useRealTimers();
-      }
-      try {
-        expectNoViolations(await axe(view.container));
-      } finally {
-        view.unmount();
       }
     });
 
     it('react sub-state (fail — Retry / Accept setback choice) is axe-clean', async () => {
       vi.useFakeTimers();
-      let view: ReturnType<typeof render> | null = null;
       try {
         // Stat 1 vs DC 15 — with the seeded rng(1) the first d20 face
         // is well below 14, so the total falls short. We assert
         // `data-result="fail"` before scanning, so a counter-example
         // would surface as a clear failure rather than silent miscoverage.
-        ({ view } = setupAndRoll({ stat: 1, advanceMs: 800 }));
+        const { view } = setupAndRoll({ stat: 1, advanceMs: 800 });
         const sub = getSubPhase(view);
         if (sub !== 'react') {
           throw new Error(`expected react sub-state, got ${sub}`);
@@ -335,13 +335,14 @@ describe('a11y — major UI surfaces', () => {
             'expected both Retry and Accept setback buttons in the fail react panel',
           );
         }
+        vi.useRealTimers();
+        try {
+          expectNoViolations(await axe(view.container));
+        } finally {
+          view.unmount();
+        }
       } finally {
         vi.useRealTimers();
-      }
-      try {
-        expectNoViolations(await axe(view.container));
-      } finally {
-        view.unmount();
       }
     });
   });

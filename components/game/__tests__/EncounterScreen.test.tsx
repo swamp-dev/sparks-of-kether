@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { EncounterScreen } from '../EncounterScreen';
 import type { ChallengeContext } from '@/lib/challenge-types';
 import { useTurn } from '@/lib/use-turn';
@@ -709,7 +710,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
     }
   });
 
-  it('react sub-state (pass): pressing Enter on the focused Continue button activates it', () => {
+  it('react sub-state (pass): pressing Enter on the focused Continue button activates it', async () => {
     vi.useFakeTimers();
     try {
       const state = makeChallengeState();
@@ -737,14 +738,22 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
       rerender();
       view.rerender(<Wrapper />);
       const continueBtn = screen.getByRole('button', { name: /^Continue$/ });
-      // Native <button> activates on click (which jsdom synthesizes
-      // from Enter on a focused button). We verify this by clicking
-      // — proving the click handler is wired without a custom
-      // keydown handler is the same as proving Enter works.
-      act(() => {
-        continueBtn.focus();
-        fireEvent.click(continueBtn);
-      });
+      // Switch to real timers before driving userEvent — its
+      // keyboard helper schedules on real Promise microtasks and
+      // hangs under `vi.useFakeTimers`. The resolve animation has
+      // already been advanced past at this point, so the rest of
+      // the test no longer needs the fake clock.
+      vi.useRealTimers();
+      // Press Enter on the focused Continue button via userEvent.
+      // The original version of this test called `fireEvent.click`
+      // with a comment claiming jsdom synthesizes click from Enter
+      // on native buttons — it does not. `userEvent.keyboard`
+      // models that browser behaviour faithfully (keydown → click
+      // on Enter for activatable elements), so this is the keyboard
+      // path the test name promises.
+      const user = userEvent.setup();
+      continueBtn.focus();
+      await user.keyboard('{Enter}');
       expect(onResolved).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
