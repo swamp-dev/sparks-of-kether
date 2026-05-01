@@ -81,6 +81,99 @@ describe('rollCheck', () => {
     expect(outcome.pass).toBe(true);
   });
 
+  // #334 / per-Sefirah surface (`design/per-sefirah-mechanics.md` § 2.6 (a)):
+  // `flatBonus` is the single field that the per-Sefirah twists land
+  // their bonus through (Hod / Yesod match, Gevurah dearest stack,
+  // Netzach declared-desire sign-aware bump, Chokmah fire-sign flash).
+  // The resolver folds it into `total` alongside assist / cardBurn /
+  // sparkBurn. Default-zero so existing call sites that pre-date the
+  // per-Sefirah work keep producing identical totals.
+  it('adds flatBonus to the total (default 0 keeps the legacy total unchanged)', () => {
+    const rng = { d20: () => 6, int: () => 6 };
+    // Stat 5 + roll 6 = 11. Without flatBonus → total 11.
+    const baseline = rollCheck({ stat: 5, dc: 14, modifiers: blank, rng });
+    expect(baseline.total).toBe(11);
+    expect(baseline.pass).toBe(false);
+    // Default-zero case: breakdown OMITS the field so legacy outcomes
+    // stay byte-identical and downstream renderers can use
+    // `breakdown.flatBonus !== undefined` as a "shipped this roll" signal.
+    expect(baseline.modifierBreakdown.flatBonus).toBeUndefined();
+
+    // With +5 flatBonus → total 16, pass.
+    const withFlat = rollCheck({
+      stat: 5,
+      dc: 14,
+      modifiers: { ...blank, flatBonus: 5 },
+      rng: { d20: () => 6, int: () => 6 },
+    });
+    expect(withFlat.total).toBe(16);
+    expect(withFlat.pass).toBe(true);
+    // breakdown reports the per-Sefirah contribution so downstream
+    // tickets (Hod +5, Yesod +5, ...) can render "+5 (dream match)"
+    // without re-deriving the value from inputs.
+    expect(withFlat.modifierBreakdown.flatBonus).toBe(5);
+  });
+
+  it('omitting flatBonus is equivalent to flatBonus: 0', () => {
+    const rng = { d20: () => 5, int: () => 5 };
+    const omitted = rollCheck({ stat: 8, dc: 12, modifiers: blank, rng });
+    const explicitZero = rollCheck({
+      stat: 8,
+      dc: 12,
+      modifiers: { ...blank, flatBonus: 0 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(omitted.total).toBe(explicitZero.total);
+    expect(omitted.effectiveDC).toBe(explicitZero.effectiveDC);
+    expect(omitted.pass).toBe(explicitZero.pass);
+  });
+
+  it('flatBonus stacks additively with assist / card-burn / spark-burn', () => {
+    const rng = { d20: () => 5, int: () => 5 };
+    // Stat 5 + roll 5 = 10; +1 assist (half of 3) + 2 cardBurn (+6) +
+    // 1 sparkBurn (+5) + 4 flatBonus = 26. DC 26 → pass on the boundary.
+    const outcome = rollCheck({
+      stat: 5,
+      dc: 26,
+      modifiers: {
+        ...blank,
+        assistStats: [3],
+        cardBurns: 2,
+        sparkBurns: 1,
+        flatBonus: 4,
+      },
+      rng,
+    });
+    expect(outcome.modifierBreakdown.assist).toBe(1);
+    expect(outcome.modifierBreakdown.cardBurn).toBe(2 * CARD_BURN_BONUS);
+    expect(outcome.modifierBreakdown.sparkBurn).toBe(1 * SPARK_BURN_BONUS);
+    expect(outcome.modifierBreakdown.flatBonus).toBe(4);
+    expect(outcome.total).toBe(5 + 5 + 1 + 6 + 5 + 4);
+    expect(outcome.pass).toBe(true);
+  });
+
+  it('flatBonus is roll-side, not DC-side — leaves effectiveDC alone', () => {
+    const rng = { d20: () => 8, int: () => 8 };
+    // Two runs at the same DC + Door delta; only flatBonus differs.
+    // The DC must be identical between them (the bonus is on the roll
+    // side); a regression that misrouted flatBonus to the DC subtractor
+    // would surface here as an effectiveDC change.
+    const without = rollCheck({
+      stat: 6,
+      dc: 14,
+      modifiers: { ...blank, soulDoorDelta: -2 },
+      rng,
+    });
+    const withFlat = rollCheck({
+      stat: 6,
+      dc: 14,
+      modifiers: { ...blank, soulDoorDelta: -2, flatBonus: 5 },
+      rng: { d20: () => 8, int: () => 8 },
+    });
+    expect(withFlat.effectiveDC).toBe(without.effectiveDC);
+    expect(withFlat.total).toBe(without.total + 5);
+  });
+
   it('applies the shortcut-path penalty as +DC (not a modifier subtraction)', () => {
     const rng = { d20: () => 10, int: () => 10 };
     // Stat 10 + roll 10 = 20. Base DC 16 → pass. With penalty, effective

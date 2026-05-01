@@ -7,7 +7,12 @@ import { drawNCards, MEDITATE_DRAW } from '@/engine/draws';
 import type { Rng } from '@/engine/rng';
 import { HAND_CAP } from '@/engine/setup';
 import { discard, endTurn } from '@/engine/turn';
-import type { GameState, MoveRejection } from '@/engine/types';
+import {
+  EMPTY_PENDING_MODIFIERS,
+  type GameState,
+  type MoveRejection,
+} from '@/engine/types';
+import { initEncounterEnvelope } from './turn-machine';
 import {
   turnReducer,
   type PrepModifier,
@@ -158,10 +163,13 @@ export function applyClientAction(
       // by `turnReducer`'s sub-phase guard.
       const newState: GameState = {
         ...next,
-        pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
         phase: 'draw',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
+        // #334: mirror the reducer — encounter envelope clears on
+        // accept-setback (the encounter has ended).
+        encounter: undefined,
       };
       return { ok: true, newState };
     }
@@ -228,8 +236,15 @@ export function applyClientAction(
         return { ok: true, newState: turned };
       }
       // Mirror the reducer: end-turn rotates seat AND resets phase
-      // to 'move' for the new active player.
-      const newState: GameState = { ...turned, phase: 'move' };
+      // to 'move' for the new active player. Also clear `encounter`
+      // defensively — the invariant is that no live encounter envelope
+      // crosses the seat boundary; this guard makes the invariant
+      // explicit (matches `lib/turn-machine.ts` `end-turn` arm).
+      const newState: GameState = {
+        ...turned,
+        phase: 'move',
+        encounter: undefined,
+      };
       return { ok: true, newState };
     }
   }
@@ -251,6 +266,9 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
       phase: 'draw',
       challengeSubPhase: undefined,
       lastOutcome: undefined,
+      // #334: keep encounter undefined on the malformed-snapshot
+      // path; matches the reducer's behaviour.
+      encounter: undefined,
     };
   }
   const arrival = sefirahByKey(movedPlayer.position);
@@ -258,10 +276,14 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
   if (arrival.challenge.kind === 'check' && !alreadyCleared) {
     return {
       ...state,
-      pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
       phase: 'challenge',
       challengeSubPhase: 'prep',
       lastOutcome: undefined,
+      // #334: mirror the reducer — initialize the per-encounter
+      // envelope at challenge entry. Shared helper keeps server-
+      // and client-applied state in lockstep.
+      encounter: initEncounterEnvelope(state, movedPlayer.position),
     };
   }
   return {
@@ -269,6 +291,8 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
     phase: 'draw',
     challengeSubPhase: undefined,
     lastOutcome: undefined,
+    // #334: clear any stale envelope on a non-challenge arrival.
+    encounter: undefined,
   };
 }
 

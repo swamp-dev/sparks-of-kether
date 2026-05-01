@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { seededRng } from '@/engine/rng';
-import type { CheckOutcome, TurnPhase } from '@/engine/types';
+import {
+  EMPTY_PENDING_MODIFIERS,
+  type CheckOutcome,
+  type TurnPhase,
+} from '@/engine/types';
 import { turnReducer, type TurnSnapshot } from '../turn-machine';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
@@ -271,7 +275,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
       {
         players: [player],
         // First copy already staged.
-        pendingModifiers: { cardBurns: [7], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [7] },
       },
     );
     const result = turnReducer(
@@ -297,7 +301,7 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
       {},
       {
         players: [player],
-        pendingModifiers: { cardBurns: [7], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [7] },
       },
     );
     const result = turnReducer(
@@ -351,9 +355,8 @@ describe('turnReducer — prep sub-phase: prep-add-modifier', () => {
         players: [player, ally],
         activePlayerId: 'p1',
         pendingModifiers: {
-          cardBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           sparkBurns: [{ sefirah: 'hod', sourcePlayerId: 'p2' }],
-          assistRequests: [],
         },
       },
     );
@@ -429,7 +432,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
       {},
       {
         players: [player],
-        pendingModifiers: { cardBurns: [3, 7, 7], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [3, 7, 7] },
       },
     );
     const result = turnReducer(
@@ -452,7 +455,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
       {},
       {
         players: [player],
-        pendingModifiers: { cardBurns: [3], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [3] },
       },
     );
     const result = turnReducer(
@@ -475,8 +478,7 @@ describe('turnReducer — prep sub-phase: prep-remove-modifier', () => {
       {
         players: [player],
         pendingModifiers: {
-          cardBurns: [],
-          sparkBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           assistRequests: ['p2', 'p3'],
         },
       },
@@ -605,9 +607,8 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
       {
         players: [player],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [7],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -652,8 +653,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
         players: [player, ally],
         activePlayerId: 'p1',
         pendingModifiers: {
-          cardBurns: [],
-          sparkBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           assistRequests: ['p2'],
         },
       },
@@ -718,8 +718,7 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
         players: [player, ally],
         activePlayerId: 'p1',
         pendingModifiers: {
-          cardBurns: [],
-          sparkBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           // Staged assist that would normally contribute 14/2 = 7;
           // the override should make this irrelevant.
           assistRequests: ['p2'],
@@ -937,9 +936,8 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
         players: [player],
         discardPile: [99],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3, 7],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -987,9 +985,8 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
         players: [player],
         discardPile: [],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3, 7],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -1039,9 +1036,8 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
         phase: 'challenge',
         challengeSubPhase: 'prep',
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3, 7],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     };
@@ -1127,9 +1123,8 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
       {
         players: [player],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3, 7, 11],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -1163,11 +1158,10 @@ describe('turnReducer — prep-confirm: burn consumption (#281)', () => {
       {
         players: [player],
         pendingModifiers: {
-          cardBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           sparkBurns: [
             { sefirah: 'hod', sourcePlayerId: 'p1' },
           ],
-          assistRequests: [],
         },
       },
     );
@@ -1299,9 +1293,8 @@ describe('turnReducer — react sub-phase: react-retry', () => {
       {
         players: [player],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -1787,9 +1780,8 @@ describe('turnReducer — sub-phase teardown when phase leaves challenge', () =>
       {
         players: [player],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3, 7],
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -1822,6 +1814,10 @@ describe('turnReducer — sub-phase teardown when phase leaves challenge', () =>
       cardBurns: [],
       sparkBurns: [],
       assistRequests: [],
+      nameCards: [],
+      giftCards: [],
+      declareDesires: [],
+      dreamGuesses: [],
     });
   });
 });
@@ -1837,12 +1833,11 @@ describe('turnReducer — edge cases: prep-remove-modifier value-equality', () =
       {
         players: [player],
         pendingModifiers: {
-          cardBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           sparkBurns: [
             { sefirah: 'hod', sourcePlayerId: 'p2' },
             { sefirah: 'hod', sourcePlayerId: 'p3' },
           ],
-          assistRequests: [],
         },
       },
     );
@@ -1869,12 +1864,11 @@ describe('turnReducer — edge cases: prep-remove-modifier value-equality', () =
       {
         players: [player],
         pendingModifiers: {
-          cardBurns: [],
+          ...EMPTY_PENDING_MODIFIERS,
           sparkBurns: [
             { sefirah: 'hod', sourcePlayerId: 'p2' },
             { sefirah: 'netzach', sourcePlayerId: 'p2' },
           ],
-          assistRequests: [],
         },
       },
     );
@@ -1926,9 +1920,8 @@ describe('turnReducer — edge cases: react-retry preserves prep state on top of
       {
         players: [player],
         pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
           cardBurns: [3, 7], // player re-stacked both cards
-          sparkBurns: [],
-          assistRequests: [],
         },
       },
     );
@@ -2018,6 +2011,10 @@ describe('turnReducer — edge cases: full pass → accept-setback teardown is i
       cardBurns: [],
       sparkBurns: [],
       assistRequests: [],
+      nameCards: [],
+      giftCards: [],
+      declareDesires: [],
+      dreamGuesses: [],
     });
   });
 });
@@ -2117,5 +2114,721 @@ describe('turnReducer — edge cases: prep-confirm fail preserves pendingModifie
 
     // The stack grew — three burns now in play.
     expect(snap.state.pendingModifiers.cardBurns).toEqual([3, 7, 11]);
+  });
+});
+
+// #334 — `design/per-sefirah-mechanics.md` § 2.6 (b): the encounter
+// envelope is a per-encounter scratch space that surfaces on
+// `GameState.encounter` for the duration of a single challenge cycle.
+//
+// Lifecycle pinned by these tests:
+//   - Init: at `move` → `challenge` transition (entry to prep).
+//   - Mutate: on `react-retry`, `retryCount` increments; the dream
+//     pillar (Yesod) is re-seeded so a missed guess can't be reused.
+//   - Clear: when the encounter ends — pass at `prep-confirm` or
+//     `accept-setback`. Both move phase out of `'challenge'` (or, in
+//     the pass case, mark the encounter complete) and the envelope
+//     is gone from the next snapshot.
+//
+// Surface only — no specific Sefirah mechanic logic. The envelope
+// fields exist so downstream per-Sefirah tickets (Hod Word-Match,
+// Yesod Dream-Peek, etc.) can consume them; this ticket pins SHAPE.
+describe('turnReducer — encounter envelope lifecycle (#334)', () => {
+  it('initializes encounter envelope on move → challenge with sefirah, seed, retryCount: 0', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
+    const state = makeState({}, { players: [player] });
+    const before: TurnSnapshot = { state: { ...state, phase: 'move' } };
+    const result = turnReducer(before, { kind: 'move', pathNumber: 32 }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.encounter).toBeDefined();
+    const env = result.value.next.state.encounter;
+    if (!env) return;
+    // Envelope sefirah matches arrival.
+    expect(env.sefirah).toBe('yesod');
+    // Seed is a finite, deterministic integer (specific value is an
+    // implementation detail of the hash; only the shape matters here).
+    expect(typeof env.seed).toBe('number');
+    expect(Number.isFinite(env.seed)).toBe(true);
+    expect(Number.isInteger(env.seed)).toBe(true);
+    // Retry counter starts at 0 (per ticket; design doc has it as
+    // optional Yesod-only — we make it required-zero for uniformity
+    // so any future consumer can read it without a ?? 0 dance).
+    expect(env.retryCount).toBe(0);
+  });
+
+  it('does not set encounter when move lands on already-cleared Sefirah', () => {
+    // Already-cleared arrival skips the challenge phase, so no
+    // encounter is initialized.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21],
+      clearedSefirot: new Set(['yesod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.encounter).toBeUndefined();
+  });
+
+  it('seed is deterministic for the same input state', () => {
+    // Replay-determinism (per § 3.6 Yesod): same game history hashes
+    // to the same envelope seed.
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
+    const state = makeState({}, { players: [player] });
+    const before: TurnSnapshot = { state: { ...state, phase: 'move' } };
+    const r1 = turnReducer(before, { kind: 'move', pathNumber: 32 }, RNG);
+    const r2 = turnReducer(before, { kind: 'move', pathNumber: 32 }, RNG);
+    expect(r1.ok && r2.ok).toBe(true);
+    if (!r1.ok || !r2.ok) return;
+    expect(r1.value.next.state.encounter?.seed).toBe(
+      r2.value.next.state.encounter?.seed,
+    );
+  });
+
+  it('seed varies when any of the digest inputs change', () => {
+    // The deterministic-seed test above pins the "same in → same out"
+    // half of the contract. This pins the other half: a refactor that
+    // dropped a digest field (e.g. stopped folding `illumination` into
+    // the hash) would still pass the deterministic test but silently
+    // collapse the input space. Pinning "different inputs → different
+    // seeds" across a few representative field changes catches that.
+    const move = (s: ReturnType<typeof makeState>) => {
+      const r = turnReducer(
+        { state: { ...s, phase: 'move' } },
+        { kind: 'move', pathNumber: 32 },
+        RNG,
+      );
+      if (!r.ok) throw new Error('move failed in fixture');
+      return r.value.next.state.encounter?.seed;
+    };
+
+    const baseSeed = move(
+      makeState(
+        {},
+        {
+          players: [makePlayer({ id: 'p1', position: 'malkuth', hand: [21] })],
+          illumination: 0,
+          separation: 0,
+        },
+      ),
+    );
+
+    // (a) Different player roster size.
+    const seedRoster = move(
+      makeState(
+        {},
+        {
+          players: [
+            makePlayer({ id: 'p1', position: 'malkuth', hand: [21] }),
+            makePlayer({ id: 'p2', position: 'malkuth' }),
+          ],
+          illumination: 0,
+          separation: 0,
+        },
+      ),
+    );
+    expect(seedRoster).not.toBe(baseSeed);
+
+    // (b) Different illumination tally.
+    const seedIllum = move(
+      makeState(
+        {},
+        {
+          players: [makePlayer({ id: 'p1', position: 'malkuth', hand: [21] })],
+          illumination: 4,
+          separation: 0,
+        },
+      ),
+    );
+    expect(seedIllum).not.toBe(baseSeed);
+
+    // (c) Different separation tally.
+    const seedSep = move(
+      makeState(
+        {},
+        {
+          players: [makePlayer({ id: 'p1', position: 'malkuth', hand: [21] })],
+          illumination: 0,
+          separation: 3,
+        },
+      ),
+    );
+    expect(seedSep).not.toBe(baseSeed);
+  });
+
+  it('react-retry increments retryCount and preserves sefirah / seed', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [],
+      stats: {
+        unity: 1,
+        insight: 1,
+        understanding: 1,
+        lovingkindness: 1,
+        strength: 1,
+        harmony: 1,
+        passion: 1,
+        intellect: 1,
+        intuition: 1,
+        body: 1,
+      },
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        // Seed an envelope as if a prior `move` initialized it.
+        encounter: { sefirah: 'gevurah', seed: 12345, retryCount: 0 },
+      },
+    );
+    const failedOutcome: CheckOutcome = {
+      rolled: 1,
+      statContribution: 1,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 2,
+      effectiveDC: 18,
+      pass: false,
+    };
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: failedOutcome,
+        },
+      },
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const env = result.value.next.state.encounter;
+    expect(env).toBeDefined();
+    if (!env) return;
+    expect(env.sefirah).toBe('gevurah');
+    expect(env.seed).toBe(12345); // Seed is stable across retries.
+    expect(env.retryCount).toBe(1); // Incremented.
+  });
+
+  it('accept-setback clears the encounter envelope', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 9876, retryCount: 0 },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'accept-setback', sefirah: 'gevurah' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.encounter).toBeUndefined();
+  });
+
+  it('passing prep-confirm clears the encounter envelope', () => {
+    // On a successful resolution the encounter is "done" — the
+    // envelope falls away with the rest of the prep machinery so
+    // a stale envelope can't bleed into a later challenge.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [],
+      stats: {
+        unity: 10,
+        insight: 10,
+        understanding: 10,
+        lovingkindness: 10,
+        strength: 12,
+        harmony: 10,
+        passion: 10,
+        intellect: 10,
+        intuition: 10,
+        body: 10,
+      },
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 555, retryCount: 0 },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        outcome: {
+          rolled: 18,
+          statContribution: 12,
+          modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+          total: 30,
+          effectiveDC: 15,
+          pass: true,
+        },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Phase stays in 'challenge' / 'react' on pass (an external
+    // transition advances to 'draw'); the envelope clears NOW because
+    // the encounter has resolved successfully.
+    expect(result.value.next.state.encounter).toBeUndefined();
+  });
+
+  it('failing prep-confirm preserves the encounter envelope (retry will increment it)', () => {
+    // Symmetry with `pendingModifiers`: on a failed roll the prep
+    // machinery (including the envelope) survives so a `react-retry`
+    // can mutate it (retryCount++ etc.) without re-init.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [],
+      stats: {
+        unity: 1,
+        insight: 1,
+        understanding: 1,
+        lovingkindness: 1,
+        strength: 1,
+        harmony: 1,
+        passion: 1,
+        intellect: 1,
+        intuition: 1,
+        body: 1,
+      },
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 4242, retryCount: 0 },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-confirm',
+        sefirah: 'gevurah',
+        outcome: {
+          rolled: 1,
+          statContribution: 1,
+          modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+          total: 2,
+          effectiveDC: 18,
+          pass: false,
+        },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const env = result.value.next.state.encounter;
+    expect(env).toBeDefined();
+    if (!env) return;
+    expect(env.sefirah).toBe('gevurah');
+    expect(env.seed).toBe(4242);
+    expect(env.retryCount).toBe(0); // Not incremented yet — react-retry does that.
+  });
+});
+
+// #334 — `design/per-sefirah-mechanics.md` § 2.7: four new PrepModifier
+// variants. Surface only — the actual mechanic logic (Hod scoring,
+// Chesed gift transfer, Netzach desire stat-bonus, Yesod dream
+// comparison) ships as separate downstream tickets that consume this
+// surface. Tests pin shape:
+//   - add: stages the modifier on `pendingModifiers`.
+//   - remove: un-stages by equality fields per § 2.7 table.
+//   - confirm: clears the staged modifier from `pendingModifiers`
+//     (consumed regardless of pass/fail per § 2.7 "Consumption note").
+describe('turnReducer — new PrepModifier variants (#334)', () => {
+  describe('name-card (Hod)', () => {
+    it('add: stages a name-card modifier with the named arcanum', () => {
+      const player = makePlayer({ id: 'p1', position: 'hod', hand: [4] });
+      const state = makeState({}, { players: [player] });
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-add-modifier', modifier: { kind: 'name-card', arcanum: 4 } },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.nameCards).toEqual([4]);
+    });
+
+    it('remove: un-stages by arcanum equality', () => {
+      const player = makePlayer({ id: 'p1', position: 'hod' });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            nameCards: [4],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-remove-modifier', modifier: { kind: 'name-card', arcanum: 4 } },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.nameCards).toEqual([]);
+    });
+
+    it('confirm: clears the staged name-card from pendingModifiers regardless of pass/fail', () => {
+      // Per § 2.7 "Consumption note": name-card is consumed at
+      // prep-confirm whether or not the roll matched.
+      const player = makePlayer({
+        id: 'p1',
+        position: 'hod',
+        stats: {
+          unity: 10,
+          insight: 10,
+          understanding: 10,
+          lovingkindness: 10,
+          strength: 10,
+          harmony: 10,
+          passion: 10,
+          intellect: 12,
+          intuition: 10,
+          body: 10,
+        },
+      });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            nameCards: [4],
+          },
+        },
+      );
+      const failOutcome: CheckOutcome = {
+        rolled: 1,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 13,
+        effectiveDC: 18,
+        pass: false,
+      };
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-confirm', sefirah: 'hod', outcome: failOutcome },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // Even on fail, the staged name-card is gone (§ 2.7 — retry
+      // requires a fresh re-stage). Note this differs from card-burn
+      // which is cumulative on retry.
+      expect(result.value.next.state.pendingModifiers.nameCards).toEqual([]);
+    });
+  });
+
+  describe('gift-card (Chesed)', () => {
+    it('add: stages a gift-card modifier with arcanum + recipientId', () => {
+      const ally = makePlayer({ id: 'p2', position: 'chesed' });
+      const player = makePlayer({ id: 'p1', position: 'chesed', hand: [4] });
+      const state = makeState({}, { players: [player, ally] });
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'gift-card', arcanum: 4, recipientId: 'p2' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.giftCards).toEqual([
+        { arcanum: 4, recipientId: 'p2' },
+      ]);
+    });
+
+    it('remove: un-stages by arcanum AND recipientId equality', () => {
+      // Two staged gifts of the same arcanum to different recipients
+      // remove independently — equality is the (arcanum, recipientId)
+      // pair per § 2.7.
+      const player = makePlayer({ id: 'p1', position: 'chesed' });
+      const state = makeState(
+        {},
+        {
+          players: [player, makePlayer({ id: 'p2' }), makePlayer({ id: 'p3' })],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            giftCards: [
+              { arcanum: 4, recipientId: 'p2' },
+              { arcanum: 4, recipientId: 'p3' },
+            ],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-remove-modifier',
+          modifier: { kind: 'gift-card', arcanum: 4, recipientId: 'p2' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // Only the (4, p2) entry removed; (4, p3) survives.
+      expect(result.value.next.state.pendingModifiers.giftCards).toEqual([
+        { arcanum: 4, recipientId: 'p3' },
+      ]);
+    });
+
+    it('confirm: clears all staged gift-cards from pendingModifiers', () => {
+      const player = makePlayer({
+        id: 'p1',
+        position: 'chesed',
+        stats: {
+          unity: 10,
+          insight: 10,
+          understanding: 10,
+          lovingkindness: 12,
+          strength: 10,
+          harmony: 10,
+          passion: 10,
+          intellect: 10,
+          intuition: 10,
+          body: 10,
+        },
+      });
+      const state = makeState(
+        {},
+        {
+          players: [player, makePlayer({ id: 'p2' })],
+          encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            giftCards: [{ arcanum: 4, recipientId: 'p2' }],
+          },
+        },
+      );
+      const passOutcome: CheckOutcome = {
+        rolled: 18,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 30,
+        effectiveDC: 15,
+        pass: true,
+      };
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-confirm', sefirah: 'chesed', outcome: passOutcome },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.giftCards).toEqual([]);
+    });
+  });
+
+  describe('declare-desire (Netzach)', () => {
+    it('add: stages a declare-desire modifier with the named sefirah', () => {
+      const player = makePlayer({ id: 'p1', position: 'netzach' });
+      const state = makeState({}, { players: [player] });
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'declare-desire', sefirah: 'tiferet' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.declareDesires).toEqual([
+        'tiferet',
+      ]);
+    });
+
+    it('remove: un-stages by sefirah equality', () => {
+      const player = makePlayer({ id: 'p1', position: 'netzach' });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            declareDesires: ['tiferet'],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-remove-modifier',
+          modifier: { kind: 'declare-desire', sefirah: 'tiferet' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.declareDesires).toEqual([]);
+    });
+
+    it('confirm: clears the staged declare-desire from pendingModifiers', () => {
+      const player = makePlayer({
+        id: 'p1',
+        position: 'netzach',
+        stats: {
+          unity: 10,
+          insight: 10,
+          understanding: 10,
+          lovingkindness: 10,
+          strength: 10,
+          harmony: 10,
+          passion: 12,
+          intellect: 10,
+          intuition: 10,
+          body: 10,
+        },
+      });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          encounter: { sefirah: 'netzach', seed: 1, retryCount: 0 },
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            declareDesires: ['tiferet'],
+          },
+        },
+      );
+      const passOutcome: CheckOutcome = {
+        rolled: 18,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 30,
+        effectiveDC: 15,
+        pass: true,
+      };
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-confirm', sefirah: 'netzach', outcome: passOutcome },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.declareDesires).toEqual([]);
+    });
+  });
+
+  describe('dream-guess (Yesod)', () => {
+    it('add: stages a dream-guess modifier with the named pillar', () => {
+      const player = makePlayer({ id: 'p1', position: 'yesod' });
+      const state = makeState({}, { players: [player] });
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'dream-guess', pillar: 'mercy' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.dreamGuesses).toEqual([
+        'mercy',
+      ]);
+    });
+
+    it('remove: un-stages by pillar equality', () => {
+      const player = makePlayer({ id: 'p1', position: 'yesod' });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            dreamGuesses: ['mercy'],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-remove-modifier',
+          modifier: { kind: 'dream-guess', pillar: 'mercy' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.next.state.pendingModifiers.dreamGuesses).toEqual([]);
+    });
+
+    it('confirm: clears the staged dream-guess from pendingModifiers regardless of pass/fail', () => {
+      // Per § 2.7 "Consumption note": dream-guess is consumed at
+      // prep-confirm whether or not the guess matched.
+      const player = makePlayer({
+        id: 'p1',
+        position: 'yesod',
+        stats: {
+          unity: 10,
+          insight: 10,
+          understanding: 10,
+          lovingkindness: 10,
+          strength: 10,
+          harmony: 10,
+          passion: 10,
+          intellect: 10,
+          intuition: 12,
+          body: 10,
+        },
+      });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          encounter: { sefirah: 'yesod', seed: 1, retryCount: 0 },
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            dreamGuesses: ['mercy'],
+          },
+        },
+      );
+      const failOutcome: CheckOutcome = {
+        rolled: 1,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 13,
+        effectiveDC: 18,
+        pass: false,
+      };
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-confirm', sefirah: 'yesod', outcome: failOutcome },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // Consumed even on fail — § 2.7 differs from card-burn here.
+      expect(result.value.next.state.pendingModifiers.dreamGuesses).toEqual([]);
+    });
   });
 });

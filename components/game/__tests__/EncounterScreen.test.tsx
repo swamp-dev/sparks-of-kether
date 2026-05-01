@@ -7,7 +7,7 @@ import type { ChallengeContext } from '@/lib/challenge-types';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
 import { makeFullGame, makePlayer } from '@/test/fixtures';
-import type { GameState } from '@/engine/types';
+import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
 
 /**
  * Tests for EncounterScreen (#228). The component renders three
@@ -62,7 +62,7 @@ function makeChallengeState(): GameState {
     players,
     phase: 'challenge',
     challengeSubPhase: 'prep',
-    pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+    pendingModifiers: EMPTY_PENDING_MODIFIERS,
     lastOutcome: undefined,
   };
 }
@@ -866,11 +866,7 @@ describe('EncounterScreen — cumulative card-burn display', () => {
       const base = makeChallengeState();
       const stateWithPending: GameState = {
         ...base,
-        pendingModifiers: {
-          cardBurns: [0, 1],
-          sparkBurns: [],
-          assistRequests: [],
-        },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [0, 1] },
       };
       const rng = seededRng(1);
       const { result } = renderHook(() =>
@@ -1109,7 +1105,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         players,
         phase: 'challenge',
         challengeSubPhase: 'prep',
-        pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
         lastOutcome: undefined,
       };
       const rng = makePinningRng(20);

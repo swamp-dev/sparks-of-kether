@@ -15,6 +15,7 @@ import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { Lobby } from '@/components/setup/Lobby';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
+import { EMPTY_PENDING_MODIFIERS } from '@/engine/types';
 
 // `next/navigation`'s `useRouter` is consumed by `HomeRoomForms`,
 // which lands inside the home-page tests below. Mock it at file
@@ -131,7 +132,7 @@ describe('a11y — major UI surfaces', () => {
       players,
       phase: 'challenge' as const,
       challengeSubPhase: 'prep' as const,
-      pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
       lastOutcome: undefined,
     };
     const rng = seededRng(1);
@@ -195,7 +196,7 @@ describe('a11y — major UI surfaces', () => {
         players,
         phase: 'challenge' as const,
         challengeSubPhase: 'prep' as const,
-        pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
         lastOutcome: undefined,
       };
     }

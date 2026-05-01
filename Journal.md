@@ -4367,3 +4367,38 @@ New components: `components/home/PrimaryCTA.tsx`, `PitchColumns.tsx`, `Filmstrip
 - **Hosted CI:** still billing-blocked per project memory.
 
 **Commit(s):** `f2dce38` (failing tests), `b9cdd84` (script implementation), `7c130dc` (round-trip bug fix + new test), `af87257` (pnpm script + dir + CLAUDE.md note), `3509f74` (.d.mts declarations), `852bf3f` (self-review tidy).
+
+## 2026-04-30T20:41:33-04:00 — #334: per-Sefirah encounter surface — flatBonus + envelope + 4 PrepModifier variants
+
+**Pushed:** Engine surface extensions for the per-Sefirah encounter mechanics (K1 of #284). Three things land, all surface-only — no specific Sefirah mechanic logic.
+
+  - **`CheckModifiers.flatBonus?: number`** (default 0). Single roll-side bonus through which the eight per-Sefirah twists land their match / sign-aware bumps (Hod / Yesod match → +5, Gevurah dearest stack / Netzach declared-desire / Chokmah fire-sign flash → +2). `rollCheck` folds it into `total` alongside assist / cardBurn / sparkBurn; default 0 keeps every legacy call site producing identical totals.
+
+  - **`GameState.encounter?: EncounterEnvelope`**. New top-level scratch space for per-encounter state. Lifecycle: init at `move` → `challenge` entry (sefirah from arrival, deterministic djb2 seed from public GameState fields, `retryCount: 0`); `retryCount` increments at `react-retry`; cleared at `accept-setback` AND at passing `prep-confirm`. Yesod `dreamPillar`, Chokmah `chokmahPriorAttempts`, Netzach `netzachPriorFails`, Hod `deceptionMisreport` declared as optional fields on the envelope; downstream per-Sefirah tickets fill them in.
+
+  - **Four new `PrepModifier` variants** — `name-card` (Hod), `gift-card` (Chesed), `declare-desire` (Netzach), `dream-guess` (Yesod). Each round-trips through `prep-add-modifier` / `prep-remove-modifier` / `prep-confirm` with the equality semantics in `design/per-sefirah-mechanics.md` § 2.7 (arcanum / arcanum+recipientId / sefirah / pillar). Per § 2.7 "Consumption note" all four are cleared from `pendingModifiers` at `prep-confirm` regardless of pass/fail — distinct from card-burn which is cumulative on retry.
+
+**Why:** PR #323 (the `design/per-sefirah-mechanics.md` doc) named the engine surface extensions the eight per-Sefirah mechanics depend on but did not implement them. Before any per-Sefirah mechanic ticket can ship (Hod Word-Match, Yesod Dream-Peek, Gevurah Sacred Sacrifice, …) the engine has to expose the fields they will read / write. This ticket lands the keystone plumbing and nothing else — each Sefirah's mechanic becomes its own follow-up that consumes this surface.
+
+**Notes:**
+  - **TDD ordering held.** Failing tests landed first (commits `cd04735` for `flatBonus`; `109f30b` for envelope + 4 variants); implementation in `b307f8f` and `bf29931` made them green. The test-fixture touch-ups (every existing inline `PendingModifiers` literal got the four new empty arrays) ride on the implementation commit since they are mechanical follow-on, not new behaviour.
+  - **Hash function.** Per-encounter seed uses a tiny djb2 hash over a digest of stable GameState fields (`players.length`, player ids joined, `activePlayerId`, `illumination`, `separation`, `sefirah`). Not cryptographic — just deterministic and well-distributed. Replay-determinism holds because the same game history hashes to the same digest; the active player can't precompute downstream uses (Yesod dream pillar, Hod deception misreport) because the inputs aren't knowable at arbitrary distance from the encounter.
+  - **`retryCount` scope decision.** Design § 2.6 spec'd `retryCount?` (Yesod-only optional). I made it required-with-default-0 in the surface — strict superset, simpler for any future consumer, and the field already wants to be canonical for the (eventually) Chokmah `chokmahPriorAttempts` / Netzach `netzachPriorFails` re-derivations that the design pins to `react-retry`. The optional Yesod-specific `dreamPillar` is what ships off the back of `retryCount`'s value.
+  - **`initEncounterEnvelope` is exported.** `lib/room-actions.ts` (the multiplayer wire-format dispatcher) mirrors the reducer's `move` arm and must produce the same envelope shape; sharing the helper keeps the two paths in lockstep. Without that the server-applied snapshot would diverge from the client-applied snapshot's `state.encounter.seed` and replay would break.
+  - **No specific Sefirah logic.** Hod Word-Match scoring, Chesed gift transfer, Netzach desire stat-bonus, Yesod dream comparison are all out of scope. The reducer accepts each new variant by shape only and clears it at confirm; the consumers ship downstream. Stage-time validation is permissive on purpose — the per-Sefirah tickets layer their own guards (e.g. "max one declare-desire per run", "gift recipient must be different player at Chesed").
+  - **`modifierBreakdown` not extended.** `flatBonus` is folded into `total` but the existing `{ assist, cardBurn, sparkBurn }` breakdown is left alone. A future per-Sefirah ticket may want to display "+5 (dream match)" alongside the existing ledger — the breakdown extension is deferred to that consumer.
+  - **Local CI: GREEN end-to-end.** `pnpm ci:local` clean across all four jobs — verify (typecheck + lint + test:coverage 1287 passed / 1 todo across 75 files), build, e2e (59 passed / 51 skipped, 1.9 min), real-Supabase integration (9 passed across 3 files).
+
+**Commit(s):** `cd04735..bf29931` (4 commits — TDD test/feat alternation for both flatBonus and the envelope/variants).
+
+**Addendum 2026-04-30T21:23:** Retro `code-reviewer` pass on PR #339 returned **LANDED WITH MINOR ISSUES (defer or fold-in)**. Five findings addressed in-branch as fold-in fixes (no scope drift; all touch only files already in the PR's footprint):
+
+  - **SIGNIFICANT 1** — `flatBonus` was folded into `total` but absent from `modifierBreakdown`; downstream renderers couldn't surface "+5 (dream match)" without re-deriving. Extended the breakdown to expose `flatBonus` alongside `{ assist, cardBurn, sparkBurn }`. Commit `4343a5e`.
+  - **SIGNIFICANT 2** — Component test fixtures still used inline `PendingModifiers` object literals; future variant additions would silently break every fixture. Swept the four affected component test files (a11y, EncounterScreen, PlayScreen.mode, PlayScreen.shortcut) plus the residual turn-machine fixtures onto the `EMPTY_PENDING_MODIFIERS` constant. Commit `5fd9a1d`.
+  - **MINOR 1** — `end-turn` reducer arm did not defensively clear `state.encounter`; only `accept-setback` and passing `prep-confirm` did. Added belt-and-braces clear at `end-turn` (reducer + room-actions wire-format dispatcher both updated to keep client/server in lockstep). Commit `33e391f`.
+  - **MINOR 2** — No test pinned the property "different inputs → different seeds" for `initEncounterEnvelope`; only "same inputs → same seed" was covered. Added a seed-varies test. Commit `3864356`.
+  - **MINOR 3** — `design/per-sefirah-mechanics.md` § 2.6 still typed `retryCount` as optional (`retryCount?`) even though the implementation made it required-with-default-0. Aligned the doc to the shipped surface. Commit `c9a0e99`.
+
+Local CI green again on the cumulative diff (verify + build + e2e + integration). No behaviour change to the four shipped variants or the envelope lifecycle; all five fixes are additive or doc-only.
+
+**Commit(s):** `4343a5e`, `5fd9a1d`, `33e391f`, `3864356`, `c9a0e99`.

@@ -186,10 +186,13 @@ export interface EncounterEnvelope {
   /** Yesod only: the dream pillar derived from `seed` plus the
    *  per-retry counter at envelope init / retry. */
   readonly dreamPillar?: Pillar;
-  /** Yesod only: counts react-retry cycles inside this Yesod
-   *  encounter. Used to re-seed `dreamPillar` on each retry so a
-   *  miss-then-retry can't recover the leaked answer. */
-  readonly retryCount?: number;
+  /** Counts react-retry cycles inside this encounter. Yesod uses it
+   *  to re-seed `dreamPillar` on each retry so a miss-then-retry
+   *  can't recover the leaked answer; Chokmah / Netzach also derive
+   *  their per-retry tilts from it. Required-zero (#334) so consumers
+   *  can read the field without a `?? 0` defaulting dance — the
+   *  optional `?` was removed when the engine surface landed. */
+  readonly retryCount: number;
   /** Chokmah only: prior modifier-count carryover for the count tilt.
    *  Increments on react-retry per § 3.8. */
   readonly chokmahPriorAttempts?: number;

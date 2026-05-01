@@ -1,5 +1,5 @@
 import { isPathShortcut, sefirahByKey } from '@/data';
-import type { SefirahKey } from '@/data';
+import type { Pillar, SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
 import {
   acceptSetback,
@@ -105,6 +105,18 @@ export interface TurnSnapshot {
  * entry in the relevant `PendingModifiers` array where every field
  * matches by value (`===` on each primitive). Removed silently if
  * the modifier isn't present.
+ *
+ * #334 (`design/per-sefirah-mechanics.md` § 2.7) extended this union
+ * with four per-Sefirah variants — `name-card` (Hod), `gift-card`
+ * (Chesed), `declare-desire` (Netzach), `dream-guess` (Yesod). The
+ * reducer accepts and removes them via the same shape; the actual
+ * mechanic logic (Word-Match scoring, gift transfer, desire
+ * stat-bonus, dream comparison) is downstream surface that ships in
+ * separate per-Sefirah tickets. Per § 2.7 "Consumption note", the
+ * `name-card` and `dream-guess` variants are consumed at
+ * `prep-confirm` regardless of pass/fail — distinct from card-burn
+ * which is cumulative on retry; this ticket lands the clear-on-
+ * confirm semantic for all four new variants.
  */
 export type PrepModifier =
   | { readonly kind: 'card-burn'; readonly arcanum: number }
@@ -113,7 +125,40 @@ export type PrepModifier =
       readonly sefirah: SefirahKey;
       readonly sourcePlayerId: string;
     }
-  | { readonly kind: 'assist-request'; readonly allyId: string };
+  | { readonly kind: 'assist-request'; readonly allyId: string }
+  | {
+      /** Hod Word-Match (§ 3.1). Equality field for remove: `arcanum`. */
+      readonly kind: 'name-card';
+      readonly arcanum: number;
+    }
+  | {
+      /**
+       * Chesed Overflow (§ 3.3). Equality fields for remove:
+       * `arcanum` AND `recipientId` (a player can stage two gifts of
+       * the same arcanum to different recipients).
+       */
+      readonly kind: 'gift-card';
+      readonly arcanum: number;
+      readonly recipientId: string;
+    }
+  | {
+      /**
+       * Netzach Declared Desire (§ 3.5). Equality field for remove:
+       * `sefirah`. Permanent run-wide vow (one per run); the
+       * downstream Netzach ticket writes it to `PlayerState`.
+       */
+      readonly kind: 'declare-desire';
+      readonly sefirah: SefirahKey;
+    }
+  | {
+      /**
+       * Yesod Dream-Peek (§ 3.6). Equality field for remove: `pillar`.
+       * Compared against `state.encounter.dreamPillar` at confirm time
+       * by the downstream Yesod ticket.
+       */
+      readonly kind: 'dream-guess';
+      readonly pillar: Pillar;
+    };
 
 export type TurnEvent =
   | { readonly kind: 'move'; readonly pathNumber: number }
@@ -220,6 +265,67 @@ export type TurnReducerResult = Result<TurnReducerSuccess, TurnReducerError>;
 
 function activePlayer(state: GameState) {
   return state.players.find((p) => p.id === state.activePlayerId);
+}
+
+/**
+ * Deterministic 32-bit hash of a string — DJB2 variant, the same
+ * "easy and good enough" hash used in countless game-state fingerprint
+ * routines. Used by `initEncounterEnvelope` (#334;
+ * `design/per-sefirah-mechanics.md` § 2.6 (b)) to derive a stable
+ * per-encounter seed from a digest of public GameState fields.
+ *
+ * Not cryptographic — we only need it to be deterministic and well-
+ * distributed. The active player can't precompute downstream uses
+ * (Yesod dream pillar, Hod deception misreport) because the inputs
+ * (illumination / separation tally at arrival, player roster) aren't
+ * known at arbitrary distance from the encounter; replay-determinism
+ * holds because the same game history hashes to the same digest.
+ */
+function djb2Hash(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(h, 33) + s.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
+}
+
+/**
+ * Build the per-encounter envelope at `move` → `challenge` entry
+ * (#334; `design/per-sefirah-mechanics.md` § 2.6 (b)). Inputs are
+ * stable GameState fields available at arrival — player roster,
+ * active-player id, the arrival Sefirah, and the team Illumination /
+ * Separation tally — so replay reproduces the seed and the active
+ * player can't precompute it from distance.
+ *
+ * Exported because `lib/room-actions.ts` mirrors the reducer's `move`
+ * arm for multiplayer state-sync and must produce the same envelope
+ * shape — sharing the helper keeps the two paths in lockstep.
+ *
+ * Surface only (#334). Per-mechanic fields (`dreamPillar`,
+ * `chokmahPriorAttempts`, `netzachPriorFails`, `deceptionMisreport`)
+ * are filled in by their respective downstream per-Sefirah tickets;
+ * this initializer leaves them undefined.
+ */
+export function initEncounterEnvelope(
+  state: GameState,
+  sefirah: SefirahKey,
+): NonNullable<GameState['encounter']> {
+  // Public, stable inputs only. Don't include rng-derived or
+  // per-player-private state — those would either break replay
+  // determinism or leak hidden information.
+  const digest = [
+    state.players.length,
+    state.players.map((p) => p.id).join('|'),
+    state.activePlayerId,
+    state.illumination,
+    state.separation,
+    sefirah,
+  ].join(':');
+  return {
+    sefirah,
+    seed: djb2Hash(digest),
+    retryCount: 0,
+  };
 }
 
 /**
@@ -462,23 +568,34 @@ export function turnReducer(
           nextPhase = 'challenge';
         }
       }
-      if (nextPhase === 'challenge') {
+      if (nextPhase === 'challenge' && movedPlayer) {
         // Entering challenge: clear any stale prep state from a
-        // prior encounter and seed the prep sub-phase.
+        // prior encounter and seed the prep sub-phase. #334
+        // (`design/per-sefirah-mechanics.md` § 2.6 (b)): also
+        // initialize the per-encounter envelope on `state.encounter`
+        // — sefirah from arrival, deterministic seed from public
+        // GameState fields, retryCount = 0. Surface only; the per-
+        // mechanic fields (dreamPillar, chokmahPriorAttempts, etc.)
+        // are filled in by downstream per-Sefirah tickets.
         const cleanState: GameState = {
           ...newState,
           pendingModifiers: EMPTY_PENDING_MODIFIERS,
           phase: 'challenge',
           challengeSubPhase: 'prep',
           lastOutcome: undefined,
+          encounter: initEncounterEnvelope(newState, movedPlayer.position),
         };
         return { ok: true, value: { next: { state: cleanState } } };
       }
+      // Non-challenge arrival (already-cleared / no-check): the
+      // encounter envelope must be cleared — a stale envelope from
+      // a prior turn cannot leak into the next move's draw phase.
       const nextState: GameState = {
         ...newState,
         phase: nextPhase,
         challengeSubPhase: undefined,
         lastOutcome: undefined,
+        encounter: undefined,
       };
       return { ok: true, value: { next: { state: nextState } } };
     }
@@ -602,6 +719,44 @@ export function turnReducer(
             assistRequests: [...pending.assistRequests, event.modifier.allyId],
           };
           break;
+        // #334 — `design/per-sefirah-mechanics.md` § 2.7 surface.
+        // Stage-time validation here is deliberately permissive: the
+        // surface accepts these variants by shape only, and the per-
+        // Sefirah downstream tickets (Hod / Chesed / Netzach / Yesod)
+        // layer their own staging guards (e.g. "name-card requires
+        // active player on Hod", "gift-card recipient must be a
+        // different player at Chesed", "max one declare-desire per
+        // run"). Multi-staging constraints are owned by the consumer.
+        case 'name-card':
+          nextPending = {
+            ...pending,
+            nameCards: [...pending.nameCards, event.modifier.arcanum],
+          };
+          break;
+        case 'gift-card':
+          nextPending = {
+            ...pending,
+            giftCards: [
+              ...pending.giftCards,
+              {
+                arcanum: event.modifier.arcanum,
+                recipientId: event.modifier.recipientId,
+              },
+            ],
+          };
+          break;
+        case 'declare-desire':
+          nextPending = {
+            ...pending,
+            declareDesires: [...pending.declareDesires, event.modifier.sefirah],
+          };
+          break;
+        case 'dream-guess':
+          nextPending = {
+            ...pending,
+            dreamGuesses: [...pending.dreamGuesses, event.modifier.pillar],
+          };
+          break;
       }
       return {
         ok: true,
@@ -667,6 +822,73 @@ export function turnReducer(
               assistRequests: [
                 ...pending.assistRequests.slice(0, idx),
                 ...pending.assistRequests.slice(idx + 1),
+              ],
+            };
+          }
+          break;
+        }
+        // #334: equality semantics per `design/per-sefirah-mechanics.md`
+        // § 2.7 table. First-match removal mirrors the existing card-
+        // burn / spark-burn / assist-request arms — silent no-op when
+        // the modifier isn't staged.
+        case 'name-card': {
+          const idx = pending.nameCards.findIndex((a) => a === target.arcanum);
+          if (idx >= 0) {
+            nextPending = {
+              ...pending,
+              nameCards: [
+                ...pending.nameCards.slice(0, idx),
+                ...pending.nameCards.slice(idx + 1),
+              ],
+            };
+          }
+          break;
+        }
+        case 'gift-card': {
+          // Equality: `arcanum` AND `recipientId` (per § 2.7 — same
+          // arcanum can be staged to two different recipients, each
+          // removable independently).
+          const idx = pending.giftCards.findIndex(
+            (g) =>
+              g.arcanum === target.arcanum &&
+              g.recipientId === target.recipientId,
+          );
+          if (idx >= 0) {
+            nextPending = {
+              ...pending,
+              giftCards: [
+                ...pending.giftCards.slice(0, idx),
+                ...pending.giftCards.slice(idx + 1),
+              ],
+            };
+          }
+          break;
+        }
+        case 'declare-desire': {
+          const idx = pending.declareDesires.findIndex(
+            (s) => s === target.sefirah,
+          );
+          if (idx >= 0) {
+            nextPending = {
+              ...pending,
+              declareDesires: [
+                ...pending.declareDesires.slice(0, idx),
+                ...pending.declareDesires.slice(idx + 1),
+              ],
+            };
+          }
+          break;
+        }
+        case 'dream-guess': {
+          const idx = pending.dreamGuesses.findIndex(
+            (p) => p === target.pillar,
+          );
+          if (idx >= 0) {
+            nextPending = {
+              ...pending,
+              dreamGuesses: [
+                ...pending.dreamGuesses.slice(0, idx),
+                ...pending.dreamGuesses.slice(idx + 1),
               ],
             };
           }
@@ -766,9 +988,41 @@ export function turnReducer(
         cardsToConsume,
         sparksToConsume,
       );
-      const baseState = passed
-        ? { ...consumed, pendingModifiers: EMPTY_PENDING_MODIFIERS }
-        : consumed;
+      // #334 — `design/per-sefirah-mechanics.md` § 2.7 "Consumption
+      // note": the four new per-Sefirah variants (`name-card`,
+      // `gift-card`, `declare-desire`, `dream-guess`) are consumed at
+      // `prep-confirm` regardless of pass/fail. This differs from
+      // `cardBurns` / `sparkBurns` / `assistRequests` which persist on
+      // failure for the cumulative-on-retry semantic (chassis § 6).
+      // Clear the new four here so a subsequent `react-retry` lands
+      // in prep with them empty; the player must re-stage any
+      // name/gift/declare/dream entries fresh. The cumulative-on-
+      // retry stacks are left alone on the fail branch, mirroring the
+      // pre-#334 semantic.
+      const consumedClearedNew: GameState = {
+        ...consumed,
+        pendingModifiers: {
+          ...consumed.pendingModifiers,
+          nameCards: [],
+          giftCards: [],
+          declareDesires: [],
+          dreamGuesses: [],
+        },
+      };
+      // On pass: clear ALL pendingModifiers (the encounter resolved
+      // successfully — nothing to retry — so the cumulative card /
+      // spark / assist stacks fall away too) and clear the encounter
+      // envelope (§ 2.6 (b) — the encounter has ended).
+      // On fail: preserve cumulative stacks AND the encounter envelope
+      // so a subsequent `react-retry` can mutate it (retryCount++,
+      // dream-pillar re-seed, etc.) without re-init.
+      const baseState: GameState = passed
+        ? {
+            ...consumedClearedNew,
+            pendingModifiers: EMPTY_PENDING_MODIFIERS,
+            encounter: undefined,
+          }
+        : consumedClearedNew;
       const stateAfter: GameState = {
         ...baseState,
         phase: 'challenge',
@@ -801,22 +1055,36 @@ export function turnReducer(
         return { ok: false, reason: { kind: 'react-retry-on-pass' } };
       }
       // Loop back to prep. `pendingModifiers` is preserved because
-      // the fail path of `prep-confirm` left them alone (the kernel
-      // returns input state unchanged on fail, and the reducer
-      // intentionally does NOT clear them — see the `prep-confirm`
-      // case above). The player stacks new burns on top of the
-      // cumulative count from the failed attempt (design § 6:
-      // "the failed-roll history visible so the player can stack
-      // additional burns on top"). `lastOutcome` is cleared so a
-      // second `react-retry` before a new resolve will be rejected
-      // by the sub-phase guard above (challengeSubPhase is now
-      // 'prep') AND, defensively, by the lastOutcome === undefined
-      // branch of the gate.
+      // the fail path of `prep-confirm` left the cumulative stacks
+      // (cardBurns / sparkBurns / assistRequests) alone — the kernel
+      // returns input state unchanged on fail and the reducer
+      // intentionally does NOT clear those. The player stacks new
+      // burns on top of the cumulative count from the failed attempt
+      // (design § 6: "the failed-roll history visible so the player
+      // can stack additional burns on top"). The four #334 variants
+      // (name/gift/declare/dream) were already cleared at the failed
+      // prep-confirm per § 2.7 "Consumption note" — those must be
+      // re-staged fresh.
+      //
+      // #334 (§ 2.6 (b)): mutate the encounter envelope —
+      // `retryCount` increments by 1 so any per-mechanic re-derivation
+      // (Yesod `dreamPillar` re-seed, Chokmah `chokmahPriorAttempts`,
+      // Netzach `netzachPriorFails`) the downstream tickets layer in
+      // can read the canonical retry count from a single field.
+      //
+      // `lastOutcome` is cleared so a second `react-retry` before a
+      // new resolve will be rejected by the sub-phase guard above
+      // (challengeSubPhase is now 'prep') AND, defensively, by the
+      // lastOutcome === undefined branch of the gate.
       const stateAfter: GameState = {
         ...state,
         phase: 'challenge',
         challengeSubPhase: 'prep',
         lastOutcome: undefined,
+        encounter:
+          state.encounter !== undefined
+            ? { ...state.encounter, retryCount: state.encounter.retryCount + 1 }
+            : undefined,
       };
       return { ok: true, value: { next: { state: stateAfter } } };
     }
@@ -831,13 +1099,17 @@ export function turnReducer(
         shortcut: event.shortcut ?? false,
       });
       // Phase leaves 'challenge' → clear prep machinery and the
-      // sub-phase / lastOutcome (now on GameState).
+      // sub-phase / lastOutcome (now on GameState). #334 (§ 2.6 (b)):
+      // also clear the encounter envelope — the encounter has ended
+      // (failure absorbed) so the next encounter must start with a
+      // fresh envelope.
       const cleared: GameState = {
         ...next,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
         phase: 'draw',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
+        encounter: undefined,
       };
       return { ok: true, value: { next: { state: cleared } } };
     }
@@ -886,7 +1158,13 @@ export function turnReducer(
       if (turned === state) {
         return { ok: true, value: { next: { state: turned } } };
       }
-      const stateAfter: GameState = { ...turned, phase: 'move' };
+      // Defensive: clear `encounter` when crossing the seat boundary.
+      // Today the only paths reaching `end` (`accept-setback`,
+      // pass-on-`prep-confirm`) already null the envelope, so this is
+      // an invariant guard rather than a bug fix — if a future code
+      // path reaches `end-turn` with a live encounter, leaking it to
+      // the next player's `move` is a state-machine violation.
+      const stateAfter: GameState = { ...turned, phase: 'move', encounter: undefined };
       return { ok: true, value: { next: { state: stateAfter } } };
     }
   }

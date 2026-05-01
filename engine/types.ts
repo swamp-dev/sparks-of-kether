@@ -1,4 +1,4 @@
-import type { SefirahKey, StatKey, ZodiacSignKey } from '@/data';
+import type { Pillar, SefirahKey, StatKey, ZodiacSignKey } from '@/data';
 
 /**
  * Result of a single d20 challenge resolution. Lives in `engine/types.ts`
@@ -14,6 +14,16 @@ export interface CheckOutcome {
     readonly assist: number;
     readonly cardBurn: number;
     readonly sparkBurn: number;
+    /**
+     * Per-Sefirah flat bonus contribution (#334). Optional so legacy
+     * callers — and any post-roll consumers that don't render this
+     * line — keep type-checking without changes. Populated by the
+     * resolver only when the input `flatBonus > 0`; downstream
+     * per-Sefirah tickets (Hod +5, Yesod +5, Gevurah / Netzach /
+     * Chokmah +2) read it to render the "+5 (dream match)" style
+     * roll-result explanation.
+     */
+    readonly flatBonus?: number;
   };
   readonly total: number;
   readonly effectiveDC: number;
@@ -312,6 +322,23 @@ export interface GameState {
    * uses to decide whether to render an animated "drew N cards" hint.
    */
   readonly lastAction?: 'move-draw' | 'meditate' | undefined;
+  /**
+   * Per-encounter scratch state for the per-Sefirah mechanic twists
+   * (#334; `design/per-sefirah-mechanics.md` § 2.6 (b)). Defined when
+   * (and only when) a challenge encounter is active — initialized at
+   * `move` → `challenge` entry, cleared at `accept-setback` /
+   * passing `prep-confirm`. See `EncounterEnvelope` for shape.
+   *
+   * Lives on `GameState` (not `TurnSnapshot`) for the same reason as
+   * `phase` and `lastOutcome`: the multiplayer wire-format dispatcher
+   * must read truth from the persisted snapshot, not synthesize.
+   *
+   * Surface only (#334). The eight per-Sefirah mechanic tickets that
+   * read / write the per-mechanic fields (Yesod `dreamPillar`, Chokmah
+   * `chokmahPriorAttempts`, etc.) ship downstream. The lifecycle
+   * (init / mutate / clear) is owned here.
+   */
+  readonly encounter?: EncounterEnvelope | undefined;
 }
 
 /**
@@ -327,7 +354,8 @@ export interface PendingDiscard {
 
 /**
  * Modifiers declared but not yet committed during a challenge's prep
- * sub-phase. See `design/encounter-prep-phase.md` § 4.
+ * sub-phase. See `design/encounter-prep-phase.md` § 4 and the
+ * per-Sefirah extensions in `design/per-sefirah-mechanics.md` § 2.7.
  */
 export interface PendingModifiers {
   /** Arcanum numbers staged for card-burn. */
@@ -344,6 +372,52 @@ export interface PendingModifiers {
   }[];
   /** Ally playerIds staged to assist. Capped at 2 per challenge. */
   readonly assistRequests: readonly string[];
+  /**
+   * Hod Word-Match (`design/per-sefirah-mechanics.md` § 3.1). Arcanum
+   * numbers staged via `name-card`. Consumed at `prep-confirm`
+   * regardless of match or miss (§ 2.7 "Consumption note") — distinct
+   * from card-burn which is cumulative on retry.
+   *
+   * #334 surface ticket: this list is staged and cleared at confirm.
+   * The match-vs-miss scoring (Hod Word-Match `flatBonus += 5`) ships
+   * as a separate downstream ticket that consumes this surface.
+   */
+  readonly nameCards: readonly number[];
+  /**
+   * Chesed Overflow (`design/per-sefirah-mechanics.md` § 3.3). Cards
+   * the active player has staged to gift to an ally. Multiple gifts
+   * per encounter are allowed (one per `gift-card` modifier). Consumed
+   * at `prep-confirm`.
+   *
+   * #334 surface ticket: list is staged and cleared at confirm. The
+   * gift-transfer side effect (move arcanum from active player's hand
+   * to recipient's hand) ships as a downstream ticket.
+   */
+  readonly giftCards: readonly {
+    readonly arcanum: number;
+    readonly recipientId: string;
+  }[];
+  /**
+   * Netzach Declared Desire (`design/per-sefirah-mechanics.md` § 3.5).
+   * Sefirah keys staged via `declare-desire`. The desire is declared
+   * at `prep-confirm` — this is a one-shot run-wide vow that the
+   * downstream ticket writes to a `PlayerState.declaredDesire` field.
+   *
+   * #334 surface ticket: list is staged and cleared at confirm. The
+   * permanence (write to `PlayerState`) ships as a downstream ticket.
+   */
+  readonly declareDesires: readonly SefirahKey[];
+  /**
+   * Yesod Dream-Peek (`design/per-sefirah-mechanics.md` § 3.6).
+   * Pillars staged via `dream-guess`. Consumed at `prep-confirm`
+   * regardless of match or miss (§ 2.7 "Consumption note") — distinct
+   * from card-burn which is cumulative on retry.
+   *
+   * #334 surface ticket: list is staged and cleared at confirm. The
+   * match-against-`encounter.dreamPillar` scoring (Yesod Dream-Peek
+   * `flatBonus += 5`) ships as a separate downstream ticket.
+   */
+  readonly dreamGuesses: readonly Pillar[];
 }
 
 /** Canonical empty `PendingModifiers` for new games / between challenges. */
@@ -351,7 +425,84 @@ export const EMPTY_PENDING_MODIFIERS: PendingModifiers = {
   cardBurns: [],
   sparkBurns: [],
   assistRequests: [],
+  nameCards: [],
+  giftCards: [],
+  declareDesires: [],
+  dreamGuesses: [],
 };
+
+/**
+ * Per-encounter scratch space surfaced on `GameState.encounter` for
+ * the duration of one challenge cycle (#334;
+ * `design/per-sefirah-mechanics.md` § 2.6 (b)).
+ *
+ * Lifecycle:
+ *   - **Init** at the entry to `phase: 'challenge'` (the start of prep
+ *     after `move` lands on an uncleared `'check'` Sefirah). `sefirah`
+ *     comes from the active player's arrival; `seed` is hashed from
+ *     stable game-state fields so replay reproduces the encounter;
+ *     `retryCount` starts at 0.
+ *   - **Mutate** at `react-retry`: `retryCount` increments by 1. Per-
+ *     mechanic re-derivation (Yesod's `dreamPillar` re-roll, Chokmah's
+ *     `chokmahPriorAttempts++`) is layered on top by the downstream
+ *     per-Sefirah tickets; `retryCount` is the canonical counter.
+ *   - **Clear** when the encounter ends — pass at `prep-confirm` or
+ *     `accept-setback`. Both move the encounter out of the prep cycle
+ *     so the next encounter starts with a fresh envelope.
+ *
+ * Surface only (#334). Each per-Sefirah ticket layers its scratch
+ * fields in here (Yesod `dreamPillar` + `retryCount`-driven re-seed,
+ * Chokmah `chokmahPriorAttempts`, Netzach `netzachPriorFails`, Hod
+ * `deceptionMisreport` under Shell). Adding a future twist that needs
+ * scratch state extends THIS envelope, not `PendingModifiers`.
+ */
+export interface EncounterEnvelope {
+  /** The Sefirah currently being challenged. */
+  readonly sefirah: SefirahKey;
+  /**
+   * Per-encounter RNG seed for any deterministic per-encounter
+   * derivation (Yesod Dream-Peek pillar, Hod deception misreport).
+   * Set at envelope init from a hash of stable GameState fields.
+   * The active player can't precompute it because the inputs (player
+   * roster, illumination/separation tally at arrival) aren't known
+   * at arbitrary distance from the encounter.
+   */
+  readonly seed: number;
+  /**
+   * Counts react-retry cycles inside this encounter. Starts at 0 at
+   * envelope init; the reducer increments by 1 on each `react-retry`.
+   * Used by mechanics that need to re-derive per-retry (e.g. Yesod
+   * Dream-Peek re-seeds `dreamPillar` so a missed guess can't be
+   * reused on the retry).
+   */
+  readonly retryCount: number;
+  /**
+   * Yesod Dream-Peek (§ 3.6). The dream pillar derived from `seed`
+   * + `retryCount` at envelope init / retry. Optional because only
+   * Yesod sets it; the downstream Yesod ticket fills this in.
+   */
+  readonly dreamPillar?: Pillar;
+  /**
+   * Chokmah (§ 3.8). Prior modifier-count carryover for the count
+   * tilt. Optional because only Chokmah uses it; the downstream
+   * Chokmah ticket increments this on react-retry.
+   */
+  readonly chokmahPriorAttempts?: number;
+  /**
+   * Netzach (§ 3.5). Counts failed resolves within this encounter.
+   * Used by the retry-within-same-encounter DC +1 rule for undeclared
+   * players (C6 fix). Optional; the downstream Netzach ticket fills
+   * this in.
+   */
+  readonly netzachPriorFails?: number;
+  /**
+   * Hod (§ 3.1). The misreported arcanum the engine compares the
+   * player's guess against when Shell of Hod is active. Sampled once
+   * at envelope init from `seed`; absent when Shell of Hod isn't
+   * active. Optional; the downstream Hod ticket fills this in.
+   */
+  readonly deceptionMisreport?: number;
+}
 
 /**
  * Pillar-streak position. Two counters move in parallel:

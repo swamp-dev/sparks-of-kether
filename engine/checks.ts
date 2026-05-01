@@ -48,6 +48,27 @@ export interface CheckModifiers {
    * Magnitude locked at -2 in `design/soul-doors.md` § 7 D1.
    */
   readonly soulDoorDelta?: number;
+  /**
+   * Per-Sefirah twist bonus (#334; `design/per-sefirah-mechanics.md`
+   * § 2.6 (a)). A single roll-side flat number that the eight
+   * per-Sefirah mechanics fold into a check at `prep-confirm` time:
+   *
+   *   - Hod Word-Match (match): `flatBonus += 5`.
+   *   - Yesod Dream-Peek (match): `flatBonus += 5`.
+   *   - Gevurah Sacred Sacrifice (per matching dearest burn, on top of
+   *     the standard +3 already counted by `cardBurns`): `flatBonus += 2`.
+   *   - Netzach Declared Desire (water + Venus-ruled signs on
+   *     declaration): `flatBonus += 2`.
+   *   - Chokmah fire-sign 0-modifier flash: `flatBonus += 2`.
+   *
+   * Optional / default 0 so call sites that pre-date the per-Sefirah
+   * work keep producing identical totals. The resolver folds it into
+   * `total` alongside assist / cardBurn / sparkBurn — purely on the
+   * roll side; the DC side is owned by `shortcutPenalty` and
+   * `soulDoorDelta`. This ticket lands the surface only; the per-
+   * Sefirah consumers ship as separate downstream tickets.
+   */
+  readonly flatBonus?: number;
 }
 
 export type ChallengeRejection =
@@ -99,7 +120,13 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   const assist = modifiers.assistStats.reduce((sum, s) => sum + Math.floor(s / 2), 0);
   const cardBurn = modifiers.cardBurns * CARD_BURN_BONUS;
   const sparkBurn = modifiers.sparkBurns * SPARK_BURN_BONUS;
-  const total = rolled + stat + assist + cardBurn + sparkBurn;
+  // #334: per-Sefirah flat bonus (§ 2.6 (a)). Default 0 keeps legacy
+  // call-sites producing identical totals. Roll-side, not DC-side —
+  // a regression that misroutes this to `effectiveDC` shifts the bar
+  // instead of the score (covered by the "flatBonus is roll-side, not
+  // DC-side" test in checks.test.ts).
+  const flatBonus = modifiers.flatBonus ?? 0;
+  const total = rolled + stat + assist + cardBurn + sparkBurn + flatBonus;
   // Effective DC composes two DC-side adjustments: the central-pillar
   // shortcut penalty (+3) and the Soul Door delta (typically -2).
   // They stack additively — Sagittarius on the shortcut at Yesod
@@ -111,7 +138,15 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   return {
     rolled,
     statContribution: stat,
-    modifierBreakdown: { assist, cardBurn, sparkBurn },
+    // `flatBonus` only included in the breakdown when nonzero — keeps
+    // legacy outcomes byte-identical and means renderers can rely on
+    // `breakdown.flatBonus !== undefined` as a shipped-this-roll signal.
+    modifierBreakdown: {
+      assist,
+      cardBurn,
+      sparkBurn,
+      ...(flatBonus > 0 ? { flatBonus } : {}),
+    },
     total,
     effectiveDC,
     pass: total >= effectiveDC,

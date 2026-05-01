@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { PlayScreen } from '../PlayScreen';
 import { makeFullGame } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
-import type { GameState } from '@/engine/types';
+import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
 
 /**
  * Code-review fix (E3, #228): the `shortcut` flag was never populated
@@ -58,7 +58,7 @@ function makePrepState(opts: {
     players,
     phase: 'challenge',
     challengeSubPhase: 'prep',
-    pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+    pendingModifiers: EMPTY_PENDING_MODIFIERS,
     lastOutcome: undefined,
     separation: 0,
   };
@@ -113,11 +113,7 @@ describe('PlayScreen — shortcut flag drives EncounterScreen DC penalty', () =>
       players,
       phase: 'challenge',
       challengeSubPhase: 'prep',
-      pendingModifiers: {
-        cardBurns: [],
-        sparkBurns: [],
-        assistRequests: [],
-      },
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
       lastOutcome: undefined,
     };
     const rng = seededRng(3);

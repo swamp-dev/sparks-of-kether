@@ -3,7 +3,7 @@ import { act, fireEvent, render } from '@testing-library/react';
 import { PlayScreen } from '../PlayScreen';
 import { makeFullGame } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
-import type { GameState } from '@/engine/types';
+import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
 
 /**
  * #278 — `EncounterScreen.mode` was hard-coded to `'hot-seat'` in
@@ -61,7 +61,7 @@ function makeChallengeState(): GameState {
     players,
     phase: 'challenge',
     challengeSubPhase: 'prep',
-    pendingModifiers: { cardBurns: [], sparkBurns: [], assistRequests: [] },
+    pendingModifiers: EMPTY_PENDING_MODIFIERS,
     lastOutcome: undefined,
   };
 }

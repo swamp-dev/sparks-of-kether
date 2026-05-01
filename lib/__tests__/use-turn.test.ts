@@ -271,6 +271,10 @@ describe('useTurn — challenge sub-phase exposure (E4 / #229)', () => {
       cardBurns: [],
       sparkBurns: [],
       assistRequests: [],
+      nameCards: [],
+      giftCards: [],
+      declareDesires: [],
+      dreamGuesses: [],
     });
   });
 });
