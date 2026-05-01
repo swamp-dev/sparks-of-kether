@@ -8,6 +8,7 @@ import {
   SPARK_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
   HOD_WORD_MATCH_BONUS,
+  YESOD_DREAM_PEEK_BONUS,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -1165,6 +1166,420 @@ describe('resolveChallenge — Hod Word-Match (#353)', () => {
     expect(result.value.hodWordMatch).toBeUndefined();
     // Name-card consumed regardless (C4 rule 2).
     expect(result.value.newState.pendingModifiers.nameCards).toEqual([]);
+  });
+});
+
+// ──────────────── resolveChallenge × Yesod Dream-Peek (#354) ────────────────
+//
+// `design/per-sefirah-mechanics.md` § 3.6 — when the player stages a
+// `dream-guess` modifier at Yesod, the engine compares against the
+// envelope's deterministically-derived `dreamPillar` at resolve time.
+// Match → +5 to the roll (the `flatBonus` field on the modifiers passed
+// to `rollCheck`); pass event carries the matched pillar. Miss → no
+// bonus; the miss event broadcasts ONLY the player's named guess and
+// deliberately omits the actual `dreamPillar` so a `react-retry` has no
+// information advantage over the first attempt (C4 information-hiding
+// rule, design § 3.6 rule 1). The `dream-guess` modifier is consumed at
+// resolve REGARDLESS of pass / fail — distinct from card-burns which
+// persist on retry. Combined with the opaque miss event AND the per-
+// retry re-seed of `dreamPillar` (rule 2 in the reducer at react-retry),
+// this closes the C4 retry-exploit cheat path.
+//
+// Soul Door composition (S6) — Yesod is a Soul Door for Sagittarius and
+// Aquarius (`design/soul-doors.md` § 4). The Dream-Peek bonus is roll-
+// side via `flatBonus`; the Soul Door delta is DC-side via
+// `soulDoorDelta`. They MUST stack — neither replaces the other.
+
+describe('resolveChallenge — Yesod Dream-Peek (#354)', () => {
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+  };
+
+  it('match: dreamPillar equals the named pillar → +5 flatBonus and pass event with the matched pillar', () => {
+    // Yesod stat = intuition (default 10). DC for Yesod is 12 in the
+    // sefirot data; we pin a fixture where the +5 is load-bearing for
+    // pass: stat 4, roll 5 → 9; +5 from match = 14 vs DC 12 → pass.
+    // Without the +5 → 9 < 12 → fail.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 4 }),
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['mercy'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+    expect(result.value.outcome.total).toBe(5 + 4 + 5); // roll + stat + match bonus
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.yesodDreamPeek).toEqual({
+      kind: 'yesod-dream-peek-pass',
+      pillar: 'mercy',
+    });
+  });
+
+  it('miss: dreamPillar differs from the named pillar → no flatBonus and miss event with NO actual pillar', () => {
+    // Per design § 3.6 C4 fix rule 1: the miss event MUST omit the
+    // actual dreamPillar so a react-retry has no information advantage.
+    // The yesod event records only the named (guessed) pillar.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 10 }),
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['severity'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy', // actual ≠ guess
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.outcome.total).toBe(5 + 10); // no match bonus
+    expect(result.value.yesodDreamPeek).toEqual({
+      kind: 'yesod-dream-peek-miss',
+      named: 'severity',
+    });
+    // Defensive: the event must not leak the actual dreamPillar.
+    const dreamEvent = result.value.yesodDreamPeek;
+    expect(dreamEvent && 'pillar' in dreamEvent).toBe(false);
+    expect(dreamEvent && 'actual' in dreamEvent).toBe(false);
+  });
+
+  it('dream-guess is consumed at resolve regardless of pass/fail (miss path)', () => {
+    // C4 rule 2 (design § 3.6 + § 2.7 "Consumption note"): the staged
+    // dream-guess is removed from `pendingModifiers.dreamGuesses`
+    // whether or not the guess matched. On a miss the chassis-level
+    // resolveChallenge path returns the input state unchanged for the
+    // standard counters/clearedSefirot, BUT it must clear the
+    // dream-guess so a subsequent react-retry re-staging requires a
+    // fresh `prep-add-modifier`.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 1 }),
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['severity'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      // Stat 1 + roll 1 = 2 vs DC 12 → fail without bonus, miss has no bonus.
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState.pendingModifiers.dreamGuesses).toEqual([]);
+    // Counters stay 0 — fail path doesn't touch them.
+    expect(result.value.newState.illumination).toBe(0);
+    expect(result.value.newState.separation).toBe(0);
+  });
+
+  it('dream-guess is consumed at resolve regardless of pass/fail (pass path)', () => {
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 4 }),
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['balance'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'balance',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 }, // 5 + 4 + 5 = 14 ≥ 12 → pass
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.newState.pendingModifiers.dreamGuesses).toEqual([]);
+  });
+
+  it('non-Yesod Sefirah with stale dream-guess in pendingModifiers does NOT fold the bonus', () => {
+    // Defensive: a dream-guess should never be staged at a non-Yesod
+    // encounter (the prep-add reducer in turn-machine.ts is gated on
+    // sefirah === 'yesod'), but the engine path must not credit the
+    // bonus if the active Sefirah differs. Otherwise a misrouted
+    // staging would let a player buy +5 on Hod from a leftover Yesod
+    // guess. The flatBonus must not appear in the breakdown.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 10 }),
+      },
+      {
+        deck: [7],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['mercy'] },
+        encounter: {
+          sefirah: 'hod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy', // stale envelope field
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.yesodDreamPeek).toBeUndefined();
+  });
+
+  it('Yesod with no dream-guess staged: vanilla resolveChallenge behaviour, no event', () => {
+    // The mechanic is opt-in via `prep-add-modifier dream-guess`. A
+    // Yesod encounter without a staged dream-guess should resolve as a
+    // normal d20 check — no flatBonus folded in, no yesodDreamPeek
+    // event — even when the envelope's `dreamPillar` happens to be set.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 10 }),
+      },
+      {
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.yesodDreamPeek).toBeUndefined();
+  });
+
+  it('Yesod with dream-guess staged but no dreamPillar in envelope: drop branch (no event, no bonus, still consumed)', () => {
+    // Defensive: if the envelope arrived without `dreamPillar` populated
+    // (a malformed snapshot, or a transitional state during refactor),
+    // the engine has no comparison source. Drop the modifier silently
+    // — no event, no bonus — but still consume the dream-guess per
+    // the C4 consumption rule. Treating this as a "miss" would render
+    // "your guess didn't match" in the UI even though no comparison
+    // happened, mirroring the Hod empty-deck drop case.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 10 }),
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['mercy'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          // dreamPillar absent — malformed envelope, drop branch
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.yesodDreamPeek).toBeUndefined();
+    // Dream-guess consumed regardless (C4 rule 2).
+    expect(result.value.newState.pendingModifiers.dreamGuesses).toEqual([]);
+  });
+
+  it('Soul Door composition: Sagittarius at Yesod with a matched dream-guess gets BOTH the −2 DC delta AND the +5 roll bonus', () => {
+    // `design/soul-doors.md` § 4: Yesod is a Soul Door for Sagittarius
+    // and Aquarius. The Soul Door delta is DC-side (−2); the
+    // Dream-Peek bonus is roll-side (+5). They MUST stack — a
+    // regression that routes one through the other (or replaces one
+    // with the other) would silently drop a leg.
+    //
+    // Pin the math: Yesod DC 12, Sagittarius Soul Door delta −2
+    // → effective DC 10. Stat 4 + roll 5 = 9 (would fail effective
+    // DC 10 alone) + 5 dream-match = 14 → pass.
+    // WITHOUT the dream-match: 9 < 10 → fail.
+    // WITHOUT the Soul Door delta: 14 vs 12 → still passes here, so
+    // we additionally check the breakdown reflects both contributions.
+    const state = makeState(
+      {
+        id: 'p1',
+        position: 'yesod',
+        stats: statSheet({ intuition: 4 }),
+        zodiacSign: 'sagittarius',
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['mercy'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Roll-side: the +5 dream-match is in the breakdown.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+    expect(result.value.outcome.total).toBe(5 + 4 + 5); // roll + stat + match
+    // DC-side: the Sagittarius Soul Door delta lowered the DC by 2.
+    // Yesod baseDC = 12, no shortcut → effectiveDC = 12 + 0 + (−2) = 10.
+    expect(result.value.outcome.effectiveDC).toBe(10);
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.yesodDreamPeek?.kind).toBe('yesod-dream-peek-pass');
+  });
+
+  it('Soul Door composition is load-bearing: a Sagittarius pass that needs BOTH the dream bonus AND the Soul Door discount', () => {
+    // Pin a stat / DC margin where neither contribution alone is
+    // sufficient — only the combined effect passes the check. Catches
+    // a regression that drops either leg.
+    //
+    // Yesod base DC 12. Stat 0 + roll 7 = 7. With +5 dream-match alone
+    // → 12 vs 12 → passes. To make BOTH load-bearing:
+    //   stat 0 + roll 6 = 6
+    //   + 5 (dream-match) = 11
+    //   vs effectiveDC = 12 - 2 (Sagittarius Door) = 10 → 11 ≥ 10 → pass
+    // Without dream-match: 6 < 10 → fail.
+    // Without Soul Door:   11 < 12 → fail.
+    // With both:           11 ≥ 10 → pass.
+    const state = makeState(
+      {
+        id: 'p1',
+        position: 'yesod',
+        stats: statSheet({ intuition: 0 }),
+        zodiacSign: 'sagittarius',
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['balance'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'balance',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 6, int: () => 6 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.total).toBe(11);
+    expect(result.value.outcome.effectiveDC).toBe(10);
+    expect(result.value.outcome.pass).toBe(true);
+  });
+
+  it('exposes YESOD_DREAM_PEEK_BONUS as the locked +5 constant', () => {
+    // Pinning the constant makes the design contract auditable and
+    // gives the downstream UI ticket a single import to render
+    // "Dream-Peek: +5" in the prep panel.
+    expect(YESOD_DREAM_PEEK_BONUS).toBe(5);
+  });
+
+  it('caller-supplied modifiers.flatBonus stacks with the Yesod match bonus', () => {
+    // A future per-Sefirah twist or a Spark might add its own flatBonus.
+    // The Yesod match bonus must STACK on top, not replace.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 0 }),
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, dreamGuesses: ['mercy'] },
+        encounter: {
+          sefirah: 'yesod',
+          seed: 1,
+          retryCount: 0,
+          dreamPillar: 'mercy',
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: { ...blankMods, flatBonus: 2 }, // pretend a +2 elsewhere
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // +2 caller + +5 Yesod match = +7 total flatBonus.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(7);
   });
 });
 

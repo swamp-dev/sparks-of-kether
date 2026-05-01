@@ -9,7 +9,7 @@ import {
   type ChallengeSuccess,
   type CheckModifiers,
 } from '@/engine/checks';
-import type { Rng } from '@/engine/rng';
+import { seededRng, type Rng } from '@/engine/rng';
 import {
   drawNCards,
   MEDITATE_DRAW as ENGINE_MEDITATE_DRAW,
@@ -302,10 +302,12 @@ function djb2Hash(s: string): number {
  * arm for multiplayer state-sync and must produce the same envelope
  * shape — sharing the helper keeps the two paths in lockstep.
  *
- * Surface only (#334). Per-mechanic fields (`dreamPillar`,
- * `chokmahPriorAttempts`, `netzachPriorFails`, `deceptionMisreport`)
- * are filled in by their respective downstream per-Sefirah tickets;
- * this initializer leaves them undefined.
+ * Per-mechanic fields:
+ *   - `dreamPillar` (#354 / § 3.6) — derived here when `sefirah` is
+ *     'yesod'. Other Sefirot leave it undefined.
+ *   - `chokmahPriorAttempts`, `netzachPriorFails`, `deceptionMisreport`
+ *     — filled in by their respective downstream per-Sefirah tickets;
+ *     this initializer leaves them undefined.
  */
 export function initEncounterEnvelope(
   state: GameState,
@@ -322,11 +324,76 @@ export function initEncounterEnvelope(
     state.separation,
     sefirah,
   ].join(':');
-  return {
+  const seed = djb2Hash(digest);
+  const base: NonNullable<GameState['encounter']> = {
     sefirah,
-    seed: djb2Hash(digest),
+    seed,
     retryCount: 0,
   };
+  // #354 / § 3.6: at Yesod, derive the dream-pillar from the envelope
+  // seed (retryCount is 0 at init; on react-retry the reducer re-derives
+  // from `seed + retryCount`). Other Sefirot leave dreamPillar undefined.
+  if (sefirah === 'yesod') {
+    return { ...base, dreamPillar: deriveDreamPillar(seed, 0) };
+  }
+  return base;
+}
+
+/**
+ * The three pillars in canonical order. Indexed into by
+ * `deriveDreamPillar`'s seeded `int(0, 2)` so the picker is
+ * deterministic and well-distributed across pillars.
+ */
+const DREAM_PILLARS = ['mercy', 'severity', 'balance'] as const satisfies readonly Pillar[];
+
+/**
+ * Derive the Yesod Dream-Peek `dreamPillar` from the encounter's seed
+ * plus `retryCount`. Per `design/per-sefirah-mechanics.md` § 3.6:
+ * `seedRng(state.encounter.seed + state.encounter.retryCount).pickOne(
+ * ['mercy', 'severity', 'balance'])`. The current `Rng` interface lacks
+ * a `pickOne` helper, so we use `int(0, 2)` and index into the canonical
+ * pillar array — equivalent because Mulberry32 is well-distributed and
+ * `int(min, max)` is uniform on the inclusive range.
+ *
+ * Pure: same `(seed, retryCount)` always returns the same pillar.
+ * Replay-deterministic — necessary for multiplayer state-sync.
+ */
+function deriveDreamPillar(seed: number, retryCount: number): Pillar {
+  const idx = seededRng(seed + retryCount).int(0, DREAM_PILLARS.length - 1);
+  // Picker output is bounded; the non-null assertion is safe because
+  // `int(0, 2)` is in [0, 2] and DREAM_PILLARS has length 3. We use
+  // a defensive lookup rather than `!` so a refactor that shrinks the
+  // array doesn't silently produce `undefined`.
+  const pillar = DREAM_PILLARS[idx];
+  if (pillar === undefined) {
+    throw new Error(
+      `deriveDreamPillar: picker idx ${idx} out of range for DREAM_PILLARS (length ${DREAM_PILLARS.length})`,
+    );
+  }
+  return pillar;
+}
+
+/**
+ * Bump `retryCount` by 1 and re-derive any per-mechanic fields that
+ * depend on the retry counter. Today only Yesod's `dreamPillar` is
+ * re-derived (#354 / § 3.6 rule 2); future mechanics that key off
+ * `retryCount` (Chokmah `chokmahPriorAttempts`, Netzach
+ * `netzachPriorFails`) would extend this helper.
+ *
+ * Pure: returns a new envelope; input is unchanged.
+ */
+function withRetryBumpedEnvelope(
+  envelope: NonNullable<GameState['encounter']>,
+): NonNullable<GameState['encounter']> {
+  const nextRetryCount = envelope.retryCount + 1;
+  if (envelope.sefirah === 'yesod') {
+    return {
+      ...envelope,
+      retryCount: nextRetryCount,
+      dreamPillar: deriveDreamPillar(envelope.seed, nextRetryCount),
+    };
+  }
+  return { ...envelope, retryCount: nextRetryCount };
 }
 
 /**
@@ -763,6 +830,15 @@ export function turnReducer(
           };
           break;
         case 'dream-guess':
+          // § 3.6: max one dream-guess per encounter; the reducer
+          // rejects a second add. The player can `prep-remove-modifier`
+          // and re-stage with a different pillar before confirm.
+          if (pending.dreamGuesses.length >= 1) {
+            return {
+              ok: false,
+              reason: { kind: 'prep-cap-exceeded', cap: 1 },
+            };
+          }
           nextPending = {
             ...pending,
             dreamGuesses: [...pending.dreamGuesses, event.modifier.pillar],
@@ -1083,6 +1159,15 @@ export function turnReducer(
       // Netzach `netzachPriorFails`) the downstream tickets layer in
       // can read the canonical retry count from a single field.
       //
+      // #354 / § 3.6 rule 2 (C4 fix): at Yesod, re-derive `dreamPillar`
+      // from `seed + (retryCount + 1)` so a missed first-attempt pillar
+      // can't carry over to the retry. The new pillar is generally
+      // different from the first attempt's; combined with the hide-on-
+      // miss event shape (rule 1, in engine/checks.ts), this closes the
+      // retry-exploit cheat path. The reseed is deterministic
+      // (replay reproduces) but unknowable to the player at retry-stage
+      // time because retryCount-at-arrival isn't known in advance.
+      //
       // `lastOutcome` is cleared so a second `react-retry` before a
       // new resolve will be rejected by the sub-phase guard above
       // (challengeSubPhase is now 'prep') AND, defensively, by the
@@ -1094,7 +1179,7 @@ export function turnReducer(
         lastOutcome: undefined,
         encounter:
           state.encounter !== undefined
-            ? { ...state.encounter, retryCount: state.encounter.retryCount + 1 }
+            ? withRetryBumpedEnvelope(state.encounter)
             : undefined,
       };
       return { ok: true, value: { next: { state: stateAfter } } };

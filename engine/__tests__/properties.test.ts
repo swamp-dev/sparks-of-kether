@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import type { SefirahKey, ZodiacSignKey } from '@/data';
+import type { Pillar, SefirahKey, ZodiacSignKey } from '@/data';
 import { acceptSetback, resolveChallenge } from '@/engine/checks';
 import type { CheckOutcome } from '@/engine/checks';
 import { ketherPlayCard, ketherPassCard } from '@/engine/kether';
@@ -8,6 +8,7 @@ import { applyMove } from '@/engine/movement';
 import { seededRng } from '@/engine/rng';
 import { endTurn } from '@/engine/turn';
 import type { GameState } from '@/engine/types';
+import { initEncounterEnvelope } from '@/lib/turn-machine';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
 /**
@@ -446,6 +447,71 @@ describe('property: applyMove conserves total card count', () => {
           expect(next.discardPile.length).toBe(state.discardPile.length + 1);
         },
       ),
+      { numRuns: 100 },
+    );
+  });
+});
+
+const VALID_PILLARS: readonly Pillar[] = ['mercy', 'severity', 'balance'];
+
+describe('property: Yesod Dream-Peek envelope.dreamPillar is always one of the three pillars (#354)', () => {
+  it('initEncounterEnvelope at yesod produces a valid pillar across generated states', () => {
+    fc.assert(
+      fc.property(gameStateArb(), (state) => {
+        const env = initEncounterEnvelope(state, 'yesod');
+        // The pillar must be defined and one of the three valid values.
+        // A regression that left it undefined or returned something else
+        // (e.g. 'central' from an earlier name choice, or a number from
+        // a refactor mistake) would fail this property.
+        expect(env.dreamPillar).toBeDefined();
+        expect(VALID_PILLARS).toContain(env.dreamPillar);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('initEncounterEnvelope at non-yesod sefirot leaves dreamPillar undefined', () => {
+    fc.assert(
+      fc.property(
+        gameStateArb(),
+        // Non-Yesod targets — Malkuth has no challenge but still gets an
+        // envelope when called explicitly via initEncounterEnvelope (the
+        // helper doesn't gate on challenge.kind; the reducer does).
+        fc.constantFrom<SefirahKey>(
+          'kether',
+          'chokmah',
+          'binah',
+          'chesed',
+          'gevurah',
+          'tiferet',
+          'netzach',
+          'hod',
+          'malkuth',
+        ),
+        (state, sefirah) => {
+          const env = initEncounterEnvelope(state, sefirah);
+          // Only Yesod populates the pillar — every other Sefirah
+          // returns an envelope with `dreamPillar: undefined`.
+          expect(env.dreamPillar).toBeUndefined();
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it('initEncounterEnvelope is deterministic for the same input state (replay-determinism)', () => {
+    // Per § 3.6 "Replay-determinism": same digest inputs hash to the
+    // same seed, and the same seed maps to the same pillar. Two calls
+    // on the same state must produce identical envelopes — required
+    // for multiplayer state-sync (`lib/room-actions.ts` mirrors the
+    // reducer's move arm and must produce a byte-identical envelope).
+    fc.assert(
+      fc.property(gameStateArb(), (state) => {
+        const env1 = initEncounterEnvelope(state, 'yesod');
+        const env2 = initEncounterEnvelope(state, 'yesod');
+        expect(env1.seed).toBe(env2.seed);
+        expect(env1.dreamPillar).toBe(env2.dreamPillar);
+      }),
       { numRuns: 100 },
     );
   });

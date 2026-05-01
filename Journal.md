@@ -4725,3 +4725,52 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
 - **S-1 (empty-deck wrong category):** The first push treated empty-deck as a miss event. Per design § 3.1 edge case + C4 rules, when both piles are empty (true game-end state) the modifier is *dropped*, not missed. A miss event would have rendered "your guess didn't match" in the UI even though no comparison happened. Fix: `evaluateHodWordMatch` returns `undefined` for the no-comparison case (no event, no bonus); the call site uses a separate `hadNameCard` check so C4 rule 2 (consume-regardless) still fires. Test updated to pin the new drop semantics: `hodWordMatch === undefined` AND `nameCards: []`.
 - **S-2 (unwired rotation helper):** `rotateDeckTopForHodRetry` was exported and unit-tested but never called by the chassis. The reviewer asked: wire it or delete it. Re-read of design § 3.1 / C4 confirmed the spec specifies exactly two rules — opaque miss + consume on confirm — and explicitly notes those two together "mean the retry has no information advantage over the first attempt." The ticket body's third-rule "rotation" was author-proposed but never adopted into the locked spec. Per CLAUDE.md "the design wins" — deleted the helper + its 4 unit tests rather than ship a defense-in-depth measure the design doesn't require.
 - **`pnpm ci:local` re-run after fixes:** all four jobs green.
+
+---
+
+## 2026-05-01T11:19:00-04:00 — #354: Yesod Dream-Peek mechanic — K2 of #284 (Selene)
+
+**Pushed:** end-to-end implementation of Yesod Dream-Peek per `design/per-sefirah-mechanics.md` § 3.6. Mirrors the Hod Word-Match (#353) pattern in shape; differs in that the comparison is 1-of-3 (`mercy` / `severity` / `balance`) instead of 1-of-22 (Major Arcana), and the retry-exploit fix has TWO rules (hide-on-miss AND re-seed-on-retry) rather than Hod's one (hide-on-miss + consume-on-confirm).
+
+**Engine surface (`engine/checks.ts`):**
+
+- `YESOD_DREAM_PEEK_BONUS = 5` — locked +5, mirroring `HOD_WORD_MATCH_BONUS`. Magnitude parity intentional per design § 3.1 "Hit-rate disparity vs Yesod (M3)" — Yesod's intuition-graded reach earns the same +5 as Hod's precision-graded memory.
+- `YesodDreamPeekEvent` discriminated union: `{ kind: 'yesod-dream-peek-pass'; pillar }` on match, `{ kind: 'yesod-dream-peek-miss'; named }` on miss. The miss event omits the actual pillar (C4 rule 1).
+- `ChallengeSuccess.yesodDreamPeek?` field — flows out alongside `hodWordMatch?` for the chassis to render the prep-result banner.
+- `evaluateYesodDreamPeek(state)` helper — pure. Reads the staged dream-guess from `state.pendingModifiers.dreamGuesses[0]` and compares against `state.encounter?.dreamPillar`. Returns `undefined` when no guess staged OR envelope missing `dreamPillar` (drop branch — analogous to Hod's empty-deck case).
+- `consumeYesodDreamGuess(state)` helper — clears `pendingModifiers.dreamGuesses` so a `react-retry` doesn't see the staled guess. Called regardless of pass/fail per § 2.7 "Consumption note".
+- `resolveChallenge` arm: when `sefirah === 'yesod'`, fold the +5 into `flatBonus` (additive — stacks with caller-supplied flatBonus and with auto-injected Soul Door delta on the DC side); emit the event; consume the dream-guess.
+
+**Chassis surface (`lib/turn-machine.ts`):**
+
+- `initEncounterEnvelope` — when `sefirah === 'yesod'`, derive `dreamPillar` via `deriveDreamPillar(seed, 0)`. Other Sefirot leave it undefined (gated on `sefirah === 'yesod'` to avoid leaking a Yesod-only field onto unrelated encounters).
+- `deriveDreamPillar(seed, retryCount)` — pure. `seededRng(seed + retryCount).int(0, 2)` → index into the canonical `['mercy', 'severity', 'balance']` array. The current `Rng` interface lacks `pickOne`, so `int + index` is the equivalent (Mulberry32 is uniform on the inclusive range).
+- `withRetryBumpedEnvelope` — encapsulates the "bump retryCount AND re-derive per-mechanic fields" operation. Today only Yesod's `dreamPillar` re-derives; future mechanics that key off retryCount (Chokmah, Netzach) extend this helper. Called from the `react-retry` reducer arm.
+
+**Tests added:**
+
+- `engine/__tests__/checks.test.ts` — 11 tests in a new `resolveChallenge — Yesod Dream-Peek (#354)` describe block: match/miss/consume × pass/fail, non-Yesod stale dream-guess defensive check, no-dream-guess vanilla path, malformed-envelope drop, two Soul Door composition tests (Sagittarius — load-bearing fixture where neither leg alone passes), constant export, caller-supplied flatBonus stacking.
+- `lib/__tests__/turn-machine.test.ts` — 6 tests in a new `turnReducer — Yesod Dream-Peek seeding (#354)` describe block: init populates dreamPillar, non-Yesod leaves it undefined, deterministic for same input, react-retry re-seeds (load-bearing — verifies the pillar actually changes across some seeds rather than just retryCount++), react-retry derivation matches `seed + retryCount`, react-retry at non-Yesod is inert.
+- `engine/__tests__/properties.test.ts` — 3 fast-check properties (100 runs each): valid pillar at Yesod, undefined for non-Yesod, deterministic across two calls on same state.
+
+**Why:** K2 of #284 part two. Mirrors the Hod K2 pattern (#353, just merged) so the prep-confirm chassis can lift both Hod and Yesod fields off `ChallengeSuccess` uniformly when the UI ticket lands.
+
+**Notes:**
+
+- **Design-vs-ticket conflict resolved in favour of design (same as Hod #353).** The ticket body said "miss event carrying both the guess AND the actual dreamPillar (for UI reveal)." Design § 3.6 explicitly says "The miss event omits the actual dream pillar" and the C4 fix has TWO rules: hide-on-miss AND re-seed-on-retry. The parent agent's spawn instructions also asserted "RE-SEEDING not hiding" but the design text is unambiguous — both rules apply. Per CLAUDE.md "the design wins" — followed § 3.6 to the letter (hide-on-miss + re-seed-on-retry).
+- **Soul Door fixture used Sagittarius, not the parent's "Pisces / Sagittarius / Cancer" hint.** Per `data/soul-doors.ts` and `design/soul-doors.md` § 4 the Yesod Soul Doors are Sagittarius and Aquarius. Pisces' only Door is Netzach; Cancer's are Binah + Gevurah. The parent's instructions had this wrong; I used the data + design.
+- **No `pickOne` helper on `Rng`.** Design spec writes `seedRng(...).pickOne([...])`. Current interface has `int(min, max)` only. Used `int(0, 2)` + index lookup — equivalent because Mulberry32 is uniform. Adding `pickOne` is a cross-cutting refactor outside this ticket.
+- **Property tests reach across the engine→lib boundary.** Engine tests don't normally import from `@/lib`, but `test/fixtures.ts` and `test/scenario.ts` already do, so the precedent exists. Tests of `initEncounterEnvelope` (which lives in `lib/turn-machine.ts`) had to import from `@/lib/turn-machine` to exercise the seeding contract. Acceptable in test files; a shape change worth a reviewer's eye.
+- **Code-reviewer subagent unavailable in this environment** (Agent / Task tool not loaded — same as the #353 first push). Per the parent's instructions: pushing the branch and stopping; opening the PR is the parent's call after a real code-review pass. Self-review against design § 3.6 + § 2.7 + § 2.6 (b) + C4 fix is in this Journal entry above.
+- **TDD followed.** Engine resolve-time tests committed alongside impl in one logical commit; same for envelope seeding; property tests as a final commit. Three commits total; each green at HEAD.
+- **`pnpm ci:local` ALL FOUR JOBS GREEN.** verify (1631 passed / 1 todo across 102 files) ✓, build (production Next.js, all routes prerender) ✓, e2e (61 passed / 51 skipped for visual-regression) ✓, integration (real-Supabase 12 passed across 4 files) ✓.
+- **Hosted CI:** still billing-blocked per project memory; PR will be for human review only when the parent opens it.
+
+**Commit(s):** `3abaf5f` (engine resolve-time logic), `1338ccc` (envelope seed + re-seed), `80852b5` (property tests), `7d6bbd5` (initial Journal entry), `05acfc3` (review fix — max-one cap on dream-guess).
+
+**Addendum 2026-05-01T11:30 — code-reviewer pass + fix.** PM ran the `code-reviewer` subagent on the engine + envelope diff. Verdict: Fix. One Significant.
+
+- **S-1 (missing max-one rejection on dream-guess staging).** Design § 3.6 says "Only one dream-guess may be staged per encounter (reducer rejects the second add)." First push silently appended to `pendingModifiers.dreamGuesses` array. Engine only ever read index 0 so the violation wasn't exploitable, but it broke the prep-cap-exceeded contract that `assist-request` already follows, and a player double-tapping the UI would see no error feedback. Fix: 4-line guard mirroring `assist-request`'s `MAX_ASSIST_REQUESTS` check; returns `prep-cap-exceeded` with `cap: 1`. Plus one new test pinning the rejection.
+- **Sibling Hod has the same gap** (silent accept on second `name-card`). Filed as follow-up issue #361 rather than fixing in #354's scope (touching Hod tests is out of #354's engine-only scope).
+- **Re-review by `code-reviewer` skipped for the cap fix.** The fix is a 4-line guard mirroring an existing pattern (`assist-request`) tested identically — trivial, not non-trivial. Per `local-ci-and-admin-merge.md` re-review fires on "non-trivial fixes that touch areas outside the original review's scope."
+- **`pnpm ci:local` re-run after fix:** all four jobs green (verify with +1 cap test).

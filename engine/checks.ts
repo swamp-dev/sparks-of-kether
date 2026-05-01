@@ -1,5 +1,5 @@
 import { sefirahByKey, tryPathByNumber } from '@/data';
-import type { SefirahKey } from '@/data';
+import type { Pillar, SefirahKey } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
 import { soulDoorDcDelta } from './soul-door-bonus';
@@ -32,6 +32,19 @@ export const SHORTCUT_DC_PENALTY = 3;
  * `state.encounter.deceptionMisreport`).
  */
 export const HOD_WORD_MATCH_BONUS = 5;
+
+/**
+ * Yesod Dream-Peek (#354; `design/per-sefirah-mechanics.md` § 3.6) match
+ * bonus. Locked at +5 — same magnitude as Hod Word-Match, even though
+ * the baseline hit rate (1/3 vs 1/22) is far higher. The asymmetry is
+ * intentional per design § 3.1 "Hit-rate disparity vs Yesod (M3)":
+ * Yesod is intuition-graded (a coin-flip-like reach that rewards
+ * trusting the dream), Hod is precision-graded (fluent-Hermetic memory
+ * pays out at the same +5). Folded into `CheckModifiers.flatBonus` at
+ * resolve time when the player's staged `dream-guess` pillar equals
+ * `state.encounter.dreamPillar`.
+ */
+export const YESOD_DREAM_PEEK_BONUS = 5;
 
 // ──────────────── Public types ────────────────
 
@@ -115,6 +128,33 @@ export type HodWordMatchEvent =
   | { readonly kind: 'hod-word-match-miss'; readonly named: number };
 
 /**
+ * Yesod Dream-Peek resolve-time event (#354;
+ * `design/per-sefirah-mechanics.md` § 3.6). Emitted by `resolveChallenge`
+ * when the encounter is at Yesod and the active player has staged a
+ * `dream-guess` modifier. The pass variant carries the matched pillar
+ * (the player's named guess equalled `state.encounter.dreamPillar`); the
+ * miss variant carries ONLY the named (guessed) pillar and deliberately
+ * omits the actual `dreamPillar` so a `react-retry` has no information
+ * advantage over the first attempt (C4 fix rule 1, design § 3.6).
+ *
+ * The C4 fix on Yesod is two-pronged: (1) hide the actual on miss
+ * (this event shape), and (2) re-seed `dreamPillar` on `react-retry`
+ * (handled by the reducer in `lib/turn-machine.ts`). Either rule alone
+ * is insufficient — naive retry semantics with a leaked answer would
+ * give a guaranteed +5; a re-seed without the hidden answer would
+ * still leak the *first* attempt's pillar to spectators in hot-seat
+ * play even though the second attempt's pillar is fresh.
+ *
+ * Consumed by the chassis layer (`lib/turn-machine.ts`'s `prep-confirm`)
+ * and downstream UI for the prep-result banner. The engine itself does
+ * not write to counters from this event — the Dream-Peek outcome is a
+ * roll-side bonus folded into `flatBonus`, not a separate counter delta.
+ */
+export type YesodDreamPeekEvent =
+  | { readonly kind: 'yesod-dream-peek-pass'; readonly pillar: Pillar }
+  | { readonly kind: 'yesod-dream-peek-miss'; readonly named: Pillar };
+
+/**
  * What a successful `resolveChallenge` invocation returns.
  *
  * **IMPORTANT:** `ok: true` means "the challenge was resolved" (the
@@ -131,6 +171,12 @@ export type HodWordMatchEvent =
  * starts with an empty staging slot (the player must re-stage with a
  * fresh `prep-add-modifier`). This is the C4 fix rule 2 in design
  * § 3.1 — the consume-on-resolve guarantee.
+ *
+ * **Exception (#354).** Same shape applies to a Yesod Dream-Peek
+ * `dream-guess` consumed during this resolve — `newState` differs from
+ * the input even on the fail branch because the consumed dream-guess
+ * is cleared from `state.pendingModifiers.dreamGuesses`. C4 fix rule 1
+ * (consume-on-resolve) for Yesod, design § 3.6 / § 2.7 "Consumption note".
  */
 export interface ChallengeSuccess {
   readonly newState: GameState;
@@ -142,6 +188,17 @@ export interface ChallengeSuccess {
    * the prep-result banner and to broadcast the public miss reveal.
    */
   readonly hodWordMatch?: HodWordMatchEvent;
+  /**
+   * Present only when this resolve consumed a Yesod `dream-guess`
+   * modifier (`state.pendingModifiers.dreamGuesses.length > 0` AND
+   * `sefirah === 'yesod'` at resolve time AND
+   * `state.encounter.dreamPillar` was populated). The chassis layer
+   * reads this to render the prep-result banner. Per design § 3.6,
+   * the miss event omits the actual pillar so spectators / retry
+   * gain no information advantage; only the pass event carries the
+   * matched pillar.
+   */
+  readonly yesodDreamPeek?: YesodDreamPeekEvent;
 }
 
 // ──────────────── rollCheck (pure math) ────────────────
@@ -256,6 +313,22 @@ export interface ResolveChallengeInput {
  * `hodWordMatch` event flows out on `ChallengeSuccess` so the chassis
  * can render the prep-result banner.
  *
+ * **Yesod Dream-Peek exception (#354).** When the encounter is at Yesod
+ * and the active player has a `dream-guess` staged in
+ * `state.pendingModifiers.dreamGuesses`, the resolver folds the +5
+ * `flatBonus` (`YESOD_DREAM_PEEK_BONUS`) into the modifiers when the
+ * named pillar equals `state.encounter.dreamPillar`. The staged
+ * dream-guess is consumed from `state.pendingModifiers.dreamGuesses`
+ * REGARDLESS of pass/fail — the C4 fix rule 1 (design § 3.6 + § 2.7
+ * "Consumption note"). In this case `newState !== state` even on a
+ * failed roll. A `yesodDreamPeek` event flows out on `ChallengeSuccess`
+ * so the chassis can render the prep-result banner. Per design § 3.6
+ * the miss event carries ONLY the player's guessed pillar — the
+ * actual `dreamPillar` is hidden so spectators / a subsequent retry
+ * gain no information advantage. The retry's freshness is additionally
+ * guaranteed by the reducer re-seeding `dreamPillar` on `react-retry`
+ * (rule 2 in the reducer at `lib/turn-machine.ts`).
+ *
  * Only handles Sefirot whose `challenge.kind` is `'check'`. Malkuth
  * (no-check) and Kether (collective Final Threshold) get a rejection;
  * the endgame module owns Kether's flow.
@@ -309,6 +382,22 @@ export function resolveChallenge(
     };
   }
 
+  // #354 / `design/per-sefirah-mechanics.md` § 3.6 — Yesod Dream-Peek.
+  // Mirrors the Hod arm above but compares the staged `dream-guess`
+  // pillar against the envelope's `dreamPillar` (1-of-3 instead of
+  // 1-of-22). Match → +5 to `flatBonus`. The miss event omits the
+  // actual pillar (C4 fix rule 1); the per-retry re-seed of
+  // `dreamPillar` (handled in the `react-retry` reducer in
+  // `lib/turn-machine.ts`) is C4 fix rule 2. The two together close
+  // the retry-exploit cheat path.
+  const yesod = sefirah === 'yesod' ? evaluateYesodDreamPeek(state) : undefined;
+  if (yesod !== undefined) {
+    resolvedModifiers = {
+      ...resolvedModifiers,
+      flatBonus: (resolvedModifiers.flatBonus ?? 0) + yesod.bonus,
+    };
+  }
+
   const outcome =
     input.outcome ??
     rollCheck({
@@ -330,13 +419,25 @@ export function resolveChallenge(
     sefirah === 'hod' && state.pendingModifiers.nameCards.length > 0;
   const stateAfterHodConsume = hadNameCard ? consumeHodNameCard(state) : state;
 
+  // #354 — consume the Yesod dream-guess REGARDLESS of pass/fail (design
+  // § 3.6 + § 2.7 "Consumption note"). Mirrors the Hod consume above —
+  // fires whenever a dream-guess was staged at a Yesod resolve, including
+  // the malformed-envelope drop branch where `evaluateYesodDreamPeek`
+  // returns undefined.
+  const hadDreamGuess =
+    sefirah === 'yesod' && state.pendingModifiers.dreamGuesses.length > 0;
+  const stateAfterYesodConsume = hadDreamGuess
+    ? consumeYesodDreamGuess(stateAfterHodConsume)
+    : stateAfterHodConsume;
+
   if (!outcome.pass) {
     return {
       ok: true,
       value: {
-        newState: stateAfterHodConsume,
+        newState: stateAfterYesodConsume,
         outcome,
         ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
+        ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
       },
     };
   }
@@ -348,8 +449,8 @@ export function resolveChallenge(
   };
 
   const stateWithCleared: GameState = {
-    ...stateAfterHodConsume,
-    players: stateAfterHodConsume.players.map((p) =>
+    ...stateAfterYesodConsume,
+    players: stateAfterYesodConsume.players.map((p) =>
       p.id === playerId ? updatedPlayer : p,
     ),
   };
@@ -376,6 +477,7 @@ export function resolveChallenge(
       newState,
       outcome,
       ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
+      ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
     },
   };
 }
@@ -454,6 +556,72 @@ function consumeHodNameCard(state: GameState): GameState {
     pendingModifiers: {
       ...state.pendingModifiers,
       nameCards: [],
+    },
+  };
+}
+
+// ──────────────── Yesod Dream-Peek helpers (#354) ────────────────
+
+/**
+ * Evaluate a staged Yesod `dream-guess` against the current encounter's
+ * `dreamPillar`. Returns `undefined` when the player hasn't staged a
+ * dream-guess (the mechanic is opt-in; `design/per-sefirah-mechanics.md`
+ * § 3.6).
+ *
+ * Comparison-source rule (design § 3.6): the engine compares the staged
+ * pillar against `state.encounter.dreamPillar`. The pillar is set once
+ * at envelope init (the moment Yesod is reached) and re-derived on
+ * `react-retry` (so a missed first attempt cannot inform the second)
+ * — both are the reducer's job in `lib/turn-machine.ts`. The engine
+ * here only reads the field.
+ *
+ * Drop branch (analogous to Hod's empty-deck case in § 3.1): if the
+ * envelope arrived without `dreamPillar` populated — a malformed
+ * snapshot, externally-injected state, or a transitional state during
+ * refactor — there is no comparison source. Returning `undefined` here
+ * means no event is emitted and no bonus is added; the caller still
+ * consumes the dream-guess per the C4 consumption rule. Treating this
+ * as a "miss" would render "your guess didn't match" in the UI even
+ * though no comparison happened, which is a category error. In normal
+ * play this branch is unreachable — the reducer populates `dreamPillar`
+ * at envelope init when sefirah is 'yesod'.
+ */
+function evaluateYesodDreamPeek(
+  state: GameState,
+): { readonly bonus: number; readonly event: YesodDreamPeekEvent } | undefined {
+  const named = state.pendingModifiers.dreamGuesses[0];
+  if (named === undefined) return undefined;
+
+  const dreamPillar = state.encounter?.dreamPillar;
+  if (dreamPillar === undefined) {
+    // Malformed envelope (drop branch): no comparison source, no event,
+    // no bonus — but the caller still consumes the dream-guess.
+    return undefined;
+  }
+
+  const matched = named === dreamPillar;
+  return {
+    bonus: matched ? YESOD_DREAM_PEEK_BONUS : 0,
+    event: matched
+      ? { kind: 'yesod-dream-peek-pass', pillar: dreamPillar }
+      : { kind: 'yesod-dream-peek-miss', named },
+  };
+}
+
+/**
+ * Remove the staged Yesod `dream-guess` from `state.pendingModifiers` —
+ * single-shot per encounter (design § 2.7). Pure: returns a new
+ * `GameState`; input is unchanged. Called from `resolveChallenge`
+ * regardless of pass/fail to satisfy the C4 retry-exploit fix rule 1
+ * (consume-on-resolve; design § 3.6).
+ */
+function consumeYesodDreamGuess(state: GameState): GameState {
+  if (state.pendingModifiers.dreamGuesses.length === 0) return state;
+  return {
+    ...state,
+    pendingModifiers: {
+      ...state.pendingModifiers,
+      dreamGuesses: [],
     },
   };
 }

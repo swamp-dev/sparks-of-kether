@@ -2481,6 +2481,232 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
   });
 });
 
+// #354 — `design/per-sefirah-mechanics.md` § 3.6: Yesod Dream-Peek seeds
+// a `dreamPillar` on the encounter envelope at envelope init AND
+// re-seeds on react-retry. The seed source is `state.encounter.seed +
+// state.encounter.retryCount` per § 3.6 "Seed source (S5 fix)". Both
+// halves of the C4 retry-exploit fix live in the reducer:
+//   - rule 1 (hide-on-miss) lives in engine/checks.ts (covered there).
+//   - rule 2 (re-seed-on-retry) lives in this reducer — these tests
+//     pin that the pillar is derived at init and re-derived on retry,
+//     deterministic for the same seed and well-distributed across
+//     pillars when seeds vary.
+describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
+  it('move → challenge at Yesod populates encounter.dreamPillar from the envelope seed', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      // path 32 = Yesod ↔ Malkuth (per data/paths.ts).
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const env = result.value.next.state.encounter;
+    expect(env).toBeDefined();
+    if (!env) return;
+    expect(env.sefirah).toBe('yesod');
+    // The pillar must be one of the three valid values — not undefined,
+    // not a stray string. § 3.6 specifies the picker output.
+    expect(['mercy', 'severity', 'balance']).toContain(env.dreamPillar);
+  });
+
+  it('move → challenge at a non-Yesod Sefirah leaves dreamPillar undefined', () => {
+    // Defensive: only Yesod populates `dreamPillar`. A leftover from a
+    // generic "set the pillar everywhere" refactor would silently leak
+    // a Yesod-only field onto unrelated encounters and downstream
+    // checks (e.g. the "non-Yesod with stale dream-guess" engine test).
+    //
+    // Path 30 = Hod ↔ Yesod (arcanum 19, Sun). Player starts at Yesod
+    // with arcanum 19 in hand → arrives at Hod.
+    const player = makePlayer({ id: 'p1', position: 'yesod', hand: [19] });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 30 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const env = result.value.next.state.encounter;
+    expect(env).toBeDefined();
+    if (!env) return;
+    expect(env.sefirah).toBe('hod');
+    expect(env.dreamPillar).toBeUndefined();
+  });
+
+  it('dreamPillar derivation is deterministic for the same envelope seed', () => {
+    // Replay determinism: the same digest inputs hash to the same seed,
+    // and the same seed maps to the same pillar. Two identical move
+    // events on identical state must produce identical pillars.
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
+    const state = makeState({}, { players: [player] });
+    const before: TurnSnapshot = { state: { ...state, phase: 'move' } };
+    const r1 = turnReducer(before, { kind: 'move', pathNumber: 32 }, RNG);
+    const r2 = turnReducer(before, { kind: 'move', pathNumber: 32 }, RNG);
+    expect(r1.ok && r2.ok).toBe(true);
+    if (!r1.ok || !r2.ok) return;
+    expect(r1.value.next.state.encounter?.dreamPillar).toBe(
+      r2.value.next.state.encounter?.dreamPillar,
+    );
+  });
+
+  it('react-retry at Yesod re-seeds dreamPillar (typically different from the first attempt)', () => {
+    // Per § 3.6 rule 2: a missed first-attempt pillar must NOT carry
+    // over to the retry. The reducer increments retryCount AND
+    // re-derives `dreamPillar` from `seed + retryCount`. We pin a seed
+    // where the re-derive picks a different pillar than the original;
+    // this catches the regression where the reducer increments retryCount
+    // but forgets to re-derive (the pillar would stay the same and a
+    // miss-then-retry could exploit a leaked answer).
+    //
+    // Strategy: try a handful of seeds, find one that yields a
+    // different post-retry pillar. (Not all seeds will — for any given
+    // seed, there's a 1/3 chance the pillar collides on the next index.
+    // We assert the existence of seeds that change, which is the
+    // load-bearing property: re-seeding HAPPENS, not just retryCount++.)
+    function pillarAfterRetry(seed: number): {
+      readonly initial: string | undefined;
+      readonly afterRetry: string | undefined;
+    } {
+      const player = makePlayer({ id: 'p1', position: 'yesod', hand: [] });
+      const failedOutcome: CheckOutcome = {
+        rolled: 1,
+        statContribution: 1,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 2,
+        effectiveDC: 12,
+        pass: false,
+      };
+      // We bypass the move arm and seed an envelope with the exact seed
+      // we want to test. The reducer does the per-mechanic re-derivation
+      // on react-retry, so we supply an initial pillar that matches what
+      // the seed would produce — but the reducer should ignore that
+      // and re-derive from `seed + retryCount`.
+      const initialPillarBySeed = (s: number): 'mercy' | 'severity' | 'balance' => {
+        const idx = seededRng(s).int(0, 2);
+        const pillars = ['mercy', 'severity', 'balance'] as const;
+        const p = pillars[idx];
+        if (p === undefined) {
+          throw new Error(`initialPillarBySeed: idx ${idx} out of range`);
+        }
+        return p;
+      };
+      const initial = initialPillarBySeed(seed);
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          encounter: {
+            sefirah: 'yesod',
+            seed,
+            retryCount: 0,
+            dreamPillar: initial,
+          },
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: failedOutcome,
+        },
+      );
+      const result = turnReducer({ state }, { kind: 'react-retry' }, RNG);
+      if (!result.ok) {
+        return { initial, afterRetry: undefined };
+      }
+      return {
+        initial,
+        afterRetry: result.value.next.state.encounter?.dreamPillar,
+      };
+    }
+    // Try several seeds; at least one must produce a different post-
+    // retry pillar (otherwise the reducer is not re-deriving — it's
+    // just keeping the old value).
+    const observed: { initial: string | undefined; afterRetry: string | undefined }[] = [];
+    for (let s = 1; s <= 20; s++) {
+      observed.push(pillarAfterRetry(s));
+    }
+    // All retries must produce a defined pillar (re-seed didn't leave
+    // it undefined).
+    for (const { afterRetry } of observed) {
+      expect(['mercy', 'severity', 'balance']).toContain(afterRetry);
+    }
+    // At least one seed must produce a DIFFERENT post-retry pillar
+    // — load-bearing for "re-seeding actually happens".
+    const anyDiffers = observed.some(({ initial, afterRetry }) => initial !== afterRetry);
+    expect(anyDiffers).toBe(true);
+  });
+
+  it('react-retry at Yesod: dreamPillar derived from seed + retryCount (deterministic)', () => {
+    // Pin the deterministic contract: the post-retry pillar equals
+    // the picker output for `seed + retryCount`. This documents the
+    // exact derivation rule (design § 3.6) so a refactor that
+    // accidentally changes the formula (e.g. uses just `seed` or
+    // `seed * retryCount`) is caught.
+    const seed = 1;
+    const player = makePlayer({ id: 'p1', position: 'yesod', hand: [] });
+    const failedOutcome: CheckOutcome = {
+      rolled: 1,
+      statContribution: 1,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 2,
+      effectiveDC: 12,
+      pass: false,
+    };
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'yesod', seed, retryCount: 0 },
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: failedOutcome,
+      },
+    );
+    const result = turnReducer({ state }, { kind: 'react-retry' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const env = result.value.next.state.encounter;
+    expect(env?.retryCount).toBe(1);
+    // Independent re-derivation matches the engine's: seed + retryCount = 2.
+    const expected = (['mercy', 'severity', 'balance'] as const)[
+      seededRng(seed + 1).int(0, 2)
+    ];
+    expect(env?.dreamPillar).toBe(expected);
+  });
+
+  it('react-retry at a non-Yesod Sefirah does NOT touch dreamPillar', () => {
+    // Defensive: re-seeding is gated on `state.encounter.sefirah ===
+    // 'yesod'`. A regression that re-derives unconditionally would
+    // mint a Yesod-only field onto unrelated encounters.
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const failedOutcome: CheckOutcome = {
+      rolled: 1,
+      statContribution: 1,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 2,
+      effectiveDC: 18,
+      pass: false,
+    };
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 9999, retryCount: 0 },
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: failedOutcome,
+      },
+    );
+    const result = turnReducer({ state }, { kind: 'react-retry' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const env = result.value.next.state.encounter;
+    expect(env?.sefirah).toBe('gevurah');
+    expect(env?.retryCount).toBe(1);
+    expect(env?.dreamPillar).toBeUndefined();
+  });
+});
+
 // #334 — `design/per-sefirah-mechanics.md` § 2.7: four new PrepModifier
 // variants. Surface only — the actual mechanic logic (Hod scoring,
 // Chesed gift transfer, Netzach desire stat-bonus, Yesod dream
@@ -2788,6 +3014,37 @@ describe('turnReducer — new PrepModifier variants (#334)', () => {
       expect(result.value.next.state.pendingModifiers.dreamGuesses).toEqual([
         'mercy',
       ]);
+    });
+
+    it('add: rejects a second dream-guess with prep-cap-exceeded (max one per encounter, § 3.6)', () => {
+      // Design § 3.6: "Only one dream-guess may be staged per encounter
+      // (reducer rejects the second add)." A player can `prep-remove-
+      // modifier` and re-stage with a different pillar before confirm,
+      // but stacking two simultaneous guesses is rejected.
+      const player = makePlayer({ id: 'p1', position: 'yesod' });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            dreamGuesses: ['mercy'],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'dream-guess', pillar: 'severity' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.reason.kind).toBe('prep-cap-exceeded');
+      if (result.reason.kind !== 'prep-cap-exceeded') return;
+      expect(result.reason.cap).toBe(1);
     });
 
     it('remove: un-stages by pillar equality', () => {
