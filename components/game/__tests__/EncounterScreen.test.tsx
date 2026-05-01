@@ -1312,3 +1312,256 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
     }
   });
 });
+
+/**
+ * #315 — Sefirah-themed dramatic frame. The Encounter modal becomes
+ * theatre: per-Sefirah colour framing, an avatar portrait, dramatized
+ * stat readout, d20-shaped roll button, staged verdict reveal, and
+ * Soul-Door sign-glyph payoff. These tests pin the contract — colour
+ * tokens flow from the challenged Sefirah, the new sub-components
+ * mount in the right sub-states, the d20 button replaces the
+ * rectangular Roll, and reduced-motion flattens the staging.
+ */
+describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
+  it('frame carries the challenged Sefirah key as a data attribute', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const frame = document.querySelector('[data-encounter-screen]');
+    // Gevurah is the default test challenge; the data attribute lets
+    // both tests and CSS variants key off the Sefirah without parsing
+    // the title string.
+    expect(frame?.getAttribute('data-sefirah')).toBe('gevurah');
+  });
+
+  it('frame applies Gevurah glow shadow when challenging Gevurah', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const frame = document.querySelector('[data-encounter-screen]');
+    // The frame's shadow class is the per-Sefirah glow token from
+    // tailwind.config.ts. We pin the class string directly because
+    // jsdom doesn't resolve Tailwind's compiled `box-shadow` recipe.
+    expect(frame?.className).toMatch(/shadow-glow-gevurah/);
+  });
+
+  it.each<{ sefirah: 'chesed' | 'hod' | 'yesod'; dc: number }>([
+    { sefirah: 'chesed', dc: 13 },
+    { sefirah: 'hod', dc: 12 },
+    { sefirah: 'yesod', dc: 12 },
+  ])('frame glow follows the challenged Sefirah ($sefirah)', ({ sefirah, dc }) => {
+    const state = makeChallengeState();
+    // Override player position so the shared fixture's stat lookups stay valid;
+    // EncounterScreen reads `context.sefirah`, not state.position, but the data
+    // shape lets either drive the test.
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: state,
+      context: {
+        ...baseContext,
+        sefirah,
+        statLabel: 'Stat',
+      },
+    });
+    const frame = document.querySelector('[data-encounter-screen]');
+    expect(frame?.getAttribute('data-sefirah')).toBe(sefirah);
+    expect(frame?.className).toMatch(new RegExp(`shadow-glow-${sefirah}`));
+    // Sanity: the modal is still showing the right DC for that Sefirah,
+    // so we know we're testing the right challenge target.
+    expect(document.body.textContent).toContain(`DC ${dc}`);
+  });
+
+  it('renders the avatar portrait in prep with the Sefirah Hebrew letter', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const portrait = document.querySelector('[data-avatar-portrait]');
+    expect(portrait).not.toBeNull();
+    // Gevurah's Hebrew letter mark is ג (per data/sefirah-glyphs.ts).
+    expect(portrait?.textContent).toMatch(/ג/);
+    // Portrait carries the Sefirah key so its ring class can be
+    // verified independently from inline styles.
+    expect(portrait?.getAttribute('data-sefirah')).toBe('gevurah');
+  });
+
+  it('renders d20 roll button (not a rectangular Roll) in prep', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    // The new dramatic frame replaces the rectangular Roll with a
+    // d20-shaped button. The token's icon stays inside the button so
+    // the click target is a real <button> for accessibility.
+    const rollBtn = document.querySelector('[data-action="roll"]');
+    expect(rollBtn).not.toBeNull();
+    // The button hosts the existing D20 token (data-token="d20")
+    // either directly as a child SVG or inside a roll wrapper.
+    const d20 = rollBtn?.querySelector('[data-token="d20"]');
+    expect(d20).not.toBeNull();
+  });
+
+  it('renders the dramatized stat readout with icon + display number', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const readout = document.querySelector('[data-stat-readout]');
+    expect(readout).not.toBeNull();
+    // The icon lives inside the readout (large size pinned via class).
+    expect(readout?.querySelector('svg')).not.toBeNull();
+    // Stat number renders inside [data-stat-readout-value], font-display.
+    const value = readout?.querySelector('[data-stat-readout-value]');
+    expect(value?.textContent).toMatch(/12/);
+    expect(value?.className).toMatch(/font-display/);
+  });
+
+  it('projected total updates as ally is staged', () => {
+    const state = makeChallengeState();
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: state,
+    });
+    const before = document
+      .querySelector('[data-projected-total]')
+      ?.textContent?.trim();
+    expect(before).toMatch(/12 vs DC 15/);
+    // Toggle ally1 (stat 10 → assist +5). Projected total should rise to 17.
+    const ally1 = document.querySelector(
+      '[data-ally="ally1"] input',
+    ) as HTMLInputElement;
+    act(() => {
+      fireEvent.click(ally1);
+    });
+    const after = document
+      .querySelector('[data-projected-total]')
+      ?.textContent?.trim();
+    expect(after).toMatch(/17 vs DC 15/);
+  });
+
+  it('verdict reveal carries pass / fail data attribute distinct from outcome string', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = seededRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      // Stat 18 + Gevurah DC 15 — most rolls pass.
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{ ...baseContext, stat: 18 }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+      const reveal = document.querySelector('[data-verdict-reveal]');
+      expect(reveal).not.toBeNull();
+      // The reveal pins pass/fail explicitly — visual stages branch
+      // off this attribute (gold sparkle for pass, red separation
+      // for fail).
+      expect(reveal?.getAttribute('data-verdict')).toMatch(/^(pass|fail)$/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('soul-door callout shows the player sign glyph alongside the existing banner', () => {
+    const state = makeChallengeState();
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: state,
+      context: {
+        ...baseContext,
+        soulDoorDelta: -2,
+        playerSign: 'aries',
+      },
+    });
+    // Original red banner remains.
+    const banner = document.querySelector('[data-soul-door]');
+    expect(banner).not.toBeNull();
+    // New: sign-glyph + payoff copy. The glyph is the Aries symbol ♈
+    // (from data/zodiac-signs.ts) and the copy reads "Your Star opens
+    // this gate." per the ticket.
+    const signCallout = document.querySelector('[data-soul-door-sign]');
+    expect(signCallout).not.toBeNull();
+    expect(signCallout?.textContent).toMatch(/♈/);
+    expect(document.body.textContent).toMatch(/Your Star opens this gate/);
+  });
+
+  it('reduced-motion: d20 settles without tumble (no `rolling=true` after 50ms)', () => {
+    vi.useFakeTimers();
+    const restore = ((): (() => void) => {
+      const original = window.matchMedia;
+      window.matchMedia = ((query: string): MediaQueryList => {
+        const matches = query === '(prefers-reduced-motion: reduce)';
+        return {
+          matches,
+          media: query,
+          onchange: null,
+          addListener: (): void => undefined,
+          removeListener: (): void => undefined,
+          addEventListener: (): void => undefined,
+          removeEventListener: (): void => undefined,
+          dispatchEvent: (): boolean => false,
+        } as unknown as MediaQueryList;
+      }) as typeof window.matchMedia;
+      return (): void => {
+        window.matchMedia = original;
+      };
+    })();
+    try {
+      const state = makeChallengeState();
+      const rng = seededRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{ ...baseContext, stat: 18 }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      // Past the reduced-motion 50ms but well short of the 800ms
+      // standard tumble. Under reduced-motion, the d20 must already
+      // be settled (rolling=false) and the verdict reveal must
+      // already be visible.
+      act(() => {
+        vi.advanceTimersByTime(60);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+      const screenEl = document.querySelector('[data-encounter-screen]');
+      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe(
+        'react',
+      );
+      // The verdict reveal in react sub-state should be flagged for
+      // reduced-motion via a stable attribute that CSS reads.
+      const reveal = document.querySelector('[data-verdict-reveal]');
+      expect(reveal?.getAttribute('data-reduced-motion')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+      restore();
+    }
+  });
+});

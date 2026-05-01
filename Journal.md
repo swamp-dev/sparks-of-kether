@@ -4488,3 +4488,20 @@ Local CI green again on the cumulative diff (verify + build + e2e + integration)
   - **MINOR 2 — properties test imports hoisted** (`9ad21e0`). Moved the Kether-property-test imports from a mid-file scope (between `describe` blocks) to the file-level import section; dropped the `makePlayerKether` / `makeStateKether` aliases now that they fold into the existing `@/test/fixtures` line.
   - **Skipped (not actionable in K1):** `ketherPassCard` +1 Separation bypassing the event system (flagged for K2/K4 author awareness — a dedicated `kind: 'kether-pass'` event variant can land alongside the wire layer if needed); `allAtKether` re-check in `checkEndgame` (redundant but harmless — defer).
   - **Local CI re-run: GREEN end-to-end.** verify ✓, build ✓, e2e (60 passed / 51 skipped) ✓, integration (9 passed across 3 files) ✓. Hosted CI still billing-blocked per project memory; admin-merge bypass remains the parent's call.
+
+## 2026-04-30T23:05:00-04:00 — #315: Sefirah-themed dramatic frame for the Encounter modal
+
+**Pushed:** Phase-3 ticket of design Epic #310. The Encounter modal goes from a tax-form to a staged dramatic surface. Five sub-components in `components/game/encounter/`: per-Sefirah `SEFIRAH_FRAME_TOKENS` table; `AvatarPortrait` (Disco-Elysium circular plate with Hebrew letter on tinted ring; placeholder until Epic #125 sub-ticket 8 ships artwork); `StatReadout` (active stat icon at large size with breath halo); `D20Button` (replaces rectangular Roll; idle has per-Sefirah glow + slow breath; settled swaps to pass/fail glow); `VerdictReveal` (pass = brief gold sparkle, fail = modal dims + Gevurah-red separation line). Soul Door callout shows player's sign glyph with "Your Star opens this gate." copy when door open. /demo/challenge swapped from deprecated ChallengeModal to live EncounterScreen. 11 new contract tests; 43/43 EncounterScreen tests pass.
+
+**Why:** Phase 3 of Epic #310. The encounter is the dramatic core of every turn. Pre-#315 it felt like a tax form; the dramatic frame makes it feel like the moment it is.
+
+**Notes:**
+- **Implementing subagent self-reviewed via `code-reviewer` subagent** — 0 critical / 4 significant / 7 minor. Agent applied S-1 + S-2 in `b199226` then stopped at the review without opening PR (same pattern as #312, #317).
+- **S-3 (focus-ring composition on D20Button, PM-fixed):** added `focus-visible:ring-offset-2 focus-visible:ring-offset-ground` so the focus ring has a deep-indigo backstop creating dead space between the ring and the per-Sefirah glow halo. Re-reviewer flagged that `ring-offset-ground` matches the modal panel color so the offset is cosmetically null in most positions — structural separation still solves the original collision. Logged as M-8 for a future polish ticket if higher-contrast offset is wanted.
+- **S-4 (untested seed-hash in /demo/challenge, PM-fixed):** added an `// untested-by-design` comment explaining the dev-only scope (route 404s in production).
+- **Re-review by `code-reviewer` subagent** on the post-fix diff: verdict `Ship`.
+- **`pnpm ci:local` ALL FOUR JOBS GREEN** post-fix: verify ✓, build ✓, e2e ✓, integration ✓.
+- **Merged origin/main into branch** (#312 Tree breathes landed first); two binary screenshot conflicts on `demo-challenge-{,soul-door}-desktop.png` resolved `--ours` (this PR's flavor of the encounter is what should ship).
+- **Hosted CI:** still billing-blocked per project memory.
+
+**Commit(s):** `41b645a` (failing tests), `8b4a9bb` (dramatic-frame implementation), `b199226` (S-1 dead-props refactor + demo seed-hash dep fix), `c02b4d2` (visual baselines), plus this commit's S-3 + S-4 fixes + main merge.

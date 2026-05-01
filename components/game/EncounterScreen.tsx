@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { sefirahByKey } from '@/data';
+import { sefirahByKey, zodiacSigns } from '@/data';
 import {
   avatarNames,
   type EncounterAvatarKey,
@@ -19,15 +19,18 @@ import {
 } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
 import type { PlayerState } from '@/engine/types';
-import { StatIcon } from '@/components/icons/StatIcon';
 import { StatSheet } from '@/components/player/StatSheet';
-import { D20Roll } from '@/components/challenge/D20Roll';
 import type {
   ChallengeContext,
   ChallengeResolution,
 } from '@/lib/challenge-types';
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
+import { AvatarPortrait } from './encounter/AvatarPortrait';
+import { D20Button } from './encounter/D20Button';
+import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
+import { StatReadout } from './encounter/StatReadout';
+import { VerdictReveal } from './encounter/VerdictReveal';
 
 /**
  * EncounterScreen — replaces `ChallengeModal` (#228) as the visual layer
@@ -539,6 +542,56 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     });
   };
 
+  // Per-Sefirah dramatic framing (#315). Glow recipe + tinted accents
+  // come from `SEFIRAH_FRAME_TOKENS`; the non-Kether/Malkuth invariant
+  // is enforced by the `challenge.kind === 'check'` throw above.
+  const frameTokens = SEFIRAH_FRAME_TOKENS[context.sefirah];
+
+  // Reduced-motion snapshot. Owned at the top so each sub-component
+  // gets the same value on the same render — avoids the case where
+  // VerdictReveal probes mid-render and disagrees with the parent's
+  // resolve-timer branch. Read once on mount + on sub-phase change
+  // so a media-query change between roll and verdict doesn't tear.
+  const [reducedMotion, setReducedMotion] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia(REDUCED_MOTION_QUERY);
+    setReducedMotion(mql.matches);
+    // No listener wiring — the flag is read once per encounter
+    // sub-state. A user toggling reduced-motion mid-encounter is a
+    // rare enough case that re-evaluating per state-change covers
+    // it without the listener cleanup overhead.
+  }, [uiSubPhase]);
+
+  // Avatar caption: in prep, the player-response line; in pass/fail,
+  // the verdict. The portrait stays mounted across all three sub-
+  // states so its position / breath halo don't reset between them.
+  const avatarCaption =
+    uiSubPhase === 'prep'
+      ? playerResponse
+      : verdictLine !== undefined && avatarHasCopy
+        ? verdictLine
+        : undefined;
+  const avatarState: 'prep' | 'pass' | 'fail' =
+    uiSubPhase === 'prep'
+      ? 'prep'
+      : resolvedOutcome?.pass === true
+        ? 'pass'
+        : 'fail';
+  const avatarNameLabel =
+    avatarHasCopy && avatarKey in avatarNames
+      ? avatarNames[avatarKey].greek
+      : undefined;
+
+  // Player-sign zodiac entry — used for the Soul-Door payoff callout
+  // (#315) when the door is open AND the player's sign was carried
+  // through context. Falls back to undefined when sign is absent
+  // (demo / test contexts); the original red banner still renders.
+  const playerSignEntry =
+    context.playerSign !== undefined
+      ? zodiacSigns.find((s) => s.key === context.playerSign)
+      : undefined;
+
   return (
     <section
       role="dialog"
@@ -546,31 +599,76 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       aria-labelledby={`encounter-${context.sefirah}-title`}
       data-encounter-screen
       data-encounter-sub-phase={uiSubPhase}
+      data-sefirah={context.sefirah}
       data-mode={mode}
-      className={`rounded-lg border border-veil/30 bg-ground p-6 text-veil ${className ?? ''}`}
+      // Border + shadow follow the challenged Sefirah's tokens
+      // (`docs/motion.md` § Glow scale). The `bg-ground` keeps the
+      // panel itself clearly differentiated from the void
+      // substrate underneath.
+      className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow} ${className ?? ''}`}
     >
-      <h2
-        id={`encounter-${context.sefirah}-title`}
-        className="font-display text-2xl tracking-widest"
-      >
-        Challenge: {sefirahData.englishName}
-      </h2>
-      <p className="mt-1 text-sm opacity-70">
-        {sefirahData.hebrewName} · DC {effectiveDC}
-        {context.shortcut ? ` (shortcut +${SHORTCUT_DC_PENALTY})` : ''}
-      </p>
+      {/*
+        Header row: avatar portrait (top-left) + title block (right).
+        The portrait is mounted in every sub-state so its breath
+        halo doesn't reset on prep→react. Caption swaps from
+        player-response → verdict at react time.
+      */}
+      <header className="flex items-start gap-4">
+        <AvatarPortrait
+          sefirah={context.sefirah}
+          state={avatarState}
+          {...(avatarNameLabel !== undefined
+            ? { avatarName: avatarNameLabel }
+            : {})}
+          {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
+        />
+        <div className="flex-1">
+          <h2
+            id={`encounter-${context.sefirah}-title`}
+            // Header underline is the per-Sefirah accent — a 2px
+            // border-bottom in the Sefirah's colour. Picks up the
+            // `headerAccent` token so swap is one-line.
+            className={`border-b-2 pb-1 font-display text-2xl tracking-widest ${frameTokens.headerAccent}`}
+          >
+            Challenge: {sefirahData.englishName}
+          </h2>
+          <p className="mt-1 text-sm opacity-70">
+            <span className="font-hebrew">{sefirahData.hebrewName}</span>
+            {' · DC '}
+            {effectiveDC}
+            {context.shortcut ? ` (shortcut +${SHORTCUT_DC_PENALTY})` : ''}
+          </p>
+        </div>
+      </header>
 
       {showSoulDoor ? (
-        <p
-          data-soul-door
-          className="mt-2 rounded border border-illumination/40 bg-illumination/5 px-3 py-1 text-sm"
-          style={{ borderColor: sefirahData.color }}
-        >
-          Soul Door open here: DC {baseDC} → {effectiveDC}
-          {context.shortcut
-            ? ` (shortcut +${SHORTCUT_DC_PENALTY}, Door −${Math.abs(soulDoorDelta)})`
-            : ''}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p
+            data-soul-door
+            className="rounded border border-illumination/40 bg-illumination/5 px-3 py-1 text-sm"
+            style={{ borderColor: sefirahData.color }}
+          >
+            Soul Door open here: DC {baseDC} → {effectiveDC}
+            {context.shortcut
+              ? ` (shortcut +${SHORTCUT_DC_PENALTY}, Door −${Math.abs(soulDoorDelta)})`
+              : ''}
+          </p>
+          {playerSignEntry !== undefined ? (
+            // Sign-glyph payoff (#315 § 6). Renders the player's
+            // zodiac glyph (e.g. ♈) next to the existing banner with
+            // "Your Star opens this gate." copy — reads as the
+            // payoff for the sign-picker choice.
+            <span
+              data-soul-door-sign
+              className="inline-flex items-center gap-2 rounded border border-veil/20 bg-veil/5 px-3 py-1 text-sm"
+            >
+              <span aria-hidden className="text-lg">
+                {playerSignEntry.glyph}
+              </span>
+              <span className="opacity-80">Your Star opens this gate.</span>
+            </span>
+          ) : null}
+        </div>
       ) : null}
 
       {player ? (
@@ -583,15 +681,21 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
         </div>
       ) : null}
 
-      <div className="mt-4 flex items-center gap-2 rounded bg-illumination/10 px-3 py-2 ring-1 ring-illumination">
-        <StatIcon stat={sefirahData.stat} className="h-5 w-5" />
-        <span className="capitalize">{context.statLabel}</span>
-        <span
-          className="ml-auto font-display text-lg tabular-nums"
-          data-stat-contribution
-        >
-          {context.stat}
-        </span>
+      {/*
+        Dramatized stat readout — replaces the old illumination-pill.
+        Stat icon at large size with a Sefirah-coloured breath halo,
+        display-face number, projected total animating upward as
+        allies/burns are staged.
+      */}
+      <div className="mt-4">
+        <StatReadout
+          stat={sefirahData.stat}
+          statLabel={context.statLabel}
+          statValue={context.stat}
+          projectedTotal={projectedTotal}
+          effectiveDC={effectiveDC}
+          glowClass={frameTokens.frameShadow}
+        />
       </div>
 
       {uiSubPhase === 'prep' ? (
@@ -610,16 +714,17 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           cumulativeCardBurns={cumulativeCardBurns}
           cumulativeSparkBurns={cumulativeSparkBurns}
           isRetry={isRetry}
-          projectedTotal={projectedTotal}
-          effectiveDC={effectiveDC}
           onRoll={handleRoll}
           onCancel={onCancel}
-          {...(playerResponse !== undefined ? { playerResponse } : {})}
+          glowClass={frameTokens.buttonGlow}
         />
       ) : null}
 
       {uiSubPhase === 'resolve' && resolvedOutcome !== null ? (
-        <ResolvePanel outcome={resolvedOutcome} />
+        <ResolvePanel
+          outcome={resolvedOutcome}
+          glowClass={frameTokens.buttonGlow}
+        />
       ) : null}
 
       {uiSubPhase === 'react' && resolvedOutcome !== null ? (
@@ -628,6 +733,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           onContinue={handleContinue}
           onRetry={handleRetry}
           onAccept={handleAccept}
+          reducedMotion={reducedMotion}
+          glowClass={frameTokens.buttonGlow}
           {...(avatarHasCopy
             ? { avatarName: avatarNames[avatarKey].greek }
             : {})}
@@ -657,20 +764,22 @@ interface PrepPanelProps {
   readonly cumulativeCardBurns: number;
   readonly cumulativeSparkBurns: number;
   readonly isRetry: boolean;
-  readonly projectedTotal: number;
-  readonly effectiveDC: number;
   readonly onRoll: () => void;
   readonly onCancel: (() => void) | undefined;
   /**
-   * Pre-roll player line ("You answer: …"), keyed to the player's
-   * sign + the avatar. Picked once per encounter by the parent and
-   * passed through; absent in demo / test contexts that don't carry
-   * a player sign. Renders above the retry-context block.
+   * Sefirah-coloured glow class — applied to the d20 roll button so
+   * it reads as part of the same dramatic frame. Comes from the
+   * parent's `SEFIRAH_FRAME_TOKENS[context.sefirah].buttonGlow`.
    */
-  readonly playerResponse?: string;
+  readonly glowClass: string;
 }
 
 function PrepPanel(props: PrepPanelProps): JSX.Element {
+  // #315: `projectedTotal` and `effectiveDC` previously rendered
+  // in the prep-panel "Projected before d20" footer; that block is
+  // gone — the new `StatReadout` (rendered by the parent above
+  // this panel) carries the canonical [data-projected-total]
+  // surface. PrepPanel no longer needs either field.
   const {
     mode,
     allies,
@@ -686,23 +795,12 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     cumulativeCardBurns,
     cumulativeSparkBurns,
     isRetry,
-    projectedTotal,
-    effectiveDC,
     onRoll,
     onCancel,
-    playerResponse,
+    glowClass,
   } = props;
   return (
     <div className="mt-4 space-y-4" data-encounter-prep>
-      {playerResponse !== undefined ? (
-        <p
-          data-player-response
-          className="rounded border border-veil/15 bg-veil/5 px-3 py-2 text-sm italic opacity-80"
-        >
-          {playerResponse}
-        </p>
-      ) : null}
-
       {isRetry ? (
         // Retry context — the player is stacking burns on top of a
         // failed-roll's preserved cumulative count. Surface what's
@@ -775,24 +873,13 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         onChange={adjustSparkBurns}
       />
 
-      <div className="flex items-center justify-between rounded bg-veil/5 px-3 py-2">
-        <span className="text-xs uppercase tracking-widest opacity-70">
-          Projected before d20
-        </span>
-        <span className="font-display tabular-nums" data-projected-total>
-          {projectedTotal} vs DC {effectiveDC}
-        </span>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
+      <div className="flex items-center justify-center gap-4 pt-2">
+        <D20Button
+          state="idle"
+          glowClass={glowClass}
           onClick={onRoll}
-          data-action="roll"
-          className="flex-1 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
-        >
-          Roll
-        </button>
+          caption="Roll"
+        />
         {onCancel ? (
           <button
             type="button"
@@ -861,15 +948,22 @@ function Stepper({
 
 interface ResolvePanelProps {
   readonly outcome: CheckOutcome;
+  readonly glowClass: string;
 }
 
-function ResolvePanel({ outcome }: ResolvePanelProps): JSX.Element {
+function ResolvePanel({ outcome, glowClass }: ResolvePanelProps): JSX.Element {
   return (
     <div
       className="mt-6 flex flex-col items-center gap-3"
       data-encounter-resolve
     >
-      <D20Roll value={outcome.rolled} rolling={true} className="h-16 w-16" />
+      <D20Button
+        state="rolling"
+        value={outcome.rolled}
+        glowClass={glowClass}
+        caption="Rolling…"
+        disabled
+      />
       <div
         // The d20 face is the only unambiguous status the resolve
         // sub-state can announce — modifier breakdown text appears in
@@ -917,6 +1011,8 @@ interface ReactPanelProps {
   readonly onContinue: () => void;
   readonly onRetry: () => void;
   readonly onAccept: () => void;
+  readonly reducedMotion: boolean;
+  readonly glowClass: string;
   /**
    * Greek avatar name (e.g. "Hermes", "Demeter"). Optional — when
    * absent (demo / tests without a player sign), the placeholder
@@ -938,6 +1034,8 @@ function ReactPanel({
   onContinue,
   onRetry,
   onAccept,
+  reducedMotion,
+  glowClass,
   avatarName,
   verdictLine,
 }: ReactPanelProps): JSX.Element {
@@ -946,7 +1044,14 @@ function ReactPanel({
       className="mt-6 flex flex-col items-center gap-3"
       data-encounter-react
     >
-      <D20Roll value={outcome.rolled} rolling={false} className="h-16 w-16" />
+      <D20Button
+        state="settled"
+        value={outcome.rolled}
+        result={outcome.pass ? 'pass' : 'fail'}
+        glowClass={glowClass}
+        caption={`${outcome.total} vs ${outcome.effectiveDC}`}
+        disabled
+      />
       <div
         role="status"
         aria-live="polite"
@@ -964,31 +1069,20 @@ function ReactPanel({
           {outcome.pass ? 'Pass' : 'Fail'}
         </p>
       </div>
-      {/*
-        Per-Sefirah avatar verdict (#277). When the parent supplies
-        `avatarName` + `verdictLine`, render "Hermes: <verdict>".
-        Falls back to the placeholder line when either is absent —
-        keeps the visual rhythm intact for demo / test harnesses
-        that don't pass a player sign through ChallengeContext.
-      */}
-      <p data-avatar-verdict className="text-sm italic opacity-80">
-        {avatarName !== undefined && verdictLine !== undefined ? (
-          <>
-            <span data-avatar-name className="not-italic font-semibold">
-              {avatarName}:
-            </span>{' '}
-            {verdictLine}
-          </>
-        ) : (
-          'The Sefirah responds.'
-        )}
-      </p>
+      <VerdictReveal
+        outcome={outcome}
+        reducedMotion={reducedMotion}
+        {...(avatarName !== undefined ? { avatarName } : {})}
+        {...(verdictLine !== undefined ? { verdictLine } : {})}
+      />
       {outcome.pass ? (
         <button
           type="button"
           onClick={onContinue}
           data-action="continue"
-          className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+          // Pass action: bright Tiferet-gold button so the success
+          // path reads as the rewarded one.
+          className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground shadow-glow-tiferet"
         >
           Continue
         </button>
@@ -998,7 +1092,10 @@ function ReactPanel({
             type="button"
             onClick={onRetry}
             data-fail-choice="retry"
-            className="rounded border border-illumination px-4 py-2 text-sm"
+            // Fail / retry: bright option — burn-another-card is the
+            // active choice. Borders use the Sefirah glow so it
+            // stays themed.
+            className={`rounded border border-illumination px-4 py-2 text-sm ${glowClass}`}
           >
             Burn another card to retry
           </button>
@@ -1006,7 +1103,9 @@ function ReactPanel({
             type="button"
             onClick={onAccept}
             data-fail-choice="accept"
-            className="rounded bg-veil/10 px-4 py-2 text-sm"
+            // Fail / accept: dim/heavy — visually the resigned
+            // option. No glow; muted background; opacity dropped.
+            className="rounded bg-veil/10 px-4 py-2 text-sm opacity-70"
           >
             Accept setback
           </button>
