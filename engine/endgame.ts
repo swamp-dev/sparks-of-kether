@@ -64,7 +64,7 @@ export function checkEndgame(state: GameState): EndgameStatus {
   // `checkEndgame` deliberately returns `'ongoing'`.
   //
   // The `separation-overflow` loss branch is handled inside the ritual
-  // (per § 4.4: `kether-pass-card` exits early to `phase: 'end'` when
+  // (per § 4.4: `kether-witness-pass` exits early to `phase: 'end'` when
   // the +1 Separation tick would overflow), so guarding here doesn't
   // hide it — the post-exit state has `phase === 'end'` and falls
   // through to the existing overflow check.

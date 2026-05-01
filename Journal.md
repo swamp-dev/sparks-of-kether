@@ -4562,3 +4562,35 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
   - **Local CI: GREEN end-to-end.** `pnpm ci:local` clean across all four jobs — verify (typecheck + lint + 1436 tests / 1 todo across 85 files), build, e2e (60 passed / 51 skipped), real-Supabase integration (9 passed across 3 files). One transient e2e flake on a chained run (sign-picker `Confirm` button timeout, unrelated to engine changes — disappeared on rerun); final ci:local exited green. Hosted CI still billing-blocked per project memory; admin-merge bypass on the parent's call after review.
 
 **Commit(s):** `363f67a` (failing tests), `85af3a9` (engine implementation), `6d6b19d` (wiring + lib-level tests).
+
+## 2026-05-01T10:12:00-04:00 — #350: K2 multiplayer wire for the Final Threshold ritual
+
+**Pushed:** Six commits closing the K2 spawn of #285 (Final Threshold). The multiplayer dispatch surface for the ritual on top of K1 (#344) and the trigger detection (#345).
+
+* Five new `ClientAction` kinds in `lib/room-actions.ts` per design spec § 5: `kether-witness-play`, `kether-witness-pass`, `kether-close-stage-spark`, `kether-close-unstage-spark`, `threshold-confirm`. Each maps 1:1 to a K1 reducer arm in `engine/kether.ts` — the dispatcher does no engine work itself, just the rejection-shape conversion (`{ kind: 'kether', cause: KetherRejection }`).
+* Sixth host-only kind: `kether-host-skip-witness` per § 7.1's disconnect defense. The host (`state.players[0]` by convention; matches `rooms.host_id` since the room creator is seated first) can dispatch a forced pass on behalf of an absent witness. Cap-exceeded falls back to a forced lowest-arcanum play so disconnection cannot evade the per-player pass cap.
+* Per-action authorize gate (`lib/authorize.ts`) per § 3.3 + § 5.3: witness actions require `currentWitnessPlayerId(state)`; stage / unstage / confirm are open to any player (identity-bound only); host-skip enforces both gates from § 7.1 — caller is host AND `targetPlayerId` is the current witness.
+* `serverArrivedAtKether` on the `move` action: when present and the move lands the player at Kether, applyMove's clock is overridden with the server stamp so `witnessOrder` is deterministic across drifting client clocks (§ 2.2). The events route stamps it server-side on every move (`Date.now()`) and overwrites whatever the client supplied — closes a griefing vector where a client could otherwise lie about their arrival time to pick their position in the round-robin.
+* Real-Supabase integration test (`tests/integration/ketherRitual.test.ts`) drives a 2-player ritual end-to-end: convergence → witness round-robin → closure → won; a separate arm pins the loss branch (`illumination-gap`); a third arm pins host-skip both as authorize gate (non-host rejected with `not-host`) and as engine effect.
+
+**Why:** K2 is the prerequisite for K3 (UI) and K4 (`useTurn` adapter). With K2 in place, Realtime can drive a multi-browser ritual through the same pure reducers the hot-seat path uses.
+
+**Notes:**
+
+* **Action-kind name drift caught by code-reviewer.** The ticket body listed shorter names (`kether-play-card` etc.); the locked design spec at `design/final-threshold.md` § 5 carries the full `kether-witness-play` / `threshold-confirm` form. Per CLAUDE.md "the source of truth is `design/`", renamed to match the spec across `ClientAction`, dispatcher, authorize, and tests so K3 / K4 don't inherit drift.
+
+* **Missing host-skip target gate caught by code-reviewer.** First draft only checked `caller === host`; the spec's three-gate rule (caller is host AND `targetPlayerId` is current witness AND absence-detected) needs gate (b) at the authorize layer — without it a host can probe witness identity by 422-vs-403 response shape. Engine catches it as a second line of defense, but the authorize layer is the authoritative gate. Fix: added the second gate; widened `not-witness-turn` rejection's `action` union to include `'kether-host-skip-witness'`, and `targetPlayerId` field for the host-skip case.
+
+* **K1/K2 boundary held.** K2's authorize gate is a pure read of `currentWitnessPlayerId(state)` — never duplicates K1's pointer-advance logic. Any future change to advance rules (e.g. a different tie-break) is a K1-only change because K2's gate consults the same query the reducer consumes.
+
+* **Loss branch in integration test (review fix).** § 7.1 K2 spec says "pass and fail branches both pinned." First draft only had win. Loss arm now pins `checkEndgame.status === 'lost'` AND `reason === 'illumination-gap'` post-`threshold-confirm` against an unmet-margin state.
+
+* **Server-side stamping of `serverArrivedAtKether`.** Initial draft stamped on the client and trusted the field server-side; reviewer flagged the griefing vector. Fix: `app/api/rooms/[code]/events/route.ts` now overwrites `serverArrivedAtKether: Date.now()` for every `move` action and persists the stamped action to the audit log so the engine fold and the audit are consistent. Existing route tests check only row insertion, not payload shape, so the change introduced no regression.
+
+* **Re-review by `code-reviewer` subagent on the post-fix diff.** Verdict: `Ship`. Two stale comments in `engine/types.ts` and `engine/endgame.ts` that referred to the pre-rename action kinds were the only remaining items; folded into a small `docs(engine)` commit.
+
+* **`pnpm ci:local` ALL FOUR JOBS GREEN over the run series.** verify (typecheck + lint + test:coverage 1509 passed / 1 todo across 90 files) ✓, build (production Next.js, /play 11.1 kB, all 19 routes prerender) ✓, e2e (Playwright 60 passed / 51 skipped for visual-regression; one transient `net::ERR_CONNECTION_REFUSED` flake on a chained run, disappeared on rerun) ✓, integration (real-Supabase 12 passed across 4 files — three new tests for #350 covering won / lost / host-skip) ✓.
+
+* **Hosted CI:** still billing-blocked per project memory; PR is for human-review.
+
+**Commit(s):** `ffd2232` (initial wire-format + authorize), `d5ebdca` (unit tests for both layers), `d5052c5` (integration test against real Supabase), `5e33580` (writeSnapshot upsert onConflict fix), `f4f1455` (code-reviewer findings — design-spec rename + missing host-skip gate + server-stamp + loss branch), `b1b4b7f` (stale-comment cleanup).

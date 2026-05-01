@@ -156,6 +156,18 @@ export async function POST(
     );
   }
 
+  // #350: stamp `serverArrivedAtKether` server-side on every move.
+  // Without this, a malicious client could lie about their arrival
+  // timestamp and unilaterally pick their position in `witnessOrder`
+  // — § 2.2 requires the order be server-deterministic. Overwriting
+  // any client-supplied value is the simplest fix; the field is
+  // ignored by `applyMove` unless the move actually lands the player
+  // at Kether, so non-Kether moves pay no cost.
+  const stampedAction: ClientAction =
+    action.kind === 'move'
+      ? { ...action, serverArrivedAtKether: Date.now() }
+      : action;
+
   // Fold the action. RNG is seeded from the row's last_event_id so
   // re-applying the same action against the same snapshot produces
   // the same outcome — handy for any future "verify client outcome"
@@ -169,7 +181,7 @@ export async function POST(
   const rng = seededRng(snapshotLookup.data.last_event_id + 1);
   let apply;
   try {
-    apply = applyClientAction(currentState, action, rng);
+    apply = applyClientAction(currentState, stampedAction, rng);
   } catch (err) {
     return NextResponse.json(
       {
@@ -197,7 +209,11 @@ export async function POST(
       room_id: room.id,
       player_id: action.playerId,
       event_type: action.kind,
-      payload: action,
+      // Persist the SERVER-stamped action — the audit log's source of
+      // truth must match what the engine actually folded into the
+      // snapshot. For non-move actions this is identical to the
+      // client's payload.
+      payload: stampedAction,
     })
     .select()
     .single<{ id: number }>();

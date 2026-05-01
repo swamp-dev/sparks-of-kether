@@ -680,7 +680,7 @@ export interface KetherRitualState {
   readonly witnessOrder: readonly string[];
   /**
    * Index into `witnessOrder` of whose turn it currently is. Advances
-   * on each `kether-play-card` / `kether-pass-card`, skipping empty
+   * on each `kether-witness-play` / `kether-witness-pass`, skipping empty
    * queues per § 5.3. Frozen when `subPhase === 'close'`.
    */
   readonly witnessTurnIndex: number;
@@ -712,7 +712,7 @@ export interface KetherRitualState {
   readonly stagedClosureSparks: readonly KetherStagedSpark[];
   /**
    * Set true by the first `threshold-confirm` so subsequent
-   * `kether-stage-spark` / `kether-unstage-spark` / `threshold-confirm`
+   * `kether-close-stage-spark` / `kether-close-unstage-spark` / `threshold-confirm`
    * actions are rejected (§ 2.4 first-confirm-wins). Persists on the
    * post-ritual state (the phase has exited to `'end'`) so a stale
    * client can read why their action was rejected.

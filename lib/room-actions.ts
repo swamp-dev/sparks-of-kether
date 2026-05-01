@@ -1,7 +1,15 @@
 import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
-import { maybeTriggerKetherRitual } from '@/engine/kether';
+import {
+  ketherConfirmClosure,
+  ketherPassCard,
+  ketherPlayCard,
+  ketherStageSpark,
+  ketherUnstageSpark,
+  maybeTriggerKetherRitual,
+  type KetherRejection,
+} from '@/engine/kether';
 import { acceptSetback } from '@/engine/checks';
 import type { CheckOutcome } from '@/engine/types';
 import { drawNCards, MEDITATE_DRAW } from '@/engine/draws';
@@ -38,6 +46,16 @@ export type ClientAction =
       readonly kind: 'move';
       readonly playerId: string;
       readonly pathNumber: number;
+      /**
+       * #350: server-side Realtime arrival timestamp (ms since epoch).
+       * Optional; when present and the move lands the player at Kether,
+       * `applyClientAction` overrides the local `Date.now()` stamp on
+       * `PlayerState.arrivedAtKetherAt` with this value so all clients
+       * agree on `witnessOrder` (`design/final-threshold.md` § 2.2).
+       * Hot-seat callers omit it; multiplayer route stamps it from the
+       * server clock before dispatching.
+       */
+      readonly serverArrivedAtKether?: number;
     }
   | {
       readonly kind: 'prep-add-modifier';
@@ -87,6 +105,80 @@ export type ClientAction =
   | {
       readonly kind: 'end-turn';
       readonly playerId: string;
+    }
+  | {
+      /**
+       * #350 (K2): active witness plays one card during the round-robin
+       * (`design/final-threshold.md` § 2.3). Authorized only when
+       * `playerId === currentWitnessPlayerId(state)` and the ritual is in
+       * `subPhase === 'witness'`. The engine cross-checks the arcanum
+       * is in the player's hand.
+       */
+      readonly kind: 'kether-witness-play';
+      readonly playerId: string;
+      readonly arcanum: number;
+    }
+  | {
+      /**
+       * #350 (K2): active witness passes their turn (+1 Separation; cap
+       * `⌈personalQueueLength / 2⌉`). Same authorize rule as
+       * `kether-witness-play`.
+       */
+      readonly kind: 'kether-witness-pass';
+      readonly playerId: string;
+    }
+  | {
+      /**
+       * #350 (K2): any player stages one of their held Sparks for the
+       * closure window. Pre-confirm only; rejected once `closureLocked`
+       * (first-confirm-wins per § 2.4).
+       */
+      readonly kind: 'kether-close-stage-spark';
+      readonly playerId: string;
+      readonly sefirah: SefirahKey;
+    }
+  | {
+      /**
+       * #350 (K2): symmetric un-stage. Pre-confirm only.
+       */
+      readonly kind: 'kether-close-unstage-spark';
+      readonly playerId: string;
+      readonly sefirah: SefirahKey;
+    }
+  | {
+      /**
+       * #350 (K2): any player closes the Spark window. The first confirm
+       * wins; subsequent confirms reject (`kether-already-confirmed`).
+       * The reducer consumes staged Sparks (+1 Illumination each),
+       * locks `closureLocked: true`, and exits the ritual to
+       * `phase: 'end'` so post-state `checkEndgame` carries the actual
+       * `'won'` / `'lost'` signal (§ 3.4).
+       */
+      readonly kind: 'threshold-confirm';
+      readonly playerId: string;
+    }
+  | {
+      /**
+       * #350 (K2 / § 7.1 disconnect defense): the host (room creator,
+       * by convention `state.players[0]`) forces the absent witness to
+       * pass. Authorized only when the dispatcher *is* the host; the
+       * engine layer treats this as a normal pass (+1 Separation,
+       * counts toward the absent player's pass cap). If the cap would
+       * be exceeded, the dispatcher falls through to a forced
+       * `kether-witness-play` of the absent player's lowest-arcanum card —
+       * disconnection is not a get-out-of-jail card per § 2.3's pass-
+       * cap rationale.
+       *
+       * The presence-detection precondition (idle > 30s OR explicit
+       * disconnect) is a UI / Realtime concern; the K2 dispatcher
+       * trusts the host gate and lets the UI surface the affordance
+       * only when the condition holds.
+       */
+      readonly kind: 'kether-host-skip-witness';
+      /** Caller's id — must match `state.players[0].id`. */
+      readonly playerId: string;
+      /** Absent witness whose turn is being skipped. */
+      readonly targetPlayerId: string;
     };
 
 export type ApplyActionRejection =
@@ -94,6 +186,7 @@ export type ApplyActionRejection =
   | { readonly kind: 'prep'; readonly cause: TurnReducerError }
   | { readonly kind: 'challenge'; readonly cause: string }
   | { readonly kind: 'meditate'; readonly cause: 'unknown-player' }
+  | { readonly kind: 'kether'; readonly cause: KetherRejection }
   | { readonly kind: 'unknown-action' };
 
 export type ApplyActionResult =
@@ -121,7 +214,22 @@ export function applyClientAction(
       // with a phase transition that mirrors what `turnReducer` does
       // for a 'move' event: a check arrival enters 'challenge'/'prep'
       // (with stale prep state cleared), anything else lands in 'draw'.
-      const result = applyMove(state, action.playerId, action.pathNumber);
+      //
+      // #350: when the multiplayer route attaches `serverArrivedAtKether`
+      // to a Kether-landing move, we override `applyMove`'s clock so
+      // `PlayerState.arrivedAtKetherAt` carries the server timestamp.
+      // This keeps `witnessOrder` deterministic across clients even
+      // when local clocks drift (`design/final-threshold.md` § 2.2).
+      const moveOptions =
+        action.serverArrivedAtKether !== undefined
+          ? { now: () => action.serverArrivedAtKether as number }
+          : undefined;
+      const result = applyMove(
+        state,
+        action.playerId,
+        action.pathNumber,
+        moveOptions,
+      );
       if (!result.ok) return { ok: false, error: { kind: 'move', cause: result.reason } };
       return { ok: true, newState: padPhaseAfterMove(result.value, action.playerId) };
     }
@@ -247,6 +355,103 @@ export function applyClientAction(
         encounter: undefined,
       };
       return { ok: true, newState };
+    }
+    case 'kether-witness-play': {
+      const result = ketherPlayCard(state, {
+        playerId: action.playerId,
+        arcanum: action.arcanum,
+      });
+      if (!result.ok) return { ok: false, error: { kind: 'kether', cause: result.reason } };
+      return { ok: true, newState: result.value };
+    }
+    case 'kether-witness-pass': {
+      const result = ketherPassCard(state, { playerId: action.playerId });
+      if (!result.ok) return { ok: false, error: { kind: 'kether', cause: result.reason } };
+      return { ok: true, newState: result.value };
+    }
+    case 'kether-close-stage-spark': {
+      const result = ketherStageSpark(state, {
+        playerId: action.playerId,
+        sefirah: action.sefirah,
+      });
+      if (!result.ok) return { ok: false, error: { kind: 'kether', cause: result.reason } };
+      return { ok: true, newState: result.value };
+    }
+    case 'kether-close-unstage-spark': {
+      const result = ketherUnstageSpark(state, {
+        playerId: action.playerId,
+        sefirah: action.sefirah,
+      });
+      if (!result.ok) return { ok: false, error: { kind: 'kether', cause: result.reason } };
+      return { ok: true, newState: result.value };
+    }
+    case 'threshold-confirm': {
+      const result = ketherConfirmClosure(state, { playerId: action.playerId });
+      if (!result.ok) return { ok: false, error: { kind: 'kether', cause: result.reason } };
+      return { ok: true, newState: result.value };
+    }
+    case 'kether-host-skip-witness': {
+      // Forced pass on behalf of an absent target. The caller-is-host
+      // gate is enforced by `authorize`; this dispatcher arm trusts
+      // that gate and runs the engine moves on the target's behalf.
+      // Per § 7.1: a normal pass first; if the cap would be exceeded
+      // the dispatcher falls back to a forced play of the target's
+      // lowest-arcanum card (deterministic, disconnection-cap-proof).
+      const passResult = ketherPassCard(state, {
+        playerId: action.targetPlayerId,
+      });
+      if (passResult.ok) {
+        return { ok: true, newState: passResult.value };
+      }
+      if (passResult.reason.kind === 'kether-pass-cap-exceeded') {
+        const target = state.players.find(
+          (p) => p.id === action.targetPlayerId,
+        );
+        if (target === undefined) {
+          // Defense in depth: a corrupted action carrying a non-
+          // player targetPlayerId reaches engine `ketherPassCard`
+          // first; the engine returns `kether-not-your-turn` (they
+          // aren't the witness) before this fallback fires, so we
+          // shouldn't be here. If we are, surface a clearer signal.
+          return {
+            ok: false,
+            error: {
+              kind: 'kether',
+              cause: {
+                kind: 'kether-unknown-player',
+                playerId: action.targetPlayerId,
+              },
+            },
+          };
+        }
+        if (target.hand.length === 0) {
+          // Empty queue: an empty-handed witness should already
+          // have been skipped by `advanceWitness`. If we're here,
+          // the engine state is internally inconsistent — surface
+          // the cap rejection unchanged so the host UI can show
+          // "this player has nothing left to skip."
+          return {
+            ok: false,
+            error: { kind: 'kether', cause: passResult.reason },
+          };
+        }
+        const lowestArcanum = target.hand.reduce(
+          (acc, n) => (n < acc ? n : acc),
+          target.hand[0] as number,
+        );
+        const playResult = ketherPlayCard(state, {
+          playerId: action.targetPlayerId,
+          arcanum: lowestArcanum,
+        });
+        if (!playResult.ok) {
+          return { ok: false, error: { kind: 'kether', cause: playResult.reason } };
+        }
+        return { ok: true, newState: playResult.value };
+      }
+      return {
+        ok: false,
+        error: { kind: 'kether', cause: passResult.reason },
+      };
     }
   }
 }

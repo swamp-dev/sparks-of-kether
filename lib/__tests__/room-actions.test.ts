@@ -769,6 +769,399 @@ describe('applyClientAction — discard (#291)', () => {
   });
 });
 
+describe('applyClientAction — kether wire-format (#350)', () => {
+  // ────────── helpers ──────────
+
+  /**
+   * Two-player ritual fixture: both at Kether, p2 the active witness
+   * (p2 has a later arrivedAtKetherAt → opens the round-robin).
+   * Hand sizes set so each has at least 2 cards to play with.
+   */
+  function makeTwoPlayerRitual() {
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3, 4],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [5, 6],
+      arrivedAtKetherAt: 200,
+    });
+    // Use the helper that mirrors the production wire — apply the
+    // last move via applyClientAction so phase / ritual are set up
+    // by the same code path. But for a unit test we can build the
+    // state directly: maybeTriggerKetherRitual is idempotent and we
+    // just want a valid in-ritual state.
+    let state = makeState(
+      {},
+      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
+    );
+    // Easiest: synthesize the ritual state by going through one move.
+    // p2 moves to kether-from-kether is a no-op — instead we set up
+    // the state manually mirroring what initKetherRitual produces.
+    state = {
+      ...state,
+      phase: 'kether',
+      ketherRitual: {
+        subPhase: 'witness',
+        witnessOrder: ['p2', 'p1'],
+        witnessTurnIndex: 0,
+        personalQueueLengths: { p1: 2, p2: 2 },
+        passCounts: { p1: 0, p2: 0 },
+        witnessLog: [],
+        arrivalTimestamps: { p1: 100, p2: 200 },
+        stagedClosureSparks: [],
+        closureLocked: false,
+      },
+    };
+    return state;
+  }
+
+  describe('serverArrivedAtKether override', () => {
+    it('uses serverArrivedAtKether when present so witnessOrder is server-deterministic', () => {
+      // p1 already at Kether stamped 100 (server-side), p2 climbing.
+      // p2's wire arrives with serverArrivedAtKether=50 — earlier than
+      // p1's stamp. The wire layer must override the default
+      // Date.now()-fed clock so applyMove records 50, not "now". The
+      // ritual then opens with p1 (later stamp) as the first witness
+      // even though p2 was the literal-last move.
+      const p1 = makePlayer({
+        id: 'p1',
+        position: 'kether',
+        hand: [],
+        arrivedAtKetherAt: 100,
+      });
+      const p2 = makePlayer({
+        id: 'p2',
+        position: 'tiferet',
+        hand: [2],
+      });
+      const state = makeState(
+        {},
+        { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
+      );
+      const result = applyClientAction(
+        state,
+        {
+          kind: 'move',
+          playerId: 'p2',
+          pathNumber: 13,
+          serverArrivedAtKether: 50, // earlier than p1's 100
+        },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.phase).toBe('kether');
+      // p1 (stamp 100) > p2 (server-overridden stamp 50) → p1 opens.
+      expect(result.newState.ketherRitual?.witnessOrder[0]).toBe('p1');
+      // p2's stamp on the state IS the server-supplied value.
+      const p2After = result.newState.players.find((p) => p.id === 'p2');
+      expect(p2After?.arrivedAtKetherAt).toBe(50);
+    });
+
+    it('falls back to engine-clock stamping when serverArrivedAtKether is omitted', () => {
+      // Hot-seat / dev path — no server timestamp on the action. The
+      // engine's default Date.now()-fed clock writes whatever the
+      // current ms is; we can't pin the exact value but we can pin
+      // that the field is set.
+      const p1 = makePlayer({
+        id: 'p1',
+        position: 'kether',
+        hand: [],
+        arrivedAtKetherAt: 100,
+      });
+      const p2 = makePlayer({
+        id: 'p2',
+        position: 'tiferet',
+        hand: [2],
+      });
+      const state = makeState(
+        {},
+        { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
+      );
+      const before = Date.now();
+      const result = applyClientAction(
+        state,
+        { kind: 'move', playerId: 'p2', pathNumber: 13 },
+        seededRng(1),
+      );
+      const after = Date.now();
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const p2After = result.newState.players.find((p) => p.id === 'p2');
+      expect(p2After?.arrivedAtKetherAt).toBeGreaterThanOrEqual(before);
+      expect(p2After?.arrivedAtKetherAt).toBeLessThanOrEqual(after);
+    });
+  });
+
+  describe('kether-witness-play', () => {
+    it('plays the card and advances the witness pointer', () => {
+      const state = makeTwoPlayerRitual();
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-witness-play', playerId: 'p2', arcanum: 5 },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.ketherRitual?.witnessLog).toEqual([
+        { kind: 'played', playerId: 'p2', arcanum: 5 },
+      ]);
+      expect(result.newState.ketherRitual?.witnessTurnIndex).toBe(1);
+      expect(result.newState.players.find((p) => p.id === 'p2')?.hand).toEqual(
+        [6],
+      );
+    });
+
+    it('rejects with kether cause when the engine rejects', () => {
+      const state = makeTwoPlayerRitual();
+      // p1 attempts to play out-of-turn; engine returns kether-not-your-turn.
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-witness-play', playerId: 'p1', arcanum: 3 },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe('kether');
+      if (result.error.kind !== 'kether') return;
+      expect(result.error.cause.kind).toBe('kether-not-your-turn');
+    });
+  });
+
+  describe('kether-witness-pass', () => {
+    it('passes (+1 separation) and advances pointer', () => {
+      const state = makeTwoPlayerRitual();
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-witness-pass', playerId: 'p2' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.separation).toBe(1);
+      expect(result.newState.ketherRitual?.passCounts.p2).toBe(1);
+      expect(result.newState.ketherRitual?.witnessLog).toEqual([
+        { kind: 'passed', playerId: 'p2' },
+      ]);
+    });
+
+    it('rejects pass-cap-exceeded with kether cause', () => {
+      const base = makeTwoPlayerRitual();
+      // 2-card queue → cap is 1. Pre-set p2 already at the cap.
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture invariant');
+      const state: typeof base = {
+        ...base,
+        ketherRitual: {
+          ...ritual,
+          passCounts: { ...ritual.passCounts, p2: 1 },
+        },
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-witness-pass', playerId: 'p2' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe('kether');
+      if (result.error.kind !== 'kether') return;
+      expect(result.error.cause.kind).toBe('kether-pass-cap-exceeded');
+    });
+  });
+
+  describe('kether-close-stage-spark / kether-close-unstage-spark', () => {
+    it('stages a held Spark when in close sub-phase', () => {
+      const base = makeTwoPlayerRitual();
+      const p1WithSpark = base.players.find((p) => p.id === 'p1');
+      if (!p1WithSpark) throw new Error('fixture');
+      const p1Updated: typeof p1WithSpark = {
+        ...p1WithSpark,
+        sparksHeld: new Set(['gevurah'] as const),
+      };
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture');
+      const state: typeof base = {
+        ...base,
+        players: base.players.map((p) =>
+          p.id === 'p1' ? p1Updated : p,
+        ),
+        ketherRitual: { ...ritual, subPhase: 'close' },
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-close-stage-spark', playerId: 'p1', sefirah: 'gevurah' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.ketherRitual?.stagedClosureSparks).toEqual([
+        { playerId: 'p1', sefirah: 'gevurah' },
+      ]);
+    });
+
+    it('unstaging is symmetric and clears the staged entry', () => {
+      const base = makeTwoPlayerRitual();
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture');
+      const state: typeof base = {
+        ...base,
+        ketherRitual: {
+          ...ritual,
+          subPhase: 'close',
+          stagedClosureSparks: [{ playerId: 'p1', sefirah: 'gevurah' }],
+        },
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-close-unstage-spark', playerId: 'p1', sefirah: 'gevurah' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.ketherRitual?.stagedClosureSparks).toEqual([]);
+    });
+
+    it('rejects stage when locked (post-confirm — kether-closure-locked)', () => {
+      const base = makeTwoPlayerRitual();
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture');
+      const state: typeof base = {
+        ...base,
+        ketherRitual: {
+          ...ritual,
+          subPhase: 'close',
+          closureLocked: true,
+        },
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-close-stage-spark', playerId: 'p1', sefirah: 'gevurah' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe('kether');
+      if (result.error.kind !== 'kether') return;
+      expect(result.error.cause.kind).toBe('kether-closure-locked');
+    });
+  });
+
+  describe('threshold-confirm', () => {
+    it('locks the ritual and exits to phase: end', () => {
+      const base = makeTwoPlayerRitual();
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture');
+      const state: typeof base = {
+        ...base,
+        illumination: 6,
+        separation: 0,
+        ketherRitual: { ...ritual, subPhase: 'close' },
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'threshold-confirm', playerId: 'p1' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.phase).toBe('end');
+      expect(result.newState.ketherRitual?.closureLocked).toBe(true);
+    });
+
+    it('a second confirm rejects with kether-already-confirmed', () => {
+      const base = makeTwoPlayerRitual();
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture');
+      const state: typeof base = {
+        ...base,
+        ketherRitual: {
+          ...ritual,
+          subPhase: 'close',
+          closureLocked: true,
+        },
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'threshold-confirm', playerId: 'p1' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe('kether');
+      if (result.error.kind !== 'kether') return;
+      expect(result.error.cause.kind).toBe('kether-already-confirmed');
+    });
+  });
+
+  describe('kether-host-skip-witness', () => {
+    it('forces a pass on behalf of the absent witness', () => {
+      const state = makeTwoPlayerRitual();
+      // p1 is the host (state.players[0]); p2 is the active witness.
+      const result = applyClientAction(
+        state,
+        {
+          kind: 'kether-host-skip-witness',
+          playerId: 'p1',
+          targetPlayerId: 'p2',
+        },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // Forced pass: +1 separation, p2's pass count incremented.
+      expect(result.newState.separation).toBe(1);
+      expect(result.newState.ketherRitual?.passCounts.p2).toBe(1);
+      expect(result.newState.ketherRitual?.witnessLog).toEqual([
+        { kind: 'passed', playerId: 'p2' },
+      ]);
+    });
+
+    it('falls back to a forced lowest-arcanum play when the absent witness is at their pass cap', () => {
+      // Per § 7.1: disconnection cannot evade the per-player pass cap.
+      // When the cap would be exceeded, the dispatcher force-plays
+      // the absent player's lowest-arcanum card.
+      const base = makeTwoPlayerRitual();
+      const ritual = base.ketherRitual;
+      if (!ritual) throw new Error('fixture');
+      const state: typeof base = {
+        ...base,
+        ketherRitual: {
+          ...ritual,
+          // 2-card queue → cap is 1; pre-set p2 already at the cap.
+          passCounts: { ...ritual.passCounts, p2: 1 },
+        },
+      };
+      const result = applyClientAction(
+        state,
+        {
+          kind: 'kether-host-skip-witness',
+          playerId: 'p1',
+          targetPlayerId: 'p2',
+        },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // Forced play of p2's lowest arcanum (5 of {5,6}) — separation
+      // does NOT increment (play, not pass), and pass counts are
+      // unchanged.
+      expect(result.newState.separation).toBe(0);
+      expect(result.newState.ketherRitual?.witnessLog).toEqual([
+        { kind: 'played', playerId: 'p2', arcanum: 5 },
+      ]);
+      expect(result.newState.players.find((p) => p.id === 'p2')?.hand).toEqual(
+        [6],
+      );
+    });
+  });
+});
+
 describe('applyClientAction — end-turn refuses while pendingDiscard pending (#291)', () => {
   it('does not advance the seat when pendingDiscard.count > 0', () => {
     // #291: the engine refuses to advance; the dispatcher mirrors
