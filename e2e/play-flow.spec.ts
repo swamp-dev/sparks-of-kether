@@ -76,9 +76,30 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
       page.getByRole('heading', { name: /Choose your sign/i }),
     ).toBeVisible();
     // P1 picks Aries; P2 picks Leo — both available, both distinct.
-    const signKey = player === 1 ? 'aries' : 'leo';
-    await page.locator(`[data-sign="${signKey}"]`).click();
-    await page.getByRole('button', { name: /^Confirm$/ }).click();
+    // #314: the picker is a carousel. Aries is the default-focused
+    // stage, so P1's confirm is one click. For P2, cycle the
+    // carousel forward to leo (idx 4, four steps from aries) by
+    // clicking the on-screen "Next sign" arrow four times. The
+    // arrow's cycle helper skips taken signs, so when aries is
+    // already taken by P1 the first ArrowRight lands on taurus
+    // (idx 1) and four total nexts land on leo.
+    if (player === 2) {
+      // First Next from default-focus aries (taken) lands on taurus,
+      // then 3 more lands on leo. Each click advances exactly one
+      // available sign. With aries taken, sequence is:
+      //   start: aries(taken) → 1st next: taurus → 2nd: gemini →
+      //   3rd: cancer → 4th: leo.
+      const nextArrow = page
+        .getByRole('button', { name: /^Next sign$/ })
+        .first();
+      for (let i = 0; i < 4; i++) {
+        await nextArrow.click();
+      }
+    }
+    const signLabel = player === 1 ? 'Aries' : 'Leo';
+    await page
+      .getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) })
+      .click();
   }
 
   // Lobby: both players ready; Begin enabled.

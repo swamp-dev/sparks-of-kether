@@ -101,17 +101,24 @@ async function walkToPlayScreen(page: Page): Promise<void> {
     .click();
   await page.getByRole('button', { name: /^continue$/i }).click();
   await page.locator('[data-zodiac-sign-picker]').waitFor();
-  await page.locator('button[data-sign="aries"]').click();
-  await page.getByRole('button', { name: /^confirm$/i }).click();
+  // #314: the carousel renders the focused sign at the centre stage.
+  // Aries is the default-focused stage on first mount — Player 1
+  // confirms it directly without cycling.
+  await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
 
-  // Player 2: same flow, pick Leo (Aries is disabled).
+  // Player 2: ritual, then cycle to Leo (aries is taken, so the cycle
+  // helper skips it; four clicks of Next from aries-taken land on
+  // leo via taurus → gemini → cancer → leo).
   await page
     .getByRole('button', { name: /skip.*roll all remaining/i })
     .click();
   await page.getByRole('button', { name: /^continue$/i }).click();
   await page.locator('[data-zodiac-sign-picker]').waitFor();
-  await page.locator('button[data-sign="leo"]').click();
-  await page.getByRole('button', { name: /^confirm$/i }).click();
+  const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
+  for (let i = 0; i < 4; i++) {
+    await nextArrow.click();
+  }
+  await page.getByRole('button', { name: /^Confirm Leo$/ }).click();
 
   // Lobby: click Begin to land on the live PlayScreen.
   await page.getByRole('button', { name: /^begin$/i }).click();

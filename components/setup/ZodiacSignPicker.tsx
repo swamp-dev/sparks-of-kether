@@ -1,79 +1,205 @@
 'use client';
-import { useMemo, useState } from 'react';
-import {
-  arcana,
-  pathByArcanum,
-  sefirahByKey,
-  soulDoorsForSign,
-  zodiacSigns,
-  type SefirahKey,
-  type ZodiacSign,
-  type ZodiacSignKey,
-} from '@/data';
-import { zodiacBonus } from '@/engine/zodiac-bonus';
+import { useCallback, useMemo, useState } from 'react';
+import { zodiacSigns, type ZodiacSign, type ZodiacSignKey } from '@/data';
+import { SignStage } from './sign-picker/SignStage';
 
 /**
- * Hebrew transliteration form ('netzach' → 'Netzach') as used in
- * `design/soul-doors.md` § 6. The Sefirah's `englishName` is the
- * *translation* (Victory, Foundation, …); the doc and reader-facing
- * mechanics name them by transliteration. Cheap title-case is fine
- * here — the keys are single tokens with no internal capitalisation.
+ * Safe `zodiacSigns[i]` accessor. The picker's index math only ever
+ * lands on a valid in-range index (we mod by `zodiacSigns.length` and
+ * the off-stage list is filtered out of the same array), but TS's
+ * `noUncheckedIndexedAccess` widens the result to `T | undefined`. A
+ * typed accessor narrows it once at the boundary so the body of the
+ * picker can deal in plain `ZodiacSign` references.
  */
-const transliterated = (key: SefirahKey): string =>
-  key.charAt(0).toUpperCase() + key.slice(1);
+function signAt(index: number): ZodiacSign {
+  const sign = zodiacSigns[index];
+  if (sign === undefined) {
+    throw new Error(
+      `ZodiacSignPicker: out-of-range index ${index} (valid: 0..${zodiacSigns.length - 1})`,
+    );
+  }
+  return sign;
+}
 
 /**
- * 12-card picker for the player's astrological-sign class (Epic #212).
- * Replaces the six-card SoulAspectPicker with a fuller class taxonomy
- * grounded in the dignity table (`design/astrological-classes.md` § 3)
- * and the Soul Doors table (`design/soul-doors.md` § 3).
+ * Carousel-based 12-sign picker (#314).
  *
- * Each card surfaces the full picture so a first-time picker chooses
- * with everything visible:
- *   - Glyph + name + Hebrew letter
- *   - Element + modality
- *   - Ruler (and the modern co-ruler for Scorpio / Pisces)
- *   - Per-stat dignity bonus deltas (rulership +1, exaltation +2,
- *     detriment −1, fall −2, modern co-rulers +1) — exactly what the
- *     engine's `zodiacBonus(sign)` returns
- *   - Soul Doors line (plural for 11 signs; singular Pisces footnote
- *     per § 6 of `design/soul-doors.md`)
+ * The picker reads as **character creation theatre**: a horizontal
+ * carousel of three visible stages on desktop (prev / current / next),
+ * one full-screen stage on mobile, with the focused sign rendering
+ * full theatre — constellation art, breathing Tiferet-gold glyph,
+ * orbiting ruler glyph, element/modality chips, weighted stat tilts,
+ * and Soul Doors as Major Arcana mini-card previews.
  *
- * Flow:
- *   1. Player clicks a card → selection state updates locally.
- *   2. Player clicks Confirm → fires `onPick(signKey)`.
- * The picker does NOT mutate engine state. The orchestrator (T7 /
- * #236) feeds the chosen sign into `initializeGame` upstream.
+ * **Data flow** (mostly unchanged from #212/#236):
+ *   1. The picker holds the focused-sign index in local state. Aries
+ *      is the default focused sign on first mount.
+ *   2. Player keyboards or clicks to cycle the carousel; the focused
+ *      stage is the one a player will commit to via Confirm.
+ *   3. Player clicks Confirm → fires `onPick(signKey)`.
+ *   4. The orchestrator (T7 / #236) feeds the chosen sign into
+ *      `initializeGame` upstream — same contract as v1 (#212).
  *
- * Single-player and tabletop modes pass an empty `taken` map.
+ * **Keyboard model**:
+ *   - ArrowRight / ArrowLeft cycle forward / backward, skipping over
+ *     taken signs (the cycle scans until it finds an available one
+ *     or wraps back to the original index = nothing-to-pick).
+ *   - Home / End jump to the first / last available sign.
+ *   - Space on the current stage selects (no commit). Enter is
+ *     unbound on the stage so it doesn't accidentally short-circuit
+ *     the radiogroup contract — commit happens only on the visible
+ *     "Confirm <Sign>" button below the stage (where Enter fires
+ *     natively because the button is a real `<button>`).
+ *
+ * **Accessibility**:
+ *   - The carousel is a `[role="radiogroup"]`; each sign is a
+ *     `[role="radio"]` with `aria-checked` mirroring the focus.
+ *   - Taken signs render `aria-disabled="true"` and the cycle skips
+ *     them, so a screen-reader user can't land on an unconfirmable
+ *     stage.
+ *   - Constellation SVGs are `aria-hidden="true"` (decorative).
+ *   - Reduce-motion: the breath / orbit animations are gated by
+ *     `motion-safe:` Tailwind variants — reduced-motion users see
+ *     the static glyph + halo with no orbit rotation. No JS branch.
+ *
+ * **Multiplayer hand-off (#265)**:
+ *   - `taken` map: a player can never confirm a sign their party
+ *     mate already picked. The picker is single-machine on its own —
+ *     #265 wires the live presence + lock at the lobby layer.
+ *
+ * **Pantheon seam (#293)**:
+ *   - Accepts a `pantheon` prop, default `'classical'`. Today only
+ *     `'classical'` is supported; the prop is the seam #293 will
+ *     extend with alternate symbol packs.
  */
+
+export type Pantheon = 'classical';
 
 interface ZodiacSignPickerProps {
   /**
    * Map of already-taken sign keys → taker display name. Signs in
-   * this map render disabled with the taker's name visible. Keys
-   * are typed as `ZodiacSignKey` (not `string`) so a typo or stray
-   * game-state field can't silently slip through.
+   * this map render disabled with the taker's name visible.
    */
   readonly taken?: Partial<Readonly<Record<ZodiacSignKey, string>>>;
   readonly onPick: (sign: ZodiacSignKey) => void;
   readonly className?: string;
+  /**
+   * Symbol pack. #293 will add Hindu / Christian / etc; today only
+   * `'classical'` is supported. The prop is accepted but otherwise a
+   * no-op so the seam is widely visible without a TS breakage in the
+   * future PR.
+   */
+  readonly pantheon?: Pantheon;
 }
 
 export function ZodiacSignPicker({
   taken,
   onPick,
   className,
+  pantheon: _pantheon = 'classical',
 }: ZodiacSignPickerProps): JSX.Element {
-  const takenMap = taken ?? {};
-  const [selected, setSelected] = useState<ZodiacSignKey | null>(null);
+  // Stabilise the taken map under `taken === undefined` so the
+  // useCallback below doesn't churn on every render. The reference is
+  // only "new" when the caller's `taken` reference changes — exactly
+  // when we want the cycle / jump helpers to recompute their skip
+  // table.
+  const takenMap = useMemo(() => taken ?? {}, [taken]);
+  // Default focus = aries (index 0). Predictable + matches the
+  // zodiacal order. If aries is taken at mount, the Confirm CTA
+  // renders disabled until the player cycles forward — the cycling
+  // helpers below skip taken signs so one keystroke moves the player
+  // off the disabled stage.
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
 
-  const canConfirm = selected !== null && takenMap[selected] === undefined;
+  const focusedSign = signAt(focusedIndex);
+  const focusedDisabled = takenMap[focusedSign.key] !== undefined;
+
+  /**
+   * Cycle focus forward (`+1`) or backward (`-1`), skipping over
+   * taken signs. If every sign is taken, the focus stays put — the
+   * picker remains keyboard-stable but no Confirm is offered.
+   */
+  const cycle = useCallback(
+    (direction: 1 | -1): void => {
+      const total = zodiacSigns.length;
+      let next = (focusedIndex + direction + total) % total;
+      let attempts = 0;
+      while (
+        takenMap[signAt(next).key] !== undefined &&
+        attempts < total
+      ) {
+        next = (next + direction + total) % total;
+        attempts += 1;
+      }
+      setFocusedIndex(next);
+    },
+    [focusedIndex, takenMap],
+  );
+
+  const jumpTo = useCallback(
+    (target: 'first' | 'last'): void => {
+      const candidates =
+        target === 'first'
+          ? zodiacSigns.map((_, i) => i)
+          : zodiacSigns.map((_, i) => zodiacSigns.length - 1 - i);
+      const found = candidates.find(
+        (i) => takenMap[signAt(i).key] === undefined,
+      );
+      if (found !== undefined) setFocusedIndex(found);
+    },
+    [takenMap],
+  );
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        event.preventDefault();
+        cycle(1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        event.preventDefault();
+        cycle(-1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        jumpTo('first');
+        break;
+      case 'End':
+        event.preventDefault();
+        jumpTo('last');
+        break;
+      default:
+        break;
+    }
+  };
 
   const handleConfirm = (): void => {
-    if (selected === null || takenMap[selected] !== undefined) return;
-    onPick(selected);
+    if (focusedDisabled) return;
+    onPick(focusedSign.key);
   };
+
+  const selectStage = (index: number): void => {
+    if (takenMap[signAt(index).key] !== undefined) return;
+    setFocusedIndex(index);
+  };
+
+  // Indices of the prev / next visible wings. They wrap, so the
+  // carousel reads as a ring — there's never a "dead end" at the
+  // edges.
+  const total = zodiacSigns.length;
+  const prevIndex = (focusedIndex - 1 + total) % total;
+  const nextIndex = (focusedIndex + 1) % total;
+
+  // Off-stage signs (everything that's not prev / current / next) are
+  // still rendered as hidden DOM nodes — that keeps `[data-sign]`
+  // selectable for the e2e specs and integration tests, and lets a
+  // multiplayer-presence layer (#265) hook into them without re-shaping
+  // the DOM. Visually they sit in a zero-size, aria-hidden wrapper.
+  const offStageIndices = zodiacSigns
+    .map((_, i) => i)
+    .filter((i) => i !== focusedIndex && i !== prevIndex && i !== nextIndex);
 
   return (
     <section
@@ -81,223 +207,171 @@ export function ZodiacSignPicker({
       aria-label="Choose your astrological sign class"
       className={className}
     >
-      <header className="mb-4 text-center">
-        <h2 className="font-display text-2xl tracking-widest">
+      <header className="mb-6 text-center">
+        <h2 className="font-display text-3xl tracking-widest text-veil">
           Choose your sign
         </h2>
-        <p className="mt-1 text-sm opacity-70">
-          Twelve classical signs. Each tilts your starting stats via planetary
+        <p className="mx-auto mt-2 max-w-xl text-sm opacity-70">
+          Twelve archetypes. Each tilts your starting stats via planetary
           dignities and opens one or two Soul Doors on the Tree.
         </p>
       </header>
-      <ul
-        role="list"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+
+      {/*
+        Screen-reader announcement region. The radiogroup contract
+        normally moves DOM focus on arrow-key (native <input
+        type="radio">), which triggers re-announcement of the newly-
+        focused sign. Our carousel keeps focus on a fixed `tabIndex={0}`
+        wrapper while the inner content swaps — without this aria-live
+        region, NVDA/JAWS users wouldn't hear the sign change. The
+        region is sr-only so sighted users see no visual artefact;
+        polite politeness so it doesn't interrupt mid-utterance.
+      */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        data-sign-picker-announce
       >
-        {zodiacSigns.map((sign) => {
-          const takenBy = takenMap[sign.key];
-          const disabled = takenBy !== undefined;
-          const isSelected = selected === sign.key;
-          return (
-            <li key={sign.key}>
-              <SignCard
+        {focusedSign.name}
+      </div>
+
+      <div
+        role="radiogroup"
+        aria-label="Zodiac sign carousel"
+        onKeyDown={handleKeyDown}
+        className="relative grid w-full items-stretch gap-3 sm:grid-cols-[1fr_2fr_1fr] sm:gap-4"
+      >
+        {/* Prev arrow — desktop chrome left of the carousel. Hidden on
+            mobile where on-screen + swipe is the input. */}
+        <button
+          type="button"
+          aria-label="Previous sign"
+          data-direction="prev"
+          onClick={() => cycle(-1)}
+          className="absolute left-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-veil/30 bg-ground/70 p-2 text-veil/70 transition-opacity duration-200 ease-flow hover:opacity-100 sm:block sm:opacity-70"
+        >
+          <span aria-hidden="true">◀</span>
+        </button>
+
+        {/* Wing: prev */}
+        <SignStage
+          key={`prev-${signAt(prevIndex).key}`}
+          sign={signAt(prevIndex)}
+          stage="prev"
+          ariaChecked={false}
+          tabIndex={-1}
+          disabled={takenMap[signAt(prevIndex).key] !== undefined}
+          takenBy={takenMap[signAt(prevIndex).key]}
+          onSelect={() => selectStage(prevIndex)}
+        />
+
+        {/* Current: the centre stage */}
+        <SignStage
+          key={`current-${focusedSign.key}`}
+          sign={focusedSign}
+          stage="current"
+          ariaChecked={true}
+          tabIndex={0}
+          disabled={focusedDisabled}
+          takenBy={takenMap[focusedSign.key]}
+          onSelect={() => selectStage(focusedIndex)}
+        />
+
+        {/* Wing: next */}
+        <SignStage
+          key={`next-${signAt(nextIndex).key}`}
+          sign={signAt(nextIndex)}
+          stage="next"
+          ariaChecked={false}
+          tabIndex={-1}
+          disabled={takenMap[signAt(nextIndex).key] !== undefined}
+          takenBy={takenMap[signAt(nextIndex).key]}
+          onSelect={() => selectStage(nextIndex)}
+        />
+
+        {/* Next arrow — symmetric to prev. */}
+        <button
+          type="button"
+          aria-label="Next sign"
+          data-direction="next"
+          onClick={() => cycle(1)}
+          className="absolute right-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-veil/30 bg-ground/70 p-2 text-veil/70 transition-opacity duration-200 ease-flow hover:opacity-100 sm:block sm:opacity-70"
+        >
+          <span aria-hidden="true">▶</span>
+        </button>
+
+        {/* Off-stage signs: kept in DOM so [data-sign] selectors find
+            them (unit tests assert "all 12 sign cards are present" and
+            integration tests query for the taken-by banner on
+            arbitrary signs). The wrapper is `display: none` via the
+            Tailwind `hidden` utility so the off-stage cards never
+            paint, never intercept pointer events, and aren't visible
+            to screen readers — the e2e specs cycle the carousel via
+            keyboard / on-screen arrows to navigate to a non-default
+            sign rather than synthetically clicking a hidden card. */}
+        <div aria-hidden="true" className="hidden">
+          {offStageIndices.map((i) => {
+            const sign = signAt(i);
+            const disabled = takenMap[sign.key] !== undefined;
+            return (
+              <SignStage
+                key={`off-${sign.key}`}
                 sign={sign}
+                // Off-stage gets a `prev`/`next` stage variant rather
+                // than `current` so the heavier decoration (constellation,
+                // ruler orbit) is suppressed for cards no one's looking
+                // at — performance hand-off for #265 multiplayer.
+                stage={i < focusedIndex ? 'prev' : 'next'}
+                ariaChecked={false}
+                tabIndex={-1}
                 disabled={disabled}
-                takenBy={takenBy}
-                selected={isSelected}
-                onSelect={() => {
-                  if (!disabled) setSelected(sign.key);
-                }}
+                takenBy={takenMap[sign.key]}
+                onSelect={() => selectStage(i)}
               />
-            </li>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Mobile prev / next. The Confirm CTA below names the focused
+          sign and is the primary way to commit; the prev/next chevrons
+          here are the mobile substitute for the desktop side-arrows.
+          The aria-labels match the desktop labels — both pairs of
+          buttons land on the same `cycle(-1)` / `cycle(1)` handler,
+          so `getAllByRole('button', { name: /Next sign/ })` (or
+          `.first()` on Playwright) is stable across viewports. */}
+      <div className="mt-6 flex items-center justify-center gap-3 sm:hidden">
+        <button
+          type="button"
+          aria-label="Previous sign"
+          onClick={() => cycle(-1)}
+          className="rounded-full border border-veil/30 bg-ground/70 p-3 text-veil/70"
+        >
+          <span aria-hidden="true">◀</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Next sign"
+          onClick={() => cycle(1)}
+          className="rounded-full border border-veil/30 bg-ground/70 p-3 text-veil/70"
+        >
+          <span aria-hidden="true">▶</span>
+        </button>
+      </div>
+
       <div className="mt-6 flex justify-center">
         <button
           type="button"
           onClick={handleConfirm}
-          disabled={!canConfirm}
+          disabled={focusedDisabled}
           data-action="confirm"
-          className="rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded bg-illumination px-8 py-3 font-display tracking-widest text-ground transition-shadow duration-300 ease-emerge hover:shadow-glow-tiferet disabled:cursor-not-allowed disabled:opacity-30"
         >
-          Confirm
+          Confirm {focusedSign.name}
         </button>
       </div>
     </section>
-  );
-}
-
-interface SignCardProps {
-  readonly sign: ZodiacSign;
-  readonly disabled: boolean;
-  readonly takenBy: string | undefined;
-  readonly selected: boolean;
-  readonly onSelect: () => void;
-}
-
-/**
- * Each sign's accent borrows the colour of its ruling planet's
- * Sefirah — Aries (Mars → Gevurah, red), Taurus (Venus → Netzach,
- * green), etc. The five planetary co-rulers in the doubled signs
- * (Aries/Scorpio share Mars, Gemini/Virgo share Mercury,
- * Taurus/Libra share Venus, Sagittarius/Pisces share Jupiter,
- * Capricorn/Aquarius share Saturn) accept the visual repetition;
- * the glyph and name carry the per-sign identity.
- */
-const RULER_TO_SEFIRAH: Readonly<Record<string, SefirahKey>> = {
-  pluto: 'kether',
-  neptune: 'chokmah',
-  saturn: 'binah',
-  jupiter: 'chesed',
-  mars: 'gevurah',
-  sun: 'tiferet',
-  venus: 'netzach',
-  mercury: 'hod',
-  moon: 'yesod',
-};
-
-function SignCard({
-  sign,
-  disabled,
-  takenBy,
-  selected,
-  onSelect,
-}: SignCardProps): JSX.Element {
-  const rulerSefirahKey = RULER_TO_SEFIRAH[sign.ruler];
-  const rulerSefirahColor =
-    rulerSefirahKey !== undefined
-      ? sefirahByKey(rulerSefirahKey).color
-      : undefined;
-
-  // Bonus list keyed for stable rendering. We surface every non-zero
-  // entry — including penalties — so the player sees the full math
-  // before choosing (Pisces' −3 intellect is part of the deal, not a
-  // surprise). `+`/`−` prefixes are explicit; we use U+2212 minus to
-  // match the design-doc typography.
-  const bonusEntries = useMemo(() => {
-    const bonus = zodiacBonus(sign.key);
-    return Object.entries(bonus)
-      .filter(([, delta]) => delta !== 0 && delta !== undefined)
-      .map(([stat, delta]) => {
-        const d = delta as number;
-        const sign_ = d > 0 ? '+' : '−';
-        return { stat, label: `${sign_}${Math.abs(d)} ${stat}`, delta: d };
-      });
-  }, [sign.key]);
-
-  // Soul Doors copy per `design/soul-doors.md` § 6. Plural form for
-  // 11 signs; singular footnote for Pisces (Malkuth has no
-  // Challenge, so The Moon's other endpoint isn't a Door).
-  const soulDoorCopy = useMemo(() => {
-    const doors = soulDoorsForSign(sign.key);
-    const soulCard = arcana.find(
-      (a) =>
-        a.attribution.kind === 'sign' && a.attribution.value === sign.key,
-    );
-    if (soulCard === undefined) {
-      throw new Error(
-        `ZodiacSignPicker: no soul card for sign ${sign.key} — arcana.ts and zodiac-signs.ts are out of sync`,
-      );
-    }
-    const path = pathByArcanum(soulCard.number);
-    const doorNames = doors.map((k) => transliterated(k)).join(', ');
-    if (sign.key === 'pisces') {
-      return `Soul Door: ${doorNames} (via ${soulCard.name} / Path ${path.number} — Malkuth has no Challenge, so Pisces has one Door instead of two)`;
-    }
-    return `Soul Doors: ${doorNames} (via ${soulCard.name} / Path ${path.number})`;
-  }, [sign.key]);
-
-  // Idle: muted neutral border. Selected (and not disabled): saturated
-  // ruler-Sefirah colour as inline border + a faint matching tint.
-  // Disabled: strip the colour entirely so the muted state is
-  // unmistakable.
-  const inlineStyle =
-    !disabled && selected && rulerSefirahColor !== undefined
-      ? {
-          borderColor: rulerSefirahColor,
-          backgroundColor: `${rulerSefirahColor}1f`, // ~12% alpha
-        }
-      : undefined;
-
-  const baseClass = disabled
-    ? 'border-veil/30'
-    : selected
-      ? 'border-2'
-      : 'border-veil/30 hover:border-veil/60';
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-disabled={disabled}
-      data-sign={sign.key}
-      data-ruler={sign.ruler}
-      data-disabled={disabled ? 'true' : 'false'}
-      data-selected={selected ? 'true' : 'false'}
-      aria-pressed={selected}
-      className={`w-full rounded-lg border p-4 text-left transition-colors ${baseClass} ${
-        disabled ? 'cursor-not-allowed opacity-40' : ''
-      }`}
-      style={inlineStyle}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <div>
-          <h3 className="font-display text-lg tracking-widest">
-            <span aria-hidden="true" className="mr-2 text-2xl">
-              {sign.glyph}
-            </span>
-            {sign.name}
-          </h3>
-          <p className="mt-1 text-xs uppercase tracking-widest opacity-60">
-            {sign.element} · {sign.modality}
-          </p>
-        </div>
-        <p className="text-xs uppercase tracking-widest opacity-70" data-rulers>
-          <span>Ruler: {sign.ruler}</span>
-          {sign.coRuler !== undefined ? (
-            <>
-              <br />
-              <span>Co-ruler: {sign.coRuler}</span>
-            </>
-          ) : null}
-        </p>
-      </div>
-
-      <ul
-        data-bonus-grid
-        className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-sm"
-      >
-        {bonusEntries.length === 0 ? (
-          <li className="col-span-2 text-xs italic opacity-60">
-            No stat tilts (balanced sign)
-          </li>
-        ) : null}
-        {bonusEntries.map((b) => (
-          <li
-            key={b.stat}
-            className={`tabular-nums ${b.delta > 0 ? 'opacity-90' : 'opacity-70'}`}
-          >
-            {b.label}
-          </li>
-        ))}
-      </ul>
-
-      <p
-        data-soul-doors
-        className="mt-3 text-xs italic opacity-80"
-      >
-        {soulDoorCopy}
-      </p>
-
-      {takenBy !== undefined ? (
-        <p
-          data-taken-by
-          className="mt-3 rounded bg-veil/10 px-2 py-1 text-xs uppercase tracking-widest"
-        >
-          Taken by {takenBy}
-        </p>
-      ) : null}
-    </button>
   );
 }
