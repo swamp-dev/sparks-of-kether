@@ -4663,3 +4663,43 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
 * **Hosted CI:** still billing-blocked per project memory; PR is for human-review.
 
 **Commit(s):** `ffd2232` (initial wire-format + authorize), `d5ebdca` (unit tests for both layers), `d5052c5` (integration test against real Supabase), `5e33580` (writeSnapshot upsert onConflict fix), `f4f1455` (code-reviewer findings — design-spec rename + missing host-skip gate + server-stamp + loss branch), `b1b4b7f` (stale-comment cleanup).
+
+## 2026-05-01T14:34:52+00:00 — #353: Hod Word-Match — K2 of #284 (Hermes)
+
+**Pushed:** First per-Sefirah mechanic on top of the #339 K1 surface. Engine-only diff (`engine/checks.ts` + `engine/__tests__/checks.test.ts`). Implements `design/per-sefirah-mechanics.md` § 3.1.
+
+* `HOD_WORD_MATCH_BONUS = 5` constant. Locked at +5 — Spark-burn parity, "language well-aimed is the Hermetic Spark."
+* `HodWordMatchEvent` discriminated union (`hod-word-match-pass` | `hod-word-match-miss`). Threaded onto `ChallengeSuccess.hodWordMatch` so the chassis can render the prep-result banner.
+* `resolveChallenge` folds in the Hod logic when `sefirah === 'hod'` AND `state.pendingModifiers.nameCards.length > 0`:
+  * Match (named arcanum equals comparison source) → `flatBonus += 5`. Caller-supplied `flatBonus` STACKS additively (not replaces).
+  * Miss → no bonus. Miss event carries ONLY the named arcanum and **omits the actual deck-top** per design § 3.1 C4 rule 1 (information-hiding). The ticket body's "miss event emits both arcana" was contradicted by the locked design doc; per CLAUDE.md the design wins.
+  * Name-card consumed via `consumeHodNameCard` regardless of pass/fail (C4 rule 2). On the fail branch this is the ONLY mutation `resolveChallenge` makes — `newState !== state` for Hod fails, but `newState === state` for non-Hod fails so existing same-reference assertions (one in `checks.test.ts` for Yesod) keep passing.
+  * Empty deck with no Shell misreport → miss; name-card still consumed. Discard recycle is the chassis layer's responsibility, not the resolve hot path.
+* **Shell of Hod / Deception (C5).** When `state.encounter.deceptionMisreport !== undefined` the engine compares the player's guess against the lie, not the deck top. Word-Match becomes a noise check; the Shell is respected, not skipped. Misreport sampling is an upstream concern (set at envelope init from the encounter `seed`).
+* **`rotateDeckTopForHodRetry`** — pure engine helper exported for the chassis layer's `react-retry` arm. Defense-in-depth on top of the C4 opaque-miss rule. Empty / single-card decks return same reference (no-op).
+
+**Why:** First per-Sefirah mechanic ticket post-#339. Pure-engine slice keeps the surface tight and lets the downstream UI ticket consume `ChallengeSuccess.hodWordMatch` and `HOD_WORD_MATCH_BONUS` without re-deriving anything.
+
+**Notes:**
+
+* **Design-vs-ticket conflict resolved in favour of design.** The ticket body said the miss event should emit BOTH the named and the actual arcanum "for UI." The locked design spec at `design/per-sefirah-mechanics.md` § 3.1 (C4 fix rule 1) says the actual is OMITTED so a `react-retry` has no information advantage over the first attempt. Per CLAUDE.md "the design docs are the source of truth; the ticket is the execution scope" — the design wins. The miss event carries `{ kind: 'hod-word-match-miss', named }` only.
+
+* **`react-retry` deck rotation is partially shipped.** The `rotateDeckTopForHodRetry` engine helper exists and is fully tested, but the wiring into `lib/turn-machine.ts`'s `react-retry` arm is out of scope per the ticket's "engine-only" constraint. The wiring is a follow-up — defense-in-depth that the design doc itself does not require (the C4 opaque-miss + consume-on-resolve rules already close the cheat path).
+
+* **Pre-existing turn-machine consumes `nameCards` again at `prep-confirm`.** The engine's name-card consume is now redundant with the turn-machine's existing post-resolve clear in `consumedClearedNew` (`lib/turn-machine.ts:1017`). Redundant clears are harmless — both set `nameCards: []` to the same shape — but a future cleanup ticket could move the consume entirely engine-side and drop the duplicate. Not worth touching turn-machine in this engine-scoped ticket.
+
+* **TDD.** 13 failing tests committed first (`7c2e9d5`); implementation green (`eb8e8e5`); JSDoc on `resolveChallenge` updated to spell out the Hod fail-path mutation exception (`dffca56`).
+
+* **Code-review subagent unavailable in this environment.** Self-review against design § 3.1 + § 2.6 + § 2.7 + C4 + C5; checked all `position: 'hod'` and `sefirah: 'hod'` test fixtures across the suite for unintended coupling (none — the Aries-at-Hod no-Door-reduction test in `checks.test.ts` runs with no name-card staged so the new path is correctly inert).
+
+* **`pnpm ci:local` ALL FOUR JOBS GREEN.** verify (1525 passed / 1 todo across 90 files) ✓, build (production Next.js, all routes prerender) ✓, e2e (61 passed / 51 skipped for visual-regression) ✓, integration (real-Supabase 12 passed across 4 files) ✓.
+
+* **Hosted CI:** still billing-blocked per project memory; PR is for human review only.
+
+**Commit(s):** `7c2e9d5` (failing tests), `eb8e8e5` (implementation), `dffca56` (resolveChallenge JSDoc note), `6886bad` (initial Journal entry), `7de6e0e` (code-reviewer fixes — empty-deck drop branch + remove unwired rotation helper).
+
+**Addendum 2026-05-01T11:00 — code-reviewer pass + fixes.** PM ran the `code-reviewer` subagent on the post-implementation diff. One Significant + one improvement.
+
+- **S-1 (empty-deck wrong category):** The first push treated empty-deck as a miss event. Per design § 3.1 edge case + C4 rules, when both piles are empty (true game-end state) the modifier is *dropped*, not missed. A miss event would have rendered "your guess didn't match" in the UI even though no comparison happened. Fix: `evaluateHodWordMatch` returns `undefined` for the no-comparison case (no event, no bonus); the call site uses a separate `hadNameCard` check so C4 rule 2 (consume-regardless) still fires. Test updated to pin the new drop semantics: `hodWordMatch === undefined` AND `nameCards: []`.
+- **S-2 (unwired rotation helper):** `rotateDeckTopForHodRetry` was exported and unit-tested but never called by the chassis. The reviewer asked: wire it or delete it. Re-read of design § 3.1 / C4 confirmed the spec specifies exactly two rules — opaque miss + consume on confirm — and explicitly notes those two together "mean the retry has no information advantage over the first attempt." The ticket body's third-rule "rotation" was author-proposed but never adopted into the locked spec. Per CLAUDE.md "the design wins" — deleted the helper + its 4 unit tests rather than ship a defense-in-depth measure the design doesn't require.
+- **`pnpm ci:local` re-run after fixes:** all four jobs green.

@@ -23,6 +23,16 @@ export const SPARK_BURN_BONUS = 5;
 /** Central-pillar (shortcut) arrival bumps the effective DC this much. */
 export const SHORTCUT_DC_PENALTY = 3;
 
+/**
+ * Hod Word-Match (#353; `design/per-sefirah-mechanics.md` § 3.1) match
+ * bonus. Locked at +5 — parity with a Spark-burn, "language well-aimed
+ * is the Hermetic Spark." Folded into `CheckModifiers.flatBonus` at
+ * resolve time when the player's staged `name-card` arcanum equals the
+ * deck top (or, under Shell of Hod, equals
+ * `state.encounter.deceptionMisreport`).
+ */
+export const HOD_WORD_MATCH_BONUS = 5;
+
 // ──────────────── Public types ────────────────
 
 export interface CheckModifiers {
@@ -85,6 +95,26 @@ export type ChallengeRejection =
   | { readonly kind: 'already-cleared'; readonly sefirah: SefirahKey };
 
 /**
+ * Hod Word-Match resolve-time event (#353;
+ * `design/per-sefirah-mechanics.md` § 3.1). Emitted by `resolveChallenge`
+ * when the encounter is at Hod and the active player has staged a
+ * `name-card` modifier. The pass variant carries the matched arcanum
+ * (the player's named guess equalled the engine-side comparison value);
+ * the miss variant carries ONLY the named arcanum and deliberately
+ * omits the actual deck-top so a `react-retry` has no information
+ * advantage over the first attempt (C4 fix rule 1).
+ *
+ * Consumed by the chassis layer (`lib/turn-machine.ts`'s
+ * `prep-confirm`) and downstream UI for the prep-result banner. The
+ * engine itself does not write to counters from this event — the
+ * Word-Match outcome is a roll-side bonus folded into `flatBonus`,
+ * not a separate counter delta.
+ */
+export type HodWordMatchEvent =
+  | { readonly kind: 'hod-word-match-pass'; readonly named: number }
+  | { readonly kind: 'hod-word-match-miss'; readonly named: number };
+
+/**
  * What a successful `resolveChallenge` invocation returns.
  *
  * **IMPORTANT:** `ok: true` means "the challenge was resolved" (the
@@ -93,10 +123,25 @@ export type ChallengeRejection =
  * success. On `outcome.pass === false`, `newState === input.state`
  * (same reference) — the reducer returns input state unchanged on
  * failure so the caller can choose retry vs. `acceptSetback`.
+ *
+ * **Exception (#353).** When a Hod Word-Match `name-card` is consumed
+ * during this resolve, `newState` differs from the input even on the
+ * fail branch — the consumed name-card is removed from
+ * `state.pendingModifiers.nameCards` so a subsequent `react-retry`
+ * starts with an empty staging slot (the player must re-stage with a
+ * fresh `prep-add-modifier`). This is the C4 fix rule 2 in design
+ * § 3.1 — the consume-on-resolve guarantee.
  */
 export interface ChallengeSuccess {
   readonly newState: GameState;
   readonly outcome: CheckOutcome;
+  /**
+   * Present only when this resolve consumed a Hod `name-card` modifier
+   * (`state.pendingModifiers.nameCards.length > 0` AND `sefirah ===
+   * 'hod'` at resolve time). The chassis layer reads this to render
+   * the prep-result banner and to broadcast the public miss reveal.
+   */
+  readonly hodWordMatch?: HodWordMatchEvent;
 }
 
 // ──────────────── rollCheck (pure math) ────────────────
@@ -195,9 +240,21 @@ export interface ResolveChallengeInput {
  * by one. Returns `{newState, outcome}`.
  *
  * On failure — the outcome indicates pass=false — the state is
- * returned UNCHANGED so the caller can choose: either burn another
- * card/spark and retry, or call `acceptSetback` to absorb the
- * Separation penalty and back off.
+ * returned unchanged (`newState === state`, same reference) so the
+ * caller can choose: either burn another card/spark and retry, or
+ * call `acceptSetback` to absorb the Separation penalty and back off.
+ *
+ * **Hod Word-Match exception (#353).** When the encounter is at Hod
+ * and the active player has a `name-card` staged in
+ * `state.pendingModifiers.nameCards`, the resolver folds the +5
+ * `flatBonus` (`HOD_WORD_MATCH_BONUS`) into the modifiers when the
+ * named arcanum matches the comparison source (deck top, or
+ * `state.encounter.deceptionMisreport` under Shell of Hod). The staged
+ * name-card is consumed from `state.pendingModifiers.nameCards`
+ * REGARDLESS of pass/fail — the C4 retry-exploit fix (design § 3.1).
+ * In this case `newState !== state` even on a failed roll. A
+ * `hodWordMatch` event flows out on `ChallengeSuccess` so the chassis
+ * can render the prep-result banner.
  *
  * Only handles Sefirot whose `challenge.kind` is `'check'`. Malkuth
  * (no-check) and Kether (collective Final Threshold) get a rejection;
@@ -230,13 +287,28 @@ export function resolveChallenge(
   // honours that. Since #237 (T8) zodiacSign is always present, so
   // the auto-inject always produces a real delta (0 if the sefirah
   // isn't a Door for this class).
-  const resolvedModifiers: CheckModifiers =
+  let resolvedModifiers: CheckModifiers =
     modifiers.soulDoorDelta !== undefined
       ? modifiers
       : {
           ...modifiers,
           soulDoorDelta: soulDoorDcDelta(player.zodiacSign, sefirah),
         };
+
+  // #353 / `design/per-sefirah-mechanics.md` § 3.1 — Hod Word-Match.
+  // Inspect the staged name-card (only one per encounter; § 2.7) and
+  // fold the +5 match bonus into `flatBonus` BEFORE the roll. The
+  // resulting event flows out via `ChallengeSuccess.hodWordMatch` so
+  // the chassis can broadcast the prep-result banner. See the comment
+  // on `evaluateHodWordMatch` for the comparison-source contract.
+  const hod = sefirah === 'hod' ? evaluateHodWordMatch(state) : undefined;
+  if (hod !== undefined) {
+    resolvedModifiers = {
+      ...resolvedModifiers,
+      flatBonus: (resolvedModifiers.flatBonus ?? 0) + hod.bonus,
+    };
+  }
+
   const outcome =
     input.outcome ??
     rollCheck({
@@ -246,8 +318,27 @@ export function resolveChallenge(
       rng,
     });
 
+  // #353 — consume the Hod name-card REGARDLESS of pass/fail (design
+  // § 3.1 C4 rule 2 / § 2.7 "Consumption note"). The consume fires on
+  // any Hod resolve where a name-card was staged — including the
+  // both-piles-empty drop branch where `evaluateHodWordMatch` returns
+  // undefined and no event is emitted. On fail this means
+  // `newState !== state` — the only path in `resolveChallenge` where
+  // that's true on a failed roll. Existing tests that assert "fail
+  // returns same reference" use non-Hod Sefirot so they remain green.
+  const hadNameCard =
+    sefirah === 'hod' && state.pendingModifiers.nameCards.length > 0;
+  const stateAfterHodConsume = hadNameCard ? consumeHodNameCard(state) : state;
+
   if (!outcome.pass) {
-    return { ok: true, value: { newState: state, outcome } };
+    return {
+      ok: true,
+      value: {
+        newState: stateAfterHodConsume,
+        outcome,
+        ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
+      },
+    };
   }
 
   const updatedPlayer: PlayerState = {
@@ -257,8 +348,10 @@ export function resolveChallenge(
   };
 
   const stateWithCleared: GameState = {
-    ...state,
-    players: state.players.map((p) => (p.id === playerId ? updatedPlayer : p)),
+    ...stateAfterHodConsume,
+    players: stateAfterHodConsume.players.map((p) =>
+      p.id === playerId ? updatedPlayer : p,
+    ),
   };
   // Each counter bump goes through applyEvent — single source of truth.
   // Spark earned for the challenger; one assist-contributed event per
@@ -277,7 +370,92 @@ export function resolveChallenge(
     });
   }
 
-  return { ok: true, value: { newState, outcome } };
+  return {
+    ok: true,
+    value: {
+      newState,
+      outcome,
+      ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
+    },
+  };
+}
+
+// ──────────────── Hod Word-Match helpers (#353) ────────────────
+
+/**
+ * Evaluate a staged Hod `name-card` against the current encounter
+ * comparison-source. Returns `undefined` when the player hasn't staged
+ * a name-card (the mechanic is opt-in; `design/per-sefirah-mechanics.md`
+ * § 3.1).
+ *
+ * Comparison-source rules (design § 3.1 + C5):
+ *   - Default: top of the draw pile (`state.deck[0]`).
+ *   - When Shell of Hod (Deception) is active: the Shell-supplied lie
+ *     at `state.encounter.deceptionMisreport`. Word-Match becomes a
+ *     noise check; the engine respects the Shell rather than skipping
+ *     it. The misreport is sampled once at envelope init from the
+ *     encounter `seed`; its presence on the envelope is the engine's
+ *     signal that the Shell is active for this encounter.
+ *
+ * Edge case (design § 3.1 "Empty draw pile at prep-confirm"): when the
+ * deck is empty AND no `deceptionMisreport` is set, the comparison has
+ * no source — the design's "drop the modifier" branch (both piles empty,
+ * game-end state). Returning `undefined` here means no event is emitted
+ * and no bonus is added; the caller still consumes the name-card per
+ * C4 rule 2. Treating this as a "miss" would be a category error — the
+ * UI would render "your guess didn't match," but no comparison happened.
+ *
+ * The chassis layer is responsible for reshuffling the discard before
+ * the engine sees an empty deck in the normal flow; reaching this branch
+ * means both piles are empty (true game-end state), which is the design's
+ * "drop" case.
+ */
+function evaluateHodWordMatch(
+  state: GameState,
+): { readonly bonus: number; readonly event: HodWordMatchEvent } | undefined {
+  const named = state.pendingModifiers.nameCards[0];
+  if (named === undefined) return undefined;
+
+  // Shell of Hod takes precedence over the deck top when present —
+  // see design § 3.1 C5. The misreport is only sampled into the
+  // envelope when the Shell is active, so its presence is sufficient
+  // signal (no separate `shells` lookup needed at this layer).
+  const comparisonSource =
+    state.encounter?.deceptionMisreport !== undefined
+      ? state.encounter.deceptionMisreport
+      : state.deck[0];
+
+  if (comparisonSource === undefined) {
+    // Both piles empty (game-end state): drop the modifier silently.
+    // No event, no bonus — but the caller still consumes the name-card.
+    return undefined;
+  }
+
+  const matched = named === comparisonSource;
+  return {
+    bonus: matched ? HOD_WORD_MATCH_BONUS : 0,
+    event: matched
+      ? { kind: 'hod-word-match-pass', named }
+      : { kind: 'hod-word-match-miss', named },
+  };
+}
+
+/**
+ * Remove the staged Hod `name-card` from `state.pendingModifiers` —
+ * single-shot per encounter (design § 2.7). Pure: returns a new
+ * `GameState`; input is unchanged. Called from `resolveChallenge`
+ * regardless of pass/fail to satisfy the C4 retry-exploit fix
+ * (rule 2 in design § 3.1).
+ */
+function consumeHodNameCard(state: GameState): GameState {
+  if (state.pendingModifiers.nameCards.length === 0) return state;
+  return {
+    ...state,
+    pendingModifiers: {
+      ...state.pendingModifiers,
+      nameCards: [],
+    },
+  };
 }
 
 // ──────────────── acceptSetback ────────────────

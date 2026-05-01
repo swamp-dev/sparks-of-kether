@@ -7,10 +7,12 @@ import {
   CARD_BURN_BONUS,
   SPARK_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
+  HOD_WORD_MATCH_BONUS,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
 import type { GameState } from '../types';
+import { EMPTY_PENDING_MODIFIERS } from '../types';
 
 // ──────────────── rollCheck (pure math) ────────────────
 
@@ -820,3 +822,349 @@ describe('resolveChallenge — Soul Door auto-injection (#244)', () => {
     expect(result.value.outcome.effectiveDC).toBe(12 + 3 - 2);
   });
 });
+
+// ──────────────── resolveChallenge × Hod Word-Match (#353) ────────────────
+//
+// `design/per-sefirah-mechanics.md` § 3.1 — when the player stages a
+// `name-card` modifier at Hod, the engine peeks the deck top at resolve
+// time. Match → +5 to the roll (the `flatBonus` field on the modifiers
+// passed to `rollCheck`). Miss → no bonus; the miss event broadcasts
+// only "your guess didn't match", NOT the actual deck-top arcanum
+// (C4 information-hiding rule). The `name-card` modifier is consumed
+// at resolve REGARDLESS of pass / fail — distinct from card-burns
+// which persist on retry. Combined with the opaque miss event, this
+// closes the C4 retry-exploit cheat path.
+//
+// Shell of Hod (C5) — when the Shell is active the engine compares the
+// guess against `state.encounter.deceptionMisreport` (the lie the Shell
+// tells the player) instead of the true deck top. Word-Match becomes a
+// noise check; the engine respects the Shell rather than skipping it.
+
+describe('resolveChallenge — Hod Word-Match (#353)', () => {
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+  };
+
+  it('match: deck top equals the named arcanum → +5 flatBonus and pass event with the matched arcanum', () => {
+    // Hod stat = intellect (10 default), DC 12. Roll 5 → 5 + 10 = 15
+    // before bonus (passes baseline DC 12 anyway). The point of THIS
+    // test is the `+5` showing in the breakdown's flatBonus and the
+    // hodWordMatch event reporting `'pass'` with the matched arcanum.
+    // Use a low intellect + DC-meeting roll so the +5 is load-bearing
+    // for a pass-side regression: stat 4, roll 5 → 9; +5 from match =
+    // 14 vs DC 12 → pass. Without the +5 → 9 < 12 → fail.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 4 }),
+      },
+      {
+        deck: [7],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [7] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+    expect(result.value.outcome.total).toBe(5 + 4 + 5); // roll + stat + match bonus
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.hodWordMatch).toEqual({
+      kind: 'hod-word-match-pass',
+      named: 7,
+    });
+  });
+
+  it('miss: deck top differs from the named arcanum → no flatBonus and miss event with NO actual arcanum', () => {
+    // Per design § 3.1 C4 fix rule 1: the miss event MUST omit the
+    // actual deck-top arcanum so a react-retry has no information
+    // advantage. The hod event records only the named arcanum.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 10 }),
+      },
+      {
+        deck: [3], // actual top
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [7] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.outcome.total).toBe(5 + 10); // no match bonus
+    expect(result.value.hodWordMatch).toEqual({
+      kind: 'hod-word-match-miss',
+      named: 7,
+    });
+    // Defensive: the event must not leak the actual deck-top.
+    const hodEvent = result.value.hodWordMatch;
+    expect(hodEvent && 'actual' in hodEvent).toBe(false);
+  });
+
+  it('name-card is consumed at resolve regardless of pass/fail (miss path)', () => {
+    // C4 rule 2: the staged name-card is removed from
+    // `pendingModifiers.nameCards` whether or not the guess matched.
+    // On a miss the chassis-level resolveChallenge path returns the
+    // input state unchanged for the standard counters/clearedSefirot,
+    // BUT it must clear the name-card so a subsequent react-retry
+    // re-staging requires a fresh `prep-add-modifier`.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 1 }),
+      },
+      {
+        deck: [3],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [7] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      // Stat 1 + roll 1 = 2 vs DC 12 → fail without bonus, miss has no bonus.
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState.pendingModifiers.nameCards).toEqual([]);
+    // Counters stay 0 — fail path doesn't touch them.
+    expect(result.value.newState.illumination).toBe(0);
+    expect(result.value.newState.separation).toBe(0);
+  });
+
+  it('name-card is consumed at resolve regardless of pass/fail (pass path)', () => {
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 4 }),
+      },
+      {
+        deck: [11],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [11] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 }, // 5 + 4 + 5 = 14 ≥ 12 → pass
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.newState.pendingModifiers.nameCards).toEqual([]);
+  });
+
+  it('Shell of Hod (Deception): engine compares against encounter.deceptionMisreport, not deck top', () => {
+    // Per design § 3.1 C5 fix: when the Shell of Hod is active, the
+    // engine substitutes `state.encounter.deceptionMisreport` for the
+    // deck top in the match comparison. The mechanic respects the
+    // Shell rather than skipping it.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 4 }),
+      },
+      {
+        deck: [3], // truth — but the Shell hides it
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [11] },
+        encounter: {
+          sefirah: 'hod',
+          seed: 1,
+          retryCount: 0,
+          deceptionMisreport: 11, // the lie matches the player's guess
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Match against the LIE → +5 even though the truth disagrees.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+    expect(result.value.hodWordMatch?.kind).toBe('hod-word-match-pass');
+  });
+
+  it('Shell of Hod: guess matching the truth but NOT the lie misses', () => {
+    // Inverse of the above — player names the actual deck-top, but the
+    // Shell's misreport is something else, so the engine sees a miss.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 10 }),
+      },
+      {
+        deck: [3], // truth
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [3] },
+        encounter: {
+          sefirah: 'hod',
+          seed: 1,
+          retryCount: 0,
+          deceptionMisreport: 11, // lie ≠ guess
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.hodWordMatch?.kind).toBe('hod-word-match-miss');
+  });
+
+  it('non-Hod Sefirah with stale name-card in pendingModifiers does NOT fold the bonus', () => {
+    // Defensive: a name-card should never be staged at a non-Hod
+    // encounter (the prep-add reducer in turn-machine.ts is gated on
+    // sefirah === 'hod'), but the engine path must not credit the
+    // bonus if the active Sefirah differs. Otherwise a misrouted
+    // staging would let a player buy +5 on Yesod from a leftover Hod
+    // guess. The flatBonus must not appear in the breakdown.
+    const state = makeState(
+      {
+        position: 'yesod',
+        stats: statSheet({ intuition: 10 }),
+      },
+      {
+        deck: [7],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [7] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.hodWordMatch).toBeUndefined();
+  });
+
+  it('Hod with no name-card staged: vanilla resolveChallenge behaviour, no event', () => {
+    // The mechanic is opt-in via `prep-add-modifier name-card`. A Hod
+    // encounter without a staged name-card should resolve as a normal
+    // d20 check — no flatBonus folded in, no hodWordMatch event.
+    const state = makeState({
+      position: 'hod',
+      stats: statSheet({ intellect: 10 }),
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.hodWordMatch).toBeUndefined();
+  });
+
+  it('exposes HOD_WORD_MATCH_BONUS as the locked +5 constant', () => {
+    // Pinning the constant makes the design contract auditable and
+    // gives the downstream UI ticket a single import to render
+    // "Word-Match: +5" in the prep panel.
+    expect(HOD_WORD_MATCH_BONUS).toBe(5);
+  });
+
+  it('caller-supplied modifiers.flatBonus stacks with the Hod match bonus', () => {
+    // A future per-Sefirah twist or a Spark might add its own flatBonus.
+    // The Hod match bonus must STACK on top, not replace.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 0 }),
+      },
+      {
+        deck: [7],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [7] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: { ...blankMods, flatBonus: 2 }, // pretend a +2 elsewhere
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // +2 caller + +5 Hod match = +7 total flatBonus.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(7);
+  });
+
+  it('both piles empty at resolve: name-card dropped (no event, no bonus), still consumed', () => {
+    // Design § 3.1 edge case: when the deck is empty at prep-confirm,
+    // the chassis layer normally reshuffles the discard before the
+    // peek. Reaching the engine with an empty deck means BOTH piles
+    // are empty (the true game-end state), in which case the design
+    // says "the modifier is dropped." Dropping is distinct from a miss:
+    // no comparison happened, so no `hod-word-match-miss` event is
+    // emitted (the UI would otherwise render "your guess didn't match"
+    // even though there was no guess-vs-card comparison).
+    //
+    // The C4 rule 2 still applies: the name-card is consumed, so a
+    // subsequent `react-retry` does not see the modifier in
+    // `pendingModifiers`.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 10 }),
+      },
+      {
+        deck: [],
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, nameCards: [7] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    // Drop branch: no hodWordMatch event surfaced — the dropped
+    // modifier is silent from the UI's perspective.
+    expect(result.value.hodWordMatch).toBeUndefined();
+    // Name-card consumed regardless (C4 rule 2).
+    expect(result.value.newState.pendingModifiers.nameCards).toEqual([]);
+  });
+});
+
