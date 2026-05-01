@@ -158,6 +158,11 @@ export function Hand({
       // 320 px viewport at the chosen card+overlap dimensions, but
       // hiding overflow guarantees the page never gets a horizontal
       // scrollbar even if a future change widens the fan.
+      // #340: `overflow-x-hidden` plus `position: relative` here are
+      // load-bearing for selected-card stacking — they form the
+      // stacking context the per-card `zIndex` participates in.
+      // Removing either would collapse the selected-card z-index lift
+      // into the document context.
       className={`animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none ${className ?? ''}`}
       style={{ display: 'flex', justifyContent: 'center', gap: 0, position: 'relative' }}
     >
@@ -233,6 +238,14 @@ export function Hand({
             onKeyDown={(e) => handleKey(e, i, arcanum)}
             tabIndex={i === focusIndex ? 0 : -1}
             style={{
+              // #340: `position: relative` on every card so `zIndex`
+              // takes effect predictably (without it, the property is
+              // ignored on a static button and the selected card stays
+              // buried under its right-hand neighbour in DOM order).
+              // Selected card lifts to z=1 — above siblings (default
+              // 0/auto) but below the parent's z-10 close button.
+              position: 'relative',
+              zIndex: isSelected ? 1 : undefined,
               transform: `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`,
               transformOrigin: 'bottom center',
               // #290: marginLeft is set in card-relative rem units so

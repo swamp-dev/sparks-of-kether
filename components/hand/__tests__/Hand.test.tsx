@@ -149,6 +149,39 @@ describe('Hand — interaction', () => {
     expect(slot1?.getAttribute('data-selected')).toBe('false');
     expect(slot2?.getAttribute('data-selected')).toBe('true');
   });
+
+  it('selected card stacks above its neighbours (#340)', () => {
+    // The fan overlaps cards via negative marginLeft; without a z-index
+    // bump on the selected card, later cards in DOM order paint over
+    // it and the gold border alone is the only signal — the selected
+    // card stays buried under its right-hand neighbour. The fix is to
+    // raise the selected card in the local stacking context so the
+    // whole face is visible.
+    const { container } = render(
+      <Hand
+        hand={[2, 5, 13]}
+        visible={true}
+        selectedArcanum={5}
+        onCardSelect={vi.fn()}
+      />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const [first, middle, last] = slots;
+    expect(first).toBeDefined();
+    expect(middle).toBeDefined();
+    expect(last).toBeDefined();
+    if (!first || !middle || !last) return;
+    // The selected card needs both `position: relative` (so zIndex
+    // takes effect) and a zIndex strictly greater than its siblings.
+    expect(middle.style.position).toBe('relative');
+    const selectedZ = parseInt(middle.style.zIndex || '0', 10);
+    const firstZ = parseInt(first.style.zIndex || '0', 10);
+    const lastZ = parseInt(last.style.zIndex || '0', 10);
+    expect(selectedZ).toBeGreaterThan(firstZ);
+    expect(selectedZ).toBeGreaterThan(lastZ);
+  });
 });
 
 describe('isHandVisible', () => {

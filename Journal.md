@@ -4402,3 +4402,20 @@ New components: `components/home/PrimaryCTA.tsx`, `PitchColumns.tsx`, `Filmstrip
 Local CI green again on the cumulative diff (verify + build + e2e + integration). No behaviour change to the four shipped variants or the envelope lifecycle; all five fixes are additive or doc-only.
 
 **Commit(s):** `4343a5e`, `5fd9a1d`, `33e391f`, `3864356`, `c9a0e99`.
+
+## 2026-04-30T21:18:13-04:00 — #340: selected card lifts above its fan neighbours
+
+**Pushed:** Bug fix for the encounter-resolver hand. The fan overlaps cards via negative `marginLeft`, so when the player picked a card, the gold selection border drew but the card itself stayed buried under its right-hand neighbour (which paints later in DOM order). Fix in `components/hand/Hand.tsx`: every card now renders with `position: relative`, and the selected card lifts to `zIndex: 1`. Choice of `z=1` (not `z=10`) is deliberate — the parent's absolutely-positioned close button is `z-10`, so the selected card needs to beat siblings at default `auto` (≈0) without competing with the close button.
+
+**Why:** Reported by the user during a hot-seat playthrough on `main` immediately after the screenshot in issue #340. Scoped down by user direction to "just have cards come to the forefront when selected" — no lift-translate animation, no broader hand polish.
+
+**Notes:**
+- **TDD.** New test `selected card stacks above its neighbours (#340)` in `Hand.test.tsx` ran red against the original code (`expected '' to be 'relative'`), green after the fix. 26-test Hand suite passes.
+- **Stacking-context note added to the parent div.** The `<div>` containing the fan already had `position: relative` and `overflow-x-hidden`, both of which establish the stacking context this z-index participates in. Comment documents that they are load-bearing — a future cosmetic removal would silently nuke the lift.
+- **Code-reviewer pass cleared with one significant-but-non-blocking finding** (the comment above). No critical findings.
+- **`pnpm ci:local` GREEN across all four jobs** with `CI=1` (verify ✓ 1330 tests, build ✓, e2e Playwright ✓ including the demo-hand visual regression, real-Supabase integration ✓). First attempt at `pnpm ci:local` (without `CI=1`) had Playwright reuse a phantom dev server from a sibling worktree (`reuseExistingServer: !CI`); re-running with `CI=1` forced a fresh dev server and all e2e tests passed.
+- **Hosted CI: now running again** — billing was restored at some point today, prior project memory was stale. typecheck+lint+test ✓, build ✓, real-Supabase integration ✓, GitGuardian ✓; only `end-to-end (playwright)` failed, with 12 visual-regression diffs at 0.01 ratio across 7 unrelated routes (`about`, `tokens`, `play`, `demo-challenge`, `demo-icons`, `demo-ritual`, `demo-stat-sheet`, `demo-hand`). The only one that exercises my code (`demo-hand`) passes locally — confirmed by re-running `playwright test e2e/visual-regression.spec.ts --grep demo-hand`. The other 11 are on pages I did not touch. This is cross-cutting baseline drift from recent atmosphere/motion/sigil/home work — same pattern as the 42-baseline refresh in Journal #317.
+- **Branch sync via merge-commit, not rebase.** Two main-side commits landed during this work (#339 per-Sefirah surface, #342 home hero). Local rebase resolved the Journal conflict cleanly, but the user's `git push --force-with-lease` deny-rule blocked publishing the rewritten history. Reset the branch to the original pushed state, merged `origin/main` in (creating a merge commit that resolves the same Journal conflict), and pushed. Squash-merge collapses both shapes to the same single commit, so the branch shape doesn't change the merged result.
+- **Admin-merged** (`gh pr merge 343 --admin --squash --delete-branch`) per user authorization, given local CI is the canonical bar per `~/.claude/rules/local-ci-and-admin-merge.md` and the hosted failures are unrelated baseline drift. A follow-up baseline-refresh ticket should sweep them.
+
+**Commit(s):** `faada9a` (failing test), `c7e49fc` (fix + reviewer-driven stacking-context comment), `29a4dfa` (Journal entry), plus the merge commit syncing main into the branch.
