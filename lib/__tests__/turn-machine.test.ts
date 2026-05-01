@@ -2731,6 +2731,37 @@ describe('turnReducer — new PrepModifier variants (#334)', () => {
       expect(result.value.next.state.pendingModifiers.nameCards).toEqual([4]);
     });
 
+    it('add: rejects a second name-card with prep-cap-exceeded (max one per encounter, § 3.1)', () => {
+      // Design § 3.1: "Only one `name-card` modifier may be staged per
+      // encounter (the reducer rejects a second add)." A player can
+      // `prep-remove-modifier` and re-stage with a different arcanum
+      // before confirm, but stacking two simultaneous guesses is rejected.
+      const player = makePlayer({ id: 'p1', position: 'hod' });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            nameCards: [4],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'name-card', arcanum: 7 },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.reason.kind).toBe('prep-cap-exceeded');
+      if (result.reason.kind !== 'prep-cap-exceeded') return;
+      expect(result.reason.cap).toBe(1);
+    });
+
     it('remove: un-stages by arcanum equality', () => {
       const player = makePlayer({ id: 'p1', position: 'hod' });
       const state = makeState(

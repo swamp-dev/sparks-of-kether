@@ -4801,3 +4801,17 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
 - **Hosted CI:** still billing-blocked per project memory.
 
 **Commit(s):** failing tests + implementation + review fixes + main merge — single PR squash.
+
+## 2026-05-01T12:15:00-04:00 — #361: name-card max-one rejection per § 3.1
+
+**Pushed:** Three-commit chore branch — failing test, 4-line guard, code-review cleanup. The Hod `name-card` PrepModifier shipped in #353 silently appended to `pendingModifiers.nameCards` on a second add, violating `design/per-sefirah-mechanics.md` § 3.1 ("Only one `name-card` modifier may be staged per encounter; the reducer rejects a second add"). Engine only ever reads index 0 so there was no exploitable path, but the silent acceptance is a UX trust violation (a player double-tapping Name a Card sees no error feedback) and a spec violation. Fix mirrors the analogous Yesod `dream-guess` fix that landed in commit `05acfc3` on the merged Yesod PR.
+
+**Why:** Follow-up flagged in the #354 code-review and explicitly deferred to its own ticket so the fix wouldn't pull Hod tests into a Yesod-scoped PR.
+
+**Notes:**
+- TDD held — test commit landed first, fails on `pending.nameCards.length >= 1` (no guard); 4-line guard returning `prep-cap-exceeded` with `cap: 1` makes it green.
+- `code-reviewer` subagent verdict: **Ship**. Two minor improvements addressed in a follow-up commit: drop inert `hand: [4, 7]` fixture (the cap guard fires before any hand check, so the hand was meaningless noise — the sibling `dream-guess` test seeds no hand either) and refresh the § 2.7 block comment that was still listing `declare-desire` as an example of consumer-owned multi-staging while `name-card` and `dream-guess` caps now live in this reducer. Re-review skipped — fixes are trivial cleanups, not non-trivial scope changes.
+- Reviewer flagged one out-of-scope follow-up: **`declare-desire` has a spec-stated cap ("Max one per run, locks") but no reducer enforcement** at stage time. The lock appears to be enforced at confirm via `activePlayer.declaredDesire`, so a player who never confirmed can keep restaging. Whether that's intentional permissiveness or the same class of bug is worth a separate ticket. Not expanding this PR.
+- Hosted CI is still billing-blocked per project memory; admin-merge bypass justified after `pnpm ci:local` runs green.
+
+**Commit(s):** `b5f7ecc` (test) + `72eacca` (fix) + `4809039` (review cleanup) + this Journal entry.

@@ -798,14 +798,25 @@ export function turnReducer(
           };
           break;
         // #334 — `design/per-sefirah-mechanics.md` § 2.7 surface.
-        // Stage-time validation here is deliberately permissive: the
-        // surface accepts these variants by shape only, and the per-
-        // Sefirah downstream tickets (Hod / Chesed / Netzach / Yesod)
-        // layer their own staging guards (e.g. "name-card requires
-        // active player on Hod", "gift-card recipient must be a
-        // different player at Chesed", "max one declare-desire per
-        // run"). Multi-staging constraints are owned by the consumer.
+        // Stage-time validation here is mostly permissive: the surface
+        // accepts these variants by shape, and the per-Sefirah downstream
+        // tickets (Hod / Chesed / Netzach / Yesod) layer their own
+        // semantic guards (e.g. "name-card requires active player on
+        // Hod", "gift-card recipient must be a different player at
+        // Chesed"). Per-encounter caps that the spec calls out — § 3.1
+        // for `name-card` and § 3.6 for `dream-guess` — are enforced
+        // here so the `prep-cap-exceeded` contract surfaces the rejection
+        // to the UI; gift-card is intentionally multi-allowed.
         case 'name-card':
+          // § 3.1: max one name-card per encounter; the reducer rejects
+          // a second add. The player can `prep-remove-modifier` and
+          // re-stage with a different arcanum before confirm.
+          if (pending.nameCards.length >= 1) {
+            return {
+              ok: false,
+              reason: { kind: 'prep-cap-exceeded', cap: 1 },
+            };
+          }
           nextPending = {
             ...pending,
             nameCards: [...pending.nameCards, event.modifier.arcanum],
