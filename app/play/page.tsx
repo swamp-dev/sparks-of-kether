@@ -14,14 +14,16 @@ import type { StatSheet } from '@/engine/types';
 
 /**
  * The actual play surface. Single-page state machine that walks each
- * player through the setup pipeline (blessing → sign) for both
+ * player through the setup pipeline (sign → blessing) for both
  * players in turn, then transitions to the lobby, and on Begin hands
  * off to `PlayScreen`.
  *
- * #237 (Epic #212 T8) removed the Soul Aspect phase. The flow is now
- * ritual(p1) → sign(p1) → ritual(p2) → sign(p2) → lobby → play. The
- * zodiac-sign pick alone supplies the player's class; dignity-derived
- * stat deltas land at `initializeGame` time.
+ * #237 (Epic #212 T8) removed the Soul Aspect phase. #255 (Voices
+ * Epic T4) reordered sign-pick before the blessing ritual so the
+ * ritual can render sign-aware blessing copy. Current flow:
+ * sign(p1) → ritual(p1) → sign(p2) → ritual(p2) → lobby → play.
+ * The zodiac-sign pick alone supplies the player's class; dignity-
+ * derived stat deltas land at `initializeGame` time.
  *
  * Hot-seat for now (no multiplayer routing). Phase 5 swaps the local
  * state machine for room-based state coming from Supabase.
@@ -43,7 +45,11 @@ type Phase =
 const RNG_SEED = 1729; // arbitrary; the seed itself doesn't matter for a demo
 
 export default function PlayPage(): JSX.Element {
-  const [phase, setPhase] = useState<Phase>({ kind: 'ritual', playerIndex: 0 });
+  // #255 reorder: sign-pick happens BEFORE the blessing ritual so
+  // BlessingRitual can render per-sign blessing quotes (Voices Epic
+  // T4). The sign is the player's astrological "class" — natural to
+  // pick before the Tree blesses them.
+  const [phase, setPhase] = useState<Phase>({ kind: 'sign', playerIndex: 0 });
   const [slots, setSlots] = useState<readonly [SetupSlot, SetupSlot]>([
     { id: 'p1', name: 'Player 1' },
     { id: 'p2', name: 'Player 2' },
@@ -58,16 +64,6 @@ export default function PlayPage(): JSX.Element {
   );
   const playRng = useMemo(() => seededRng(RNG_SEED + 2), []);
 
-  const finishRitual = (idx: 0 | 1, stats: StatSheet): void => {
-    setSlots((prev) => {
-      const next = [...prev] as [SetupSlot, SetupSlot];
-      const slot = next[idx];
-      next[idx] = { ...slot, stats };
-      return next;
-    });
-    setPhase({ kind: 'sign', playerIndex: idx });
-  };
-
   const finishSign = (idx: 0 | 1, sign: ZodiacSignKey): void => {
     setSlots((prev) => {
       const next = [...prev] as [SetupSlot, SetupSlot];
@@ -75,8 +71,18 @@ export default function PlayPage(): JSX.Element {
       next[idx] = { ...slot, zodiacSign: sign };
       return next;
     });
+    setPhase({ kind: 'ritual', playerIndex: idx });
+  };
+
+  const finishRitual = (idx: 0 | 1, stats: StatSheet): void => {
+    setSlots((prev) => {
+      const next = [...prev] as [SetupSlot, SetupSlot];
+      const slot = next[idx];
+      next[idx] = { ...slot, stats };
+      return next;
+    });
     if (idx === 0) {
-      setPhase({ kind: 'ritual', playerIndex: 1 });
+      setPhase({ kind: 'sign', playerIndex: 1 });
     } else {
       setPhase({ kind: 'lobby' });
     }
@@ -111,12 +117,23 @@ export default function PlayPage(): JSX.Element {
   };
 
   if (phase.kind === 'ritual') {
+    const sign = slots[phase.playerIndex].zodiacSign;
+    if (sign === undefined) {
+      // The phase machine routes sign-pick before ritual (#255), so
+      // this is unreachable through normal flow. Loud error if we
+      // somehow get here so the regression is debuggable from the
+      // exception alone.
+      throw new Error(
+        `BlessingRitual entered without a zodiac sign for player ${phase.playerIndex}`,
+      );
+    }
     return (
       <main className="min-h-screen p-8 text-veil">
         <PhaseHeader title={`${slots[phase.playerIndex].name} — Sefirot Blessing`} />
         <BlessingRitual
           key={`ritual-${phase.playerIndex}`}
           rng={ritualRngs[phase.playerIndex]}
+          sign={sign}
           onComplete={(stats) => finishRitual(phase.playerIndex, stats)}
         />
       </main>

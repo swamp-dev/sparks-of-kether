@@ -378,7 +378,7 @@ describe('a11y — major UI surfaces', () => {
 
   it('BlessingRitual (initial step) is axe-clean', async () => {
     const { container } = render(
-      <BlessingRitual rng={seededRng(1)} onComplete={() => undefined} />,
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={() => undefined} />,
     );
     expectNoViolations(await axe(container));
   });

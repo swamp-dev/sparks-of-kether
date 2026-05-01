@@ -4947,3 +4947,27 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 - Hosted CI will fail e2e on visual-regression (known infra issue); diff is engine + tests only — admin-merge bypass criteria met.
 
 **Commit(s):** `b1a58bb` (failing test) + `0a08db8` (impl) + `18d6709` (Kether fix, re-reviewed) + this Journal entry.
+
+## 2026-05-01T15:20:00-04:00 — #255: T4 sign-aware blessing quote in BlessingRitual
+
+**Pushed:** Three commits (failing test → impl + flow reorder → review fixes). Final ticket of the Sefirah Voices Epic (#251). Renders the per-Sefirah blessing quote inside `BlessingRitual` after each roll, with the dignity tier surfaced as a `data-dignity-tier` attribute for tone-styling. Reorders the play flow so the sign-pick happens before the ritual.
+
+**Why:** T4 of the Voices Epic — the user-visible payoff. T1 (#252), T2 (#253), T3 (#254) all shipped earlier today; this ticket lands the surface a player actually sees. With this merge, the entire Voices Epic (#251) is complete.
+
+**Notes:**
+- TDD held — failing test commit first (8 new tests covering #255's acceptance criteria: quote visibility, per-dignity-tier sample for ruler/exaltation/detriment/fall/neutral, Next-clears-quote, `data-dignity-tier` exposure for tone-styling). Implementation commit added the prop + render + flow reorder; tests went green.
+- **Required `sign: ZodiacSignKey` prop** on BlessingRitual. Production callers must run the sign-picker before mounting BlessingRitual; runtime guard in `app/play/page.tsx` throws if the sign is somehow absent.
+- **Play flow reordered:** initial phase is `'sign'` not `'ritual'`. New order: `sign(p1) → ritual(p1) → sign(p2) → ritual(p2) → lobby → play`. The sign is the player's astrological "class" and is naturally picked before the Tree blesses them. `e2e/play-flow.spec.ts` updated to walk the new order.
+- **Quote rendered as `<blockquote>`** inside `RollDisplay` after the rolled stat total. Italic, colored by the Sefirah color token, opacity 90 — prominent enough to read, styled distinctly from the non-blessing copy. Cleared on Next so the next step starts in the awaiting state.
+- **Quote + tier computed at roll-time, stored in state** (not derived at render-time). This avoids re-picking on every render — `pickBlessing` consumes one int from the shared rng per call, so deriving at render would silently shift the engine's RNG state. Roll consumes 4 ints total (3 dice + 1 variant pick).
+- **Demo page** (`app/demo/ritual/page.tsx`) gets a sign-selector dropdown so anyone reviewing can see how the voice calibrates per sign without needing to walk the production flow.
+- **`code-reviewer` subagent verdict:** **Ship**. Two SIGNIFICANT items addressed in commit `ee8e8f7`: `handleSkipCeremony` was leaving `blessing` state non-null when the Summary screen took over (state-machine invariant violation; not user-visible today but fragile if Summary ever reads `blessing`); module JSDoc in `app/play/page.tsx` still described the old phase order. Plus minor improvements: `data-dignity-tier` assertions on the ruler and fall test cells (was only neutral); removed redundant seed-bump on demo-page sign-change. Re-review skipped — both fixes are exactly what the reviewer specified, no novel scope.
+- Reviewer-flagged out-of-scope follow-ups (deferred):
+  - Axe coverage of the post-roll state — would catch any accessibility regression in the new blockquote element. Not in scope for T4 itself.
+  - Whether `<blockquote>` is the right semantic element vs `<p role="status">` for game-authored copy — design-doc-level question; sticking with blockquote for now.
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 29 tests in BlessingRitual.test.tsx (was 20 pre-T4); full suite 1880 passing.
+- Hosted CI will fail e2e on visual-regression as it does for every UI PR (known infra issue per memory); UI changes here are an expected new baseline for `BlessingRitual` (rendered blockquote in the post-roll state). Admin-merge bypass criteria met since local CI is green.
+
+**Voices Epic #251 — fully complete.** All 4 tickets (T1 #252 + T2 #253 + T3 #254 + T4 #255) shipped 2026-05-01.
+
+**Commit(s):** `62b5df4` (failing test) + `20e1a85` (impl + flow reorder) + `ee8e8f7` (review fixes) + this Journal entry.

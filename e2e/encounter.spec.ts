@@ -59,27 +59,11 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
 
   // Walk both players through the blessing ritual + sign pick. Mirrors
   // the existing `play-flow.spec.ts` to land on the play screen.
+  // #255: sign-pick now runs BEFORE the blessing ritual.
   for (let player = 1; player <= 2; player++) {
-    await expect(
-      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
-    ).toBeVisible();
-    for (let step = 0; step < 10; step++) {
-      await page.getByRole('button', { name: /Roll 3d6/i }).click();
-      await page.getByRole('button', { name: /^Next$/i }).click();
-    }
-    await expect(
-      page.getByRole('heading', { name: /The Tree has spoken/i }),
-    ).toBeVisible();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
     await expect(
       page.getByRole('heading', { name: /Choose your sign/i }),
     ).toBeVisible();
-    // #314 carousel: aries is the default-focused stage. P1 confirms
-    // it directly. P2's picker mounts after P1 picked aries, so aries
-    // is already in `taken`; we cycle four times via the on-screen
-    // Next-sign arrow to land on leo (the cycle helper skips taken
-    // signs, so the first Next from aries-taken lands on taurus and
-    // four Next clicks total land on leo).
     if (player === 2) {
       const nextArrow = page
         .getByRole('button', { name: /^Next sign$/ })
@@ -92,6 +76,18 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
     await page
       .getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) })
       .click();
+
+    await expect(
+      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
+    ).toBeVisible();
+    for (let step = 0; step < 10; step++) {
+      await page.getByRole('button', { name: /Roll 3d6/i }).click();
+      await page.getByRole('button', { name: /^Next$/i }).click();
+    }
+    await expect(
+      page.getByRole('heading', { name: /The Tree has spoken/i }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
   }
 
   await expect(page.getByRole('heading', { name: /^Lobby$/ })).toBeVisible();

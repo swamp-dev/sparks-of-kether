@@ -35,18 +35,8 @@ test('settings cog opens, toggles sound, persists to localStorage, closes via Es
   await hotseatLink.click();
   await page.waitForURL('**/play');
 
+  // #255: sign-pick now runs BEFORE the blessing ritual.
   for (let player = 1; player <= 2; player++) {
-    await expect(
-      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
-    ).toBeVisible();
-    for (let step = 0; step < 10; step++) {
-      await page.getByRole('button', { name: /Roll 3d6/i }).click();
-      await page.getByRole('button', { name: /^Next$/i }).click();
-    }
-    await expect(
-      page.getByRole('heading', { name: /The Tree has spoken/i }),
-    ).toBeVisible();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
     await expect(
       page.getByRole('heading', { name: /Choose your sign/i }),
     ).toBeVisible();
@@ -62,6 +52,18 @@ test('settings cog opens, toggles sound, persists to localStorage, closes via Es
     await page
       .getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) })
       .click();
+
+    await expect(
+      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
+    ).toBeVisible();
+    for (let step = 0; step < 10; step++) {
+      await page.getByRole('button', { name: /Roll 3d6/i }).click();
+      await page.getByRole('button', { name: /^Next$/i }).click();
+    }
+    await expect(
+      page.getByRole('heading', { name: /The Tree has spoken/i }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
   }
 
   await expect(page.getByRole('heading', { name: /^Lobby$/ })).toBeVisible();

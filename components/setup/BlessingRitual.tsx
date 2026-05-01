@@ -1,9 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { sefirot } from '@/data';
-import type { Sefirah, StatKey } from '@/data';
+import type { Sefirah, StatKey, ZodiacSignKey } from '@/data';
 import type { Rng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
+import {
+  dignityRelationship,
+  quoteForBlessing,
+  type DignityRelationship,
+} from '@/engine/sefirah-quote';
 import { StatIcon } from '@/components/icons/StatIcon';
 import { RITUAL_COPY } from './ritual-copy';
 import { RitualScene } from './RitualScene';
@@ -39,14 +44,27 @@ import { RitualLedger } from './RitualLedger';
 
 interface BlessingRitualProps {
   readonly rng: Rng;
+  /**
+   * The player's zodiac sign. Required: each Sefirah's blessing line
+   * is selected from the per-sign matrix (#252) and tagged with the
+   * dignity tier (#254) for tone-styling. Production callers must run
+   * the sign-picker phase before mounting BlessingRitual.
+   */
+  readonly sign: ZodiacSignKey;
   readonly onComplete: (stats: StatSheet) => void;
   readonly className?: string;
 }
 
 type StepStatus = 'awaiting' | 'rolled';
 
+interface BlessingRender {
+  readonly quote: string;
+  readonly tier: DignityRelationship;
+}
+
 export function BlessingRitual({
   rng,
+  sign,
   onComplete,
   className,
 }: BlessingRitualProps): JSX.Element {
@@ -54,6 +72,10 @@ export function BlessingRitual({
   const [stats, setStats] = useState<Partial<Record<StatKey, number>>>({});
   const [stepStatus, setStepStatus] = useState<StepStatus>('awaiting');
   const [lastRoll, setLastRoll] = useState<readonly [number, number, number] | null>(null);
+  // Quote + tier are computed once at roll-time and held in state so
+  // they don't re-pick (and consume rng) on every render. Cleared at
+  // step advance; never present in the 'awaiting' state.
+  const [blessing, setBlessing] = useState<BlessingRender | null>(null);
 
   const finished = stepIndex >= sefirot.length;
   const currentSefirah = finished ? null : sefirot[stepIndex];
@@ -67,6 +89,13 @@ export function BlessingRitual({
     setStepStatus('rolled');
     if (currentSefirah) {
       setStats((prev) => ({ ...prev, [currentSefirah.stat]: a + b + c }));
+      // Pick the blessing quote off the same rng — uniform-from-3 per
+      // T3's `quoteForBlessing`. Compute the tier separately so the
+      // rendered element can carry it for tone-styling.
+      setBlessing({
+        quote: quoteForBlessing(currentSefirah.key, sign, rng),
+        tier: dignityRelationship(currentSefirah.key, sign),
+      });
     }
   };
 
@@ -78,6 +107,7 @@ export function BlessingRitual({
     setStepIndex((i) => i + 1);
     setStepStatus('awaiting');
     setLastRoll(null);
+    setBlessing(null);
   };
 
   // #133: skip-to-summary — roll all remaining Sefirot in one click,
@@ -104,6 +134,7 @@ export function BlessingRitual({
     setStepIndex(sefirot.length);
     setStepStatus('awaiting');
     setLastRoll(null);
+    setBlessing(null);
   };
 
   // #215: explicit Continue handler. Validates the StatSheet first
@@ -198,6 +229,8 @@ export function BlessingRitual({
           <RollDisplay
             roll={lastRoll}
             stat={currentSefirah.stat}
+            blessing={blessing}
+            sefirahColor={currentSefirah.color}
             onAdvance={handleAdvance}
           />
         ) : null}
@@ -286,10 +319,18 @@ function relativeLuminance(hex: string): number {
 interface RollDisplayProps {
   readonly roll: readonly [number, number, number];
   readonly stat: StatKey;
+  readonly blessing: BlessingRender | null;
+  readonly sefirahColor: string;
   readonly onAdvance: () => void;
 }
 
-function RollDisplay({ roll, stat, onAdvance }: RollDisplayProps): JSX.Element {
+function RollDisplay({
+  roll,
+  stat,
+  blessing,
+  sefirahColor,
+  onAdvance,
+}: RollDisplayProps): JSX.Element {
   const total = roll[0] + roll[1] + roll[2];
   return (
     <div
@@ -317,6 +358,16 @@ function RollDisplay({ roll, stat, onAdvance }: RollDisplayProps): JSX.Element {
       >
         {total}
       </p>
+      {blessing ? (
+        <blockquote
+          data-blessing-quote
+          data-dignity-tier={blessing.tier}
+          className="mt-2 max-w-prose px-4 text-center text-sm italic leading-relaxed opacity-90"
+          style={{ color: sefirahColor }}
+        >
+          {blessing.quote}
+        </blockquote>
+      ) : null}
       <button
         type="button"
         onClick={onAdvance}
