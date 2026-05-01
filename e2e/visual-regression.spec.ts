@@ -63,6 +63,16 @@ const ROUTES: readonly Route[] = [
   { path: '/demo/stat-sheet', slug: 'demo-stat-sheet' },
   { path: '/demo/tokens', slug: 'demo-tokens' },
   { path: '/demo/tree', slug: 'demo-tree' },
+  // #320 Codex baselines. Per the ticket's acceptance criteria the
+  // four landing surfaces are covered: index, one Sefirah (Tiferet —
+  // most-connected), one Arcanum (Death — high-symbol-content), one
+  // Path (22 / Justice — Lamed). The other 51 detail pages share the
+  // same component shells so a regression on one would surface on
+  // these four.
+  { path: '/codex', slug: 'codex' },
+  { path: '/sefirah/tiferet', slug: 'sefirah-tiferet' },
+  { path: '/arcana/13', slug: 'arcana-13' },
+  { path: '/path/22', slug: 'path-22' },
 ];
 
 interface Viewport {

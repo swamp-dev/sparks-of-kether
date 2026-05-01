@@ -227,6 +227,15 @@ const ROUTES: readonly Route[] = [
     slug: 'demo-tree',
     captureLocator: '[data-demo-canvas]',
   },
+
+  // #320 Codex captures — index + one representative detail per
+  // category. The other 51 detail pages share the same component
+  // shells; capturing one Sefirah / Arcanum / Path is enough for
+  // the curated visual tour.
+  { path: '/codex', slug: 'codex' },
+  { path: '/sefirah/tiferet', slug: 'sefirah-tiferet' },
+  { path: '/arcana/13', slug: 'arcana-13' },
+  { path: '/path/22', slug: 'path-22' },
 ];
 
 interface Viewport {
