@@ -4858,3 +4858,19 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
 - **Re-review by `code-reviewer` skipped for these fixes.** Both are mechanical pattern shifts tested explicitly, not non-trivial.
 
 - **`pnpm ci:local` re-run after fixes:** all four jobs green (+3 new tests for the review fixes — 49 total in `use-turn.test.ts`'s K4 batch).
+
+## 2026-05-01T12:40:00-04:00 — #366: declare-desire max-one rejection per § 3.5
+
+**Pushed:** Three-commit chore branch — failing test, 4-line guard, code-review cleanup. The Netzach `declare-desire` PrepModifier had the same gap that #361 just closed for `name-card` and #354 closed for `dream-guess`: `design/per-sefirah-mechanics.md:246` (§ 3.5 row in the § 2.7 surface table) says "Max one per run, locks" but the reducer in `lib/turn-machine.ts:837–842` silently appended to `pendingModifiers.declareDesires`.
+
+The post-confirm run-wide lock works correctly today — it's enforced at `prep-confirm` via `activePlayer.declaredDesire` (permanent, never cleared). What was missing is the *pre*-confirm cap: a player who never confirmed could keep restaging fresh declarations. Same shape as the `name-card` and `dream-guess` defects already fixed.
+
+**Why:** Surfaced during the #361 code-review (which itself was the #354 review's deferred follow-up) and filed as #366 to keep the fix self-contained. Closing this clears the bug-fix queue before unpausing the Sefirah Voices epic (#252–#255).
+
+**Notes:**
+- TDD held — failing test commit first; 4-line guard returning `prep-cap-exceeded` with `cap: 1` makes it green. Pattern faithful to commits `05acfc3` (#354 dream-guess) and the just-shipped #361.
+- `code-reviewer` subagent verdict: **Ship**. One Note item folded in as a follow-up commit: refresh the § 2.7 surface comment to list `declare-desire` (§ 3.5) alongside the two already-noted in-reducer caps (§ 3.1 name-card, § 3.6 dream-guess). Re-review skipped — trivial doc tweak, not a non-trivial fix.
+- Engine reads `declareDesires[0]`, so there's no exploit path; the silent acceptance was a UX trust violation (a player double-tapping "Declare Desire" sees no error feedback) and a spec violation that broke the `prep-cap-exceeded` contract every other capped modifier follows.
+- Hosted CI now runs (billing restored) but consistently fails on Playwright visual-regression baselines (different render than local). Diff is engine-only — same admin-merge bypass criteria as #361.
+
+**Commit(s):** `3ab7694` (test) + `21041d4` (fix) + `57f1f06` (review cleanup) + this Journal entry.

@@ -2956,6 +2956,40 @@ describe('turnReducer — new PrepModifier variants (#334)', () => {
       ]);
     });
 
+    it('add: rejects a second declare-desire with prep-cap-exceeded (max one per run, § 3.5)', () => {
+      // Design § 2.7 surface table, § 3.5 row: "Max one per run, locks."
+      // The pre-confirm cap mirrors § 3.1 (name-card) and § 3.6 (dream-
+      // guess). The post-confirm lock is enforced separately via
+      // activePlayer.declaredDesire (permanent, never cleared) — that
+      // path is unchanged. A player can prep-remove-modifier and re-
+      // stage a different sefirah before confirm, but stacking two
+      // simultaneous declarations is rejected.
+      const player = makePlayer({ id: 'p1', position: 'netzach' });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            declareDesires: ['tiferet'],
+          },
+        },
+      );
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'declare-desire', sefirah: 'gevurah' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.reason.kind).toBe('prep-cap-exceeded');
+      if (result.reason.kind !== 'prep-cap-exceeded') return;
+      expect(result.reason.cap).toBe(1);
+    });
+
     it('remove: un-stages by sefirah equality', () => {
       const player = makePlayer({ id: 'p1', position: 'netzach' });
       const state = makeState(

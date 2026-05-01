@@ -803,10 +803,11 @@ export function turnReducer(
         // tickets (Hod / Chesed / Netzach / Yesod) layer their own
         // semantic guards (e.g. "name-card requires active player on
         // Hod", "gift-card recipient must be a different player at
-        // Chesed"). Per-encounter caps that the spec calls out — § 3.1
-        // for `name-card` and § 3.6 for `dream-guess` — are enforced
-        // here so the `prep-cap-exceeded` contract surfaces the rejection
-        // to the UI; gift-card is intentionally multi-allowed.
+        // Chesed"). Spec-stated caps — § 3.1 for `name-card` (per
+        // encounter), § 3.5 for `declare-desire` (per run), § 3.6 for
+        // `dream-guess` (per encounter) — are enforced here so the
+        // `prep-cap-exceeded` contract surfaces the rejection to the UI;
+        // `gift-card` is intentionally multi-allowed.
         case 'name-card':
           // § 3.1: max one name-card per encounter; the reducer rejects
           // a second add. The player can `prep-remove-modifier` and
@@ -835,6 +836,19 @@ export function turnReducer(
           };
           break;
         case 'declare-desire':
+          // § 3.5 (§ 2.7 surface table row): "Max one per run, locks."
+          // The pre-confirm cap mirrors § 3.1 (name-card) and § 3.6
+          // (dream-guess). The post-confirm lock is enforced separately
+          // via `activePlayer.declaredDesire` (permanent, never cleared);
+          // this guard only governs stage-time stacking. The player can
+          // `prep-remove-modifier` and re-stage a different sefirah
+          // before confirm.
+          if (pending.declareDesires.length >= 1) {
+            return {
+              ok: false,
+              reason: { kind: 'prep-cap-exceeded', cap: 1 },
+            };
+          }
           nextPending = {
             ...pending,
             declareDesires: [...pending.declareDesires, event.modifier.sefirah],
