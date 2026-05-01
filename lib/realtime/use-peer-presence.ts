@@ -78,6 +78,15 @@ export function usePeerPresence(
   const lastSentCursorTsRef = useRef<number | null>(null);
   const reduceMotionRef = useRef(options.reduceMotion ?? false);
   reduceMotionRef.current = options.reduceMotion ?? false;
+  // #356 trailing-edge state. When a cursor sample arrives within the
+  // throttle window we drop it from the leading-edge path but stash
+  // it here so the trailing-edge timer can flush it after the window
+  // expires. The pending sample is overwritten on every drop, so the
+  // FINAL position before idle is what fires (the load-bearing
+  // contract). Both refs are nulled when the timer fires or on
+  // unmount.
+  const pendingCursorRef = useRef<PeerCursorSendInput | null>(null);
+  const trailingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (roomId === null || selfPlayerId === null) return;
@@ -133,6 +142,15 @@ export function usePeerPresence(
       clearInterval(sweep);
       unsubscribe();
       subRef.current = null;
+      // #356 — cancel any pending trailing-edge cursor flush so a
+      // late timer doesn't fire on a dead subscription. The
+      // pendingCursorRef is also nulled to avoid a future remount
+      // (same hook, new room) inheriting stale state.
+      if (trailingTimerRef.current !== null) {
+        clearTimeout(trailingTimerRef.current);
+        trailingTimerRef.current = null;
+      }
+      pendingCursorRef.current = null;
       setStatus('idle');
     };
   }, [roomId, selfPlayerId]);
@@ -142,7 +160,44 @@ export function usePeerPresence(
     if (sub === null) return;
     const now = Date.now();
     const hz = reduceMotionRef.current ? SEND_HZ_REDUCED : SEND_HZ_NORMAL;
-    if (shouldThrottleCursor(now, lastSentCursorTsRef.current, hz)) return;
+    if (shouldThrottleCursor(now, lastSentCursorTsRef.current, hz)) {
+      // Throttled. Stash the input as the pending trailing-edge
+      // sample; overwrite any prior queued sample (we only care
+      // about the LAST position the user reaches before stopping).
+      // If no trailing timer is already pending, schedule one to
+      // fire at the next window boundary — when it fires it will
+      // flush whatever is in `pendingCursorRef` at that moment.
+      pendingCursorRef.current = input;
+      if (trailingTimerRef.current === null) {
+        const windowMs = 1000 / hz;
+        // INVARIANT: when we reach the stash branch above,
+        // `shouldThrottleCursor` returned `true`, which only happens
+        // when `lastSentCursorTsRef.current` is non-null (the helper
+        // returns `false` for the null case so the leading-edge path
+        // fires). We assert that here rather than papering over it
+        // with `?? now` — a `?? now` fallback would silently schedule
+        // a `delay = 0` immediate trailing fire if the helper is ever
+        // refactored to allow throttling on null.
+        const lastSent = lastSentCursorTsRef.current;
+        if (lastSent === null) {
+          throw new Error(
+            'usePeerPresence: throttle invariant broken — lastSent is null in stash branch',
+          );
+        }
+        const delay = Math.max(0, windowMs - (now - lastSent));
+        trailingTimerRef.current = setTimeout(() => {
+          trailingTimerRef.current = null;
+          const queued = pendingCursorRef.current;
+          if (queued === null) return;
+          pendingCursorRef.current = null;
+          const liveSub = subRef.current;
+          if (liveSub === null) return;
+          lastSentCursorTsRef.current = Date.now();
+          void liveSub.sendCursor(queued);
+        }, delay);
+      }
+      return;
+    }
     lastSentCursorTsRef.current = now;
     void sub.sendCursor(input);
   }, []);

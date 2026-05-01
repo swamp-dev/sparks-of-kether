@@ -4664,6 +4664,28 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
 
 **Commit(s):** `ffd2232` (initial wire-format + authorize), `d5ebdca` (unit tests for both layers), `d5052c5` (integration test against real Supabase), `5e33580` (writeSnapshot upsert onConflict fix), `f4f1455` (code-reviewer findings — design-spec rename + missing host-skip gate + server-stamp + loss branch), `b1b4b7f` (stale-comment cleanup).
 
+## 2026-05-01T11:00:00-04:00 — #356: trailing-edge cursor emit (follow-up to #322)
+
+**Pushed:** Closes the deferred S-2 from PR #355's review — the cursor throttle in `lib/realtime/use-peer-presence.ts` was leading-edge-only, so the LAST sample before idle could be dropped if it landed inside the throttle window. Peers saw a ghost cursor frozen 0–33ms (normal) or 0–250ms (reduce-motion) behind the sender's resting position; against the stated "Figma-style presence" expectation that's a noticeable UX regression. Three things land:
+
+- Two new refs in `usePeerPresence`: `pendingCursorRef` (last dropped sample, overwritten on every drop so the FINAL position before idle is what fires) and `trailingTimerRef` (the `setTimeout` handle).
+- `sendCursor` extended: when throttled, stash the input. If no trailing timer is pending, schedule one to fire at `windowMs - (now - lastSent)` (the next window boundary). When the timer fires, flush whatever's queued, update `lastSentCursorTsRef`, and clear the queue.
+- Cleanup in the useEffect's return: `clearTimeout` on the trailing timer; null both refs to avoid a remount (same hook, new room) inheriting stale state.
+
+3 new contract tests in `use-peer-presence.test.tsx`: trailing-edge fires after burst stops (asserts the LAST sample, x=0.3, fires after the 33ms window); no double-emit when a single sample landed in the window (no spurious trailing fire); cancels the pending timer on unmount (no late send on dead subscription).
+
+**Why:** Closes the gap in #322's "Figma-style presence" promise. Without trailing-edge emit the resting cursor lags behind the true position by up to 250ms in reduce-motion — a noticeable regression for users who rely on deliberate cursor movement to communicate.
+
+**Notes:**
+- **TDD ordering held.** Failing-test commit landed first (3 red tests). Implementation made all three green. 34/34 lib/realtime tests pass.
+- **Code-reviewer subagent pass — 2 Significant findings, both fixed:** (a) `?? now` fallback in the delay calculation was dead code under current `shouldThrottleCursor` semantics but would silently schedule a `delay=0` immediate trailing fire if the helper is ever refactored. Replaced with a throw-on-invariant pattern that documents the assumption and surfaces a regression loudly. (b) Unmount test snapshotted `beforeUnmount = sendCalls.length` then asserted `length === beforeUnmount` post-unmount — a silent false-positive path if scheduler jitter caused the trailing-edge to fire before unmount. Replaced with `toHaveLength(1)` absolute assertions on both sides.
+- **Re-review by `code-reviewer` subagent on the post-fix diff:** verdict `Ship`. Noted the throw is loud-by-design (uncaught into `window.onerror` if the impossible state is ever reached), which is a reasonable tradeoff for an unreachable invariant.
+- **Skipped (per original review marking them as non-blockers):** `Date.now()` → `performance.now()` (cosmetic at 30Hz); reduce-motion 250ms variant test (additional coverage, not a contract gap); fake-timer refactor (the 80ms real-timer wait is 2.4× the 33ms window).
+- **`pnpm ci:local` ALL FOUR JOBS GREEN:** verify ✓, build ✓, e2e ✓, integration ✓.
+- **Hosted CI:** still billing-blocked per project memory.
+
+**Commit(s):** failing tests + implementation + review fixes — single PR squash.
+
 ## 2026-05-01T14:34:52+00:00 — #353: Hod Word-Match — K2 of #284 (Hermes)
 
 **Pushed:** First per-Sefirah mechanic on top of the #339 K1 surface. Engine-only diff (`engine/checks.ts` + `engine/__tests__/checks.test.ts`). Implements `design/per-sefirah-mechanics.md` § 3.1.
