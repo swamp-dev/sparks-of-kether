@@ -4930,3 +4930,20 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 - Hosted CI will fail e2e on visual-regression as it does for every PR (known infra issue per memory); diff is data + tests only — admin-merge bypass criteria met.
 
 **Commit(s):** `69a41dc` (failing test) + `654a816` (impl + lookup + index re-exports) + `73fad0d` (review cleanup) + this Journal entry.
+
+## 2026-05-01T14:50:00-04:00 — #254: T3 sefirah-quote engine helper
+
+**Pushed:** Three commits (failing test → impl → review fix). Adds `engine/sefirah-quote.ts` exporting the new `DignityRelationship` 5-tier type (`ruler / exaltation / neutral / detriment / fall`) and two pure functions: `dignityRelationship(sefirah, sign)` for tone-tier resolution and `quoteForBlessing(sefirah, sign, rng)` as a thin wrapper over T2's `pickBlessing`.
+
+**Why:** T3 of the Voices Epic (#251). T2 (#253) shipped the data layer with uniform variant selection; T3 adds the dignity-tier computation that T4 (#255) will need for tone-styling the rendered blessing.
+
+**Notes:**
+- TDD held — failing test commit (27 tests across parametric 120-cell coverage, 5 locked edge cases, 14 per-Sefirah spot checks) → implementation → green.
+- **Architecture decision:** new `DignityRelationship` type lives in `engine/sefirah-quote.ts`, not in `data/types.ts`. The existing `data/types.ts:Dignity` (4 tiers, no neutral, uses `'rulership'`) is the unit the stat-bonus engine works in (`engine/zodiac-bonus.ts`). The new 5-tier type with `'neutral'` and `'ruler'` is the derived tone bucket the blessing surface speaks in. Two contracts, two types.
+- **`code-reviewer` subagent (pass 1) flagged a SIGNIFICANT contract conflict:** `dignityRelationship('kether', 'scorpio')` returned `'ruler'` (because Pluto co-rules Scorpio and Kether's `planetKey` is `'pluto'`), but T1 (#252) authored all 12 Kether cells in `'neutral'` collective tone. T4 would mismatch styling vs authored content. Fix in commit `18d6709`: special-case Kether (and document the existing Malkuth special-case) to return `'neutral'` for all 12 signs. The Pluto-co-rulership relationship is REAL at the stat-bonus layer (`engine/zodiac-bonus.ts` does honor it for stat math), but the blessing surface and the stat-bonus surface have different contracts. JSDoc documents the divergence at the point of divergence.
+- **`code-reviewer` subagent (pass 2 — re-review on the fix):** verdict **Ship**. Verified: contract conflict resolved, JSDoc adequate, no other Sefirah has the same kind of conflict (Chokmah/Pisces was authored in `'ruler'` tier so the engine output matches there), test coverage unchanged or strictly better.
+- The divergence between the blessing-tone path (`sefirah-quote.ts`) and the stat-bonus-mechanics path (`zodiac-bonus.ts`) is intentional and documented; both surfaces read `sefirot.ts:planetKey` directly with no coupling between them.
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 27 new tests pass; full suite 1870 tests pass.
+- Hosted CI will fail e2e on visual-regression (known infra issue); diff is engine + tests only — admin-merge bypass criteria met.
+
+**Commit(s):** `b1a58bb` (failing test) + `0a08db8` (impl) + `18d6709` (Kether fix, re-reviewed) + this Journal entry.
