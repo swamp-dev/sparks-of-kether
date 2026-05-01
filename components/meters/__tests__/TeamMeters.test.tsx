@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { TeamMeters, SHELL_THRESHOLDS } from '../TeamMeters';
 import { EMPTY_PILLAR_STREAK } from '@/engine/types';
@@ -145,6 +145,65 @@ describe('TeamMeters — pillar streak as three columns', () => {
       expect(col?.getAttribute('data-active')).toBe('false');
       expect(col?.getAttribute('data-fill-ratio')).toBe('0.00');
     }
+  });
+});
+
+describe('TeamMeters — sound hooks (silent today, wired for #321)', () => {
+  it('forwards onIlluminationIncrease to the IlluminationMeter', () => {
+    const onIllum = vi.fn();
+    const { rerender } = render(
+      <TeamMeters
+        illumination={3}
+        separation={0}
+        onIlluminationIncrease={onIllum}
+      />,
+    );
+    expect(onIllum).not.toHaveBeenCalled();
+    rerender(
+      <TeamMeters
+        illumination={5}
+        separation={0}
+        onIlluminationIncrease={onIllum}
+      />,
+    );
+    expect(onIllum).toHaveBeenCalledTimes(1);
+    expect(onIllum).toHaveBeenCalledWith(2);
+  });
+
+  it('forwards onSeparationIncrease to the SeparationMeter on tick from 0→1', () => {
+    const onSep = vi.fn();
+    const { rerender } = render(
+      <TeamMeters illumination={0} separation={0} onSeparationIncrease={onSep} />,
+    );
+    expect(onSep).not.toHaveBeenCalled();
+    rerender(
+      <TeamMeters illumination={0} separation={1} onSeparationIncrease={onSep} />,
+    );
+    expect(onSep).toHaveBeenCalledTimes(1);
+    expect(onSep).toHaveBeenCalledWith(1);
+  });
+
+  it('does not fire either hook on a downward change', () => {
+    const onIllum = vi.fn();
+    const onSep = vi.fn();
+    const { rerender } = render(
+      <TeamMeters
+        illumination={5}
+        separation={5}
+        onIlluminationIncrease={onIllum}
+        onSeparationIncrease={onSep}
+      />,
+    );
+    rerender(
+      <TeamMeters
+        illumination={3}
+        separation={3}
+        onIlluminationIncrease={onIllum}
+        onSeparationIncrease={onSep}
+      />,
+    );
+    expect(onIllum).not.toHaveBeenCalled();
+    expect(onSep).not.toHaveBeenCalled();
   });
 });
 
