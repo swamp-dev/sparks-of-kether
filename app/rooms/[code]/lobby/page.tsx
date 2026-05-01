@@ -1,9 +1,41 @@
 'use client';
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { Lobby, type LobbyPlayer } from '@/components/setup/Lobby';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
+import {
+  AvatarStack,
+  type PresencePeer,
+} from '@/components/presence/AvatarStack';
 import { useLobby } from '@/lib/use-lobby';
+import { usePresence } from '@/lib/presence';
+import { sefirot, zodiacSigns } from '@/data';
 import type { ZodiacSignKey } from '@/data';
+
+/**
+ * Maps each zodiac sign to its primary-ruler Sefirah accent color.
+ * The ruler-Sefirah link is the same one Soul Doors use (a sign's
+ * ruler maps to a Sefirah; that Sefirah is its "home gate"). This
+ * keeps the avatar tint consistent with the ColorBloom on the play
+ * screen — no new color taxonomy.
+ */
+const SIGN_COLOR_BY_KEY = (() => {
+  const sefirahColorByPlanet = new Map<string, string>();
+  for (const s of sefirot) {
+    if (s.planetKey !== undefined)
+      sefirahColorByPlanet.set(s.planetKey, s.color);
+  }
+  const out: Partial<Record<ZodiacSignKey, string>> = {};
+  for (const sign of zodiacSigns) {
+    const color = sefirahColorByPlanet.get(sign.ruler);
+    if (color !== undefined) out[sign.key] = color;
+  }
+  return out;
+})();
+
+const SIGN_GLYPH_BY_KEY = Object.fromEntries(
+  zodiacSigns.map((s) => [s.key, s.glyph]),
+) as Record<ZodiacSignKey, string>;
 
 /**
  * Room lobby page. Thin renderer over `useLobby(code)` — the hook
@@ -139,7 +171,19 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   }));
 
   return (
-    <main className="min-h-screen p-8 text-veil">
+    <main className="relative min-h-screen p-8 text-veil">
+      {/*
+        #322 — Figma-style avatar stack. Top-right of the lobby so
+        players see their party assemble in real time as peers join,
+        pick signs, and toggle ready. Honors the existing presence
+        roster (`usePresence`) for online/offline state without
+        introducing a parallel channel.
+      */}
+      <PresenceAvatarStack
+        roomId={room?.id ?? null}
+        viewerPlayerId={currentPlayerId}
+        players={players}
+      />
       <header className="mb-6 text-center">
         <h1 className="font-display text-3xl tracking-widest">Lobby</h1>
         <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">
@@ -173,5 +217,71 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
         </p>
       </div>
     </main>
+  );
+}
+
+/**
+ * Presence-aware avatar stack rendered fixed top-right. Pulls
+ * online/offline from the existing `usePresence` channel so a
+ * disconnected peer's avatar dims without needing a second presence
+ * pipeline. Active player surfaces during play, not lobby — in lobby
+ * the active-player concept doesn't apply, so we mark the viewer
+ * themselves as "active" purely as a self-locator (the ring is the
+ * viewer's; the gold tells them which avatar is "you").
+ */
+/**
+ * `PresenceAvatarStack` reads the same `players` array `useLobby`
+ * already produces — no duplicate mapping at the call site. The
+ * inline narrowing here (`p.zodiac_sign as ZodiacSignKey | null`)
+ * mirrors the cast in `lobbyPlayers` above; both run against the
+ * same `PlayerRow.zodiac_sign: string | null` field.
+ */
+function PresenceAvatarStack({
+  roomId,
+  viewerPlayerId,
+  players,
+}: {
+  readonly roomId: string | null;
+  readonly viewerPlayerId: string | null;
+  readonly players: readonly {
+    readonly id: string;
+    readonly nickname: string;
+    readonly zodiac_sign: string | null;
+  }[];
+}): JSX.Element | null {
+  const { onlinePlayerIds } = usePresence(roomId, viewerPlayerId);
+
+  const peers = useMemo<readonly PresencePeer[]>(
+    () =>
+      players.map((p) => {
+        const sign = p.zodiac_sign as ZodiacSignKey | null;
+        const glyph = sign ? SIGN_GLYPH_BY_KEY[sign] : null;
+        return {
+          playerId: p.id,
+          name: p.nickname,
+          color: (sign && SIGN_COLOR_BY_KEY[sign]) ?? '#f8f8ff',
+          ...(glyph ? { glyph } : {}),
+          online: onlinePlayerIds.has(p.id),
+        };
+      }),
+    [players, onlinePlayerIds],
+  );
+
+  if (peers.length === 0 || viewerPlayerId === null) return null;
+
+  return (
+    <div
+      className="absolute right-4 top-4 z-20"
+      data-testid="lobby-avatar-stack-wrapper"
+    >
+      <AvatarStack
+        peers={peers}
+        viewerPlayerId={viewerPlayerId}
+        // In the lobby we don't have a "current turn" concept — point
+        // the gold ring at the viewer themselves so they can spot
+        // their own avatar at a glance.
+        activePlayerId={viewerPlayerId}
+      />
+    </div>
   );
 }
