@@ -7,6 +7,16 @@ import type {
   ChallengeRejection,
   ChallengeSuccess,
 } from '@/engine/checks';
+import {
+  currentWitnessPlayerId,
+  ketherConfirmClosure,
+  ketherPassCard,
+  ketherPlayCard,
+  ketherStageSpark,
+  ketherUnstageSpark,
+  type KetherConfirmResult,
+  type KetherRejection,
+} from '@/engine/kether';
 import type { Rng } from '@/engine/rng';
 import type {
   ChallengeSubPhase,
@@ -16,6 +26,7 @@ import type {
   Result,
   TurnPhase,
 } from '@/engine/types';
+import type { ClientAction } from './room-actions';
 import {
   HAND_CAP as MACHINE_HAND_CAP,
   STARTING_HAND_SIZE as MACHINE_STARTING_HAND_SIZE,
@@ -38,9 +49,43 @@ export type { TurnPhase } from '@/engine/types';
 export const STARTING_HAND_SIZE = MACHINE_STARTING_HAND_SIZE;
 export const HAND_CAP = MACHINE_HAND_CAP;
 
+/**
+ * Wire-dispatch callback for multiplayer mode (K4 / #352). When the
+ * caller supplies this, the Kether ritual methods send the matching
+ * K2 `ClientAction` over the wire (so other clients see the move via
+ * Realtime) AND apply the engine reducer locally for an optimistic
+ * update. When the callback is omitted (hot-seat), the ritual methods
+ * apply the engine reducer locally without any wire dispatch.
+ *
+ * The same shape is used by the (out-of-scope-for-K4) future
+ * EncounterScreen wire-dispatch refactor; the Kether methods are the
+ * first to land with this contract because the multiplayer
+ * acceptance criteria for #352 demand it explicitly.
+ */
+export type DispatchClientAction = (action: ClientAction) => void;
+
 interface UseTurnOptions {
   readonly initialState: GameState;
   readonly rng: Rng;
+  /**
+   * K4 / #352 — multiplayer wire-dispatch hook for the Kether ritual.
+   * Hot-seat callers omit this and the ritual methods apply the engine
+   * reducer locally only. Multiplayer callers supply both this AND
+   * `selfPlayerId` so the dispatched `ClientAction` carries the
+   * authentic actor id (the server will gate it against the bearer
+   * token regardless, but the client-side `playerId` field has to
+   * match for the round-trip to succeed).
+   */
+  readonly dispatchClientAction?: DispatchClientAction;
+  /**
+   * K4 / #352 — caller's player id, used by ritual methods to populate
+   * the `playerId` field on dispatched `ClientAction`s. Required when
+   * `dispatchClientAction` is provided; ignored otherwise. (Hot-seat
+   * uses `currentWitnessPlayerId(state)` for play/pass and
+   * `state.activePlayerId` as the implicit actor for closure-window
+   * stage/unstage actions.)
+   */
+  readonly selfPlayerId?: string;
 }
 
 export interface UseTurnReturn {
@@ -156,6 +201,89 @@ export interface UseTurnReturn {
   readonly endTurn: () => void;
   /** Force a state replacement — used when an external action mutates state out-of-band. */
   readonly setState: (s: GameState) => void;
+
+  // ────────────────────────────────────────────────────────────────
+  // K4 (#352) — Kether ritual adapter.
+  //
+  // The five ritual methods mirror the K2 wire actions one-for-one
+  // (`design/final-threshold.md` § 7.1 K4). Hot-seat callers (no
+  // `dispatchClientAction` injected) get the local engine reducer
+  // applied directly; multiplayer callers also dispatch the matching
+  // `ClientAction` for Realtime. `currentWitnessPlayerId` is a
+  // derived field surfacing the engine's round-robin pointer so
+  // the UI can render "whose voice is speaking" without reaching
+  // into `state.ketherRitual` directly.
+  //
+  // `ketherHostSkipWitness` is `undefined` outside multiplayer mode —
+  // there is no disconnect risk at one keyboard. The hot-seat hook
+  // doesn't expose the affordance at all.
+  // ────────────────────────────────────────────────────────────────
+
+  /**
+   * Whose turn it currently is in the witness round-robin. Wraps
+   * `engine/kether.ts:currentWitnessPlayerId`. Returns `null` outside
+   * `phase === 'kether'` / `subPhase === 'witness'`. The hot-seat UI
+   * uses this to focus the right local "voice"; multiplayer UI uses it
+   * to gate the play/pass affordance.
+   */
+  readonly currentWitnessPlayerId: string | null;
+
+  /**
+   * Active witness plays one card from hand (§ 2.3). The arcanum must
+   * be in the player's hand; the engine validates this. Hot-seat uses
+   * `currentWitnessPlayerId(state)` as the implicit actor; multiplayer
+   * dispatches with `selfPlayerId`. No-op (and no wire dispatch) if
+   * the hook can't determine an actor (no current witness or no
+   * `selfPlayerId` in multiplayer mode).
+   */
+  readonly ketherWitnessPlay: (
+    arcanum: number,
+  ) => Result<GameState, KetherRejection> | undefined;
+
+  /**
+   * Active witness passes their turn (+1 Separation; cap
+   * `⌈personalQueueLength / 2⌉`). Symmetric with `ketherWitnessPlay`
+   * for actor resolution.
+   */
+  readonly ketherWitnessPass: () =>
+    | Result<GameState, KetherRejection>
+    | undefined;
+
+  /**
+   * Stage one of `playerId`'s held Sparks for the closure window
+   * (§ 2.4). Pre-confirm only; the engine rejects once
+   * `closureLocked` is true. Multiplayer dispatch shape:
+   * `{ kind: 'kether-close-stage-spark', playerId, sefirah }`.
+   */
+  readonly ketherCloseStageSpark: (
+    playerId: string,
+    sefirah: SefirahKey,
+  ) => Result<GameState, KetherRejection>;
+
+  /**
+   * Symmetric un-stage. Pre-confirm only.
+   */
+  readonly ketherCloseUnstageSpark: (
+    playerId: string,
+    sefirah: SefirahKey,
+  ) => Result<GameState, KetherRejection>;
+
+  /**
+   * Close the spark window (first-confirm-wins per § 2.4 / S-7).
+   * Hot-seat uses `state.activePlayerId` as the implicit actor;
+   * multiplayer uses `selfPlayerId`. Subsequent confirms reject with
+   * `kether-already-confirmed` at the engine layer.
+   */
+  readonly thresholdConfirm: () => KetherConfirmResult | undefined;
+
+  /**
+   * Multiplayer-only: host forces an absent witness to pass / play
+   * (§ 7.1 disconnect defense). The K2 dispatcher in
+   * `lib/room-actions.ts` falls through to a forced lowest-arcanum
+   * play when the absent player has hit their pass cap. Hot-seat:
+   * this method is `undefined` (no disconnect risk).
+   */
+  readonly ketherHostSkipWitness?: (targetPlayerId: string) => void;
 }
 
 /**
@@ -512,6 +640,177 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, opts.rng],
   );
 
+  // ────────────────────────────────────────────────────────────────
+  // K4 (#352) — Kether ritual adapter.
+  //
+  // Each ritual method has the same general shape: (1) compute the
+  // implicit actor (current witness for play/pass, explicit playerId
+  // for closure stage/unstage, current active player for confirm),
+  // (2) call the engine reducer locally for the optimistic snapshot
+  // update, (3) ONLY IF the local apply succeeds, dispatch the
+  // matching K2 `ClientAction` for Realtime visibility.
+  //
+  // Order is local-apply-first-then-dispatch (post-#352 review fix).
+  // The earlier draft dispatched first — meaning a stale-closure race
+  // (two clients clicking simultaneously) would fire the wire even
+  // when the engine would reject locally. Local-first means the wire
+  // sees only the actions the local engine accepts; if the server's
+  // engine rejects too (same engine, same state), the audit row is
+  // still created server-side, but the client never sends an action
+  // it knows is invalid.
+  //
+  // Hot-seat absence of `dispatchClientAction` short-circuits step (3);
+  // the local reducer is the sole writer.
+  // ────────────────────────────────────────────────────────────────
+
+  const dispatch = opts.dispatchClientAction;
+  const selfPlayerId = opts.selfPlayerId;
+
+  // Runtime guard: when `dispatchClientAction` is provided, the caller
+  // MUST also provide `selfPlayerId` — together they compose the
+  // multiplayer mode. Without `selfPlayerId`, `thresholdConfirm` (and
+  // any caller that needs an explicit actor identity) silently no-ops,
+  // which is invisible to UI and would only surface as "the close
+  // button does nothing" in production. Failing loud at construction
+  // time catches a misconfigured options bag immediately.
+  if (dispatch !== undefined && selfPlayerId === undefined) {
+    throw new Error(
+      'useTurn: opts.dispatchClientAction was provided without opts.selfPlayerId. ' +
+        'Both fields together compose the multiplayer mode; without selfPlayerId, ' +
+        'ritual methods like thresholdConfirm cannot determine the actor and ' +
+        'would silently no-op. Pass both, or omit both for hot-seat.',
+    );
+  }
+
+  const witnessPointer = currentWitnessPlayerId(state);
+
+  const ketherWitnessPlay = useCallback(
+    (
+      arcanum: number,
+    ): Result<GameState, KetherRejection> | undefined => {
+      // Pick the actor: in multiplayer the caller's selfPlayerId IS
+      // the actor (the wire layer will reject if it isn't the current
+      // witness; the local optimistic apply will likewise reject via
+      // engine kether-not-your-turn). In hot-seat we use the engine
+      // pointer because there's only one keyboard — the round-robin
+      // is a UI focus, not a security boundary.
+      const actor =
+        dispatch !== undefined
+          ? selfPlayerId
+          : currentWitnessPlayerId(state);
+      if (actor === undefined || actor === null) return undefined;
+      const result = ketherPlayCard(state, { playerId: actor, arcanum });
+      if (!result.ok) return result;
+      setSnapshot({ state: result.value });
+      if (dispatch !== undefined) {
+        dispatch({ kind: 'kether-witness-play', playerId: actor, arcanum });
+      }
+      return result;
+    },
+    [state, dispatch, selfPlayerId],
+  );
+
+  const ketherWitnessPass = useCallback(
+    (): Result<GameState, KetherRejection> | undefined => {
+      const actor =
+        dispatch !== undefined
+          ? selfPlayerId
+          : currentWitnessPlayerId(state);
+      if (actor === undefined || actor === null) return undefined;
+      const result = ketherPassCard(state, { playerId: actor });
+      if (!result.ok) return result;
+      setSnapshot({ state: result.value });
+      if (dispatch !== undefined) {
+        dispatch({ kind: 'kether-witness-pass', playerId: actor });
+      }
+      return result;
+    },
+    [state, dispatch, selfPlayerId],
+  );
+
+  const ketherCloseStageSpark = useCallback(
+    (
+      playerId: string,
+      sefirah: SefirahKey,
+    ): Result<GameState, KetherRejection> => {
+      const result = ketherStageSpark(state, { playerId, sefirah });
+      if (!result.ok) return result;
+      setSnapshot({ state: result.value });
+      if (dispatch !== undefined) {
+        dispatch({
+          kind: 'kether-close-stage-spark',
+          playerId,
+          sefirah,
+        });
+      }
+      return result;
+    },
+    [state, dispatch],
+  );
+
+  const ketherCloseUnstageSpark = useCallback(
+    (
+      playerId: string,
+      sefirah: SefirahKey,
+    ): Result<GameState, KetherRejection> => {
+      const result = ketherUnstageSpark(state, { playerId, sefirah });
+      if (!result.ok) return result;
+      setSnapshot({ state: result.value });
+      if (dispatch !== undefined) {
+        dispatch({
+          kind: 'kether-close-unstage-spark',
+          playerId,
+          sefirah,
+        });
+      }
+      return result;
+    },
+    [state, dispatch],
+  );
+
+  const thresholdConfirm = useCallback(
+    (): KetherConfirmResult | undefined => {
+      // Implicit actor: multiplayer uses selfPlayerId; hot-seat uses
+      // state.activePlayerId (the seat that pressed the confirm
+      // button). Either is acceptable to the engine — `ketherConfirmClosure`
+      // doesn't enforce a per-actor rule (any player can close, per
+      // § 3.3); the playerId field is for audit/logging. The hook-init
+      // guard above guarantees that when dispatch is set, selfPlayerId
+      // is also set — so `actor` is never `undefined` in multiplayer
+      // (the early-return below is hot-seat-only defense for an
+      // engine-corrupted state with `activePlayerId` unset).
+      const actor =
+        dispatch !== undefined ? selfPlayerId : state.activePlayerId;
+      if (actor === undefined) return undefined;
+      const result = ketherConfirmClosure(state, { playerId: actor });
+      if (!result.ok) return result;
+      setSnapshot({ state: result.value });
+      if (dispatch !== undefined) {
+        dispatch({ kind: 'threshold-confirm', playerId: actor });
+      }
+      return result;
+    },
+    [state, dispatch, selfPlayerId],
+  );
+
+  // Host-skip is a multiplayer-only affordance — no local engine
+  // apply; the server runs the forced pass / play on receipt. The
+  // hot-seat hook leaves this `undefined` (see UseTurnReturn comment).
+  const ketherHostSkipWitness = useMemo<
+    ((targetPlayerId: string) => void) | undefined
+  >(() => {
+    if (dispatch === undefined || selfPlayerId === undefined) {
+      return undefined;
+    }
+    return (targetPlayerId: string): void => {
+      dispatch({
+        kind: 'kether-host-skip-witness',
+        playerId: selfPlayerId,
+        targetPlayerId,
+      });
+    };
+  }, [dispatch, selfPlayerId]);
+
   return useMemo(
     () => ({
       state,
@@ -532,6 +831,21 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       discard,
       endTurn,
       setState: replaceState,
+      // K4 (#352) — Kether ritual adapter.
+      currentWitnessPlayerId: witnessPointer,
+      ketherWitnessPlay,
+      ketherWitnessPass,
+      ketherCloseStageSpark,
+      ketherCloseUnstageSpark,
+      thresholdConfirm,
+      // Spread so the field is omitted (not `undefined`) in hot-seat —
+      // the type signature is optional, and `expect(field).toBeUndefined()`
+      // succeeds whether the key is absent or has value `undefined`.
+      // Multiplayer surfaces the function; hot-seat doesn't have the
+      // key. Tests rely on this dichotomy.
+      ...(ketherHostSkipWitness !== undefined
+        ? { ketherHostSkipWitness }
+        : {}),
     }),
     [
       state,
@@ -552,6 +866,13 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       discard,
       endTurn,
       replaceState,
+      witnessPointer,
+      ketherWitnessPlay,
+      ketherWitnessPass,
+      ketherCloseStageSpark,
+      ketherCloseUnstageSpark,
+      thresholdConfirm,
+      ketherHostSkipWitness,
     ],
   );
 }

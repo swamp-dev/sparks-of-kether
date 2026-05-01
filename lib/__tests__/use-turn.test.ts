@@ -1,10 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useTurn } from '../use-turn';
 import type { CheckModifiers, CheckOutcome } from '@/engine/checks';
 import { seededRng } from '@/engine/rng';
-import type { PlayerState } from '@/engine/types';
+import type {
+  GameState,
+  KetherRitualState,
+  PlayerState,
+  Result,
+} from '@/engine/types';
+import type { KetherRejection } from '@/engine/kether';
 import type { PrepModifier } from '../turn-machine';
+import type { ClientAction } from '../room-actions';
 import { makePlayer, makeState } from '@/test/fixtures';
 
 function freshHook() {
@@ -731,6 +738,548 @@ describe('useTurn — submitChallenge atomicity / rollback (E4 / #229)', () => {
 
     expect(outcome?.ok).toBe(false);
     expect(result.current.state).toBe(beforeState);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// K4 (#352) — Kether ritual adapter + hot-seat collapse.
+// ────────────────────────────────────────────────────────────────────
+//
+// `useTurn` gains five ritual-specific methods (`ketherWitnessPlay`,
+// `ketherWitnessPass`, `ketherCloseStageSpark`, `ketherCloseUnstageSpark`,
+// `thresholdConfirm`) plus a host-only `ketherHostSkipWitness` for
+// multiplayer disconnect defense. Hot-seat consumes the engine reducers
+// directly; multiplayer dispatches the matching K2 `ClientAction` via
+// an injected `dispatchClientAction` callback so other clients see the
+// move via Realtime.
+//
+// The hot-seat collapse: with no `dispatchClientAction` injected, the
+// hook applies the engine reducer locally AND mirrors the witness
+// pointer onto a derived field so the UI can render "whose voice is
+// speaking now" without reaching into `state.ketherRitual`. The
+// rotation tests below pin both 2-player and 3-player round-robins.
+//
+// Design refs: `design/final-threshold.md` § 7.1 (K4 scope), § 2.2
+// (hot-seat collapse + abbreviated solo coda S-5), § 3.3 (active-player
+// frozen during ritual), § 5 (state shape).
+
+/**
+ * Build a `KetherRitualState` matching what `initKetherRitual`
+ * produces for a 2- or 3-player ritual at fresh witness entry. Hand
+ * sizes default to 2 cards each; first player in `playerIds`
+ * opens the round-robin (matches the descending-timestamp invariant
+ * via the order the test caller passes).
+ */
+function freshRitual(
+  playerIds: readonly string[],
+  handSizes: Readonly<Record<string, number>> = {},
+): KetherRitualState {
+  const personalQueueLengths: Record<string, number> = {};
+  const passCounts: Record<string, number> = {};
+  const arrivalTimestamps: Record<string, number> = {};
+  for (const id of playerIds) {
+    personalQueueLengths[id] = handSizes[id] ?? 2;
+    passCounts[id] = 0;
+    arrivalTimestamps[id] = 100; // unused at runtime, present for shape
+  }
+  return {
+    subPhase: 'witness',
+    witnessOrder: [...playerIds],
+    witnessTurnIndex: 0,
+    personalQueueLengths,
+    passCounts,
+    witnessLog: [],
+    arrivalTimestamps,
+    stagedClosureSparks: [],
+    closureLocked: false,
+  };
+}
+
+/**
+ * Mount a `useTurn` hook against a fully-staged ritual state. Two
+ * players by default — `p2` opens (last-arrived) per the design's
+ * descending-timestamp rule — but a custom player set can be passed.
+ *
+ * The fixture is a hot-seat snapshot: no `dispatchClientAction`
+ * injection, no Realtime. Tests can override `players` / `ritual`
+ * fully; the helper just plumbs the standard plumbing.
+ */
+function ritualHook(opts?: {
+  readonly players?: readonly PlayerState[];
+  readonly ritual?: KetherRitualState;
+  readonly dispatchClientAction?: (action: ClientAction) => void;
+  readonly selfPlayerId?: string;
+}) {
+  const players: readonly PlayerState[] = opts?.players ?? [
+    makePlayer({ id: 'p1', position: 'kether', hand: [3, 4] }),
+    makePlayer({ id: 'p2', position: 'kether', hand: [5, 6] }),
+  ];
+  const ritual: KetherRitualState =
+    opts?.ritual ?? freshRitual(['p2', 'p1']);
+  const initialState: GameState = makeState(
+    {},
+    {
+      players: [...players],
+      activePlayerId: ritual.witnessOrder[0] ?? players[0]?.id ?? 'p1',
+      phase: 'kether',
+      ketherRitual: ritual,
+    },
+  );
+  const baseOpts = { initialState, rng: seededRng(1) };
+  const fullOpts =
+    opts?.dispatchClientAction !== undefined
+      ? {
+          ...baseOpts,
+          dispatchClientAction: opts.dispatchClientAction,
+          ...(opts.selfPlayerId !== undefined
+            ? { selfPlayerId: opts.selfPlayerId }
+            : {}),
+        }
+      : baseOpts;
+  return renderHook(() => useTurn(fullOpts));
+}
+
+describe('useTurn — Kether ritual return shape (K4 / #352)', () => {
+  it('exposes the five ritual methods on the return shape', () => {
+    const { result } = ritualHook();
+    expect(typeof result.current.ketherWitnessPlay).toBe('function');
+    expect(typeof result.current.ketherWitnessPass).toBe('function');
+    expect(typeof result.current.ketherCloseStageSpark).toBe('function');
+    expect(typeof result.current.ketherCloseUnstageSpark).toBe('function');
+    expect(typeof result.current.thresholdConfirm).toBe('function');
+  });
+
+  it('exposes a derived currentWitnessPlayerId that tracks the engine pointer', () => {
+    // Pre-action: p2 opens the round-robin (witnessOrder[0]).
+    const { result } = ritualHook();
+    expect(result.current.currentWitnessPlayerId).toBe('p2');
+  });
+
+  it('currentWitnessPlayerId is null outside the witness sub-phase', () => {
+    // Non-ritual state: the field is null, not undefined, so callers
+    // can rely on a single discriminator across hot-seat and
+    // multiplayer paths.
+    const { result } = freshHook();
+    expect(result.current.currentWitnessPlayerId).toBeNull();
+  });
+});
+
+describe('useTurn — ketherWitnessPlay (K4 / #352)', () => {
+  it('hot-seat: plays the card via the engine reducer and advances the pointer', () => {
+    const { result } = ritualHook();
+    expect(result.current.currentWitnessPlayerId).toBe('p2');
+    act(() => {
+      result.current.ketherWitnessPlay(5);
+    });
+    // Engine: p2 burns arcanum 5 to discard, witness pointer advances
+    // to p1 (next in witnessOrder).
+    expect(result.current.state.ketherRitual?.witnessLog).toEqual([
+      { kind: 'played', playerId: 'p2', arcanum: 5 },
+    ]);
+    expect(result.current.state.ketherRitual?.witnessTurnIndex).toBe(1);
+    expect(
+      result.current.state.players.find((p) => p.id === 'p2')?.hand,
+    ).toEqual([6]);
+    // Derived field follows the engine.
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+  });
+
+  it('multiplayer: dispatches the K2 ClientAction with the correct shape', () => {
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      dispatchClientAction,
+      selfPlayerId: 'p2',
+    });
+    act(() => {
+      result.current.ketherWitnessPlay(5);
+    });
+    expect(dispatchClientAction).toHaveBeenCalledTimes(1);
+    expect(dispatchClientAction).toHaveBeenCalledWith({
+      kind: 'kether-witness-play',
+      playerId: 'p2',
+      arcanum: 5,
+    } satisfies ClientAction);
+  });
+});
+
+describe('useTurn — ketherWitnessPass (K4 / #352)', () => {
+  it('hot-seat: passes via the engine reducer (+1 separation, pointer advances)', () => {
+    const { result } = ritualHook({
+      ritual: freshRitual(['p2', 'p1'], { p1: 4, p2: 4 }),
+    });
+    act(() => {
+      result.current.ketherWitnessPass();
+    });
+    expect(result.current.state.separation).toBe(1);
+    expect(result.current.state.ketherRitual?.passCounts.p2).toBe(1);
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+  });
+
+  it('multiplayer: dispatches the K2 ClientAction with the correct shape', () => {
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      dispatchClientAction,
+      selfPlayerId: 'p2',
+    });
+    act(() => {
+      result.current.ketherWitnessPass();
+    });
+    expect(dispatchClientAction).toHaveBeenCalledWith({
+      kind: 'kether-witness-pass',
+      playerId: 'p2',
+    } satisfies ClientAction);
+  });
+});
+
+describe('useTurn — closure-window methods (K4 / #352)', () => {
+  /**
+   * Build a closure-window state: ritual is in `subPhase: 'close'`
+   * (witness has finished). Both players hold sparks they may stage.
+   */
+  function closureFixture() {
+    const players: readonly PlayerState[] = [
+      makePlayer({
+        id: 'p1',
+        position: 'kether',
+        hand: [],
+        sparksHeld: new Set(['chesed', 'gevurah']),
+      }),
+      makePlayer({
+        id: 'p2',
+        position: 'kether',
+        hand: [],
+        sparksHeld: new Set(['hod']),
+      }),
+    ];
+    const ritual: KetherRitualState = {
+      ...freshRitual(['p2', 'p1']),
+      subPhase: 'close',
+    };
+    return { players, ritual };
+  }
+
+  it('hot-seat: ketherCloseStageSpark stages the spark on ritual state', () => {
+    const { players, ritual } = closureFixture();
+    const { result } = ritualHook({ players, ritual });
+    act(() => {
+      result.current.ketherCloseStageSpark('p1', 'chesed');
+    });
+    expect(result.current.state.ketherRitual?.stagedClosureSparks).toEqual([
+      { playerId: 'p1', sefirah: 'chesed' },
+    ]);
+  });
+
+  it('multiplayer: ketherCloseStageSpark dispatches the K2 ClientAction', () => {
+    const { players, ritual } = closureFixture();
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      players,
+      ritual,
+      dispatchClientAction,
+      selfPlayerId: 'p1',
+    });
+    act(() => {
+      result.current.ketherCloseStageSpark('p1', 'chesed');
+    });
+    expect(dispatchClientAction).toHaveBeenCalledWith({
+      kind: 'kether-close-stage-spark',
+      playerId: 'p1',
+      sefirah: 'chesed',
+    } satisfies ClientAction);
+  });
+
+  it('hot-seat: ketherCloseUnstageSpark removes the staged spark', () => {
+    const { players, ritual } = closureFixture();
+    const stagedRitual: KetherRitualState = {
+      ...ritual,
+      stagedClosureSparks: [{ playerId: 'p1', sefirah: 'chesed' }],
+    };
+    const { result } = ritualHook({ players, ritual: stagedRitual });
+    act(() => {
+      result.current.ketherCloseUnstageSpark('p1', 'chesed');
+    });
+    expect(
+      result.current.state.ketherRitual?.stagedClosureSparks,
+    ).toEqual([]);
+  });
+
+  it('multiplayer: ketherCloseUnstageSpark dispatches the K2 ClientAction', () => {
+    const { players, ritual } = closureFixture();
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      players,
+      ritual: { ...ritual, stagedClosureSparks: [{ playerId: 'p1', sefirah: 'chesed' }] },
+      dispatchClientAction,
+      selfPlayerId: 'p1',
+    });
+    act(() => {
+      result.current.ketherCloseUnstageSpark('p1', 'chesed');
+    });
+    expect(dispatchClientAction).toHaveBeenCalledWith({
+      kind: 'kether-close-unstage-spark',
+      playerId: 'p1',
+      sefirah: 'chesed',
+    } satisfies ClientAction);
+  });
+
+  it('hot-seat: thresholdConfirm consumes staged sparks and exits to phase=end', () => {
+    const { players, ritual } = closureFixture();
+    const stagedRitual: KetherRitualState = {
+      ...ritual,
+      stagedClosureSparks: [{ playerId: 'p1', sefirah: 'chesed' }],
+    };
+    const { result } = ritualHook({ players, ritual: stagedRitual });
+    act(() => {
+      result.current.thresholdConfirm();
+    });
+    // Engine consumed the spark and exited to 'end' (per § 3.4).
+    expect(result.current.state.phase).toBe('end');
+    expect(result.current.state.ketherRitual?.closureLocked).toBe(true);
+    // Spark spent → +1 illumination.
+    expect(result.current.state.illumination).toBe(1);
+    const p1 = result.current.state.players.find((p) => p.id === 'p1');
+    expect(p1?.sparksHeld.has('chesed')).toBe(false);
+  });
+
+  it('multiplayer: thresholdConfirm dispatches the K2 ClientAction with selfPlayerId', () => {
+    const { players, ritual } = closureFixture();
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      players,
+      ritual,
+      dispatchClientAction,
+      selfPlayerId: 'p2',
+    });
+    act(() => {
+      result.current.thresholdConfirm();
+    });
+    expect(dispatchClientAction).toHaveBeenCalledWith({
+      kind: 'threshold-confirm',
+      playerId: 'p2',
+    } satisfies ClientAction);
+  });
+});
+
+describe('useTurn — hot-seat round-robin rotation (K4 / #352)', () => {
+  // The "hot-seat collapse" claim from § 7.1: the round-robin still
+  // rotates through local "players" — same rhythm. After each Play /
+  // Pass, the derived `currentWitnessPlayerId` advances to the next
+  // player in `witnessOrder`. `state.activePlayerId` itself stays
+  // frozen per § 3.3 (the active-player field is a turn-machine
+  // concept; the ritual owns its own pointer).
+
+  it('rotates 2-player round-robin: p2 → p1 → close', () => {
+    const { result } = ritualHook();
+    expect(result.current.currentWitnessPlayerId).toBe('p2');
+    act(() => {
+      result.current.ketherWitnessPlay(5);
+    });
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+    act(() => {
+      result.current.ketherWitnessPlay(3);
+    });
+    // p2 hand: [6], p1 hand: [4]. Pointer wraps back to p2.
+    expect(result.current.currentWitnessPlayerId).toBe('p2');
+    act(() => {
+      result.current.ketherWitnessPlay(6);
+    });
+    // p2 hand empty; advance to p1 (only non-empty queue).
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+    act(() => {
+      result.current.ketherWitnessPlay(4);
+    });
+    // All queues empty → witness sub-phase ends; pointer null.
+    expect(result.current.currentWitnessPlayerId).toBeNull();
+    expect(result.current.state.ketherRitual?.subPhase).toBe('close');
+  });
+
+  it('rotates 3-player round-robin: p3 → p1 → p2 → wrap', () => {
+    // 3 players, last-arrived first — say `witnessOrder: ['p3', 'p1', 'p2']`.
+    const players: readonly PlayerState[] = [
+      makePlayer({ id: 'p1', position: 'kether', hand: [10, 11] }),
+      makePlayer({ id: 'p2', position: 'kether', hand: [20, 21] }),
+      makePlayer({ id: 'p3', position: 'kether', hand: [30, 31] }),
+    ];
+    const ritual: KetherRitualState = freshRitual(
+      ['p3', 'p1', 'p2'],
+      { p1: 2, p2: 2, p3: 2 },
+    );
+    const { result } = ritualHook({ players, ritual });
+    expect(result.current.currentWitnessPlayerId).toBe('p3');
+    act(() => {
+      result.current.ketherWitnessPlay(30);
+    });
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+    act(() => {
+      result.current.ketherWitnessPlay(10);
+    });
+    expect(result.current.currentWitnessPlayerId).toBe('p2');
+    act(() => {
+      result.current.ketherWitnessPlay(20);
+    });
+    // Wrap: back to p3 (first non-empty queue at pointer-wrap).
+    expect(result.current.currentWitnessPlayerId).toBe('p3');
+  });
+
+  it('§ 3.3: state.activePlayerId is frozen during the ritual (not advanced by play/pass)', () => {
+    const { result } = ritualHook();
+    const initialActive = result.current.state.activePlayerId;
+    act(() => {
+      result.current.ketherWitnessPlay(5);
+    });
+    // The witness pointer advanced (currentWitnessPlayerId changed),
+    // but state.activePlayerId stays frozen — the ritual has its own
+    // pointer.
+    expect(result.current.state.activePlayerId).toBe(initialActive);
+    act(() => {
+      result.current.ketherWitnessPass();
+    });
+    expect(result.current.state.activePlayerId).toBe(initialActive);
+  });
+});
+
+describe('useTurn — hot-seat solo coda (N=1) (K4 / #352)', () => {
+  // § 2.2 / S-5: the abbreviated solo coda — one player at the keyboard
+  // (e.g. dev / playtest) plays each card from their final hand in
+  // arrival order, then enters closure normally. The engine handles
+  // N=1 as a degenerate one-element round-robin: `witnessOrder = [p1]`,
+  // `witnessTurnIndex = 0`. After the queue empties, advanceWitness
+  // transitions to 'close'. K4's hook just exposes the same per-step
+  // methods; the "abbreviated coda" is a UI presentation collapse, not
+  // a state-shape collapse. (See Journal entry for #352 — design § 2.2
+  // explicitly covers this.)
+
+  it('solo: 1-player ritual enters witness with witnessOrder=[p1]', () => {
+    const players: readonly PlayerState[] = [
+      makePlayer({ id: 'p1', position: 'kether', hand: [3, 4] }),
+    ];
+    const ritual: KetherRitualState = freshRitual(['p1']);
+    const { result } = ritualHook({ players, ritual });
+    expect(result.current.state.phase).toBe('kether');
+    expect(result.current.state.ketherRitual?.subPhase).toBe('witness');
+    expect(result.current.state.ketherRitual?.witnessOrder).toEqual(['p1']);
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+  });
+
+  it('solo: playing the entire queue exits witness → close', () => {
+    const players: readonly PlayerState[] = [
+      makePlayer({ id: 'p1', position: 'kether', hand: [3, 4] }),
+    ];
+    const ritual: KetherRitualState = freshRitual(['p1']);
+    const { result } = ritualHook({ players, ritual });
+    act(() => {
+      result.current.ketherWitnessPlay(3);
+    });
+    // Queue still has [4]; pointer wraps to p1 (only player).
+    expect(result.current.currentWitnessPlayerId).toBe('p1');
+    act(() => {
+      result.current.ketherWitnessPlay(4);
+    });
+    // Queue empty → close.
+    expect(result.current.state.ketherRitual?.subPhase).toBe('close');
+    expect(result.current.currentWitnessPlayerId).toBeNull();
+  });
+});
+
+describe('useTurn — ketherHostSkipWitness (K4 / #352)', () => {
+  // Host-only multiplayer affordance for the disconnect-defense path
+  // (§ 7.1). Hot-seat does not expose this method (no disconnect risk
+  // at one keyboard). The dispatch goes through the wire as a
+  // `kether-host-skip-witness` ClientAction; the server enforces the
+  // host-identity gate.
+
+  it('multiplayer: dispatches the K2 ClientAction with the target playerId', () => {
+    const { players, ritual } = (() => {
+      const ps: readonly PlayerState[] = [
+        makePlayer({ id: 'p1', position: 'kether', hand: [3, 4] }),
+        makePlayer({ id: 'p2', position: 'kether', hand: [5, 6] }),
+      ];
+      // p1 is the host (state.players[0]); p2 is the absent witness.
+      const r: KetherRitualState = freshRitual(['p2', 'p1']);
+      return { players: ps, ritual: r };
+    })();
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      players,
+      ritual,
+      dispatchClientAction,
+      selfPlayerId: 'p1',
+    });
+    expect(typeof result.current.ketherHostSkipWitness).toBe('function');
+    act(() => {
+      result.current.ketherHostSkipWitness?.('p2');
+    });
+    expect(dispatchClientAction).toHaveBeenCalledWith({
+      kind: 'kether-host-skip-witness',
+      playerId: 'p1',
+      targetPlayerId: 'p2',
+    } satisfies ClientAction);
+  });
+
+  it('hot-seat: ketherHostSkipWitness is undefined (no disconnect at one keyboard)', () => {
+    const { result } = ritualHook();
+    expect(result.current.ketherHostSkipWitness).toBeUndefined();
+  });
+});
+
+describe('useTurn — Kether dispatch ordering (K4 / #352 review fix)', () => {
+  // The first draft of K4 dispatched the K2 ClientAction BEFORE applying
+  // the engine reducer locally. A stale-closure race (two clients
+  // clicking simultaneously, or a witness-play attempted out of turn)
+  // would fire the wire even when the engine would reject locally —
+  // sending an action the client knows is invalid. The fix swaps the
+  // order: local-apply first; dispatch only on `result.ok`.
+
+  it('does NOT dispatch over the wire when the local engine reduce rejects', () => {
+    // p1 is NOT the current witness (p2 opens the round-robin).
+    // Calling ketherWitnessPlay with selfPlayerId 'p1' should reject
+    // with kether-not-your-turn. Pre-fix the wire would still fire.
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      dispatchClientAction,
+      selfPlayerId: 'p1', // wrong — current witness is p2
+    });
+    let callResult: Result<GameState, KetherRejection> | undefined;
+    act(() => {
+      callResult = result.current.ketherWitnessPlay(5);
+    });
+    expect(callResult?.ok).toBe(false);
+    if (!callResult || callResult.ok) return;
+    expect(callResult.reason.kind).toBe('kether-not-your-turn');
+    // Wire NEVER fires for a locally-rejected action.
+    expect(dispatchClientAction).not.toHaveBeenCalled();
+  });
+
+  it('does NOT dispatch when ketherCloseStageSpark rejects locally', () => {
+    // Stage attempt outside the close sub-phase rejects
+    // (`kether-wrong-sub-phase`). Pre-fix the wire would still fire.
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    const { result } = ritualHook({
+      dispatchClientAction,
+      selfPlayerId: 'p1',
+    });
+    act(() => {
+      result.current.ketherCloseStageSpark('p1', 'gevurah');
+    });
+    expect(dispatchClientAction).not.toHaveBeenCalled();
+  });
+});
+
+describe('useTurn — multiplayer options pairing guard (K4 / #352 review fix)', () => {
+  // When `dispatchClientAction` is provided, `selfPlayerId` MUST also
+  // be provided. Without selfPlayerId, methods like thresholdConfirm
+  // would silently no-op (the actor is undefined and the guard returns
+  // `undefined` without dispatching). The hook throws at construction
+  // time so the misconfiguration is caught immediately rather than at
+  // runtime when the close button silently fails.
+
+  it('throws when dispatchClientAction is provided without selfPlayerId', () => {
+    const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
+    expect(() => {
+      // Render the hook with a malformed options bag — the hook should
+      // throw synchronously inside renderHook's wrapping component.
+      ritualHook({ dispatchClientAction });
+    }).toThrow(/selfPlayerId/);
   });
 });
 
