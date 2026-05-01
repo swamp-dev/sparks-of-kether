@@ -4874,3 +4874,38 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 - Hosted CI now runs (billing restored) but consistently fails on Playwright visual-regression baselines (different render than local). Diff is engine-only — same admin-merge bypass criteria as #361.
 
 **Commit(s):** `3ab7694` (test) + `21041d4` (fix) + `57f1f06` (review cleanup) + this Journal entry.
+
+## 2026-05-01T13:50:00-04:00 — #252: T1 Sefirah Voices blessing matrix — 360 lines authored
+
+**Pushed:** `design/sefirah-blessings.md` — 655-line content surface for the Blessing Ritual. **10 sefirot × 12 zodiac signs × 3 variants = 360 in-character blessing lines.** T1 keystone of Voices Epic (#251), built on the avatar voice infrastructure shipped in #276.
+
+**What's in the file:**
+- Preamble: scope decisions, Kether/Malkuth special voices, dignity-tier tone calibration rules.
+- Per-Sefirah matrices in Sefirah order 1→10 — Kether (collective voice), Chokmah (Athena/Neptune), Binah (Demeter/Saturn), Chesed (Zeus/Jupiter), Gevurah (Ares/Mars), Tiferet (Apollo/Sun), Netzach (Aphrodite/Venus), Hod (Hermes/Mercury), Yesod (Selene/Moon), Malkuth (Hestia/Earth).
+- Each cell: 3 distinct variants (different rhythm, image, angle), 10–20 words each, second person, in-character voice, dignity-tier tone calibration.
+
+**Why:** Voices Epic #251 unpaused 2026-05-01 after the bug-fix queue (#361, #366) cleared. T1 is the keystone — T2 (#253 data file), T3 (#254 engine helper), T4 (#255 UI render) all consume this matrix verbatim.
+
+**How it was authored:**
+- 5 scope decisions locked on #252 ([comment](https://github.com/swamp-dev/sparks-of-kether/issues/252#issuecomment-4360628736)): all 10 sefirot covered, speakers = #276 avatars, 360 lines, Pisces/Hod = `'fall'`, Virgo/Hod = `'ruler'` (last item diverges from one bullet in Epic #251 body — Epic body to be updated, likely folded into #287).
+- An Explore subagent extracted the avatar voice specs, sign personality capsules, dignity tier table, and generation prompt scaffold from `design/avatars.md` (#276) into a focused brief.
+- Per-Sefirah authoring subagents in three waves: wave 1 (Hod, Chokmah, Gevurah, Chesed) and wave 2 (Binah, Tiferet, Netzach, Yesod) for the 8 well-specified avatars; wave 3 (Kether, Malkuth) for the two specials. Each subagent got the Explore brief plus the avatar's voice spec verbatim, the locked dignity tier per sign, the 12 sign capsules, and the generation prompt scaffold tuned for blessings (no pass/fail axis — purely warmth/admonishment by dignity).
+- Each subagent wrote to a `/tmp/` draft file; I assembled into `design/sefirah-blessings.md` in canonical Sefirah order.
+
+**Notes:**
+- **Literary critic / dramaturg subagent** dispatched on the full 360-line corpus per #294's framing pattern. Verdict: **fix-then-ship**. Findings were concentrated, not corpus-wide drift. Specific addressed items in commit `2d89854`:
+  - **Classical accuracy:** Selene § Cancer v2 — `White-armed` is *leukōlenos* (Hera epithet), not Selene; replaced with `Bright-tressed` (matches Selene's actual epithet *liparoplokamos*). Demeter § Aquarius v2 — `kept worlds` overreached Demeter's earthly domain; replaced with `kept fields whole`.
+  - **Voice contamination:** Hermes § Cancer v3 leaked into Selene's lexicon ("water carries shape"); rewritten in trader register.
+  - **Variant paraphrase pairs** rewritten in Apollo § Sagittarius v2, Hestia § Sagittarius v2, Selene § Pisces v2, and Kether § Aries v1+v2.
+  - **Voice contamination Kether → Selene:** Kether § Pisces v2 had "rain-receiver" (Selene-coded); replaced with "the one who comes by feel."
+  - **Dignity calibration warmed** in Athena § Pisces (ruler) and Hermes § Gemini (ruler) where reviewer flagged opener felt observational rather than warm.
+  - **Athena voice precision:** § Cancer v1 replaced "Trust the undertow" with "That is sight too — use it" — Athena verifies, doesn't permit.
+- **Out-of-scope notes from the reviewer** (deferred):
+  - Aries cross-Sefirah individuation could be tighter at Hermes and Selene (minor).
+  - Hestia variant openings lean on "You came in [adj]" — acceptable given Hestia's point is sameness.
+  - Gemini cross-Sefirah polish (Hermes-Gemini-ruler also acknowledging doubled *want*) — minor future polish.
+- **Engine concern flagged by the reviewer (T3/#254):** the Kether v1 opener formula ("We hold/await…") repeats across most cells. The reviewer noted that if T3's variant selector is heavily biased toward variant 1, the formula becomes audible across the player's matrix. Mitigation: T3's `quoteForBlessing` should pick a random/seeded variant from the 3 to ensure even distribution. Captured here so #254 carries it forward.
+- `pnpm test --run tests/docs` green (129 passed) — all internal markdown links to `avatars.md`, `final-threshold.md`, `per-sefirah-mechanics.md` resolve.
+- Hosted CI will fail e2e on visual-regression as it does for every PR; diff is docs-only so admin-merge bypass criteria are met.
+
+**Commit(s):** `be8a224` (scaffold) + `1733ea6 / 26dd731 / db33082 / 107452c` (wave 1) + `f96a1f3` (waves 2 + 3 in canonical order) + `2d89854` (literary review fixes) + this Journal entry.
