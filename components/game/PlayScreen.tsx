@@ -8,6 +8,7 @@ import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { DiscardPrompt } from '@/components/game/DiscardPrompt';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
+import { SettingsButton } from '@/components/play/SettingsButton';
 import type {
   ChallengeContext,
   ChallengeResolution,
@@ -16,6 +17,7 @@ import { FinalThreshold } from '@/components/game/FinalThreshold';
 import type { FinalThresholdResult } from '@/engine/endgame';
 import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
+import { useSound } from '@/lib/sound/useSound';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -92,6 +94,63 @@ export function PlayScreen({
   const [thresholdResult, setThresholdResult] =
     useState<FinalThresholdResult | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
+
+  // #321: sound wiring. The Meters and ShellPanel below already
+  // expose state-change callbacks (`onIlluminationIncrease`,
+  // `onShellAwakened`, etc.) — we route those into `playSound`
+  // directly. For events that don't yet have callbacks (Spark
+  // collected on challenge pass, card drawn) we watch derived state
+  // here. Keeping the calls at the orchestrator level avoids
+  // sprinkling sound logic through pure-display components.
+  const { playSound } = useSound();
+  // Watch the active player's sparksHeld and hand sizes. A net
+  // increase fires the appropriate cue. Edge case: rotating to a
+  // different active player (size difference is incidental, not a
+  // gameplay event) — we key the watcher on activePlayerIndex so
+  // a turn-change resets the baseline. Without that gate, every
+  // hot-seat rotation would fire spurious cues.
+  const turnIndex = turn.activePlayerIndex;
+  const activeForSound = turn.state.players[turnIndex];
+  const sparksCount = activeForSound?.sparksHeld.size ?? 0;
+  const handCount = activeForSound?.hand.length ?? 0;
+  const handLastAction = turn.state.lastAction;
+  // Refs seed to the current count on first render so the initial
+  // mount NEVER fires a spurious cue — fresh-game start at 0 sparks /
+  // 0 cards is the common case, but if a future fixture seeds players
+  // with non-zero state, this still does the right thing (no chime
+  // for the seed values; only growth from this point onward fires).
+  const prevSparksRef = useRef(sparksCount);
+  const prevHandRef = useRef(handCount);
+  const prevTurnIndexRef = useRef(turnIndex);
+  useEffect(() => {
+    if (prevTurnIndexRef.current !== turnIndex) {
+      // Turn rotated — reset baselines without firing cues.
+      prevTurnIndexRef.current = turnIndex;
+      prevSparksRef.current = sparksCount;
+      prevHandRef.current = handCount;
+      return;
+    }
+    if (sparksCount > prevSparksRef.current) {
+      playSound('spark-collected');
+    }
+    if (handCount > prevHandRef.current) {
+      // Card drawn (Draw or Meditate action). Gate on `lastAction` so
+      // future hand-growing effects (e.g. a Spark ability that returns
+      // a played card) don't ALSO fire the draw chime. The two values
+      // that legitimately produce a "draw" sound are `'move-draw'` (a
+      // standard turn's automatic draw) and `'meditate'` (the
+      // skip-movement-to-draw-2 action); anything else that grows the
+      // hand is a different gameplay event and should get its own cue.
+      // Fires once per render even if multiple cards were drawn in
+      // one tick — the throttle inside `useSound` keeps a multi-card
+      // draw to one chime.
+      if (handLastAction === 'meditate' || handLastAction === 'move-draw') {
+        playSound('card-drawn');
+      }
+    }
+    prevSparksRef.current = sparksCount;
+    prevHandRef.current = handCount;
+  }, [turnIndex, sparksCount, handCount, handLastAction, playSound]);
 
   // #131: hot-seat cadence — once the active player lands in `'end'`
   // phase, schedule an auto-advance to the next turn after a short
@@ -348,10 +407,24 @@ export function PlayScreen({
             illumination={turn.state.illumination}
             separation={turn.state.separation}
             pillarStreak={turn.state.pillarStreak}
+            // #321: route the per-meter callbacks straight into
+            // `playSound`. The hook itself is a no-op when sound is
+            // off and throttled per cue, so we don't need a guard
+            // here.
+            onIlluminationIncrease={() => playSound('illumination-up')}
+            onSeparationIncrease={() => playSound('separation-up')}
           />
         </div>
         <div className="rounded border border-veil/20 bg-ground/40 p-4">
-          <ShellPanel shells={turn.state.shells} headingLevel={3} />
+          <ShellPanel
+            shells={turn.state.shells}
+            headingLevel={3}
+            // #321: same wiring pattern. ShellPanel fires the
+            // callback once per state transition; throttle still
+            // covers the multi-Shell-banished-in-one-tick case.
+            onShellAwakened={() => playSound('shell-awakened')}
+            onShellBanished={() => playSound('shell-banished')}
+          />
         </div>
       </aside>
 
@@ -417,6 +490,13 @@ export function PlayScreen({
           onDiscard={(arcanum) => turn.discard(arcanum)}
         />
       ) : null}
+
+      {/* #321: floating settings cog. Always available on the play
+          surface so players can flip sound on/off without leaving
+          the game. Renders fixed bottom-right; the inline div keeps
+          it inside the main layout for SR ordering, but the
+          component itself uses `position: fixed` so it floats. */}
+      <SettingsButton />
     </main>
   );
 }

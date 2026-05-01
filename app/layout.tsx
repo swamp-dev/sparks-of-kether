@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Fraunces, Frank_Ruhl_Libre, Inter } from 'next/font/google';
 import { Starfield } from '@/components/atmosphere/Starfield';
 import { Substrate } from '@/components/atmosphere/Substrate';
+import { SoundSettingsProvider } from '@/lib/sound/settings';
 import './globals.css';
 
 // See `docs/typography.md`. Fraunces carries display copy with optical
@@ -37,7 +38,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             behind page content. Both are decorative and click-through. */}
         <Substrate />
         <Starfield />
-        {children}
+        {/* #321: sound settings provider. Wraps every route so any
+            descendant can call `useSound()` / `useSoundEnabled()`.
+            The provider holds a single boolean; all real audio work
+            (lazy load, throttle) lives in `useSound`. */}
+        <SoundSettingsProvider>{children}</SoundSettingsProvider>
       </body>
     </html>
   );

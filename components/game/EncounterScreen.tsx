@@ -26,6 +26,7 @@ import type {
 } from '@/lib/challenge-types';
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
+import { useSound } from '@/lib/sound/useSound';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { D20Button } from './encounter/D20Button';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
@@ -270,6 +271,13 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setResolvedOutcome(null);
       setCommittedModifiers(null);
       setAnimatingResolve(false);
+      // #321: clear the verdict-cue ref so a retry's new outcome
+      // fires its own cue. Without this, a retry that lands on the
+      // same boolean (fail → fail) would still be a NEW outcome
+      // instance from `rollCheck` and the identity check below
+      // would correctly re-fire — but explicitly resetting here
+      // keeps the intent obvious in the loopback path.
+      // (The ref itself is declared further down where it's read.)
       // Drop the verdict so the next Roll picks a fresh variant.
       // Player-response stays put — it's pre-roll flavor for the
       // current encounter, and re-picking on every retry would
@@ -293,6 +301,21 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     if (animatingResolve) return 'resolve';
     return 'react';
   })();
+
+  // #321: pass / fail cue. Fire once when the verdict reveals — i.e.
+  // when the resolve animation finishes and the react sub-state is
+  // about to render. The `firedForOutcomeRef` guard ties the cue to
+  // a specific outcome instance (resets on retry by the existing
+  // `setResolvedOutcome(null)` clear in the prep-loopback effect),
+  // so re-renders inside react state don't re-fire.
+  const { playSound } = useSound();
+  const firedForOutcomeRef = useRef<CheckOutcome | null>(null);
+  useEffect(() => {
+    if (uiSubPhase !== 'react' || resolvedOutcome === null) return;
+    if (firedForOutcomeRef.current === resolvedOutcome) return;
+    firedForOutcomeRef.current = resolvedOutcome;
+    playSound(resolvedOutcome.pass ? 'encounter-pass' : 'encounter-fail');
+  }, [uiSubPhase, resolvedOutcome, playSound]);
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;

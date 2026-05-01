@@ -4563,6 +4563,25 @@ New components: `components/setup/sign-picker/SignStage.tsx` (520 lines — one 
 
 **Commit(s):** `363f67a` (failing tests), `85af3a9` (engine implementation), `6d6b19d` (wiring + lib-level tests).
 
+## 2026-05-01T10:15:00-04:00 — #321: UI sound design system — useSound hook + 8 cues + settings toggle
+
+**Pushed:** Phase-4 ticket of design Epic #310. `useSound` hook with throttling + lazy-loading + per-cue cache; `SoundSettingsProvider` context with localStorage persistence + reduced-motion-aware defaults; floating `SettingsButton` with a11y popover (focus trap, Esc); 8 in-tree-synthesized audio cues via `scripts/generate-audio-cues.sh` (deterministic ffmpeg `aevalsrc` synthesis; CC0 with explicit waiver in `assets/audio/LICENSE.md`); wiring through `PlayScreen` / `EncounterScreen` / `Meters` / `ShellPanel`. 23 new unit tests + 1 e2e. The 8 cues fire from: Spark collected, Illumination up, Separation up, Shell awakened, Shell banished, Card drawn, Encounter pass, Encounter fail.
+
+**Why:** Phase 4 of design Epic #310. Co-op magical web games feel hollow without tactile UI sound. The hooks exposed by #316 (meters) and #317 (Shells) in Phase 2 are the load-bearing receivers; #321 wires them. Music out of scope. Default sound OFF (opt-in) — auto-playing audio is a UX trap.
+
+**Notes:**
+- **Implementing agent reviewed the diff and stopped without opening the PR** (same pattern as Phase-3 #312/#315/#317 agents). PM picked up: applied S-2, ran an independent `code-reviewer` subagent pass, applied two minor doc fixes, ran a final ci:local re-verify.
+- **S-2 fix (Significant, applied):** card-drawn cue fired on ANY hand-size growth. Future hand-growing effects (e.g. a Spark ability returning a played card) would mistrigger. Gated on `state.lastAction === 'meditate' || 'move-draw'` — the only two `lastAction` literals that legitimately produce a draw sound.
+- **Doc fix M-1 (re-review):** `useSound.ts` JSDoc claimed clones "share the decoded buffer" — `cloneNode()` shares the `src`; the decoded buffer is browser-internal. Rewrote to honestly describe "no extra network fetch per clone; decode-cache reuse is browser-dependent."
+- **Doc fix M-2 (re-review):** baseline-seed comment at `prevSparksRef` / `prevHandRef` init explaining why the initial mount doesn't fire spurious cues.
+- **e2e fix:** `getByText(/reduced motion/i)` was strict-mode-colliding with both the heading and the descriptive paragraph below it. Tightened to `/^reduced motion$/i`.
+- **In-tree audio synthesis decision.** Agent built `scripts/generate-audio-cues.sh` using ffmpeg `aevalsrc` filter expressions to synthesize all 8 cues deterministically. Total weight 26KB. License posture: synthetic audio with no human creative authorship is treated as CC0 with explicit waiver in `assets/audio/LICENSE.md`. Replacement path documented (drop a file at the same path; `lib/sound/cues.ts` is the single source of truth).
+- **Re-review by `code-reviewer` subagent** on the post-fix diff: verdict `Ship`.
+- **`pnpm ci:local` ALL FOUR JOBS GREEN** post-fix tree: verify ✓, build ✓, e2e (60 passed / 51 skipped) ✓, integration (9 passed) ✓.
+- **Hosted CI:** still billing-blocked per project memory.
+
+**Commit(s):** `15ad4f4` (failing tests), `b70888b` (full implementation), plus this commit's review fixes.
+
 ## 2026-05-01T10:12:00-04:00 — #350: K2 multiplayer wire for the Final Threshold ritual
 
 **Pushed:** Six commits closing the K2 spawn of #285 (Final Threshold). The multiplayer dispatch surface for the ritual on top of K1 (#344) and the trigger detection (#345).
