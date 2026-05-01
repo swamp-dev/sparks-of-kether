@@ -222,7 +222,7 @@ SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot (saves ~70s)
 | What does each screen look like? | `docs/screens.md` |
 | How does typography work (display / body / Hebrew)? | `docs/typography.md` |
 | How do motion tokens / glow scale / atmosphere layers work? | `docs/motion.md` |
-| What was built, by whom, what surprised them? | `Journal.md` |
+| What was built, by whom, what surprised them? | `Journal.md` (recent ~30 days) + `docs/journal-archive/` (older months, sliced by `pnpm archive:journal`) |
 | What work is queued? | GitHub issues (milestone: _MVP: Playable web version_) |
 | What's the master plan? | Epic issue #1 |
 

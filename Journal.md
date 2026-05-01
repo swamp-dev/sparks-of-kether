@@ -39,6 +39,12 @@ will thank you.
 
 ## Entries
 
+## Archived entries
+
+_No archives yet. Future runs of `pnpm archive:journal` will populate this list._
+
+---
+
 ## 2026-04-24T16:09:58-04:00 — #2: CLAUDE.md initial draft + code-review fixes
 
 **Pushed:** First draft of `CLAUDE.md` (191 lines), revised in-worktree to
@@ -4284,3 +4290,21 @@ Also resolved the `Journal.md` merge conflict from rebase against main (#311 + #
 - **Hosted CI:** still billing-blocked per project memory.
 
 **Commit(s):** `f0c9ad0` (failing tests), `fbc769b` (sigil implementation), `19c7fa6` (initial baseline refresh), plus this commit's review fixes.
+
+## 2026-04-30T20:30:22-04:00 — #300: time-sliced Journal archive infrastructure
+
+**Pushed:** Archive script + tests + dir scaffold for slicing entries older than 30 days out of `Journal.md` into `docs/journal-archive/journal-YYYY-MM.md`. Five exported pure functions in `scripts/archive-journal.mjs` (`parseEntries`, `partitionByCutoff`, `groupEntriesByMonth`, `buildArchiveLinkSection`, `applyArchive`) plus a CLI wrapper. New `pnpm archive:journal` script. 15 unit tests in `scripts/__tests__/archive-journal.test.ts` covering parsing, partitioning, grouping, link rendering, and a three-entry round-trip idempotency case. New `docs/journal-archive/` directory with a README explaining what lives there and the don't-edit rule. Sibling `.d.mts` declares the .mjs module's types so the test file can import without `@ts-expect-error` (tsconfig has `allowJs: false`). CLAUDE.md "Where to look" row updated to point at the archive dir.
+
+**Why:** `Journal.md` was at ~4500 lines and growing 10-30 lines per push. Append-only invariant means it grows unboundedly — slow editor open, MEMORY.md context bloat. Solution per #300: time-sliced archive. Today is 2026-04-30 and all entries are from April 2026, so this PR's value is **infrastructure** — the first run cuts zero entries (cutoff 2026-03-31, no entries older). Future runs (manual or scheduled) will do the actual slicing.
+
+**Notes:**
+- **First-run effect on `Journal.md` is minimal as designed.** Just adds a `## Archived entries` placeholder section above the entries (with a `_No archives yet…_` note). 6 lines added. Three other in-flight worktrees (#313, #316, #317-followups) merging post-archive shouldn't conflict — they append to the bottom; we modified the area between `## Entries` and the first dated entry.
+- **TDD rhythm preserved.** 15 unit tests landed before the implementation; first commit was a deliberate red-fail (`Failed to resolve import "../archive-journal.mjs"`). Implementation commit followed.
+- **Round-trip bug caught during real-Journal validation.** Initial implementation joined recent-entry bodies with `'\n'`, which inflated every entry gap by one blank line on each pass. Two-entry synthetic test missed it (only one gap = bug invisible). Fixed by switching to `.join('')` — each mid-loop body already carries its trailing `\n` (the `\n` that originally separated it from the next heading). New three-entry round-trip test pins this.
+- **Idempotency design choice:** `applyArchive` is pure — it parses the previously-archived months out of the input header (`parseArchivedMonthsFromHeader`) rather than reading the disk. Re-runs are deterministic regardless of disk state, and unit tests can exercise idempotency without writing real files.
+- **`pnpm ci:local` GREEN end-to-end across all four jobs:** verify (typecheck + lint + test 1283 passed / 1 todo across 76 files) ✓, build (Next.js compile + 18 static pages) ✓, e2e (Playwright 59 passed / 51 skipped) ✓, real-Supabase integration (9 passed across 3 files) ✓. One transient e2e flake on the first ci:local run (visual-regression `home` mismatch + a few connection failures); cleared on re-run — likely dev-server warmup.
+- **Self-reviewed the diff** (no `code-reviewer` Task tool available in this session). Caught and fixed: stale top-of-file comment claiming the archive list comes from "on-disk archive files" (it actually comes from parsing the input header now), and a `let headerLines` that should have been `const`.
+- **Rebased onto latest main** (#337 sigil aesthetic landed during this work). Clean fast-forward — #337 appended Journal entries; my changes added `## Archived entries` section above existing entries. No conflicts.
+- **Hosted CI:** still billing-blocked per project memory.
+
+**Commit(s):** `f2dce38` (failing tests), `b9cdd84` (script implementation), `7c130dc` (round-trip bug fix + new test), `af87257` (pnpm script + dir + CLAUDE.md note), `3509f74` (.d.mts declarations), `852bf3f` (self-review tidy).
