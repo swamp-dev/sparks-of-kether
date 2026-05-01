@@ -4264,3 +4264,23 @@ Out of scope per the retro-review: RPC `stable`/`volatile` annotation (low-risk,
 Also resolved the `Journal.md` merge conflict from rebase against main (#311 + #329 + #278 entries landed since branch was cut). Kept all entries in chronological order by timestamp.
 
 **Commit(s):** `72f0e9e` (selfLookup error guard + new unit test)
+
+## 2026-04-30T20:25:00-04:00 — #317: Shell sigil aesthetic — distinct dormant/active/banished weight
+
+**Pushed:** Visual hierarchy for the 10 Shell sigils per design Epic #310 phase 2. Three states render distinctly at a glance (subway-legibility): **dormant** = faded Sefirah-coloured hairline ring + hollow Hebrew letter + slow ~30s rotation; **active** = full Sefirah-colour halo (`shadow-glow-{sefirah}`) + filled letter + descriptive copy in Sefirah's color + ~8s wobble; **banished** = gold engraved hairline + diagonal wax-seal binding line + neutral Hebrew letter + "Banished at &lt;Sefirah&gt;" caption. New keyframes (`shell-dormant-spin`, `shell-active-wobble`, `shell-awaken`, `shell-banish`) gated under `motion-safe:`. Compact-row size hierarchy: dormant 50%, active 100%, banished 75%. Sound-hook props (`onShellAwakened`, `onShellBanished`) — silent today; wired for #321. 31 new test assertions covering state markers, compact hierarchy, hooks fire on transition, default no-op when hooks omitted.
+
+**Why:** Phase 2 of Epic #310. The Shell row is one of the strongest occult-character primitives the project ships; the original implementation differentiated states only by tint + strikethrough. Real visual weight (halo + wobble for active, wax-seal binding for banished) makes the run-state of the team legible across the HUD without copy.
+
+**Notes:**
+- **Implementing subagent self-reviewed and identified S-1 / S-2 / S-3 / M-2** but stopped before applying its own fixes or opening the PR. PM applied the fixes locally and ran an independent `code-reviewer` pass, which surfaced one additional Significant finding.
+- **S-1 (Critical-as-shipped, fixed):** `motion-safe:animate-shell-active-wobble motion-safe:animate-shell-awaken` on the same element collide on the `animation` shorthand — the last-listed wins, so the wobble silently dies. Fixed by splitting across two wrappers: outer `data-shell-halo` carries the one-shot awaken (`scale` transform), inner `data-shell-wobble` carries the continuous wobble (`rotate` transform). The two `transform`s now live on different elements and compose correctly.
+- **S-1 follow-up (Significant, fixed in re-review):** the new wobble wrapper rendered as a default `<div>` for non-active states, breaking layout symmetry with the pre-fix DOM (`ShellIcon` was no longer a direct flex child of the halo). Fixed by setting `wobbleClass = 'contents'` for non-active states — the wrapper disappears from the box model entirely; layout matches the original.
+- **S-2 (fixed):** dead `transition-transform duration-500 ease-emerge` on the outer slot wrapper — no transform-driving prop on that element. Removed.
+- **S-3 (fixed):** stale comment in `ShellIcon.tsx` claiming the inner disc "provides letter ground" — the disc has `fill="transparent"`, so the substrate's void carries the ground. Comment rewritten to reflect what the code actually does.
+- **M-2 (fixed):** `tailwind.config.ts` keyframe comment referenced a non-existent `animate-spin-slow` utility; corrected to `animate-shell-dormant-spin`.
+- **Visual-regression baselines refreshed.** With S-1 fixed (wobble now actually applies), Playwright's frame-0-pause renders the active icons at `transform: rotate(-2deg)` instead of identity. That diff exceeded `maxDiffPixelRatio: 0.005`, so 42 baselines were regenerated via `--update-snapshots`. The 17 `docs/screenshots/*-desktop.png` curated baselines refreshed alongside.
+- **`pnpm ci:local` final run, all four jobs green:** verify (typecheck + lint + test 1275 passed / 1 todo) ✓, build ✓, e2e (after baseline update, all visual-regression pass) ✓, integration (5 passed) ✓.
+- **Rebased onto latest main** (1 commit ahead at fetch — #335 joinRoom RLS fix). Clean fast-forward, no conflicts.
+- **Hosted CI:** still billing-blocked per project memory.
+
+**Commit(s):** `f0c9ad0` (failing tests), `fbc769b` (sigil implementation), `19c7fa6` (initial baseline refresh), plus this commit's review fixes.
