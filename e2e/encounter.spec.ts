@@ -45,7 +45,17 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
   // multiplayer branch IS chosen when `roomCode` is supplied.
 
   await page.goto('/');
-  await page.getByRole('link', { name: /Hot-seat/i }).click();
+  // #313: the home page was redesigned — the three entry points
+  // (New game / Join game / Hot-seat) sit behind a single
+  // "Begin the ascent" disclosure trigger. Click the trigger,
+  // wait for the hot-seat link to be visible, click it, and wait
+  // for navigation to /play. Without `waitForURL`, parallel dev-
+  // server compile of /play can race with the next assertion.
+  await page.getByRole('button', { name: /begin the ascent/i }).click();
+  const hotseatLink = page.getByRole('link', { name: /Hot-seat/i });
+  await hotseatLink.waitFor({ state: 'visible' });
+  await hotseatLink.click();
+  await page.waitForURL('**/play');
 
   // Walk both players through the blessing ritual + sign pick. Mirrors
   // the existing `play-flow.spec.ts` to land on the play screen.

@@ -1,109 +1,268 @@
+import { sefirot } from '@/data/sefirot';
+import { paths } from '@/data/paths';
 import { TIFERET_GOLD, VEIL } from '@/data/colors';
+import type { SefirahKey } from '@/data';
 
 /**
- * Simplified Tree of Life silhouette for the home page hero band.
- * Decorative: 10 circles connected by 22 paths in faint gold/veil
- * tones, sized to fill the gap between the title and the room
- * forms. Aria-hidden because the home page already names the game
- * in copy ("A cooperative ascent up the Kabbalistic Tree of Life").
+ * Tree-of-Life hero for the home page (#313). Stripped-down rendering
+ * of the play board's geometry — same layout (`nodeLayout` mirrors
+ * `TreeBoard.tsx`), same path graph from `data/paths` — but no
+ * interactivity, no player tokens, no path numbers, no per-node
+ * label text. Decorative.
  *
- * Not interactive — this is a still illustration, not the play
- * board (`components/tree/TreeBoard.tsx`). The play board carries
- * `role="figure"`, click handlers, and per-node ARIA — none of
- * that belongs on a marketing surface.
+ * Each Sefirah node has two paint layers:
  *
- * Positions mirror `nodeLayout` in TreeBoard so the visual reads as
- * the same Tree the player will navigate.
+ * 1. An SVG halo disc in the Sefirah's canonical colour (translucent),
+ *    so the colour reads at SVG viewBox scale even before any CSS
+ *    shadow lands.
+ * 2. An HTML overlay disc in the same colour with a per-Sefirah
+ *    `shadow-glow-{key}` token, breathing under
+ *    `motion-safe:animate-breath`. The breath cycle is staggered —
+ *    odd-indexed halos delay 3s (half the 6s cycle) — so the ten
+ *    halos don't pulse in unison.
+ *
+ * Tiferet at the geometric centre carries a slightly larger halo and a
+ * faint gold ring — the warm focal point of the composition.
+ *
+ * The hero relies on the layout-level substrate's ambient bloom; it
+ * doesn't paint its own background. Per the brief in the foundation
+ * ticket #311 ("don't add another layout-level atmosphere component").
+ *
+ * Aria-hidden because the home page already names the game in copy
+ * ("Sparks of Kether — A cooperative ascent up the Kabbalistic Tree
+ * of Life."). This Tree is a visual; AT users get nothing from a
+ * labels-only enumeration of ten dots that aren't interactive.
+ *
+ * Reduced-motion: the halos render at the keyframe's 100% opacity
+ * state without animation thanks to the `motion-safe:` variant — a
+ * static lit Tree, never a flickering one.
+ *
+ * Sized to ~70vh on desktop, ~58vh on tablet, ~42vh on mobile so the
+ * hero remains the focal point at every viewport without crowding
+ * neighbouring layout.
  */
 
 interface HeroProps {
   readonly className?: string;
 }
 
-const NODES: readonly { x: number; y: number }[] = [
-  { x: 200, y: 60 }, // kether
-  { x: 320, y: 150 }, // chokmah
-  { x: 80, y: 150 }, // binah
-  { x: 320, y: 280 }, // chesed
-  { x: 80, y: 280 }, // gevurah
-  { x: 200, y: 340 }, // tiferet
-  { x: 320, y: 430 }, // netzach
-  { x: 80, y: 430 }, // hod
-  { x: 200, y: 490 }, // yesod
-  { x: 200, y: 560 }, // malkuth
-];
+const VIEW_W = 400;
+const VIEW_H = 620;
 
-// 22 paths between Sefirot, indexed into NODES. Mirrors the canonical
-// Hermetic-Qabalah path arrangement (paths 11–32 in the traditional
-// numbering).
-const PATHS: readonly [number, number][] = [
-  [0, 1], [0, 2], [0, 5],          // kether → chokmah, binah, tiferet
-  [1, 2], [1, 3], [1, 5],          // chokmah → binah, chesed, tiferet
-  [2, 4], [2, 5],                  // binah → gevurah, tiferet
-  [3, 4], [3, 5], [3, 6],          // chesed → gevurah, tiferet, netzach
-  [4, 5], [4, 7],                  // gevurah → tiferet, hod
-  [5, 6], [5, 7], [5, 8],          // tiferet → netzach, hod, yesod
-  [6, 7], [6, 8], [6, 9],          // netzach → hod, yesod, malkuth
-  [7, 8], [7, 9],                  // hod → yesod, malkuth
-  [8, 9],                          // yesod → malkuth
-];
+interface NodeLayout {
+  readonly x: number;
+  readonly y: number;
+}
 
+// Mirrors `TreeBoard.tsx`'s nodeLayout exactly — the hero shows the
+// same Tree the player will navigate. Drift here would create a
+// silent "first impression vs gameplay" mismatch.
+const nodeLayout: Readonly<Record<SefirahKey, NodeLayout>> = {
+  kether: { x: 200, y: 60 },
+  chokmah: { x: 320, y: 150 },
+  binah: { x: 80, y: 150 },
+  chesed: { x: 320, y: 280 },
+  gevurah: { x: 80, y: 280 },
+  tiferet: { x: 200, y: 340 },
+  netzach: { x: 320, y: 430 },
+  hod: { x: 80, y: 430 },
+  yesod: { x: 200, y: 490 },
+  malkuth: { x: 200, y: 560 },
+};
+
+// Tailwind class for each Sefirah's glow shadow. Pre-mapped so the
+// JIT picks them up — Tailwind's content scanner needs the literal
+// classnames in the source, not built dynamically by string concat.
+const GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
+  kether: 'shadow-glow-kether',
+  chokmah: 'shadow-glow-chokmah',
+  binah: 'shadow-glow-binah',
+  chesed: 'shadow-glow-chesed',
+  gevurah: 'shadow-glow-gevurah',
+  tiferet: 'shadow-glow-tiferet',
+  netzach: 'shadow-glow-netzach',
+  hod: 'shadow-glow-hod',
+  yesod: 'shadow-glow-yesod',
+  malkuth: 'shadow-glow-malkuth',
+};
+
+// Node disc radius (viewBox units). Slightly larger than TreeBoard's
+// 28 for the hero, where there's no inscribed text fighting for the
+// surface.
+const NODE_RADIUS = 22;
+// Halo radius — the soft glow disc behind each node.
+const HALO_RADIUS = 30;
+// HTML-overlay halo size in CSS pixels at 1× — the actual rendered
+// size scales with the parent container's responsive height. Keep
+// these small so the box-shadow is the dominant visual; the disc
+// itself is just an anchor for the shadow stack.
+const OVERLAY_NODE_PX = 18;
+const OVERLAY_TIFERET_PX = 28;
+
+/**
+ * Tree-of-Life hero band for the home page. See file header for the
+ * design rationale; the brief lives in #313.
+ */
 export function Hero({ className }: HeroProps): JSX.Element {
   return (
     <div
       data-home-hero
       aria-hidden="true"
-      className={`pointer-events-none w-full ${className ?? ''}`}
+      className={`pointer-events-none relative w-full ${className ?? ''}`}
     >
       <svg
-        viewBox="0 40 400 540"
-        className="mx-auto h-48 w-auto sm:h-56 md:h-64"
+        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        // Sized as a fraction of the viewport so the Tree dominates
+        // first impression at every breakpoint:
+        //   mobile  ~42vh — primary visual without crowding the title.
+        //   tablet  ~58vh — taller because the device is taller.
+        //   desktop ~70vh — the brief's headline number.
+        // `mx-auto` centres horizontally; `preserveAspectRatio` keeps
+        // the geometry honest at any aspect ratio.
+        className="mx-auto block h-[42vh] w-auto sm:h-[58vh] md:h-[70vh]"
         preserveAspectRatio="xMidYMid meet"
         role="presentation"
       >
-        {/* Faint paths first so the nodes overlay them. */}
-        {PATHS.map(([a, b], i) => {
-          const from = NODES[a];
-          const to = NODES[b];
-          if (!from || !to) return null;
+        {/* 22 paths — faint, behind the nodes. Same graph as the play
+            board (`data/paths`), but rendered as decorative lines
+            with no labels, no numbers, no hit areas. */}
+        <g data-layer="paths">
+          {paths.map((path) => {
+            const a = nodeLayout[path.from];
+            const b = nodeLayout[path.to];
+            return (
+              <line
+                key={path.number}
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke={VEIL}
+                strokeOpacity={0.22}
+                strokeWidth={1.5}
+              />
+            );
+          })}
+        </g>
+
+        {/* Outer Tiferet halo ring — gold suggestion behind the
+            centre. Faint enough to read as a glow, not as a literal
+            ring. */}
+        <circle
+          cx={nodeLayout.tiferet.x}
+          cy={nodeLayout.tiferet.y}
+          r={NODE_RADIUS + 14}
+          fill="none"
+          stroke={TIFERET_GOLD}
+          strokeOpacity={0.22}
+          strokeWidth={1.25}
+        />
+
+        {/* Halo discs — translucent Sefirah colour at viewBox scale,
+            so each node reads as warmth even on viewports too small
+            for the CSS box-shadow overlay to have visible reach. */}
+        <g data-layer="halos">
+          {sefirot.map((sefirah) => {
+            const pos = nodeLayout[sefirah.key];
+            const isCentre = sefirah.key === 'tiferet';
+            return (
+              <circle
+                key={`halo-${sefirah.key}`}
+                data-halo={sefirah.key}
+                cx={pos.x}
+                cy={pos.y}
+                r={isCentre ? HALO_RADIUS + 6 : HALO_RADIUS}
+                fill={sefirah.color}
+                fillOpacity={isCentre ? 0.2 : 0.12}
+              />
+            );
+          })}
+        </g>
+
+        {/* Sefirah discs — canonical colour, sat over the halo. */}
+        <g data-layer="nodes">
+          {sefirot.map((sefirah) => {
+            const pos = nodeLayout[sefirah.key];
+            const isCentre = sefirah.key === 'tiferet';
+            return (
+              <circle
+                key={`node-${sefirah.key}`}
+                data-node={sefirah.key}
+                cx={pos.x}
+                cy={pos.y}
+                r={isCentre ? NODE_RADIUS + 2 : NODE_RADIUS}
+                fill={sefirah.color}
+                fillOpacity={isCentre ? 1 : 0.94}
+                stroke={VEIL}
+                strokeOpacity={0.45}
+                strokeWidth={1.25}
+              />
+            );
+          })}
+        </g>
+      </svg>
+
+      {/* HTML overlay layer carrying the breathing CSS `box-shadow`
+          glows. The SVG layer above provides the geometry and the
+          colour discs; this layer adds the warm halo bloom that the
+          per-Sefirah `shadow-glow-{key}` tokens paint cheaply on the
+          GPU.
+
+          Each halo runs `motion-safe:animate-breath` (6s symmetric
+          opacity loop). The breath cycle is staggered — odd indices
+          delay 3s (half-cycle) — so the ten halos don't pulse in
+          unison. Reduced-motion users get the static halo (the
+          keyframe's 100% state).
+
+          Sized to mirror the SVG's responsive height exactly (same
+          `h-[Nvh]` classes); `aspect-ratio` set inline so the
+          overlay's box matches the SVG's intrinsic 400/620 ratio at
+          every viewport. Without that match, the percentage-based
+          halo positions below would resolve against a parent that's
+          a different shape than the SVG, and halos would drift off
+          their nodes. */}
+      <div
+        data-layer="halo-overlay"
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[42vh] -translate-x-1/2 -translate-y-1/2 sm:h-[58vh] md:h-[70vh]"
+        style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+      >
+        {sefirot.map((sefirah, index) => {
+          const pos = nodeLayout[sefirah.key];
+          const leftPct = (pos.x / VIEW_W) * 100;
+          const topPct = (pos.y / VIEW_H) * 100;
+          const isCentre = sefirah.key === 'tiferet';
+          // Offset cycle by half a breath on alternating indices so
+          // halos don't pulse synchronously. The breath animation
+          // is 6s, so 3s = half-cycle — maximally desynced.
+          const delay = index % 2 === 0 ? '0s' : '3s';
+          const sizePx = isCentre ? OVERLAY_TIFERET_PX : OVERLAY_NODE_PX;
           return (
-            <line
-              key={`path-${i}`}
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
-              stroke={VEIL}
-              strokeOpacity={0.18}
-              strokeWidth={1.5}
+            <span
+              key={sefirah.key}
+              data-halo-overlay={sefirah.key}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full ${GLOW_CLASS_BY_KEY[sefirah.key]} motion-safe:animate-breath`}
+              style={{
+                left: `${leftPct}%`,
+                top: `${topPct}%`,
+                width: `${sizePx}px`,
+                height: `${sizePx}px`,
+                animationDelay: delay,
+                // Background colour anchors the box-shadow stack so
+                // the halo has a coloured core. For Binah (near-
+                // black) and Malkuth (low-chroma brown) the canonical
+                // colour disappears on the void — but the box-shadow
+                // (which substitutes indigo / amber per
+                // `tailwind.config.ts`) carries the perceptual halo
+                // regardless. The disc itself stays small and behind
+                // the SVG node above.
+                backgroundColor: sefirah.color,
+                opacity: 0.88,
+              }}
             />
           );
         })}
-        {/* Outer halo on Tiferet for warm focal point. */}
-        {NODES[5] ? (
-          <circle
-            cx={NODES[5].x}
-            cy={NODES[5].y}
-            r={32}
-            fill={TIFERET_GOLD}
-            fillOpacity={0.08}
-          />
-        ) : null}
-        {/* Sefirot dots. */}
-        {NODES.map((n, i) => (
-          <circle
-            key={`node-${i}`}
-            cx={n.x}
-            cy={n.y}
-            r={i === 5 ? 12 : 7}
-            fill={i === 5 ? TIFERET_GOLD : VEIL}
-            fillOpacity={i === 5 ? 0.85 : 0.5}
-            stroke={VEIL}
-            strokeOpacity={0.25}
-            strokeWidth={1}
-          />
-        ))}
-      </svg>
+      </div>
     </div>
   );
 }

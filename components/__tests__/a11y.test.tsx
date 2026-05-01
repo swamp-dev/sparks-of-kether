@@ -16,6 +16,14 @@ import { Lobby } from '@/components/setup/Lobby';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 
+// `next/navigation`'s `useRouter` is consumed by `HomeRoomForms`,
+// which lands inside the home-page tests below. Mock it at file
+// scope so a render of <HomePage /> doesn't crash when the expanded
+// portal panel mounts.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+}));
+
 // vitest-axe's `extend-expect` ships an empty file in 0.1.0 and the
 // matcher pattern fights vitest 4's expect-context lifecycle. Assert
 // on `axe(...).violations` directly instead — same coverage, simpler
@@ -400,4 +408,32 @@ describe('a11y — major UI surfaces', () => {
     );
     expectNoViolations(await axe(container));
   });
+
+  // #313: home page is the recruitment surface. Axe sweep at both
+  // disclosure states pins the contract that neither closed-portal
+  // nor expanded-portal introduces a violation. Mocking
+  // `next/navigation` mirrors `home.test.tsx` — `HomeRoomForms`
+  // (rendered inside the expanded panel) calls `useRouter()`.
+  describe('HomePage (#313)', () => {
+    it('home page (closed-portal default) is axe-clean', async () => {
+      const HomePage = (await import('@/app/page')).default;
+      const { container } = render(<HomePage />);
+      expectNoViolations(await axe(container));
+    });
+
+    it('home page (expanded-portal — three CTAs visible) is axe-clean', async () => {
+      const HomePage = (await import('@/app/page')).default;
+      const { container, getByRole } = render(<HomePage />);
+      // Click the trigger so the panel mounts. axe over the open
+      // panel state catches a different DOM (HomeRoomForms inputs +
+      // Hot-seat Link) than the closed state.
+      const trigger = getByRole('button', { name: /begin the ascent/i });
+      trigger.click();
+      // Wait for the panel to mount (synchronous in this codepath —
+      // useState set + render — but the click handler may be batched).
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expectNoViolations(await axe(container));
+    });
+  });
 });
+

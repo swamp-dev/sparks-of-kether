@@ -29,12 +29,26 @@ test.skip(
 
 test('home → setup → lobby → play screen renders', async ({ page }) => {
   await page.goto('/');
+  // #313: the home page was redesigned. The h1 is unique; pin it
+  // by level=1 so the assertion is unambiguous against the
+  // PitchColumns sr-only h2 which also names the game.
   await expect(
-    page.getByRole('heading', { name: /sparks of kether/i }),
+    page.getByRole('heading', { level: 1, name: /sparks of kether/i }),
   ).toBeVisible();
-  // Use the hot-seat / single-machine link, not the new
-  // multiplayer "New game" button (which depends on Supabase).
-  await page.getByRole('link', { name: /Hot-seat/i }).click();
+  // #313: the three entry points (New game / Join game / Hot-seat)
+  // sit behind a single "Begin the ascent" disclosure trigger. Click
+  // the trigger first to reveal them; wait for the panel to be in
+  // the DOM (parallel-worker dev server compile can lag the panel's
+  // first paint) before reaching for the hot-seat link.
+  await page.getByRole('button', { name: /begin the ascent/i }).click();
+  const hotseatLink = page.getByRole('link', { name: /Hot-seat/i });
+  await hotseatLink.waitFor({ state: 'visible' });
+  await hotseatLink.click();
+  // Wait for the navigation to /play to complete before asserting
+  // the next-screen content. Without this, parallel dev-server
+  // compile of /play can race with the test's `getByText` lookup
+  // and time out before the page has loaded.
+  await page.waitForURL('**/play');
 
   // Walk both players through the blessing ritual + sign pick.
   for (let player = 1; player <= 2; player++) {
