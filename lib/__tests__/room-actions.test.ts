@@ -35,6 +35,68 @@ describe('applyClientAction — move', () => {
     if (result.ok) return;
     expect(result.error.kind).toBe('move');
   });
+
+  it('trips the Final Threshold ritual when the last player arrives at Kether (#345)', () => {
+    // Two players: p1 already at Kether (with arrivedAtKetherAt set so
+    // the trigger uses a real timestamp), p2 still at Tiferet holding
+    // arcanum 2 (path 13). p2 plays the move — convergence is met at
+    // the post-move state and `padPhaseAfterMove` flips phase to 'kether'.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const state = makeState(
+      {},
+      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'move', playerId: 'p2', pathNumber: 13 },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.phase).toBe('kether');
+    expect(result.newState.ketherRitual).toBeDefined();
+    expect(result.newState.ketherRitual?.subPhase).toBe('witness');
+    // p2 arrived last → p2 opens (its stamp from applyMove is > 100).
+    expect(result.newState.ketherRitual?.witnessOrder[0]).toBe('p2');
+  });
+
+  it('does NOT trip the ritual on a non-last arrival (#345)', () => {
+    // First player arrives at Kether but a teammate is still climbing.
+    // Phase stays 'draw' (Kether is no-check arrival).
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [],
+    });
+    const state = makeState(
+      {},
+      { players: [p1, p2], phase: 'move', activePlayerId: 'p1' },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'move', playerId: 'p1', pathNumber: 13 },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.phase).toBe('draw');
+    expect(result.newState.ketherRitual).toBeUndefined();
+  });
 });
 
 describe('applyClientAction — prep-add-modifier', () => {

@@ -1,6 +1,7 @@
 import { isPathShortcut, sefirahByKey } from '@/data';
 import type { Pillar, SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
+import { maybeTriggerKetherRitual } from '@/engine/kether';
 import {
   acceptSetback,
   resolveChallenge,
@@ -552,7 +553,17 @@ export function turnReducer(
       if (!result.ok) {
         return { ok: false, reason: { kind: 'move-rejected', cause: result.reason } };
       }
-      const newState = result.value;
+      const movedState = result.value;
+      // #345: detect convergence (every player at Kether) and trip the
+      // Final Threshold ritual. The helper is idempotent: a no-op if
+      // the trigger predicate is unmet, so we always pipe the post-
+      // move state through it. When the trigger fires the post-state
+      // carries `phase: 'kether'` and a populated `ketherRitual` —
+      // skip the regular phase-decision below and return directly.
+      const newState = maybeTriggerKetherRitual(movedState);
+      if (newState.phase === 'kether') {
+        return { ok: true, value: { next: { state: newState } } };
+      }
       const movedPlayer = newState.players.find((p) => p.id === player.id);
       // Decide the next phase: if the arrival is an uncleared
       // standard-check Sefirah, enter `challenge`; otherwise jump

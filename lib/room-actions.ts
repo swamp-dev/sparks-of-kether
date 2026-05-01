@@ -1,6 +1,7 @@
 import { sefirahByKey } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
+import { maybeTriggerKetherRitual } from '@/engine/kether';
 import { acceptSetback } from '@/engine/checks';
 import type { CheckOutcome } from '@/engine/types';
 import { drawNCards, MEDITATE_DRAW } from '@/engine/draws';
@@ -257,12 +258,27 @@ export function applyClientAction(
  * cleared. Any other arrival → `phase: 'draw'`. Stale `lastOutcome`
  * is always cleared on a fresh move (a new turn cannot inherit the
  * prior turn's failed-roll record).
+ *
+ * #345: when this move was the LAST player's arrival at Kether, the
+ * Final Threshold ritual trips. `maybeTriggerKetherRitual` returns a
+ * state with `phase: 'kether'` and a populated `ketherRitual`; we
+ * surface that directly without any further phase padding (no
+ * 'challenge', no 'draw' — the ritual owns the phase machinery from
+ * here until it exits to 'end' on `threshold-confirm`).
  */
 function padPhaseAfterMove(state: GameState, playerId: string): GameState {
-  const movedPlayer = state.players.find((p) => p.id === playerId);
+  // #345: detect convergence first. The helper is idempotent — a no-op
+  // when the trigger predicate is unmet — so we can fold it into the
+  // pipeline without a guard. When the ritual trips, return the
+  // ritual-padded state directly: no further phase decision applies.
+  const triggered = maybeTriggerKetherRitual(state);
+  if (triggered.phase === 'kether') {
+    return triggered;
+  }
+  const movedPlayer = triggered.players.find((p) => p.id === playerId);
   if (!movedPlayer) {
     return {
-      ...state,
+      ...triggered,
       phase: 'draw',
       challengeSubPhase: undefined,
       lastOutcome: undefined,
@@ -275,7 +291,7 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
   const alreadyCleared = movedPlayer.clearedSefirot.has(movedPlayer.position);
   if (arrival.challenge.kind === 'check' && !alreadyCleared) {
     return {
-      ...state,
+      ...triggered,
       pendingModifiers: EMPTY_PENDING_MODIFIERS,
       phase: 'challenge',
       challengeSubPhase: 'prep',
@@ -283,11 +299,11 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
       // #334: mirror the reducer — initialize the per-encounter
       // envelope at challenge entry. Shared helper keeps server-
       // and client-applied state in lockstep.
-      encounter: initEncounterEnvelope(state, movedPlayer.position),
+      encounter: initEncounterEnvelope(triggered, movedPlayer.position),
     };
   }
   return {
-    ...state,
+    ...triggered,
     phase: 'draw',
     challengeSubPhase: undefined,
     lastOutcome: undefined,

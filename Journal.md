@@ -4505,3 +4505,25 @@ Local CI green again on the cumulative diff (verify + build + e2e + integration)
 - **Hosted CI:** still billing-blocked per project memory.
 
 **Commit(s):** `41b645a` (failing tests), `8b4a9bb` (dramatic-frame implementation), `b199226` (S-1 dead-props refactor + demo seed-hash dep fix), `c02b4d2` (visual baselines), plus this commit's S-3 + S-4 fixes + main merge.
+
+## 2026-04-30T23:16:04-04:00 — #345: Final Threshold ritual trigger detection (initial push)
+
+**Pushed:** Three commits closing the gap left by #344's K1 ship — the actual transition from regular play → ritual when every player has arrived at Kether. `engine/types.ts` gains an optional `PlayerState.arrivedAtKetherAt` timestamp; `applyMove` (now with an injectable clock surface via `ApplyMoveOptions.now`) stamps it on the first arrival at Kether and never overwrites it. `engine/kether.ts` gains `maybeTriggerKetherRitual(state)` — idempotent helper that detects all-at-Kether convergence, builds `arrivalTimestamps` from each player's stamp, and calls `initKetherRitual` to flip `phase` to `'kether'` with `subPhase: 'witness'`. The two post-`applyMove` call sites (`lib/turn-machine.ts` reducer + `lib/room-actions.ts:padPhaseAfterMove`) fold the helper into their pipelines: when the ritual trips, those paths surface the kether-padded state directly without further phase decision (no challenge, no draw, no encounter envelope init).
+
+**Why:** Closes the K1-deferred trigger gate. Pre-#345 a player who reached Kether entered the pre-ritual hold (seat skipped, hand frozen via the `isKetherHeld` predicate) but no engine code detected "all players at Kether" and tripped the ritual. Now the convergence check is the single fold-in helper that both server (room-actions dispatcher) and client (turn-machine reducer) consult; idempotency means callers can pipe through unconditionally.
+
+**Notes:**
+
+  - **arrivalTimestamps source decision: option (a).** Per the ticket's choice between (a) per-player `arrivedAtKetherAt` field and (b) tracking-array on `GameState`, went with (a). It keeps `initKetherRitual`'s existing `Record<string, number>` API stable (the locked spec field on `KetherRitualState.arrivalTimestamps` is what we'd populate either way), folds naturally into `applyMove` (one stamp per arrival, never overwritten), and gives K2 (multiplayer wire) a clean override surface — the wire layer overwrites `arrivedAtKetherAt` with the Realtime server-side timestamp before the helper runs.
+
+  - **`applyMove` clock injection.** Production calls omit `options.now` and the engine uses `Date.now()` directly. Tests that need deterministic timestamps pass `{ now: () => 100 }`. Lex tie-break in `initKetherRitual` covers simultaneous arrivals (two players with the same stamp resolve by descending `playerId`). The signature change is additive — every existing caller still type-checks because `options` defaults to `{}`.
+
+  - **Idempotency contract.** `maybeTriggerKetherRitual` returns the input state by reference when (1) `phase === 'kether'` already, or (2) any player is not yet at Kether. This lets both call sites fold the helper unconditionally — no duplicated convergence check at the call sites, no risk of double-init wiping a ritual mid-flight.
+
+  - **Hot-seat solo behaviour.** The trigger predicate is `every player at Kether`, so a single-player run trivially triggers the ritual on the lone player's arrival. Per `design/final-threshold.md` § 2.2 hot-seat solo runs an "abbreviated coda" — that's a UI concern downstream (K3); the engine just detects convergence. The pre-existing single-player test in `lib/__tests__/room-actions.test.ts` ("applies a valid move and returns the new state") still passes — it only asserted `position`, which the trigger leaves alone.
+
+  - **TDD ordering held.** Failing tests landed first in `363f67a` (red — `maybeTriggerKetherRitual` not exported, `arrivedAtKetherAt` field absent, 13 failures). Implementation in `85af3a9` made all 13 green and bumped the suite from 1420 → 1433. Wiring + lib-level tests in `6d6b19d` brought the count to 1436 (+3 wiring tests).
+
+  - **Local CI: GREEN end-to-end.** `pnpm ci:local` clean across all four jobs — verify (typecheck + lint + 1436 tests / 1 todo across 85 files), build, e2e (60 passed / 51 skipped), real-Supabase integration (9 passed across 3 files). One transient e2e flake on a chained run (sign-picker `Confirm` button timeout, unrelated to engine changes — disappeared on rerun); final ci:local exited green. Hosted CI still billing-blocked per project memory; admin-merge bypass on the parent's call after review.
+
+**Commit(s):** `363f67a` (failing tests), `85af3a9` (engine implementation), `6d6b19d` (wiring + lib-level tests).

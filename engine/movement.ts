@@ -87,6 +87,18 @@ export function canTravelPath(
 // ──────────────── applyMove ────────────────
 
 /**
+ * Optional ambient clock surface for `applyMove`. The only side-input
+ * is the Kether-arrival timestamp written into
+ * `PlayerState.arrivedAtKetherAt` — production uses `Date.now()`,
+ * tests pass a deterministic stub so the rest of `applyMove` stays
+ * pure-by-default. `undefined` (or omitted) means the engine sources
+ * `Date.now()` itself; callers who pin determinism inject `now`.
+ */
+export interface ApplyMoveOptions {
+  readonly now?: () => number;
+}
+
+/**
  * Execute a move. Returns a new `GameState` on success; returns the
  * same rejection as `canTravelPath` on failure. Input state is never
  * touched on either branch.
@@ -99,8 +111,17 @@ export function canTravelPath(
  *   - Pillar streak updated; threshold events emitted via `applyEvents`
  *     for imbalance / equilibrium.
  *   - Downward moves (toward Malkuth) emit `move-downward` for +1 Illumination.
+ *   - Arrival at Kether stamps `arrivedAtKetherAt` (#345), but only on
+ *     the first such arrival — subsequent calls preserve the original
+ *     timestamp so the ritual's witness-order rule (§ 2.2) reads the
+ *     true arrival, not a return.
  */
-export function applyMove(state: GameState, playerId: string, pathNumber: number): MoveResult {
+export function applyMove(
+  state: GameState,
+  playerId: string,
+  pathNumber: number,
+  options: ApplyMoveOptions = {},
+): MoveResult {
   const validation = canTravelPath(state, playerId, pathNumber);
   if (!validation.ok) return validation;
   const { path, player } = validation.value;
@@ -110,6 +131,16 @@ export function applyMove(state: GameState, playerId: string, pathNumber: number
   const toSefirah = sefirahByKey(destination);
   const handIndex = player.hand.indexOf(path.arcanumNumber);
   const nextHand = [...player.hand.slice(0, handIndex), ...player.hand.slice(handIndex + 1)];
+
+  // #345: stamp the Kether arrival timestamp on the first arrival only.
+  // The clock injection keeps `applyMove` deterministic in tests; in
+  // production callers omit `now` and the engine sources `Date.now()`.
+  // On non-Kether arrivals this branch is a no-op (the field stays
+  // whatever it was, which for an MVP run is `undefined`).
+  const arrivedAtKetherAt: number | undefined =
+    destination === 'kether' && player.arrivedAtKetherAt === undefined
+      ? (options.now ?? Date.now)()
+      : player.arrivedAtKetherAt;
 
   const nextPlayer: PlayerState = {
     ...player,
@@ -123,6 +154,7 @@ export function applyMove(state: GameState, playerId: string, pathNumber: number
     // penalty on the check and the +2 Separation tick on
     // accept-setback (vs. the regular +1 tick).
     lastArrivalPathNumber: pathNumber,
+    arrivedAtKetherAt,
   };
 
   // Pillar streak: tracked team-wide. The destination's pillar is

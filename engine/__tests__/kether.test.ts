@@ -11,11 +11,13 @@ import {
   ketherUnstageSpark,
   ketherConfirmClosure,
   initKetherRitual,
+  maybeTriggerKetherRitual,
   currentWitnessPlayerId,
   isKetherHeld,
   type KetherRitualState,
   type KetherWitnessLogEntry,
 } from '../kether';
+import { applyMove } from '../movement';
 import { makePlayer, makeState } from '@/test/fixtures';
 import type { GameState } from '../types';
 
@@ -578,5 +580,339 @@ describe('initKetherRitual', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('kether-not-all-at-kether');
+  });
+});
+
+// ──────────────── Trigger detection: applyMove stamps arrivedAtKetherAt ────────────────
+
+describe('applyMove — Kether arrival timestamp (#345)', () => {
+  it('stamps arrivedAtKetherAt on the moving player when destination is Kether', () => {
+    // Arcanum 2 = path 13 = Kether ↔ Tiferet. Player at Tiferet, holding
+    // arcanum 2, plays it to move to Kether.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const state = makeState({}, { players: [p1] });
+    let captured = 0;
+    const clock = (): number => {
+      captured = 17_000;
+      return captured;
+    };
+    const result = applyMove(state, 'p1', 13, { now: clock });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const moved = result.value.players[0];
+    expect(moved?.position).toBe('kether');
+    expect(moved?.arrivedAtKetherAt).toBe(captured);
+  });
+
+  it('does NOT stamp arrivedAtKetherAt on a non-Kether arrival', () => {
+    // Arcanum 21 = path 32 = Yesod ↔ Malkuth. Player at Yesod moves to
+    // Malkuth — arrivedAtKetherAt remains undefined.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'yesod',
+      hand: [21],
+    });
+    const state = makeState({}, { players: [p1] });
+    const result = applyMove(state, 'p1', 32, { now: () => 1 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.players[0]?.position).toBe('malkuth');
+    expect(result.value.players[0]?.arrivedAtKetherAt).toBeUndefined();
+  });
+
+  it('does not overwrite an existing arrivedAtKetherAt on a re-arrival', () => {
+    // Defensive: in MVP a player cannot leave Kether, but if a future
+    // ticket allows a Meditate-back step, the original arrival timestamp
+    // is the canonical one (the player "completed the journey then" —
+    // the second arrival is a return, not a closure). Only stamp if
+    // the field is currently undefined.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2],
+      arrivedAtKetherAt: 500,
+    });
+    const state = makeState({}, { players: [p1] });
+    const result = applyMove(state, 'p1', 13, { now: () => 999 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.players[0]?.arrivedAtKetherAt).toBe(500);
+  });
+});
+
+// ──────────────── maybeTriggerKetherRitual ────────────────
+
+describe('maybeTriggerKetherRitual', () => {
+  it('triggers the ritual when every player is at Kether and phase is not yet kether', () => {
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3, 7],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [4],
+      arrivedAtKetherAt: 200,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next.phase).toBe('kether');
+    expect(next.ketherRitual).toBeDefined();
+    expect(next.ketherRitual?.subPhase).toBe('witness');
+  });
+
+  it('does NOT trigger when only some players have arrived', () => {
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({ id: 'p2', position: 'tiferet', hand: [4] });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next).toBe(state);
+    expect(next.phase).toBe('move');
+    expect(next.ketherRitual).toBeUndefined();
+  });
+
+  it('builds witnessOrder by descending arrivedAtKetherAt (last arrival first)', () => {
+    // p1 arrives first (lower timestamp), p2 last — p2 opens the ritual.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3, 7],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [4],
+      arrivedAtKetherAt: 200,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next.ketherRitual?.witnessOrder).toEqual(['p2', 'p1']);
+  });
+
+  it('hot-seat: latest seat-rotation arrival opens the ritual (timestamps are monotonically captured at applyMove)', () => {
+    // Hot-seat single-machine play: each player arrival happens in
+    // seat-rotation sequence. The timestamps stamped by applyMove are
+    // monotonic, so descending-timestamp ordering naturally yields
+    // "the player whose seat-rotation index most recently advanced into
+    // Kether" — exactly the rule from § 2.2 / S-1.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 1000, // arrived earliest in this run
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 3000, // arrived last
+    });
+    const p3 = makePlayer({
+      id: 'p3',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 2000, // middle
+    });
+    const state = makeState({}, { players: [p1, p2, p3], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    // p2 arrived last → p2 opens; then p3, then p1.
+    expect(next.ketherRitual?.witnessOrder).toEqual(['p2', 'p3', 'p1']);
+  });
+
+  it('snapshots personalQueueLengths from each player hand at trigger time', () => {
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3, 7, 11, 15], // 4-card queue → cap 2
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [4, 9], // 2-card queue → cap 1
+      arrivedAtKetherAt: 200,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next.ketherRitual?.personalQueueLengths).toEqual({
+      p1: 4,
+      p2: 2,
+    });
+    expect(next.ketherRitual?.passCounts).toEqual({ p1: 0, p2: 0 });
+  });
+
+  it('initializes subPhase to "witness" (gather is transient — see § 3.2)', () => {
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 200,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next.ketherRitual?.subPhase).toBe('witness');
+  });
+
+  it('is idempotent: calling on a state already in phase=kether returns it unchanged', () => {
+    // The trigger should fire exactly once. If the helper is called
+    // again on the post-trigger state (e.g. after a witness action that
+    // lands inside the ritual), it must be a no-op — never re-init.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [4],
+      arrivedAtKetherAt: 200,
+    });
+    const initial = makeState({}, { players: [p1, p2], phase: 'move' });
+    const triggered = maybeTriggerKetherRitual(initial);
+    const triggeredAgain = maybeTriggerKetherRitual(triggered);
+    expect(triggeredAgain).toBe(triggered);
+  });
+
+  it('tie-break: simultaneous arrivals resolve lexicographically on playerId', () => {
+    // Two players record the same arrivedAtKetherAt — the descending
+    // sort + lex tie-break per § 2.2 puts the lex-larger id first.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [3],
+      arrivedAtKetherAt: 500,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [4],
+      arrivedAtKetherAt: 500,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next.ketherRitual?.witnessOrder).toEqual(['p2', 'p1']);
+  });
+
+  it('captures arrivalTimestamps from arrivedAtKetherAt fields on each player', () => {
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 200,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next.ketherRitual?.arrivalTimestamps).toEqual({
+      p1: 100,
+      p2: 200,
+    });
+  });
+
+  it('does not trigger if state.phase is already kether (defense in depth)', () => {
+    // If something already flipped phase to kether but ketherRitual is
+    // not yet built, the helper still must not re-trigger — the path
+    // out of "phase=kether without ritual" is engine corruption to
+    // surface, not silently re-init.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 200,
+    });
+    const state = makeState({}, { players: [p1, p2], phase: 'kether' });
+    const next = maybeTriggerKetherRitual(state);
+    expect(next).toBe(state);
+  });
+});
+
+// ──────────────── End-to-end: applyMove → maybeTriggerKetherRitual ────────────────
+
+describe('Kether trigger end-to-end (applyMove → maybeTriggerKetherRitual)', () => {
+  it('last arrival flips phase to kether and initializes the ritual', () => {
+    // Two players. p1 already at Kether (arrivedAtKetherAt set).
+    // p2 plays arcanum 2 (path 13, Tiferet→Kether) — this is the LAST
+    // arrival; the trigger should fire on the post-move state.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const state = makeState(
+      {},
+      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
+    );
+    const moveResult = applyMove(state, 'p2', 13, { now: () => 200 });
+    expect(moveResult.ok).toBe(true);
+    if (!moveResult.ok) return;
+    expect(moveResult.value.players[1]?.position).toBe('kether');
+    expect(moveResult.value.players[1]?.arrivedAtKetherAt).toBe(200);
+    // Trigger should now fire — every player at Kether.
+    const triggered = maybeTriggerKetherRitual(moveResult.value);
+    expect(triggered.phase).toBe('kether');
+    expect(triggered.ketherRitual).toBeDefined();
+    // p2 arrived last (timestamp 200 > 100) → p2 opens.
+    expect(triggered.ketherRitual?.witnessOrder).toEqual(['p2', 'p1']);
+  });
+
+  it('mid-arrival does NOT trigger the ritual (only first player at Kether)', () => {
+    // p1 arrives at Kether but p2 still at Tiferet — phase remains 'move'.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [],
+    });
+    const state = makeState(
+      {},
+      { players: [p1, p2], phase: 'move', activePlayerId: 'p1' },
+    );
+    const moveResult = applyMove(state, 'p1', 13, { now: () => 100 });
+    expect(moveResult.ok).toBe(true);
+    if (!moveResult.ok) return;
+    const triggered = maybeTriggerKetherRitual(moveResult.value);
+    expect(triggered.phase).toBe('move');
+    expect(triggered.ketherRitual).toBeUndefined();
   });
 });

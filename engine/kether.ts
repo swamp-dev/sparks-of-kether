@@ -197,6 +197,74 @@ export function initKetherRitual(
 }
 
 /**
+ * Detect convergence and (idempotently) trigger the Final Threshold
+ * ritual when every player has arrived at Kether (#345;
+ * `design/final-threshold.md` § 2.1). Called by post-`applyMove`
+ * hooks in `lib/turn-machine.ts` and `lib/room-actions.ts`.
+ *
+ * Idempotent contract:
+ *   - If `state.phase === 'kether'` already → returns the input
+ *     state by reference (the helper never re-initializes a running
+ *     ritual; callers can fold this into their move pipeline without
+ *     a guard).
+ *   - If any player's `position !== 'kether'` → returns the input
+ *     state by reference (the trigger condition is not yet met).
+ *   - Otherwise → builds `KetherRitualState` per § 5.1 and returns
+ *     a new state with `phase: 'kether'`. Witness order is descending
+ *     by `PlayerState.arrivedAtKetherAt` (last arrival opens the
+ *     ritual per § 2.2 / S-1), with lex tie-break on `playerId` for
+ *     simultaneous arrivals.
+ *
+ * The arrival-timestamp source is `PlayerState.arrivedAtKetherAt`,
+ * stamped by `applyMove` on each player's first move into Kether.
+ * Hot-seat: stamp comes from the engine clock (`Date.now()` by
+ * default; injectable for tests). Multiplayer K2: the wire layer
+ * overwrites this field with the Realtime server-side timestamp
+ * before this helper runs, so the round-robin reads server truth
+ * even when client clocks drift.
+ *
+ * Players whose `arrivedAtKetherAt` is undefined at trigger time
+ * (defensive — the trigger predicate above already requires
+ * everyone be at Kether, which means every player should have a
+ * stamp; this fallback is for snapshot replay against a pre-#345
+ * row that lacks the field) fall through to timestamp 0, then resolve
+ * via lex tie-break — deterministic, even if not the timestamp the
+ * UI would prefer.
+ */
+export function maybeTriggerKetherRitual(state: GameState): GameState {
+  // Idempotency guard #1: a running ritual is never re-initialized.
+  // Distinct from "phase is kether but ritual is undefined" — that
+  // state shape is engine corruption and surfaces as a no-op here too,
+  // because re-init on a partially-built ritual would silently lose
+  // any in-flight witness log / pass counts.
+  if (state.phase === 'kether') return state;
+  // Trigger predicate: every player at Kether (§ 2.1). Less than 2
+  // players can technically pass (a single player at Kether trivially
+  // satisfies the all-at-Kether check) — the hot-seat solo coda
+  // (§ 2.2 player-count floor) is a downstream concern; this helper
+  // just detects convergence per the spec.
+  if (!state.players.every((p) => p.position === 'kether')) return state;
+
+  // Build arrivalTimestamps from arrivedAtKetherAt. Missing stamps
+  // fall through to 0 — `initKetherRitual`'s lex tie-break makes the
+  // ordering deterministic regardless.
+  const arrivalTimestamps: Record<string, number> = {};
+  for (const player of state.players) {
+    arrivalTimestamps[player.id] = player.arrivedAtKetherAt ?? 0;
+  }
+
+  const result = initKetherRitual(state, arrivalTimestamps);
+  if (!result.ok) {
+    // Unreachable: the predicate above guarantees the all-at-Kether
+    // precondition `initKetherRitual` enforces. Defense-in-depth — if
+    // a future change desynchronises the two checks, returning the
+    // input state is the safer default than throwing.
+    return state;
+  }
+  return result.value;
+}
+
+/**
  * Active witness plays one card from hand. Per § 2.3:
  *   - Card moves to discard.
  *   - Witness log gains a `{ playerId, arcanum }` entry.

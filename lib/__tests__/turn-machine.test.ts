@@ -154,6 +154,39 @@ describe('turnReducer — phase transitions', () => {
       initial.activePlayerId,
     );
   });
+
+  it('move that is the last arrival at Kether trips the Final Threshold ritual (#345)', () => {
+    // p1 already at Kether (held); p2 active, at Tiferet, holds arcanum 2.
+    // p2 plays path 13 — convergence is met and the reducer skips the
+    // regular phase-decision (no challenge, no draw), surfacing the
+    // ritual state directly.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'kether',
+      hand: [],
+      arrivedAtKetherAt: 100,
+    });
+    const p2 = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [2],
+    });
+    const state = makeState(
+      {},
+      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
+    );
+    const result = turnReducer(
+      { state },
+      { kind: 'move', pathNumber: 13 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('kether');
+    expect(result.value.next.state.ketherRitual).toBeDefined();
+    expect(result.value.next.state.ketherRitual?.subPhase).toBe('witness');
+    expect(result.value.next.state.ketherRitual?.witnessOrder[0]).toBe('p2');
+  });
 });
 
 describe('turnReducer — prep sub-phase: prep-add-modifier', () => {

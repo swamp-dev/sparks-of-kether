@@ -172,6 +172,28 @@ export interface PlayerState {
    * `applyMove` after a snapshot loads.
    */
   readonly lastArrivalPathNumber?: number | undefined;
+  /**
+   * Timestamp (ms since epoch) at which this player's `position`
+   * flipped to `'kether'`. Set by `applyMove` on the move that lands
+   * the player at Kether; remains `undefined` for any player who has
+   * not yet arrived. Stable across re-entry (only stamped when
+   * currently `undefined`) so the ritual's "who arrived last" rule
+   * (`design/final-threshold.md` § 2.2) reads the original arrival,
+   * not a hypothetical Meditate-back return.
+   *
+   * Consumed by `maybeTriggerKetherRitual` (#345) to build
+   * `KetherRitualState.arrivalTimestamps` and the descending-timestamp
+   * `witnessOrder`. Hot-seat callers source the timestamp from the
+   * engine's injected clock (`Date.now()` in production, deterministic
+   * in tests); multiplayer K2 will overwrite this with the Realtime
+   * server-side timestamp before `maybeTriggerKetherRitual` runs.
+   *
+   * Optional/additive: snapshots predating this field survive
+   * deserialisation via the `?`; on the next `applyMove`-into-Kether
+   * the field is populated. The lex tie-break in `initKetherRitual`
+   * keeps ordering deterministic if two players' stamps collide.
+   */
+  readonly arrivedAtKetherAt?: number | undefined;
 }
 
 /**
