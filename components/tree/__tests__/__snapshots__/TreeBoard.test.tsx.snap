@@ -1,1623 +1,2114 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
-<svg
-  role="figure"
-  viewBox="0 0 400 620"
-  xmlns="http://www.w3.org/2000/svg"
+<div
+  class="relative inline-block "
+  data-tree-root="true"
+  style="width: 100%;"
 >
-  <title>
-    Tree of Life — ten Sefirot connected by twenty-two paths
-  </title>
-  <defs>
-    <radialgradient
-      cx="50%"
-      cy="40%"
-      id="tree-bg-:r8:"
-      r="70%"
-    >
-      <stop
-        offset="0%"
-        stop-color="#1a1542"
-      />
-      <stop
-        offset="100%"
-        stop-color="#0e0a1f"
-      />
-    </radialgradient>
-  </defs>
-  <rect
-    fill="url(#tree-bg-:r8:)"
-    height="620"
-    width="400"
-  />
-  <g
-    aria-hidden="true"
+  <svg
+    class="block w-full"
+    role="figure"
+    viewBox="0 0 400 620"
+    xmlns="http://www.w3.org/2000/svg"
   >
-    <circle
-      cx="40"
-      cy="80"
-      fill="#f8f8ff"
-      fill-opacity="0.6"
-      r="0.8"
-    />
-    <circle
-      cx="340"
-      cy="50"
-      fill="#f8f8ff"
-      fill-opacity="0.4"
-      r="0.8"
-    />
-    <circle
-      cx="120"
-      cy="30"
-      fill="#f8f8ff"
-      fill-opacity="0.5"
-      r="0.8"
-    />
-    <circle
-      cx="260"
-      cy="110"
-      fill="#f8f8ff"
-      fill-opacity="0.3"
-      r="0.8"
-    />
-    <circle
-      cx="60"
-      cy="220"
-      fill="#f8f8ff"
-      fill-opacity="0.4"
-      r="0.8"
-    />
-    <circle
-      cx="355"
-      cy="350"
-      fill="#f8f8ff"
-      fill-opacity="0.5"
-      r="0.8"
-    />
-    <circle
-      cx="30"
-      cy="380"
-      fill="#f8f8ff"
-      fill-opacity="0.3"
-      r="0.8"
-    />
-    <circle
-      cx="380"
-      cy="220"
-      fill="#f8f8ff"
-      fill-opacity="0.4"
-      r="0.8"
-    />
-    <circle
-      cx="180"
-      cy="600"
-      fill="#f8f8ff"
-      fill-opacity="0.3"
-      r="0.8"
-    />
-    <circle
-      cx="10"
-      cy="540"
-      fill="#f8f8ff"
-      fill-opacity="0.4"
-      r="0.8"
-    />
-    <circle
-      cx="390"
-      cy="510"
-      fill="#f8f8ff"
-      fill-opacity="0.5"
-      r="0.8"
-    />
-    <circle
-      cx="140"
-      cy="380"
-      fill="#f8f8ff"
-      fill-opacity="0.3"
-      r="0.8"
-    />
-  </g>
-  <g
-    data-layer="paths"
-  >
-    <g
-      aria-label="Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom"
-      data-path="11"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom
-      </title>
-      <line
-        data-path-hit="11"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="222.4"
-        x2="297.6"
-        y1="76.8"
-        y2="133.2"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+    <title>
+      Tree of Life — ten Sefirot connected by twenty-two paths
+    </title>
+    <defs>
+      <radialgradient
+        cx="50%"
+        cy="40%"
+        id="tree-bg-:r8:"
+        r="70%"
+      >
+        <stop
+          offset="0%"
+          stop-color="#1a1542"
+        />
+        <stop
+          offset="100%"
+          stop-color="#0e0a1f"
+        />
+      </radialgradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-11-:r8:"
         x1="200"
         x2="320"
         y1="60"
         y2="150"
-      />
-    </g>
-    <g
-      aria-label="Path 12 (Beth) — Arcanum 1, between Crown and Understanding"
-      data-path="12"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 12 (Beth) — Arcanum 1, between Crown and Understanding
-      </title>
-      <line
-        data-path-hit="12"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="177.6"
-        x2="102.4"
-        y1="76.8"
-        y2="133.2"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ffffff"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#c0c0c0"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-12-:r8:"
         x1="200"
         x2="80"
         y1="60"
         y2="150"
-      />
-    </g>
-    <g
-      aria-label="Path 13 (Gimel) — Arcanum 2, between Crown and Beauty"
-      data-path="13"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 13 (Gimel) — Arcanum 2, between Crown and Beauty
-      </title>
-      <line
-        data-path-hit="13"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="200"
-        x2="200"
-        y1="88"
-        y2="312"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ffffff"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#1a1a1a"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-13-:r8:"
         x1="200"
         x2="200"
         y1="60"
         y2="340"
-      />
-    </g>
-    <g
-      aria-label="Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding"
-      data-path="14"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding
-      </title>
-      <line
-        data-path-hit="14"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="292"
-        x2="108"
-        y1="150"
-        y2="150"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ffffff"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-14-:r8:"
         x1="320"
         x2="80"
         y1="150"
         y2="150"
-      />
-    </g>
-    <g
-      aria-label="Path 15 (He) — Arcanum 4, between Wisdom and Beauty"
-      data-path="15"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 15 (He) — Arcanum 4, between Wisdom and Beauty
-      </title>
-      <line
-        data-path-hit="15"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="305.0481962411365"
-        x2="214.9518037588635"
-        y1="173.67368928486718"
-        y2="316.3263107151328"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#c0c0c0"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#1a1a1a"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-15-:r8:"
         x1="320"
         x2="200"
         y1="150"
         y2="340"
-      />
-    </g>
-    <g
-      aria-label="Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy"
-      data-path="16"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy
-      </title>
-      <line
-        data-path-hit="16"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="320"
-        x2="320"
-        y1="178"
-        y2="252"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#c0c0c0"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-16-:r8:"
         x1="320"
         x2="320"
         y1="150"
         y2="280"
-      />
-    </g>
-    <g
-      aria-label="Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty"
-      data-path="17"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty
-      </title>
-      <line
-        data-path-hit="17"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="94.95180375886349"
-        x2="185.0481962411365"
-        y1="173.67368928486718"
-        y2="316.3263107151328"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#c0c0c0"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#4169e1"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-17-:r8:"
         x1="80"
         x2="200"
         y1="150"
         y2="340"
-      />
-    </g>
-    <g
-      aria-label="Path 18 (Cheth) — Arcanum 7, between Understanding and Severity"
-      data-path="18"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 18 (Cheth) — Arcanum 7, between Understanding and Severity
-      </title>
-      <line
-        data-path-hit="18"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="80"
-        x2="80"
-        y1="178"
-        y2="252"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#1a1a1a"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-18-:r8:"
         x1="80"
         x2="80"
         y1="150"
         y2="280"
-      />
-    </g>
-    <g
-      aria-label="Path 19 (Teth) — Arcanum 8, between Mercy and Severity"
-      data-path="19"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 19 (Teth) — Arcanum 8, between Mercy and Severity
-      </title>
-      <line
-        data-path-hit="19"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="292"
-        x2="108"
-        y1="280"
-        y2="280"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#1a1a1a"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#dc143c"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-19-:r8:"
         x1="320"
         x2="80"
         y1="280"
         y2="280"
-      />
-    </g>
-    <g
-      aria-label="Path 20 (Yod) — Arcanum 9, between Mercy and Beauty"
-      data-path="20"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 20 (Yod) — Arcanum 9, between Mercy and Beauty
-      </title>
-      <line
-        data-path-hit="20"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="294.95603865200235"
-        x2="225.04396134799765"
-        y1="292.5219806739988"
-        y2="327.4780193260012"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#4169e1"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#dc143c"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-20-:r8:"
         x1="320"
         x2="200"
         y1="280"
         y2="340"
-      />
-    </g>
-    <g
-      aria-label="Path 21 (Kaph) — Arcanum 10, between Mercy and Victory"
-      data-path="21"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 21 (Kaph) — Arcanum 10, between Mercy and Victory
-      </title>
-      <line
-        data-path-hit="21"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="320"
-        x2="320"
-        y1="308"
-        y2="402"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#4169e1"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-21-:r8:"
         x1="320"
         x2="320"
         y1="280"
         y2="430"
-      />
-    </g>
-    <g
-      aria-label="Path 22 (Lamed) — Arcanum 11, between Severity and Beauty"
-      data-path="22"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 22 (Lamed) — Arcanum 11, between Severity and Beauty
-      </title>
-      <line
-        data-path-hit="22"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="105.04396134799764"
-        x2="174.95603865200235"
-        y1="292.5219806739988"
-        y2="327.4780193260012"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#4169e1"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#228b22"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-22-:r8:"
         x1="80"
         x2="200"
         y1="280"
         y2="340"
-      />
-    </g>
-    <g
-      aria-label="Path 23 (Mem) — Arcanum 12, between Severity and Splendor"
-      data-path="23"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 23 (Mem) — Arcanum 12, between Severity and Splendor
-      </title>
-      <line
-        data-path-hit="23"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="80"
-        x2="80"
-        y1="308"
-        y2="402"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#dc143c"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-23-:r8:"
         x1="80"
         x2="80"
         y1="280"
         y2="430"
-      />
-    </g>
-    <g
-      aria-label="Path 24 (Nun) — Arcanum 13, between Beauty and Victory"
-      data-path="24"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 24 (Nun) — Arcanum 13, between Beauty and Victory
-      </title>
-      <line
-        data-path-hit="24"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="222.4"
-        x2="297.6"
-        y1="356.8"
-        y2="413.2"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#dc143c"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ff8c00"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-24-:r8:"
         x1="200"
         x2="320"
         y1="340"
         y2="430"
-      />
-    </g>
-    <g
-      aria-label="Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation"
-      data-path="25"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation
-      </title>
-      <line
-        data-path-hit="25"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="200"
-        x2="200"
-        y1="368"
-        y2="462"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#228b22"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-25-:r8:"
         x1="200"
         x2="200"
         y1="340"
         y2="490"
-      />
-    </g>
-    <g
-      aria-label="Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor"
-      data-path="26"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor
-      </title>
-      <line
-        data-path-hit="26"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="177.6"
-        x2="102.4"
-        y1="356.8"
-        y2="413.2"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#9370db"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-26-:r8:"
         x1="200"
         x2="80"
         y1="340"
         y2="430"
-      />
-    </g>
-    <g
-      aria-label="Path 27 (Peh) — Arcanum 16, between Victory and Splendor"
-      data-path="27"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 27 (Peh) — Arcanum 16, between Victory and Splendor
-      </title>
-      <line
-        data-path-hit="27"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="292"
-        x2="108"
-        y1="430"
-        y2="430"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ffd700"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ff8c00"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-27-:r8:"
         x1="320"
         x2="80"
         y1="430"
         y2="430"
-      />
-    </g>
-    <g
-      aria-label="Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation"
-      data-path="28"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation
-      </title>
-      <line
-        data-path-hit="28"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="294.95603865200235"
-        x2="225.04396134799765"
-        y1="442.5219806739988"
-        y2="477.4780193260012"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#228b22"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#ff8c00"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-28-:r8:"
         x1="320"
         x2="200"
         y1="430"
         y2="490"
-      />
-    </g>
-    <g
-      aria-label="Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom"
-      data-path="29"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom
-      </title>
-      <line
-        data-path-hit="29"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="301.0081571234742"
-        x2="218.99184287652585"
-        y1="450.57449644956966"
-        y2="539.4255035504303"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#228b22"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#9370db"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-29-:r8:"
         x1="320"
         x2="200"
         y1="430"
         y2="560"
-      />
-    </g>
-    <g
-      aria-label="Path 30 (Resh) — Arcanum 19, between Splendor and Foundation"
-      data-path="30"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 30 (Resh) — Arcanum 19, between Splendor and Foundation
-      </title>
-      <line
-        data-path-hit="30"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="105.04396134799764"
-        x2="174.95603865200235"
-        y1="442.5219806739988"
-        y2="477.4780193260012"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#228b22"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#8b4513"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-30-:r8:"
         x1="80"
         x2="200"
         y1="430"
         y2="490"
-      />
-    </g>
-    <g
-      aria-label="Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom"
-      data-path="31"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom
-      </title>
-      <line
-        data-path-hit="31"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
-        x1="98.99184287652585"
-        x2="181.00815712347415"
-        y1="450.57449644956966"
-        y2="539.4255035504303"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ff8c00"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#9370db"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-31-:r8:"
         x1="80"
         x2="200"
         y1="430"
         y2="560"
-      />
-    </g>
-    <g
-      aria-label="Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom"
-      data-path="32"
-      data-valid="false"
-      role="img"
-    >
-      <title>
-        Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom
-      </title>
-      <line
-        data-path-hit="32"
-        stroke="transparent"
-        stroke-linecap="butt"
-        stroke-width="28"
+      >
+        <stop
+          offset="0%"
+          stop-color="#ff8c00"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#8b4513"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+      <lineargradient
+        gradientUnits="userSpaceOnUse"
+        id="card-lit-32-:r8:"
         x1="200"
         x2="200"
         y1="490"
         y2="560"
-      />
-      <line
-        pointer-events="none"
-        stroke="#f8f8ff"
-        stroke-opacity="0.35"
-        stroke-width="1.5"
-        style="transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, stroke-width 200ms ease-out;"
-        x1="200"
-        x2="200"
-        y1="490"
-        y2="560"
-      />
-    </g>
-  </g>
-  <g
-    aria-hidden="true"
-    data-layer="path-labels"
-    pointer-events="none"
-  >
+      >
+        <stop
+          offset="0%"
+          stop-color="#9370db"
+          stop-opacity="0.95"
+        />
+        <stop
+          offset="100%"
+          stop-color="#8b4513"
+          stop-opacity="0.95"
+        />
+      </lineargradient>
+    </defs>
+    <rect
+      fill="url(#tree-bg-:r8:)"
+      height="620"
+      width="400"
+    />
     <g
-      data-path-label="11"
-      transform="translate(260, 105)"
+      aria-hidden="true"
     >
       <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
+        cx="40"
+        cy="80"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        11
-      </text>
-    </g>
-    <g
-      data-path-label="12"
-      transform="translate(140, 105)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.6"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="340"
+        cy="50"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        12
-      </text>
-    </g>
-    <g
-      data-path-label="13"
-      transform="translate(200, 200)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.4"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="120"
+        cy="30"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        13
-      </text>
-    </g>
-    <g
-      data-path-label="14"
-      transform="translate(200, 150)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.5"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="260"
+        cy="110"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        14
-      </text>
-    </g>
-    <g
-      data-path-label="15"
-      transform="translate(260, 245)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.3"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="60"
+        cy="220"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        15
-      </text>
-    </g>
-    <g
-      data-path-label="16"
-      transform="translate(320, 215)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.4"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="355"
+        cy="350"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        16
-      </text>
-    </g>
-    <g
-      data-path-label="17"
-      transform="translate(140, 245)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.5"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="30"
+        cy="380"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        17
-      </text>
-    </g>
-    <g
-      data-path-label="18"
-      transform="translate(80, 215)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.3"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="380"
+        cy="220"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        18
-      </text>
-    </g>
-    <g
-      data-path-label="19"
-      transform="translate(200, 280)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.4"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="180"
+        cy="600"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        19
-      </text>
-    </g>
-    <g
-      data-path-label="20"
-      transform="translate(260, 310)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.3"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="10"
+        cy="540"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        20
-      </text>
-    </g>
-    <g
-      data-path-label="21"
-      transform="translate(320, 355)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.4"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="390"
+        cy="510"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        21
-      </text>
-    </g>
-    <g
-      data-path-label="22"
-      transform="translate(140, 310)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
+        fill-opacity="0.5"
+        r="0.8"
       />
-      <text
-        dominant-baseline="central"
+      <circle
+        cx="140"
+        cy="380"
         fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
-      >
-        22
-      </text>
+        fill-opacity="0.3"
+        r="0.8"
+      />
     </g>
     <g
-      data-path-label="23"
-      transform="translate(80, 355)"
+      data-layer="paths"
     >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+      <g
+        aria-label="Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom"
+        data-card-lit="false"
+        data-path="11"
+        data-valid="false"
+        role="img"
       >
-        23
-      </text>
+        <title>
+          Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom
+        </title>
+        <line
+          data-path-hit="11"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="222.4"
+          x2="297.6"
+          y1="76.8"
+          y2="133.2"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="320"
+          y1="60"
+          y2="150"
+        />
+      </g>
+      <g
+        aria-label="Path 12 (Beth) — Arcanum 1, between Crown and Understanding"
+        data-card-lit="false"
+        data-path="12"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 12 (Beth) — Arcanum 1, between Crown and Understanding
+        </title>
+        <line
+          data-path-hit="12"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="177.6"
+          x2="102.4"
+          y1="76.8"
+          y2="133.2"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="80"
+          y1="60"
+          y2="150"
+        />
+      </g>
+      <g
+        aria-label="Path 13 (Gimel) — Arcanum 2, between Crown and Beauty"
+        data-card-lit="false"
+        data-path="13"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 13 (Gimel) — Arcanum 2, between Crown and Beauty
+        </title>
+        <line
+          data-path-hit="13"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="200"
+          x2="200"
+          y1="88"
+          y2="312"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="200"
+          y1="60"
+          y2="340"
+        />
+      </g>
+      <g
+        aria-label="Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding"
+        data-card-lit="false"
+        data-path="14"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding
+        </title>
+        <line
+          data-path-hit="14"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="292"
+          x2="108"
+          y1="150"
+          y2="150"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="80"
+          y1="150"
+          y2="150"
+        />
+      </g>
+      <g
+        aria-label="Path 15 (He) — Arcanum 4, between Wisdom and Beauty"
+        data-card-lit="false"
+        data-path="15"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 15 (He) — Arcanum 4, between Wisdom and Beauty
+        </title>
+        <line
+          data-path-hit="15"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="305.0481962411365"
+          x2="214.9518037588635"
+          y1="173.67368928486718"
+          y2="316.3263107151328"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="200"
+          y1="150"
+          y2="340"
+        />
+      </g>
+      <g
+        aria-label="Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy"
+        data-card-lit="false"
+        data-path="16"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy
+        </title>
+        <line
+          data-path-hit="16"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="320"
+          x2="320"
+          y1="178"
+          y2="252"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="320"
+          y1="150"
+          y2="280"
+        />
+      </g>
+      <g
+        aria-label="Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty"
+        data-card-lit="false"
+        data-path="17"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty
+        </title>
+        <line
+          data-path-hit="17"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="94.95180375886349"
+          x2="185.0481962411365"
+          y1="173.67368928486718"
+          y2="316.3263107151328"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="80"
+          x2="200"
+          y1="150"
+          y2="340"
+        />
+      </g>
+      <g
+        aria-label="Path 18 (Cheth) — Arcanum 7, between Understanding and Severity"
+        data-card-lit="false"
+        data-path="18"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 18 (Cheth) — Arcanum 7, between Understanding and Severity
+        </title>
+        <line
+          data-path-hit="18"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="80"
+          x2="80"
+          y1="178"
+          y2="252"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="80"
+          x2="80"
+          y1="150"
+          y2="280"
+        />
+      </g>
+      <g
+        aria-label="Path 19 (Teth) — Arcanum 8, between Mercy and Severity"
+        data-card-lit="false"
+        data-path="19"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 19 (Teth) — Arcanum 8, between Mercy and Severity
+        </title>
+        <line
+          data-path-hit="19"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="292"
+          x2="108"
+          y1="280"
+          y2="280"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="80"
+          y1="280"
+          y2="280"
+        />
+      </g>
+      <g
+        aria-label="Path 20 (Yod) — Arcanum 9, between Mercy and Beauty"
+        data-card-lit="false"
+        data-path="20"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 20 (Yod) — Arcanum 9, between Mercy and Beauty
+        </title>
+        <line
+          data-path-hit="20"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="294.95603865200235"
+          x2="225.04396134799765"
+          y1="292.5219806739988"
+          y2="327.4780193260012"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="200"
+          y1="280"
+          y2="340"
+        />
+      </g>
+      <g
+        aria-label="Path 21 (Kaph) — Arcanum 10, between Mercy and Victory"
+        data-card-lit="false"
+        data-path="21"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 21 (Kaph) — Arcanum 10, between Mercy and Victory
+        </title>
+        <line
+          data-path-hit="21"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="320"
+          x2="320"
+          y1="308"
+          y2="402"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="320"
+          y1="280"
+          y2="430"
+        />
+      </g>
+      <g
+        aria-label="Path 22 (Lamed) — Arcanum 11, between Severity and Beauty"
+        data-card-lit="false"
+        data-path="22"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 22 (Lamed) — Arcanum 11, between Severity and Beauty
+        </title>
+        <line
+          data-path-hit="22"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="105.04396134799764"
+          x2="174.95603865200235"
+          y1="292.5219806739988"
+          y2="327.4780193260012"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="80"
+          x2="200"
+          y1="280"
+          y2="340"
+        />
+      </g>
+      <g
+        aria-label="Path 23 (Mem) — Arcanum 12, between Severity and Splendor"
+        data-card-lit="false"
+        data-path="23"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 23 (Mem) — Arcanum 12, between Severity and Splendor
+        </title>
+        <line
+          data-path-hit="23"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="80"
+          x2="80"
+          y1="308"
+          y2="402"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="80"
+          x2="80"
+          y1="280"
+          y2="430"
+        />
+      </g>
+      <g
+        aria-label="Path 24 (Nun) — Arcanum 13, between Beauty and Victory"
+        data-card-lit="false"
+        data-path="24"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 24 (Nun) — Arcanum 13, between Beauty and Victory
+        </title>
+        <line
+          data-path-hit="24"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="222.4"
+          x2="297.6"
+          y1="356.8"
+          y2="413.2"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="320"
+          y1="340"
+          y2="430"
+        />
+      </g>
+      <g
+        aria-label="Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation"
+        data-card-lit="false"
+        data-path="25"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation
+        </title>
+        <line
+          data-path-hit="25"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="200"
+          x2="200"
+          y1="368"
+          y2="462"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="200"
+          y1="340"
+          y2="490"
+        />
+      </g>
+      <g
+        aria-label="Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor"
+        data-card-lit="false"
+        data-path="26"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor
+        </title>
+        <line
+          data-path-hit="26"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="177.6"
+          x2="102.4"
+          y1="356.8"
+          y2="413.2"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="80"
+          y1="340"
+          y2="430"
+        />
+      </g>
+      <g
+        aria-label="Path 27 (Peh) — Arcanum 16, between Victory and Splendor"
+        data-card-lit="false"
+        data-path="27"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 27 (Peh) — Arcanum 16, between Victory and Splendor
+        </title>
+        <line
+          data-path-hit="27"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="292"
+          x2="108"
+          y1="430"
+          y2="430"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="80"
+          y1="430"
+          y2="430"
+        />
+      </g>
+      <g
+        aria-label="Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation"
+        data-card-lit="false"
+        data-path="28"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation
+        </title>
+        <line
+          data-path-hit="28"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="294.95603865200235"
+          x2="225.04396134799765"
+          y1="442.5219806739988"
+          y2="477.4780193260012"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="200"
+          y1="430"
+          y2="490"
+        />
+      </g>
+      <g
+        aria-label="Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom"
+        data-card-lit="false"
+        data-path="29"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom
+        </title>
+        <line
+          data-path-hit="29"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="301.0081571234742"
+          x2="218.99184287652585"
+          y1="450.57449644956966"
+          y2="539.4255035504303"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="320"
+          x2="200"
+          y1="430"
+          y2="560"
+        />
+      </g>
+      <g
+        aria-label="Path 30 (Resh) — Arcanum 19, between Splendor and Foundation"
+        data-card-lit="false"
+        data-path="30"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 30 (Resh) — Arcanum 19, between Splendor and Foundation
+        </title>
+        <line
+          data-path-hit="30"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="105.04396134799764"
+          x2="174.95603865200235"
+          y1="442.5219806739988"
+          y2="477.4780193260012"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="80"
+          x2="200"
+          y1="430"
+          y2="490"
+        />
+      </g>
+      <g
+        aria-label="Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom"
+        data-card-lit="false"
+        data-path="31"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom
+        </title>
+        <line
+          data-path-hit="31"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="98.99184287652585"
+          x2="181.00815712347415"
+          y1="450.57449644956966"
+          y2="539.4255035504303"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="80"
+          x2="200"
+          y1="430"
+          y2="560"
+        />
+      </g>
+      <g
+        aria-label="Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom"
+        data-card-lit="false"
+        data-path="32"
+        data-valid="false"
+        role="img"
+      >
+        <title>
+          Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom
+        </title>
+        <line
+          data-path-hit="32"
+          stroke="transparent"
+          stroke-linecap="butt"
+          stroke-width="28"
+          x1="200"
+          x2="200"
+          y1="490"
+          y2="560"
+        />
+        <line
+          pointer-events="none"
+          stroke="#f8f8ff"
+          stroke-opacity="0.35"
+          stroke-width="1.5"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+          x1="200"
+          x2="200"
+          y1="490"
+          y2="560"
+        />
+      </g>
     </g>
     <g
-      data-path-label="24"
-      transform="translate(260, 385)"
+      aria-hidden="true"
+      data-layer="path-labels"
+      pointer-events="none"
     >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+      <g
+        data-card-lit="false"
+        data-path-label="11"
+        transform="translate(260, 105)"
       >
-        24
-      </text>
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          11
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="12"
+        transform="translate(140, 105)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          12
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="13"
+        transform="translate(200, 200)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          13
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="14"
+        transform="translate(200, 150)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          14
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="15"
+        transform="translate(260, 245)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          15
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="16"
+        transform="translate(320, 215)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          16
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="17"
+        transform="translate(140, 245)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          17
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="18"
+        transform="translate(80, 215)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          18
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="19"
+        transform="translate(200, 280)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          19
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="20"
+        transform="translate(260, 310)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          20
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="21"
+        transform="translate(320, 355)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          21
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="22"
+        transform="translate(140, 310)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          22
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="23"
+        transform="translate(80, 355)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          23
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="24"
+        transform="translate(260, 385)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          24
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="25"
+        transform="translate(222, 415)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          25
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="26"
+        transform="translate(140, 385)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          26
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="27"
+        transform="translate(200, 430)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          27
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="28"
+        transform="translate(260, 460)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          28
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="29"
+        transform="translate(260, 495)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          29
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="30"
+        transform="translate(140, 460)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          30
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="31"
+        transform="translate(140, 495)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          31
+        </text>
+      </g>
+      <g
+        data-card-lit="false"
+        data-path-label="32"
+        transform="translate(222, 525)"
+      >
+        <circle
+          fill="#0e0a1f"
+          r="10"
+          stroke="#f8f8ff"
+          stroke-opacity="0.9"
+          stroke-width="0.85"
+          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
+        />
+        <text
+          dominant-baseline="central"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="10"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          32
+        </text>
+      </g>
     </g>
     <g
-      data-path-label="25"
-      transform="translate(222, 415)"
+      data-layer="nodes"
     >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+      <g
+        aria-label="Crown (1)"
+        data-cleared="false"
+        data-sefirah="kether"
+        role="img"
       >
-        25
-      </text>
-    </g>
-    <g
-      data-path-label="26"
-      transform="translate(140, 385)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="200"
+          cy="60"
+          fill="#ffffff"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#0e1320"
+          font-family="var(--font-display), serif"
+          font-size="9"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="200"
+          y="60"
+        >
+          Crown
+        </text>
+      </g>
+      <g
+        aria-label="Wisdom (2)"
+        data-cleared="false"
+        data-sefirah="chokmah"
+        role="img"
       >
-        26
-      </text>
-    </g>
-    <g
-      data-path-label="27"
-      transform="translate(200, 430)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="320"
+          cy="150"
+          fill="#c0c0c0"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#0e1320"
+          font-family="var(--font-display), serif"
+          font-size="9"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="320"
+          y="150"
+        >
+          Wisdom
+        </text>
+      </g>
+      <g
+        aria-label="Understanding (3)"
+        data-cleared="false"
+        data-sefirah="binah"
+        role="img"
       >
-        27
-      </text>
-    </g>
-    <g
-      data-path-label="28"
-      transform="translate(260, 460)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="80"
+          cy="150"
+          fill="#1a1a1a"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="7"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="80"
+          y="150"
+        >
+          Understanding
+        </text>
+      </g>
+      <g
+        aria-label="Mercy (4)"
+        data-cleared="false"
+        data-sefirah="chesed"
+        role="img"
       >
-        28
-      </text>
-    </g>
-    <g
-      data-path-label="29"
-      transform="translate(260, 495)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="320"
+          cy="280"
+          fill="#4169e1"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="9"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="320"
+          y="280"
+        >
+          Mercy
+        </text>
+      </g>
+      <g
+        aria-label="Severity (5)"
+        data-cleared="false"
+        data-sefirah="gevurah"
+        role="img"
       >
-        29
-      </text>
-    </g>
-    <g
-      data-path-label="30"
-      transform="translate(140, 460)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="80"
+          cy="280"
+          fill="#dc143c"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="8"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="80"
+          y="280"
+        >
+          Severity
+        </text>
+      </g>
+      <g
+        aria-label="Beauty (6)"
+        data-cleared="false"
+        data-sefirah="tiferet"
+        role="img"
       >
-        30
-      </text>
-    </g>
-    <g
-      data-path-label="31"
-      transform="translate(140, 495)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="200"
+          cy="340"
+          fill="#ffd700"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#0e1320"
+          font-family="var(--font-display), serif"
+          font-size="9"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="200"
+          y="340"
+        >
+          Beauty
+        </text>
+      </g>
+      <g
+        aria-label="Victory (7)"
+        data-cleared="false"
+        data-sefirah="netzach"
+        role="img"
       >
-        31
-      </text>
-    </g>
-    <g
-      data-path-label="32"
-      transform="translate(222, 525)"
-    >
-      <circle
-        fill="#0e0a1f"
-        r="9"
-        stroke="#f8f8ff"
-        stroke-opacity="0.7"
-        stroke-width="0.75"
-      />
-      <text
-        dominant-baseline="central"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="10"
-        font-weight="600"
-        text-anchor="middle"
+        <circle
+          class=""
+          cx="320"
+          cy="430"
+          fill="#228b22"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#0e1320"
+          font-family="var(--font-display), serif"
+          font-size="9"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="320"
+          y="430"
+        >
+          Victory
+        </text>
+      </g>
+      <g
+        aria-label="Splendor (8)"
+        data-cleared="false"
+        data-sefirah="hod"
+        role="img"
       >
-        32
-      </text>
-    </g>
-  </g>
-  <g
-    data-layer="nodes"
-  >
-    <g
-      aria-label="Crown (1)"
-      data-cleared="false"
-      data-sefirah="kether"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="200"
-        cy="60"
-        fill="#ffffff"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#0e1320"
-        font-family="var(--font-display), serif"
-        font-size="9"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="200"
-        y="60"
+        <circle
+          class=""
+          cx="80"
+          cy="430"
+          fill="#ff8c00"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#0e1320"
+          font-family="var(--font-display), serif"
+          font-size="8"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="80"
+          y="430"
+        >
+          Splendor
+        </text>
+      </g>
+      <g
+        aria-label="Foundation (9)"
+        data-cleared="false"
+        data-sefirah="yesod"
+        role="img"
       >
-        Crown
-      </text>
-    </g>
-    <g
-      aria-label="Wisdom (2)"
-      data-cleared="false"
-      data-sefirah="chokmah"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="320"
-        cy="150"
-        fill="#c0c0c0"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#0e1320"
-        font-family="var(--font-display), serif"
-        font-size="9"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="320"
-        y="150"
+        <circle
+          class=""
+          cx="200"
+          cy="490"
+          fill="#9370db"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#0e1320"
+          font-family="var(--font-display), serif"
+          font-size="7"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="200"
+          y="490"
+        >
+          Foundation
+        </text>
+      </g>
+      <g
+        aria-label="Kingdom (10)"
+        data-cleared="false"
+        data-sefirah="malkuth"
+        role="img"
       >
-        Wisdom
-      </text>
+        <circle
+          class=""
+          cx="200"
+          cy="560"
+          fill="#8b4513"
+          r="28"
+          stroke="#f8f8ff"
+          stroke-opacity="0.6"
+          stroke-width="1.5"
+          style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
+        />
+        <text
+          dominant-baseline="middle"
+          fill="#f8f8ff"
+          font-family="var(--font-display), serif"
+          font-size="9"
+          font-weight="600"
+          letter-spacing="0.5"
+          style="text-transform: uppercase;"
+          text-anchor="middle"
+          x="200"
+          y="560"
+        >
+          Kingdom
+        </text>
+      </g>
     </g>
-    <g
-      aria-label="Understanding (3)"
-      data-cleared="false"
-      data-sefirah="binah"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="80"
-        cy="150"
-        fill="#1a1a1a"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="7"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="80"
-        y="150"
-      >
-        Understanding
-      </text>
-    </g>
-    <g
-      aria-label="Mercy (4)"
-      data-cleared="false"
-      data-sefirah="chesed"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="320"
-        cy="280"
-        fill="#4169e1"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="9"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="320"
-        y="280"
-      >
-        Mercy
-      </text>
-    </g>
-    <g
-      aria-label="Severity (5)"
-      data-cleared="false"
-      data-sefirah="gevurah"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="80"
-        cy="280"
-        fill="#dc143c"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="8"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="80"
-        y="280"
-      >
-        Severity
-      </text>
-    </g>
-    <g
-      aria-label="Beauty (6)"
-      data-cleared="false"
-      data-sefirah="tiferet"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="200"
-        cy="340"
-        fill="#ffd700"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#0e1320"
-        font-family="var(--font-display), serif"
-        font-size="9"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="200"
-        y="340"
-      >
-        Beauty
-      </text>
-    </g>
-    <g
-      aria-label="Victory (7)"
-      data-cleared="false"
-      data-sefirah="netzach"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="320"
-        cy="430"
-        fill="#228b22"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#0e1320"
-        font-family="var(--font-display), serif"
-        font-size="9"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="320"
-        y="430"
-      >
-        Victory
-      </text>
-    </g>
-    <g
-      aria-label="Splendor (8)"
-      data-cleared="false"
-      data-sefirah="hod"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="80"
-        cy="430"
-        fill="#ff8c00"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#0e1320"
-        font-family="var(--font-display), serif"
-        font-size="8"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="80"
-        y="430"
-      >
-        Splendor
-      </text>
-    </g>
-    <g
-      aria-label="Foundation (9)"
-      data-cleared="false"
-      data-sefirah="yesod"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="200"
-        cy="490"
-        fill="#9370db"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#0e1320"
-        font-family="var(--font-display), serif"
-        font-size="7"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="200"
-        y="490"
-      >
-        Foundation
-      </text>
-    </g>
-    <g
-      aria-label="Kingdom (10)"
-      data-cleared="false"
-      data-sefirah="malkuth"
-      role="img"
-    >
-      <circle
-        class=""
-        cx="200"
-        cy="560"
-        fill="#8b4513"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-opacity="0.6"
-        stroke-width="1.5"
-        style="transform-box: fill-box; transform-origin: center; transition: stroke 200ms ease-out, stroke-opacity 200ms ease-out, fill-opacity 200ms ease-out;"
-      />
-      <text
-        dominant-baseline="middle"
-        fill="#f8f8ff"
-        font-family="var(--font-display), serif"
-        font-size="9"
-        font-weight="600"
-        letter-spacing="0.5"
-        style="text-transform: uppercase;"
-        text-anchor="middle"
-        x="200"
-        y="560"
-      >
-        Kingdom
-      </text>
-    </g>
-  </g>
-</svg>
+  </svg>
+</div>
 `;

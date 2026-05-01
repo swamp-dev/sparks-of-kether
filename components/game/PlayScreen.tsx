@@ -258,6 +258,16 @@ export function PlayScreen({
           // next turn begins; the action panel below carries the
           // available affordances (Draw, End Turn, etc.).
           movesEnabled={turn.phase === 'move'}
+          // #312: surface the currently-selected card on the Tree as
+          // a card-lit path so the player sees "this card travels
+          // here" before committing to the click. Independent of
+          // `validPaths` — even if the player can't reach the path
+          // from their current Sefirah, they should still see what
+          // the card would do. Only set during 'move' phase; once
+          // they've moved, the highlight no longer matters.
+          {...(turn.phase === 'move' && selectedCard !== undefined
+            ? { highlightedCard: selectedCard }
+            : {})}
           className="w-full max-w-xl"
         />
         <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
