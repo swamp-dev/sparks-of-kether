@@ -3,11 +3,12 @@ import fc from 'fast-check';
 import type { SefirahKey, ZodiacSignKey } from '@/data';
 import { acceptSetback, resolveChallenge } from '@/engine/checks';
 import type { CheckOutcome } from '@/engine/checks';
+import { ketherPlayCard, ketherPassCard } from '@/engine/kether';
 import { applyMove } from '@/engine/movement';
 import { seededRng } from '@/engine/rng';
 import { endTurn } from '@/engine/turn';
 import type { GameState } from '@/engine/types';
-import { makeFullGame } from '@/test/fixtures';
+import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
 /**
  * Property-based tests for the engine reducers. fast-check generates
@@ -265,6 +266,144 @@ describe('property: shortcut acceptSetback rolls active player back to path orig
           // lastArrivalPathNumber cleared so a subsequent challenge
           // at the origin doesn't re-read the old path's pillarsCrossed.
           expect(movedPlayer?.lastArrivalPathNumber).toBeUndefined();
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+});
+
+// ──────── #335 Final Threshold ritual property ────────
+//
+// Pin the witness round-robin's exhaustion contract: any sequence of
+// witness actions (play and pass interleaved) terminates with the
+// ritual transitioning to `'close'` exactly when every queue empties
+// (`witnessTurnIndex >= sum(personalQueueLengths)` is the equivalent
+// total-step count, including passes — passes consume a step but not
+// a card). Generates a 2-player witness state with random hand sizes,
+// then drives a random sequence of plays/passes (capped by the §2.3
+// pass cap) and checks the close-transition fires iff and only if all
+// hands hit zero.
+
+describe('property: Kether ritual transitions to close iff all queues empty', () => {
+  it('holds across random play/pass interleavings', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 4 }),
+        fc.integer({ min: 1, max: 4 }),
+        fc.array(fc.boolean(), { minLength: 0, maxLength: 16 }),
+        (p1Cards, p2Cards, passCoinFlips) => {
+          // Build a synthetic post-gather witness state without going
+          // through `makeFullGame` (which doesn't know about Kether).
+          // `makeWitnessState` (in kether.test.ts) is local; reproduce
+          // the minimal shape here so the property is self-contained.
+          const p1Hand = Array.from({ length: p1Cards }, (_, i) => 11 + i);
+          const p2Hand = Array.from(
+            { length: p2Cards },
+            (_, i) => 11 + p1Cards + i,
+          );
+          const players = [
+            makePlayer({ id: 'p1', position: 'kether', hand: p1Hand }),
+            makePlayer({ id: 'p2', position: 'kether', hand: p2Hand }),
+          ];
+          let state: GameState = makeState(
+            {},
+            {
+              players,
+              activePlayerId: 'p1',
+              phase: 'kether',
+              ketherRitual: {
+                subPhase: 'witness',
+                witnessOrder: ['p1', 'p2'],
+                witnessTurnIndex: 0,
+                personalQueueLengths: { p1: p1Cards, p2: p2Cards },
+                passCounts: { p1: 0, p2: 0 },
+                witnessLog: [],
+                arrivalTimestamps: { p1: 1, p2: 2 },
+                stagedClosureSparks: [],
+                closureLocked: false,
+              },
+            },
+          );
+
+          let coinIdx = 0;
+          // Drive at most p1Cards + p2Cards + a buffer steps; the
+          // ritual is bounded by total queue size + pass cap.
+          const MAX_STEPS = (p1Cards + p2Cards) * 4 + 8;
+          for (let step = 0; step < MAX_STEPS; step++) {
+            if (state.ketherRitual?.subPhase !== 'witness') break;
+            // Forward-direction invariant: if we're still in the witness
+            // sub-phase but every queue is empty, the advance logic
+            // failed to flip to 'close'. Throw rather than `break` —
+            // a silent break would let the property's outer assertion
+            // pass on degenerate states (no remaining cards, still
+            // witnessing) instead of surfacing the bug.
+            const stepTotalRemaining = state.players.reduce(
+              (sum, p) => sum + p.hand.length,
+              0,
+            );
+            if (
+              state.phase === 'kether' &&
+              state.ketherRitual?.subPhase === 'witness' &&
+              stepTotalRemaining === 0
+            ) {
+              throw new Error(
+                'witness sub-phase with zero remaining cards — advance logic failed to transition to close',
+              );
+            }
+            const current = state.ketherRitual.witnessOrder[
+              state.ketherRitual.witnessTurnIndex
+            ];
+            if (current === undefined) break;
+            const player = state.players.find((p) => p.id === current);
+            if (player === undefined || player.hand.length === 0) {
+              // Shouldn't happen — advance logic should have skipped
+              // empty queues. Bail to surface the bug.
+              break;
+            }
+            const wantsPass = passCoinFlips[coinIdx++ % passCoinFlips.length];
+            const cap = Math.ceil(
+              (state.ketherRitual.personalQueueLengths[current] ?? 0) / 2,
+            );
+            const passed = state.ketherRitual.passCounts[current] ?? 0;
+            const canPass = passed < cap;
+            const arcanum = player.hand[0]!;
+            const result =
+              wantsPass && canPass
+                ? ketherPassCard(state, { playerId: current })
+                : ketherPlayCard(state, {
+                    playerId: current,
+                    arcanum,
+                  });
+            if (!result.ok) {
+              // A rejection here would mean a logic bug — the
+              // property should never feed an illegal action.
+              throw new Error(
+                `unexpected rejection: ${result.reason.kind}`,
+              );
+            }
+            state = result.value;
+          }
+
+          // Final state: either we're in `'close'` (or the post-confirm
+          // `'end'`, if a separation overflow exited early), and in
+          // either case every still-on-the-field queue is empty.
+          const totalRemaining = state.players.reduce(
+            (sum, p) => sum + p.hand.length,
+            0,
+          );
+          if (state.ketherRitual?.subPhase === 'close') {
+            expect(totalRemaining).toBe(0);
+          } else {
+            // Either ritual moved past close (phase: 'end' on overflow)
+            // or we never finished the queue — but we must NOT be
+            // stuck in 'witness' with no remaining cards.
+            const stillWitnessing =
+              state.ketherRitual?.subPhase === 'witness';
+            if (stillWitnessing) {
+              expect(totalRemaining).toBeGreaterThan(0);
+            }
+          }
         },
       ),
       { numRuns: 100 },

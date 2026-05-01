@@ -22,13 +22,16 @@ export const SEPARATION_LOSS_THRESHOLD = 15;
  * can read `.status` and `.reason` without first narrowing — the loss
  * branches all share the same shape.
  *
- * `illumination-gap` losses are NOT reported here; that branch lives
- * solely in `resolveFinalThreshold`'s success payload, where the team
- * has reached Kether but the threshold ritual fell short.
+ * `'illumination-gap'` was added by #335: the Kether ritual's
+ * post-confirm state writes the union into `EndgameStatus` (not a
+ * separate `FinalThresholdSuccess.reason`) so all loss reasons share
+ * one shape. Pre-#335, the gap branch lived only on
+ * `FinalThresholdSuccess`; post-#335, `checkEndgame` returns it
+ * directly when the ritual exits with insufficient illumination.
  */
 export interface EndgameStatus {
   readonly status: 'ongoing' | 'won' | 'lost';
-  readonly reason?: 'separation-overflow' | 'stranded';
+  readonly reason?: 'separation-overflow' | 'stranded' | 'illumination-gap';
 }
 
 /**
@@ -50,15 +53,50 @@ export interface EndgameStatus {
  * need it.
  */
 export function checkEndgame(state: GameState): EndgameStatus {
+  // #335 mid-ritual guard. Without this, `checkEndgame` would already
+  // return `'won'` at gather time for any team that enters the ritual
+  // with `illumination >= separation + margin` (its existing logic
+  // checks `allAtKether AND margin met`). UI callers that consult
+  // `checkEndgame` on every render would short-circuit the witness
+  // round-robin to "game won" before the climactic narrative beat
+  // finishes. The Kether ritual writes its own end-state on
+  // `threshold-confirm` and exits `phase` to `'end'`; until then,
+  // `checkEndgame` deliberately returns `'ongoing'`.
+  //
+  // The `separation-overflow` loss branch is handled inside the ritual
+  // (per § 4.4: `kether-pass-card` exits early to `phase: 'end'` when
+  // the +1 Separation tick would overflow), so guarding here doesn't
+  // hide it — the post-exit state has `phase === 'end'` and falls
+  // through to the existing overflow check.
+  if (state.phase === 'kether') {
+    return { status: 'ongoing' };
+  }
+
   if (state.separation >= SEPARATION_LOSS_THRESHOLD) {
     return { status: 'lost', reason: 'separation-overflow' };
   }
+
+  // #335: post-ritual illumination-gap loss. The ritual flips
+  // `phase: 'kether' → 'end'` and sets `closureLocked: true` on
+  // confirm; if the win condition below isn't met on that state, the
+  // team lost by illumination-gap. This branch is gated on
+  // `closureLocked` so it doesn't fire on incidental
+  // `phase: 'end' + ketherRitual` shapes (e.g. a future replay
+  // pre-confirm). Precedence vs. `separation-overflow` and `stranded`:
+  // overflow wins (the +1-per-pass tick that overflows mid-ritual
+  // exits to `'end'` *with* `closureLocked: true` and
+  // `separation >= threshold` — overflow check above runs first and
+  // returns first); `stranded` cannot fire here because the ritual
+  // empties hands but leaves discardPile non-empty (cards were
+  // played, not destroyed).
+  const ritual = state.ketherRitual;
+  const ritualClosed = ritual !== undefined && ritual.closureLocked;
 
   const totalCards =
     state.deck.length +
     state.discardPile.length +
     state.players.reduce((sum, p) => sum + p.hand.length, 0);
-  if (totalCards === 0) {
+  if (totalCards === 0 && !ritualClosed) {
     return { status: 'lost', reason: 'stranded' };
   }
 
@@ -68,6 +106,10 @@ export function checkEndgame(state: GameState): EndgameStatus {
     state.illumination >= state.separation + REQUIRED_ILLUMINATION_MARGIN
   ) {
     return { status: 'won' };
+  }
+
+  if (ritualClosed) {
+    return { status: 'lost', reason: 'illumination-gap' };
   }
 
   return { status: 'ongoing' };

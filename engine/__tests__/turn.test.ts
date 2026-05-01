@@ -97,6 +97,63 @@ describe('endTurn', () => {
     expect(next).toBe(state);
   });
 
+  // #335 — Final Threshold pre-ritual hold (`design/final-threshold.md`
+  // § 2.1). A player who has arrived at Kether while the rest of the
+  // team has not is "Kether-held": their seat is skipped in
+  // rotation. The hold is a derived predicate (`p.position === 'kether'
+  // && state.phase !== 'kether'`); no new state field is added.
+  it('skips a Kether-held player when advancing the seat (pre-ritual hold)', () => {
+    const players = [
+      makePlayer({ id: 'p1', position: 'malkuth' }),
+      makePlayer({ id: 'p2', position: 'kether' }), // held
+      makePlayer({ id: 'p3', position: 'tiferet' }),
+    ];
+    const state = makeState(
+      {},
+      { players, activePlayerId: 'p1', phase: 'move' },
+    );
+    // p1 → skip p2 (held) → p3.
+    expect(endTurn(state).activePlayerId).toBe('p3');
+  });
+
+  it('skips multiple consecutive Kether-held seats and wraps if needed', () => {
+    const players = [
+      makePlayer({ id: 'p1', position: 'tiferet' }),
+      makePlayer({ id: 'p2', position: 'kether' }), // held
+      makePlayer({ id: 'p3', position: 'kether' }), // held
+      makePlayer({ id: 'p4', position: 'malkuth' }),
+    ];
+    const state = makeState(
+      {},
+      { players, activePlayerId: 'p1', phase: 'move' },
+    );
+    // p1 → skip p2, p3 → p4.
+    expect(endTurn(state).activePlayerId).toBe('p4');
+    // From p4 → wrap → p1 (p2/p3 still held).
+    const fromP4 = makeState(
+      {},
+      { players, activePlayerId: 'p4', phase: 'move' },
+    );
+    expect(endTurn(fromP4).activePlayerId).toBe('p1');
+  });
+
+  it('does NOT skip a Kether-positioned player once the ritual is active (phase === kether)', () => {
+    // Once everyone is at Kether and `phase === 'kether'`, players are
+    // no longer "held" — they are full participants in the ritual and
+    // ordinary seat-rotation no longer applies (the witness pointer
+    // advances ritual turns instead). But endTurn for `'end'` arrival
+    // still touches the seat; the held-skip predicate must NOT fire.
+    const players = [
+      makePlayer({ id: 'p1', position: 'kether' }),
+      makePlayer({ id: 'p2', position: 'kether' }),
+    ];
+    const state = makeState(
+      {},
+      { players, activePlayerId: 'p1', phase: 'kether' },
+    );
+    expect(endTurn(state).activePlayerId).toBe('p2');
+  });
+
   it('clears pendingDiscard and advances seat when count reaches 0', () => {
     const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })];
     const state = makeState(

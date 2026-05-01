@@ -4419,3 +4419,52 @@ Local CI green again on the cumulative diff (verify + build + e2e + integration)
 - **Admin-merged** (`gh pr merge 343 --admin --squash --delete-branch`) per user authorization, given local CI is the canonical bar per `~/.claude/rules/local-ci-and-admin-merge.md` and the hosted failures are unrelated baseline drift. A follow-up baseline-refresh ticket should sweep them.
 
 **Commit(s):** `faada9a` (failing test), `c7e49fc` (fix + reviewer-driven stacking-context comment), `29a4dfa` (Journal entry), plus the merge commit syncing main into the branch.
+
+## 2026-04-30T21:49:34-04:00 — #335: Final Threshold engine — KetherSubPhase + KetherRitualState (K1 of #285)
+
+**Pushed:** Engine layer for the Final Threshold collective ritual per `design/final-threshold.md` § 2-§ 5 + § 7.1. K1 of the K1-K5 spawn-tickets that decompose #285. Engine-only — no UI, no multiplayer wire format, no `useTurn` adapter. Five things land:
+
+  - **`TurnPhase` extended** with `'kether'` (the in-ritual phase). `'won'`/`'lost'` stay on `EndgameStatus.status` per § 3.4 (path b). `EndgameStatus.reason` widened from `'separation-overflow' | 'stranded'` to add `'illumination-gap'`; the post-ritual confirm reducer flips `phase` to `'end'` and the next `checkEndgame` read carries the actual win/lose.
+
+  - **`KetherSubPhase` + `KetherRitualState` types** on `GameState.ketherRitual` (`undefined` outside the ritual). Carries `subPhase`, `witnessOrder`, `witnessTurnIndex`, `personalQueueLengths` (frozen at gather, drives the pass cap), `passCounts`, `witnessLog` (discriminated structurally — passes carry `passed: true`, plays carry `arcanum`), `arrivalTimestamps`, `stagedClosureSparks`, `closureLocked`. `KetherWitnessLogEntry` and `KetherStagedSpark` exported from `engine/types.ts` and re-exported from `engine/kether.ts` so K2/K3 can import everything ritual-related from one module.
+
+  - **Five reducer arms** in `engine/kether.ts` — `ketherPlayCard`, `ketherPassCard`, `ketherStageSpark`, `ketherUnstageSpark`, `ketherConfirmClosure`. Each pure (`Result<GameState, KetherRejection>` for the four state-mutating arms; `KetherConfirmResult` adds a `meta.droppedSparks` audit field). Pass cap = `⌈personalQueueLength / 2⌉` per § 2.3. Pointer advance skips empty queues, transitions to `'close'` when every queue empties. Pass-induced separation-overflow exits early to `phase: 'end'` per § 4.4 (separation-overflow precedence over illumination-gap). First-confirm-wins ordering on `ketherConfirmClosure` (closureLocked check ahead of phase guard); same ordering applied to stage/unstage so a stale post-confirm action routes through `kether-closure-locked` not `kether-wrong-phase`.
+
+  - **`currentWitnessPlayerId(state)` pure query helper** — the K2 multiplayer authorize gate's read-side per § 5.3 / S-6. K1 owns the advance logic; K2 reads this query. Any future change to advance rules is K1-only because K2 consults the same helper the reducer consumes.
+
+  - **`isKetherHeld(state, playerId)` predicate** + `endTurn` skip — pre-ritual hold per § 2.1. Players who reach Kether before the rest of the team are "held" (their seat is skipped, hand frozen). Hold ends the moment `phase === 'kether'`. Predicate is purely derived from the position/phase pair — no new state field per design recommendation.
+
+  - **`checkEndgame` mid-ritual guard** — early-returns `'ongoing'` while `phase === 'kether'` so a margin-already-met team can't short-circuit the witness round-robin via a UI-side render call (§ 3.4 / C1 fix). Post-confirm `'illumination-gap'` loss branch lives in `checkEndgame`, gated on `closureLocked` so a future replay-pre-confirm shape doesn't accidentally trigger it. Stranded check is bypassed when `closureLocked` (the ritual deliberately empties hands; that's not a stranded loss).
+
+  - **`initKetherRitual(state, arrivalTimestamps)`** — builds `witnessOrder` by descending arrival timestamp (last-arrived first per § 2.2), lex tie-break on `playerId`. The wire layer (K2) will call this once it detects all-at-Kether.
+
+**Why:** Locks the engine surface for the Final Threshold so K2 (multiplayer wire / authorize gate), K3 (`FinalThresholdScreen` UI), and K4 (`useTurn` adapter) can all consume one stable shape. Per § 7's spawn-ticket boundaries, K1 must land first because K2/K3/K4 all read the state shape this commit defines.
+
+**Notes:**
+
+  - **TDD ordering held.** Failing tests landed first in `9aee153` (red — module doesn't exist); implementation in `0c76df5` made them pass. `8dc0095` is a small post-impl cleanup (dropped a placeholder `void` reference, reordered `closureLocked` check ahead of phase guard in stage/unstage to match confirm's first-confirm-wins ordering, extended PlayScreen's `phaseHint` switch to keep the `TurnPhase` exhaustive-check honest).
+
+  - **Trigger-condition decision: DEFERRED.** Ticket #335 left this implementer's call. The trigger detection ("when all players' `position === 'kether'`, flip `phase` to `'kether'` and call `initKetherRitual`") naturally lives at the wire-format dispatcher in `lib/room-actions.ts` and the `useTurn` reducer in `lib/turn-machine.ts` — the layers K2/K4 own. K1's `initKetherRitual` is the engine helper those layers call; the trigger-detection work itself is queued as a follow-up ticket so K1 stays engine-pure. Will file `feat(engine): trigger Final Threshold ritual when all players reach Kether (refs #285)` (labels `enhancement,phase:1-engine`) immediately after this PR opens.
+
+  - **`resolveFinalThreshold` left in place.** The pre-#335 `engine/endgame.ts:resolveFinalThreshold` primitive still ships — its existing tests stay green. Per § 7.1 it becomes "an internal helper of the new `threshold-confirm` reducer path" once the K2 wire layer routes through `ketherConfirmClosure`. No collapse / rename in K1; that mechanical refactor belongs with K2 so the wire-format dispatcher and the deprecation move land in the same diff.
+
+  - **Property test added.** `engine/__tests__/properties.test.ts` gains a "Kether ritual transitions to close iff all queues empty" property — generates a 2-player witness state with 1..4 cards each, drives random play/pass interleavings (capped by the § 2.3 pass cap), asserts the ritual reaches `'close'` exactly when all hands hit zero (passes consume a step but not a card, so the bound is per-step not per-card). 100 generated cases.
+
+  - **Pass reducer side-steps `applyEvent`.** The +1 Separation tick on a witness-pass is a direct counter mutation — none of the existing `GameEvent` variants map to "ritual pass" cleanly (`gift-refused` is closest semantically but its scope is the ordinary gift handler). Direct mutation locked to the single reducer site; a future ticket can layer a dedicated event variant for replay/audit if the need arises. Counter rules stay one-place auditable (`engine/events.ts:deltaFor`) for everything else.
+
+  - **`ketherConfirmClosure` returns a custom `KetherConfirmResult`.** Standard `Result<T, E>` doesn't carry meta on the success arm; threading a `{ value, meta }` wrapper through every consumer would force the test to read `result.value.value` for the state. Custom shape extends `Result` with a sibling `meta` field on success — `result.ok && result.value` still narrows to a valid post-state, so the deviation is ergonomic-only.
+
+  - **`PlayScreen.phaseHint` extended.** TypeScript noticed the `TurnPhase` switch became non-exhaustive after adding `'kether'`. The dedicated `FinalThresholdScreen` (K3) takes over the play surface during the ritual so this hint is rarely visible — but the switch staying exhaustive is the compile-time guard against future routing bugs.
+
+  - **Local CI: GREEN end-to-end.** `pnpm ci:local` clean across all four jobs — verify (typecheck + lint + 1417 tests / 1 todo across 85 files), build, e2e (60 passed / 51 skipped), real-Supabase integration (9 passed across 3 files). Hosted CI still billing-blocked per project memory; admin-merge bypass on the parent's call after review.
+
+**Commit(s):** `9aee153` (failing tests), `0c76df5` (implementation), `8dc0095` (refactor / cleanup).
+
+**Addendum 2026-04-30T22:20:** PR #344 retro-review fixes — 2 SIGNIFICANT + 2 MINOR addressed without touching K2/K3/K4 surface or the trigger condition (#345's scope). Local CI re-run GREEN end-to-end across all four jobs.
+
+  - **SIGNIFICANT 1 — property test forward direction** (`16f1177`). The "Kether ritual transitions to close iff all queues empty" property only asserted contrapositives; a buggy `advanceWitness` that left the pointer in `'witness'` on an empty board would silently pass via the driver loop's `break`. Added an explicit invariant throw inside the loop: if `phase === 'kether'` + `subPhase === 'witness'` + `totalRemaining === 0`, throw rather than break.
+  - **SIGNIFICANT 2 — `KetherWitnessLogEntry` discriminant shape** (`8bdb5e0`). Implementation shipped with structural `passed: true` flag; `design/final-threshold.md` § 5.1 specifies an explicit `kind: 'played' | 'passed'` literal. Brought implementation back in line: `engine/types.ts` (union shape + JSDoc), `engine/kether.ts` (log construction in `ketherPlayCard` / `ketherPassCard`), `engine/__tests__/kether.test.ts` (the two assertions that construct expected log entries). No external consumers yet (K2/K3/K4 don't exist); self-contained shape correction.
+  - **MINOR 1 — `'gather'` non-durable note** (`b7a396b`). Added JSDoc clarifying that `KetherSubPhase`'s `'gather'` literal exists for spec-alignment but `initKetherRitual` writes `subPhase: 'witness'` directly; future ticket can introduce a discrete gather pause without re-widening the union.
+  - **MINOR 2 — properties test imports hoisted** (`9ad21e0`). Moved the Kether-property-test imports from a mid-file scope (between `describe` blocks) to the file-level import section; dropped the `makePlayerKether` / `makeStateKether` aliases now that they fold into the existing `@/test/fixtures` line.
+  - **Skipped (not actionable in K1):** `ketherPassCard` +1 Separation bypassing the event system (flagged for K2/K4 author awareness — a dedicated `kind: 'kether-pass'` event variant can land alongside the wire layer if needed); `allAtKether` re-check in `checkEndgame` (redundant but harmless — defer).
+  - **Local CI re-run: GREEN end-to-end.** verify ✓, build ✓, e2e (60 passed / 51 skipped) ✓, integration (9 passed across 3 files) ✓. Hosted CI still billing-blocked per project memory; admin-merge bypass remains the parent's call.

@@ -517,5 +517,12 @@ function phaseHint(phase: TurnPhase): string {
       return 'Draw to refill your hand';
     case 'end':
       return 'Move complete — end turn';
+    case 'kether':
+      // K1 / #335: top-level phase for the Final Threshold collective
+      // ritual. The dedicated `FinalThresholdScreen` (K3) takes over
+      // the play surface when this phase is active and the inline
+      // phase hint isn't visible — but the switch must stay
+      // exhaustive so a future routing bug surfaces at compile time.
+      return 'Final Threshold ritual';
   }
 }

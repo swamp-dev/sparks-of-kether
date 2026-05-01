@@ -1,3 +1,4 @@
+import { isKetherHeld } from './kether';
 import type { GameState } from './types';
 
 /**
@@ -42,7 +43,27 @@ export function endTurn(state: GameState): GameState {
   if (state.pendingDiscard !== undefined && state.pendingDiscard.count > 0) {
     return state;
   }
-  const nextIdx = (currentIdx + 1) % state.players.length;
+  // #335: skip Kether-held seats per `design/final-threshold.md` § 2.1.
+  // A player who has arrived at Kether before the rest of the team
+  // is in the pre-ritual hold — their seat is skipped in rotation,
+  // their hand and stats are frozen. The held predicate is purely
+  // derived (`position === 'kether' && phase !== 'kether'`); once the
+  // ritual itself has begun (`phase === 'kether'`), no one is "held"
+  // and the rotation is normal.
+  //
+  // We walk forward looking for the first non-held seat. We bound
+  // the search by `players.length` so an all-held configuration —
+  // structurally unreachable today (the ritual triggers when the
+  // last player arrives, flipping phase to `'kether'` and ending
+  // the held state for everyone) — falls back to the next index
+  // rather than looping forever.
+  let nextIdx = (currentIdx + 1) % state.players.length;
+  for (let i = 0; i < state.players.length; i++) {
+    const candidate = state.players[nextIdx];
+    if (candidate === undefined) break;
+    if (!isKetherHeld(state, candidate.id)) break;
+    nextIdx = (nextIdx + 1) % state.players.length;
+  }
   const nextPlayer = state.players[nextIdx];
   if (!nextPlayer) {
     // Unreachable: modulo by length guarantees a valid index. The
