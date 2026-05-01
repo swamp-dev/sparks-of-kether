@@ -19,6 +19,7 @@ import { sefirot } from './sefirot';
 import { zodiacSigns } from './zodiac-signs';
 import { signDignities } from './dignities';
 import { soulDoorsBySign } from './soul-doors';
+import { sefirahBlessings } from './sefirah-blessings';
 import type {
   Arcanum,
   HebrewLetter,
@@ -40,6 +41,8 @@ export { paths } from './paths';
 export { zodiacSigns } from './zodiac-signs';
 export { signDignities } from './dignities';
 export { soulDoorsBySign } from './soul-doors';
+export { sefirahBlessings, pickBlessing } from './sefirah-blessings';
+export type { SefirahBlessingMatrix } from './sefirah-blessings';
 export { sefirahMarkLetter } from './sefirah-glyphs';
 export * from './types';
 
@@ -176,6 +179,24 @@ export function soulDoorsForSign(key: ZodiacSignKey): readonly SefirahKey[] {
   const found = soulDoorsBySign[key];
   if (!found) {
     throw new Error(`No Soul Doors for zodiac sign: ${key}`);
+  }
+  return found;
+}
+
+/**
+ * Sefirah → its blessing sub-table keyed by zodiac sign. Each value
+ * is the array of 3 variants for a given (sefirah, sign) cell. Throws
+ * on an unknown Sefirah key — the matrix is fixed at build time, so
+ * a miss always indicates a programming error. See
+ * `data/sefirah-blessings.ts` for the matrix itself, and `pickBlessing`
+ * for the seedable runtime variant selector.
+ */
+export function blessingsForSefirah(
+  key: SefirahKey,
+): Readonly<Record<ZodiacSignKey, readonly string[]>> {
+  const found = sefirahBlessings[key];
+  if (!found) {
+    throw new Error(`No blessings for Sefirah: ${key}`);
   }
   return found;
 }

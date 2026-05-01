@@ -4909,3 +4909,24 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 - Hosted CI will fail e2e on visual-regression as it does for every PR; diff is docs-only so admin-merge bypass criteria are met.
 
 **Commit(s):** `be8a224` (scaffold) + `1733ea6 / 26dd731 / db33082 / 107452c` (wave 1) + `f96a1f3` (waves 2 + 3 in canonical order) + `2d89854` (literary review fixes) + this Journal entry.
+
+## 2026-05-01T14:30:00-04:00 — #253: T2 sefirah-blessings data layer
+
+**Pushed:** Three commits (failing test → impl → review fixes). Adds `data/sefirah-blessings.ts` (360 lines, 10 × 12 × 3 matrix) mirroring the design doc (T1 / #252) verbatim, plus `pickBlessing(sefirah, sign, rng)` and `blessingsForSefirah(key)` lookup. Mirrors the shape of `data/sefirah-verdicts.ts` (#276 / #277 precedent) so engine consumers see a familiar API.
+
+**Why:** T2 of the Voices Epic (#251). T1 (#252) shipped the authored matrix; T2 turns it into typed runtime data so T3 (#254 engine helper) and T4 (#255 BlessingRitual UI) can consume it.
+
+**Notes:**
+- TDD held — failing test commit first (144 tests covering completeness + 10 verbatim string-pins + `pickBlessing` semantics). Implementation commit added the data file + lookup; tests went green.
+- **Generator is mechanical, not manual.** Wrote a one-shot Node parser (`/tmp/parse-blessings.mjs`, not checked in) that walks the design markdown and emits the TS file. Mechanical transcription — zero typo risk on 360 lines. Re-run if the design doc updates; the verbatim string-pins in the test catch any drift either way.
+- **Asymmetry with `sefirah-verdicts.ts`:** that file is consumed via direct import from `data/sefirah-verdicts`, not re-exported through `data/index.ts`. The blessings file IS re-exported through `data/index.ts` (per #253's explicit ticket scope). Reviewer flagged the asymmetry as fine-but-noted; if a future cleanup pass routes verdicts through `index.ts` too, this is the precedent.
+- **`code-reviewer` subagent** verdict: **Ship**. Two significant items addressed in commit `73fad0d`:
+  - File header said "#252 / T2 of #251" → corrected to "#253" (#252 is the design ticket).
+  - Test named "throws if the cell has no variants" actually asserted `not.toThrow` on a valid cell — renamed and clarified the comment.
+  - Bonus: added a programmatic 360-cell total-count assertion (catches whole-sefirah or whole-sign omissions that the per-cell loops would silently skip).
+- **`blessingsForSefirah` throw is unreachable** through the typed matrix (`Record<SefirahKey, …>` forbids bad keys at compile time, and `Record` indexing on a complete record can't return `undefined` at runtime). Kept the throw because the convention is established (every other lookup in `data/index.ts` follows the throw-on-miss pattern), it satisfies the ticket, and it's a safe fallback if the typing is ever loosened.
+- **Engine concern carried forward to #254:** the literary reviewer for #252 flagged that Kether's v1 openers all start "We hold/await…" — if T3's variant selector is biased toward variant 1, the formula becomes audible. The data file's header comment + this Journal entry capture the mitigation: T3's `quoteForBlessing` should pick uniformly at random across all 3 variants (or seeded-uniform for in-game determinism).
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 145 tests in the new test file (+1 vs the failing-test commit for the new total-count assertion).
+- Hosted CI will fail e2e on visual-regression as it does for every PR (known infra issue per memory); diff is data + tests only — admin-merge bypass criteria met.
+
+**Commit(s):** `69a41dc` (failing test) + `654a816` (impl + lookup + index re-exports) + `73fad0d` (review cleanup) + this Journal entry.
