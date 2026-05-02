@@ -4989,3 +4989,17 @@ The previous 0.005 threshold has been failing hosted e2e on every PR for weeks, 
 - This PR unblocks the four open PRs (#371, #372, #374, #377) that were all hitting the same hosted-CI failure pattern. After this lands, those PRs can rebase and their hosted CI should go green without admin-merge.
 
 **Commit(s):** `de2de43` (threshold + comment) + this Journal entry.
+
+## 2026-05-01T13:07:10-04:00 — #368 / #369 / #370: playtest evidence screenshots
+
+**Pushed:** Three PNGs under `docs/playtest/2026-05-01/`, referenced from the bug reports filed during the 2026-05-01 hot-seat playtest:
+
+- `hand-fan-card-occlusion.png` → #368 (leftmost-card click target occlusion)
+- `unstyled-404.png` → #369 (default Next.js 404 fallback breaks theme)
+- `sign-picker-p2-aries-taken.png` → #370 (P2 picker default state when chosen sign is taken by P1)
+
+**Why:** The three issues were filed earlier in the session with `/tmp/playtest-2026-05-01/...` paths in their bodies — meaningless to anyone reading the ticket later. Committing the evidence under `docs/playtest/2026-05-01/` makes the screenshots inlineable from each issue body (via `raw/<sha>/...` URLs) and survives any future cleanup of `/tmp`. The issue bodies will be edited to use the new paths immediately after this push lands.
+
+**Notes:** Docs-only change. No code, no tests, no engine touch. Pre-push hook (`pnpm ci:local:fast`) is the gate; full `pnpm ci:local` not warranted for image-only diff. Hosted CI on the PR will follow the project's current pattern (visual-regression failures unrelated to diff per #366's note); admin-merge criteria apply if hosted CI fails on the now-routine visual-regression delta.
+
+**Commit(s):** `b3d3991` — single commit adding the three PNGs and this Journal entry.
