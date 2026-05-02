@@ -138,6 +138,82 @@ describe('SignStage', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  describe('Soul Doors render shape (#382)', () => {
+    // The bug: SignStage looped over the 1–2 doors and rendered an
+    // ArcanumCard per door, so 2-door signs displayed the same Tarot
+    // card twice. The soul card is sign-level (one Major Arcana per
+    // sign); the doors are Sefirah-level. The fix renders the soul
+    // card ONCE and the doors as separate Sefirah chips below it.
+    it('renders the soul card exactly once for a 2-door sign (Aries)', () => {
+      const aries = zodiacSigns.find((s) => s.key === 'aries');
+      if (aries === undefined) throw new Error('aries missing from zodiacSigns');
+      const { container } = render(
+        <SignStage
+          sign={aries}
+          stage="current"
+          ariaChecked={true}
+          tabIndex={0}
+          disabled={false}
+          takenBy={undefined}
+          onSelect={vi.fn()}
+        />,
+      );
+      // Aries has two doors (Chokmah, Tiferet), but the soul card
+      // (The Emperor) is one card per sign. Exactly one rendering.
+      expect(
+        container.querySelectorAll('[data-soul-card]'),
+        'soul card must render exactly once per sign',
+      ).toHaveLength(1);
+    });
+
+    it('renders both Aries door names as separate Sefirah chips', () => {
+      const aries = zodiacSigns.find((s) => s.key === 'aries');
+      if (aries === undefined) throw new Error('aries missing from zodiacSigns');
+      const { container, getByText } = render(
+        <SignStage
+          sign={aries}
+          stage="current"
+          ariaChecked={true}
+          tabIndex={0}
+          disabled={false}
+          takenBy={undefined}
+          onSelect={vi.fn()}
+        />,
+      );
+      // The data-soul-door hooks survive the rewrite — one per door,
+      // each carrying the SefirahKey. Two doors for Aries.
+      const doors = container.querySelectorAll('[data-soul-door]');
+      expect(doors).toHaveLength(2);
+      // Both transliterated door names are visible. The chip carries
+      // the door label so the player can see *which* Sefirah is the
+      // door, distinct from the soul card identity.
+      expect(getByText('Chokmah')).toBeDefined();
+      expect(getByText('Tiferet')).toBeDefined();
+    });
+
+    it('renders the soul card exactly once for the 1-door sign (Pisces)', () => {
+      const pisces = zodiacSigns.find((s) => s.key === 'pisces');
+      if (pisces === undefined) throw new Error('pisces missing from zodiacSigns');
+      const { container, getByText } = render(
+        <SignStage
+          sign={pisces}
+          stage="current"
+          ariaChecked={true}
+          tabIndex={0}
+          disabled={false}
+          takenBy={undefined}
+          onSelect={vi.fn()}
+        />,
+      );
+      // Pisces is the single-door class (path 29 ends at Malkuth,
+      // which has no Challenge). One card, one chip.
+      expect(container.querySelectorAll('[data-soul-card]')).toHaveLength(1);
+      const doors = container.querySelectorAll('[data-soul-door]');
+      expect(doors).toHaveLength(1);
+      expect(getByText('Netzach')).toBeDefined();
+    });
+  });
+
   it('disabled (taken) stage shows the takenBy banner and does not fire onSelect', () => {
     const onSelect = vi.fn();
     const aries = zodiacSigns[0];

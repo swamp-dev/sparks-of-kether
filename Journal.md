@@ -4972,6 +4972,27 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 
 **Commit(s):** `62b5df4` (failing test) + `20e1a85` (impl + flow reorder) + `ee8e8f7` (review fixes) + this Journal entry.
 
+## 2026-05-01T17:20:00-04:00 — #382: SoulDoors renders soul card once with Sefirah-tinted door chips
+
+**Pushed:** Three commits (failing test → impl + existing-test update → self-review polish). Fixes the SoulDoors render shape in `components/setup/sign-picker/SignStage.tsx`. Previously the component looped over the 1–2 doors and rendered an `<ArcanumCard />` per iteration, so a 2-door sign (most signs) showed the same Major Arcana card twice. The fix renders the soul card ONCE at the top and the doors as a row of Sefirah-tinted chips (Hebrew glyph + transliterated label + per-Sefirah accent dot, border-tinted in the Sefirah's signature colour) below it.
+
+**Why:** UI bug surfaced in user playtest 2026-05-01. The soul card is sign-level (one Major Arcana per sign per `data/arcana.ts`); the doors are Sefirah-level (the 1–2 endpoints of the soul card's path that bear a check Challenge per `design/soul-doors.md` § 3 and engine `engine/soul-doors.ts`). The earlier shape conflated them.
+
+**Notes:**
+- TDD held — failing test commit first (3 new tests in `SignStage.test.tsx`: 2-door Aries → exactly one `[data-soul-card]` + both door names visible, 1-door Pisces → exactly one card + Netzach visible). Implementation went green.
+- **One existing test updated.** `components/setup/__tests__/ZodiacSignPicker.test.tsx` had a #314-era assertion that each `[data-soul-door]` *contained* a mini ArcanumCard. The new shape inverts that — soul card at top, doors as chips below — so the assertion was rewritten to assert one soul card per stage instead. The "every Soul Door arcana mapping uses the canonical soul-card path" test still passes unchanged because `[data-soul-card][data-arcanum]` lives on the same span as before, just only ONCE per stage.
+- **Issue chose between Option A (doors-as-text-line) and Option B (Sefirah-glyph chips with per-Sefirah colour). Took Option B** per task spec — richer + consistent with the design doc framing "the Door is a Sefirah, not the soul card".
+- **Self-review caught two issues** before push:
+  - Binah's Sefirah colour token is `#1a1a1a` (deliberately near-shadow per the project's design tokens). My first chip render used `color: sefirah.color` for the Hebrew glyph and label, which made Binah's chip text invisible against the dark `bg-ground/40` substrate. Switched glyph + label to `text-veil` and let the border + a small accent dot carry the per-Sefirah signal — the same pattern the encounter `sefirah-frame-tokens` uses (border + glow, not text fill).
+  - First version had `lang="he"` on the outer chip wrapper, which would mark the transliterated English name as Hebrew to screen readers. Moved `lang="he"` to the inner Hebrew glyph span only.
+- **No `code-reviewer` subagent run** — the `Task` tool was not available in this session. Self-review served as the review pass; both findings above were addressed in the polish commit.
+- **Visual regression — passed.** The local Playwright `regression play` baseline tolerates `maxDiffPixelRatio: 0.005`; the SoulDoors region is a small fraction of the page and the change came in under threshold across desktop / tablet / mobile.
+- **`pnpm ci:local` all four jobs green.** verify (typecheck + lint + test:coverage), build, e2e (138 tests, 75 passed + 63 skipped via `test.skip` browser-install gates), integration (4 files, 12 tests).
+- Hosted CI is billing-blocked per project memory; admin-merge bypass criteria met (local CI green).
+- Out of scope per task: didn't touch `data/soul-doors.ts`, `engine/soul-doors.ts`, `data/arcana.ts`, or anything outside `components/setup/sign-picker/` and its tests.
+
+**Commit(s):** `f15fe94` (failing test) + `94ec93d` (impl + existing test update) + `349d63f` (self-review polish: Binah legibility + lang="he" placement) + this Journal entry.
+
 ## 2026-05-01T17:35:00-04:00 — #385: react-continue event for pass + Continue (game-blocking)
 
 **Pushed:** Four commits (failing tests → engine event → hook method → PlayScreen wiring + journal). Adds the `react-continue` engine event in `lib/turn-machine.ts`, exposes it as `turn.reactContinue()` on `useTurn`, and wires it from PlayScreen's pass-Continue handler. Also drops the over-eager `!clearedSefirot.has(position)` short-circuit from `showChallenge` — the engine is now the authoritative gate.

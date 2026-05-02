@@ -469,40 +469,30 @@ function SoulDoors({
   soulCardNumber,
   isPisces,
 }: SoulDoorsProps): JSX.Element {
+  // The soul card is sign-level (one Major Arcana per sign per the
+  // locked attribution in `data/arcana.ts`), so it renders ONCE here.
+  // The doors are Sefirah-level (the 1–2 endpoints of the soul card's
+  // path that bear a check Challenge) and render as a row of chips
+  // below the card. Earlier versions duplicated the card per door,
+  // which read as "the same card twice" on 2-door signs (#382).
   return (
     <div className="flex flex-col items-center gap-2">
+      <span
+        data-soul-card
+        data-arcanum={soulCardNumber}
+        className="block"
+      >
+        <ArcanumCard
+          number={soulCardNumber}
+          className="h-32 w-20 sm:h-36 sm:w-[5.5rem]"
+        />
+      </span>
       <p className="text-xs uppercase tracking-[0.3em] opacity-60">
         {doors.length === 1 ? 'Soul Door' : 'Soul Doors'}
       </p>
-      <div className="flex flex-wrap items-start justify-center gap-3">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         {doors.map((door) => (
-          <div
-            key={door}
-            data-soul-door={door}
-            className="flex flex-col items-center gap-1 rounded-lg border border-veil/15 bg-ground/40 p-2"
-          >
-            {/* The data-soul-card hook lives alongside data-arcanum on
-                the inner SVG via this wrapper — the SVG keeps its own
-                data-arcanum attribute (set inside ArcanumCard), and the
-                wrapper carries the picker-specific data-soul-card key
-                so e2e / unit selectors can scope without cross-cutting
-                the ArcanumCard implementation. The wrapper also
-                propagates data-arcanum so a single-element selector
-                (`[data-soul-card][data-arcanum="N"]`) finds it. */}
-            <span
-              data-soul-card
-              data-arcanum={soulCardNumber}
-              className="block"
-            >
-              <ArcanumCard
-                number={soulCardNumber}
-                className="h-32 w-20 sm:h-36 sm:w-[5.5rem]"
-              />
-            </span>
-            <p className="font-display text-xs uppercase tracking-widest text-veil">
-              {transliterated(door)}
-            </p>
-          </div>
+          <SoulDoorChip key={door} door={door} />
         ))}
       </div>
       {isPisces ? (
@@ -512,6 +502,53 @@ function SoulDoors({
         </p>
       ) : null}
     </div>
+  );
+}
+
+interface SoulDoorChipProps {
+  readonly door: SefirahKey;
+}
+
+function SoulDoorChip({ door }: SoulDoorChipProps): JSX.Element {
+  // Option B render: each Door is its own Sefirah chip carrying the
+  // Hebrew glyph + transliterated name, with a Sefirah-tinted border
+  // and accent dot per `data/sefirot.ts`. This makes Chokmah and
+  // Tiferet (or any 2-door pairing) visually distinct without leaning
+  // on the soul card to carry the difference (it is identical for both
+  // — same sign).
+  //
+  // Glyph + label both render in `text-veil` so a darker Sefirah
+  // (Binah's `#1a1a1a` is the canonical example) stays legible on the
+  // dark `bg-ground/40` substrate. The Sefirah's signature colour is
+  // carried by the border and the small accent dot, matching how the
+  // encounter `sefirah-frame-tokens` carry per-Sefirah identity via
+  // border + glow rather than text fill.
+  const sefirah = sefirahByKey(door);
+  return (
+    <span
+      data-soul-door={door}
+      role="img"
+      className="inline-flex items-center gap-2 rounded-full border bg-ground/40 px-3 py-1 text-veil"
+      style={{ borderColor: `${sefirah.color}99` }}
+      aria-label={`Soul Door: ${transliterated(door)}`}
+    >
+      <span
+        aria-hidden="true"
+        className="inline-block h-2 w-2 rounded-full"
+        style={{ background: sefirah.color }}
+      />
+      <span
+        aria-hidden="true"
+        lang="he"
+        className="font-hebrew text-base"
+        style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
+      >
+        {sefirah.hebrewName}
+      </span>
+      <span aria-hidden="true" className="font-display text-xs uppercase tracking-widest">
+        {transliterated(door)}
+      </span>
+    </span>
   );
 }
 

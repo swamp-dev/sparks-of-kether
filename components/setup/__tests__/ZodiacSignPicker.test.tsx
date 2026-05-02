@@ -304,23 +304,24 @@ describe('ZodiacSignPicker — stat tilts as visual weights (#314)', () => {
   });
 });
 
-describe('ZodiacSignPicker — Soul Doors with mini-card previews (#314)', () => {
-  it('current stage renders a mini-card preview for each Soul Door', () => {
+describe('ZodiacSignPicker — Soul Doors render shape (#314, #382)', () => {
+  it('current stage renders the soul card once with each Soul Door as a chip', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
     // Aries → Soul Doors: Chokmah, Tiferet (via The Emperor / Path 15).
-    // Each door is rendered as a button containing a mini ArcanumCard
-    // for the corresponding path's arcanum.
+    // The soul card is sign-level (one Major Arcana per sign), so it
+    // renders ONCE; each door renders as its own Sefirah-tinted chip.
+    // Earlier shape (per #314 v1) duplicated the soul card once per
+    // door — that read as "the same card twice" on 2-door signs and
+    // was fixed in #382.
     const aries = container.querySelector('[data-sign="aries"]');
     const doors = aries?.querySelectorAll('[data-soul-door]');
     expect(doors?.length, 'aries has 2 Soul Doors').toBe(2);
     expect(aries?.querySelector('[data-soul-door="chokmah"]')).not.toBeNull();
     expect(aries?.querySelector('[data-soul-door="tiferet"]')).not.toBeNull();
 
-    // Each Soul Door surfaces a mini ArcanumCard (svg with [data-arcanum]).
-    for (const door of doors ?? []) {
-      const arcanum = door.querySelector('[data-arcanum]');
-      expect(arcanum, `mini ArcanumCard inside ${door.textContent}`).not.toBeNull();
-    }
+    // The soul card renders exactly once on the stage, not per door.
+    const soulCards = aries?.querySelectorAll('[data-soul-card]');
+    expect(soulCards?.length, 'aries renders one soul card').toBe(1);
   });
 
   it('Pisces shows the singular Soul Door (Netzach) plus the Malkuth footnote', () => {
