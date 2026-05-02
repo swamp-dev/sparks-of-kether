@@ -181,6 +181,16 @@ export interface UseTurnReturn {
    */
   readonly reactRetry: () => Result<TurnReducerSuccess, TurnReducerError>;
   /**
+   * #385: pass-path counterpart to `acceptChallengeSetback`. From the
+   * `react` sub-phase with `lastOutcome.pass === true`, advance phase
+   * to 'draw' and clear all challenge machinery. Wraps the reducer's
+   * `react-continue` event. Rejected (`react-continue-on-fail`) if
+   * the last roll failed — the fail path must route through
+   * `acceptChallengeSetback` for the Separation tick + shortcut
+   * rollback.
+   */
+  readonly reactContinue: () => Result<TurnReducerSuccess, TurnReducerError>;
+  /**
    * Apply the engine's failure-acceptance cost (Separation +1, or
    * +2 on shortcut arrivals) and advance the phase to 'draw'
    * atomically. Wraps the reducer's `accept-setback` event.
@@ -444,6 +454,18 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const reactRetry = useCallback(
     (): Result<TurnReducerSuccess, TurnReducerError> => {
       const result = turnReducer(snapshot, { kind: 'react-retry' }, opts.rng);
+      if (!result.ok) return result;
+      setSnapshot(result.value.next);
+      return result;
+    },
+    [snapshot, opts.rng],
+  );
+
+  // #385: pass-path Continue out of challenge.react. Mirrors
+  // `reactRetry`'s shape — same return type, same setSnapshot-on-ok.
+  const reactContinue = useCallback(
+    (): Result<TurnReducerSuccess, TurnReducerError> => {
+      const result = turnReducer(snapshot, { kind: 'react-continue' }, opts.rng);
       if (!result.ok) return result;
       setSnapshot(result.value.next);
       return result;
@@ -826,6 +848,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       prepRemoveModifier,
       prepConfirm,
       reactRetry,
+      reactContinue,
       acceptChallengeSetback,
       draw,
       discard,
@@ -861,6 +884,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       prepRemoveModifier,
       prepConfirm,
       reactRetry,
+      reactContinue,
       acceptChallengeSetback,
       draw,
       discard,

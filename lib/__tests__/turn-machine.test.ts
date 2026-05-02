@@ -1399,6 +1399,150 @@ describe('turnReducer — react sub-phase: react-retry', () => {
   });
 });
 
+describe('turnReducer — react sub-phase: react-continue (#385)', () => {
+  // #385 regression: pre-fix the engine had no event for pass + Continue
+  // out of the `'challenge.react'` sub-phase. PlayScreen's pass branch
+  // returned without dispatching, so the snapshot stayed at
+  // `phase='challenge', challengeSubPhase='react'` indefinitely. The
+  // modal then unmounted because the showChallenge gate also short-
+  // circuited on `clearedSefirot.has(position)`, and the player had no
+  // UI to advance. `react-continue` is the pass-path analogue of
+  // `accept-setback`: clear sub-phase / pendingModifiers / lastOutcome /
+  // encounter, and transition phase → 'draw'.
+  const PASS_OUTCOME: CheckOutcome = {
+    rolled: 18,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 28,
+    effectiveDC: 15,
+    pass: true,
+  };
+
+  const FAIL_OUTCOME: CheckOutcome = {
+    rolled: 1,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
+    total: 14,
+    effectiveDC: 15,
+    pass: false,
+  };
+
+  it('transitions phase → draw and clears all challenge machinery on pass', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: PASS_OUTCOME,
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            cardBurns: [3],
+          },
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastOutcome).toBeUndefined();
+    expect(result.value.next.state.encounter).toBeUndefined();
+    expect(result.value.next.state.pendingModifiers).toEqual(
+      EMPTY_PENDING_MODIFIERS,
+    );
+  });
+
+  it('rejects react-continue when phase is not challenge', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'draw',
+          lastOutcome: PASS_OUTCOME,
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('wrong-phase');
+    if (result.reason.kind !== 'wrong-phase') return;
+    expect(result.reason.expected).toBe('challenge');
+    expect(result.reason.actual).toBe('draw');
+  });
+
+  it('rejects react-continue when sub-phase is not react', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'prep',
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('wrong-sub-phase');
+    if (result.reason.kind !== 'wrong-sub-phase') return;
+    expect(result.reason.expected).toBe('react');
+    expect(result.reason.actual).toBe('prep');
+  });
+
+  it('rejects react-continue when lastOutcome is a fail (callers should use accept-setback)', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: FAIL_OUTCOME,
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    // The pass-only branch — fail must route through accept-setback.
+    expect(result.reason.kind).toBe('react-continue-on-fail');
+  });
+
+  it('rejects react-continue when lastOutcome is undefined', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: undefined,
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('react-continue-on-fail');
+  });
+});
+
 describe('turnReducer — replace-state event', () => {
   it('replaces state wholesale, including the replacement state\'s phase machinery', () => {
     // Post-#227 review fix `phase` lives on `GameState`, so the

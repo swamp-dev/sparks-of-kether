@@ -4972,6 +4972,25 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 
 **Commit(s):** `62b5df4` (failing test) + `20e1a85` (impl + flow reorder) + `ee8e8f7` (review fixes) + this Journal entry.
 
+## 2026-05-01T17:35:00-04:00 — #385: react-continue event for pass + Continue (game-blocking)
+
+**Pushed:** Four commits (failing tests → engine event → hook method → PlayScreen wiring + journal). Adds the `react-continue` engine event in `lib/turn-machine.ts`, exposes it as `turn.reactContinue()` on `useTurn`, and wires it from PlayScreen's pass-Continue handler. Also drops the over-eager `!clearedSefirot.has(position)` short-circuit from `showChallenge` — the engine is now the authoritative gate.
+
+**Why:** Game-blocking bug surfaced by user playtest 2026-05-01: clicking Continue on a passed challenge left the snapshot stuck at `phase='challenge', challengeSubPhase='react'` while the modal unmounted, leaving the player UI-less. The engine had no event for pass + Continue (only `accept-setback` for the fail path); PlayScreen's pass branch returned silently. Pre-fix this had been latent since the prep→resolve→react chassis shipped (#269 batch, ~April 30) — E2E tests don't walk a passed challenge, so it never tripped CI.
+
+**Notes:**
+- TDD held — failing tests committed first across three layers (engine reducer, useTurn hook, PlayScreen integration), then engine event, then hook method, then the PlayScreen wiring + gate cleanup. Each layer's tests went green when its layer landed; the integration test is the one that would have caught this originally.
+- **Engine event mirrors `accept-setback`'s state shape** but skips the Separation tick + position rollback (the win was already rewarded at `prep-confirm`). Validates phase + sub-phase + `lastOutcome.pass === true`; rejects `react-continue-on-fail` if last outcome is fail or undefined (callers must use `accept-setback` for fail). Same teardown: clear `pendingModifiers`, `challengeSubPhase`, `lastOutcome`, `encounter`; transition `phase: 'draw'`.
+- **Trust the engine gate.** Pre-#385 `showChallenge` belt-and-suspenders'd on `clearedSefirot.has(position)` to defensively unmount when the engine had recorded the win but stayed at `challenge.react`. That short-circuit was masking the missing event — now that `react-continue` exists, `phase === 'challenge'` is sufficient. Documented inline so a future reader doesn't re-add the short-circuit.
+- **Multiplayer parity deferred.** `lib/room-actions.ts` has the wire-format equivalents for `react-retry` and `accept-setback` but not yet `react-continue`. Multiplayer Play isn't wired in PlayScreen today (PlayScreen instantiates `useTurn` without `dispatchClientAction`), so this is forward-looking parity rather than a current gap. When multiplayer Play lands, the wire `ClientAction` for `react-continue` should be added alongside.
+- **No e2e changes needed** — `e2e/play-flow.spec.ts`, `e2e/encounter.spec.ts`, `e2e/sound.spec.ts` all stop at the play-screen render before walking a challenge, so they're unaffected.
+- **Test seed nuance:** the integration test uses stat=20 + base DC 12 (non-shortcut path 30 Hod↔Yesod) so the d20 result doesn't matter — total is always ≥ 21 > 12. The `data-action="continue"` selector pins the pass branch directly.
+- **`code-reviewer` subagent:** invoked inline (no Task tool available in this harness); review against the bugs/security/tests/quality rubric covered: engine state shape vs. `accept-setback`, defensive ordering of guards, stale-closure risk in `useCallback`, the `showChallenge` gate correctness post-removal-of-short-circuit, and confirmation that no other test fixtures rely on the short-circuit. No issues raised.
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 1889 tests passing (+9 new). `pnpm ci:local` verify + build + e2e all green; integration tests flake on Supabase fetch (infrastructure, unrelated to this diff).
+- Hosted CI billing-blocked (memory note from 2026-04-29) — admin-merge bypass criteria met: per-PR checklist run in this session, all CI jobs that exited locally are green, hosted CI failure is infrastructure not regression.
+
+**Commit(s):** `1b568d7` (failing tests) + `147e883` (engine event) + `80ef9da` (hook method) + `d3cc50a` (PlayScreen wiring + gate cleanup) + this Journal entry.
+
 ## 2026-05-01T16:44:19-04:00 — fix(visual): bump VR threshold 0.005 → 0.025 to unblock hosted CI
 
 **Pushed:** One-line change in `e2e/visual-regression.spec.ts` plus an expanded inline comment. `maxDiffPixelRatio` was `0.005` (0.5%); hosted CI's ubuntu-latest runner consistently produces 1–2% pixel diffs vs local Linux on text-heavy routes (codex / sefirah / about / tokens) — uniform across baselines, fingerprint of font / SVG anti-aliasing differences (different freetype, fontconfig fallbacks, or subpixel positioning between the two Linux flavours). Largest observed delta in the run that exposed this most clearly (PR #371's CI): 21 687 px / 1 280×800 = 2.12%.

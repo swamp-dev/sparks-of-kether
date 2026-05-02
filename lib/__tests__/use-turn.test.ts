@@ -385,6 +385,59 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
     });
     expect(retryOutcome?.ok).toBe(false);
   });
+
+  // #385 — pass-path Continue out of challenge.react.
+  // The hook surfaces `reactContinue` as the pass-path counterpart to
+  // `acceptChallengeSetback`. After a successful prep-confirm the
+  // snapshot sits at challenge/react/lastOutcome=pass; calling
+  // reactContinue clears the challenge machinery and advances phase
+  // to 'draw'.
+  it('reactContinue after a passed prepConfirm advances phase to draw and clears challenge state', () => {
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepConfirm('binah', {
+        rolled: 18,
+        statContribution: 10,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 28,
+        effectiveDC: 15,
+        pass: true,
+      });
+    });
+    expect(result.current.phase).toBe('challenge');
+    expect(result.current.challengeSubPhase).toBe('react');
+    let outcome: ReturnType<typeof result.current.reactContinue> | undefined;
+    act(() => {
+      outcome = result.current.reactContinue();
+    });
+    expect(outcome?.ok).toBe(true);
+    expect(result.current.phase).toBe('draw');
+    expect(result.current.challengeSubPhase).toBeUndefined();
+    expect(result.current.state.lastOutcome).toBeUndefined();
+  });
+
+  it('reactContinue on a failed challenge surfaces a structured rejection', () => {
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepConfirm('binah', {
+        rolled: 1,
+        statContribution: 10,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 11,
+        effectiveDC: 15,
+        pass: false,
+      });
+    });
+    let outcome: ReturnType<typeof result.current.reactContinue> | undefined;
+    act(() => {
+      outcome = result.current.reactContinue();
+    });
+    expect(outcome?.ok).toBe(false);
+    // Hook stays at challenge/react so the failure path UI remains
+    // available.
+    expect(result.current.phase).toBe('challenge');
+    expect(result.current.challengeSubPhase).toBe('react');
+  });
 });
 
 describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {

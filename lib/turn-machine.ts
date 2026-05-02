@@ -207,6 +207,25 @@ export type TurnEvent =
     }
   | { readonly kind: 'react-retry' }
   | {
+      /**
+       * #385: pass-path counterpart to `accept-setback`. From the
+       * `react` sub-phase with `lastOutcome.pass === true`, advance
+       * phase → 'draw' and clear all challenge machinery
+       * (`pendingModifiers`, `challengeSubPhase`, `lastOutcome`,
+       * `encounter`). The fail path uses `accept-setback` (which
+       * additionally ticks Separation and rolls back position on a
+       * shortcut); the pass path has no extra cost — the win was
+       * recorded at `prep-confirm` (Sefirah cleared, +1 Illumination).
+       *
+       * Pre-#385 the engine had no event for this case: PlayScreen's
+       * Continue handler returned without dispatching, so the snapshot
+       * stayed at `phase='challenge', challengeSubPhase='react'`
+       * indefinitely while the modal unmounted on the
+       * `clearedSefirot` short-circuit. This event is the fix.
+       */
+      readonly kind: 'react-continue';
+    }
+  | {
       readonly kind: 'accept-setback';
       readonly sefirah: SefirahKey;
       readonly shortcut?: boolean;
@@ -244,6 +263,16 @@ export type TurnReducerError =
       readonly sourcePlayerId: string;
     }
   | { readonly kind: 'react-retry-on-pass' }
+  | {
+      /**
+       * #385: `react-continue` was dispatched on a non-pass `lastOutcome`.
+       * Callers should route fail outcomes through `accept-setback`
+       * (which ticks Separation and handles shortcut rollback). This
+       * is also the rejection when `lastOutcome` is undefined — a
+       * defensive guard against a misordered dispatch.
+       */
+      readonly kind: 'react-continue-on-fail';
+    }
   | { readonly kind: 'move-rejected'; readonly cause: MoveRejection }
   | { readonly kind: 'challenge-rejected'; readonly cause: ChallengeRejection };
 
@@ -1208,6 +1237,46 @@ export function turnReducer(
             : undefined,
       };
       return { ok: true, value: { next: { state: stateAfter } } };
+    }
+
+    case 'react-continue': {
+      // #385: pass-path teardown of the challenge cycle. Mirrors
+      // `accept-setback`'s state shape but skips the Separation tick
+      // and the position rollback (the win was rewarded at
+      // `prep-confirm`; nothing more to do here). The phase
+      // transition itself is the whole point — pre-#385 the engine
+      // had no handler so the snapshot froze at challenge/react.
+      if (phase !== 'challenge') {
+        return {
+          ok: false,
+          reason: { kind: 'wrong-phase', expected: 'challenge', actual: phase },
+        };
+      }
+      if (challengeSubPhase !== 'react') {
+        return {
+          ok: false,
+          reason: {
+            kind: 'wrong-sub-phase',
+            expected: 'react',
+            actual: challengeSubPhase,
+          },
+        };
+      }
+      // Defensive: callers must use `accept-setback` for the fail
+      // branch. A mis-routed dispatch would otherwise silently skip
+      // the Separation tick.
+      if (state.lastOutcome === undefined || !state.lastOutcome.pass) {
+        return { ok: false, reason: { kind: 'react-continue-on-fail' } };
+      }
+      const cleared: GameState = {
+        ...state,
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
+        phase: 'draw',
+        challengeSubPhase: undefined,
+        lastOutcome: undefined,
+        encounter: undefined,
+      };
+      return { ok: true, value: { next: { state: cleared } } };
     }
 
     case 'accept-setback': {

@@ -237,11 +237,19 @@ export function PlayScreen({
   }
 
   // Challenge modal: useTurn's phase moves to 'challenge' when the
-  // active player arrives at an uncleared 'check' Sefirah.
+  // active player arrives at an uncleared 'check' Sefirah. The
+  // engine is the authoritative gate — once `prep-confirm` succeeds
+  // (pass) or `accept-setback` fires (fail) or `react-continue` fires
+  // (pass + Continue), phase leaves 'challenge' and this gate
+  // unmounts the modal. Pre-#385 we also short-circuited on
+  // `clearedSefirot.has(position)` to defensively unmount when the
+  // engine had recorded the win but stayed at challenge/react — but
+  // that was masking the real bug (no event for pass + Continue) and
+  // caused the modal to disappear mid-react with no UI to advance.
+  // Now that `react-continue` exists, trust the engine: the phase
+  // check alone is sufficient.
   const showChallenge =
-    turn.phase === 'challenge' &&
-    activePlayer !== undefined &&
-    !activePlayer.clearedSefirot.has(activePlayer.position);
+    turn.phase === 'challenge' && activePlayer !== undefined;
 
   const challengeContext: ChallengeContext | null =
     showChallenge && activePlayer
@@ -280,10 +288,21 @@ export function PlayScreen({
     // only resolutions surfaced are `pass` (player saw the win, hit
     // Continue) and `accept` (player saw the fail, hit Accept setback).
     if (resolution.pass) {
-      // Engine already cleared the Sefirah and ticked Illumination —
-      // nothing to do here. The next render's `showChallenge` gate
-      // unmounts the EncounterScreen because the player's
-      // `clearedSefirot` now contains their position.
+      // #385: dispatch `react-continue` to advance phase out of
+      // 'challenge.react'. The engine clears all challenge machinery
+      // (sub-phase, lastOutcome, encounter, pendingModifiers) and
+      // transitions phase → 'draw'. The reward (cleared Sefirah,
+      // +1 Illumination) was already applied at prep-confirm; this
+      // dispatch is purely the phase teardown.
+      //
+      // Pre-#385 this branch returned without dispatching, leaving
+      // the snapshot stuck at challenge/react indefinitely while the
+      // showChallenge gate unmounted on the over-eager
+      // `clearedSefirot.has(position)` short-circuit. The player was
+      // left UI-less — phase hint read "Resolve the challenge" but
+      // no modal, and turn.move()/turn.draw()/turn.endTurn() all
+      // failed their phase guards.
+      turn.reactContinue();
       return;
     }
     // 'accept': apply the engine's failure consequence — Separation
