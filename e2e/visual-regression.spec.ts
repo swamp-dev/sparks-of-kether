@@ -105,11 +105,27 @@ for (const viewport of VIEWPORTS) {
           {
             fullPage: true,
             animations: 'disabled',
-            // Allow a fraction of a percent of pixel variance —
-            // anti-aliasing on font glyphs and SVG strokes is real
-            // and varies slightly even between identical headless
-            // chromium runs.
-            maxDiffPixelRatio: 0.005,
+            // Allow a few percent of pixel variance — anti-aliasing
+            // on font glyphs and SVG strokes is real and the diff
+            // between local Linux and the GitHub Actions
+            // ubuntu-latest runner is consistently ~1–2% per page on
+            // text-heavy routes (codex / sefirah / about / tokens).
+            // The previous 0.005 (0.5%) threshold was tight enough
+            // to fail roughly every PR on hosted CI for reasons
+            // unrelated to the diff — see Journal entries for #366
+            // and the `project_hosted_ci_billing_blocked` memory.
+            //
+            // 0.025 (2.5%) absorbs the documented font-AA delta
+            // (largest observed: 21 687 px / 1 280×800 = 2.12%) with
+            // a thin headroom, while still surfacing a real layout
+            // regression (a 4 px padding shift or a colour swap
+            // diffs ≥ 5% easily). If hosted CI starts producing
+            // diffs > 0.025 the right move is to root-cause the
+            // renderer divergence (font loading, freetype version,
+            // device-pixel-ratio) rather than bump the threshold
+            // further; this number is meant to absorb noise, not
+            // mask real changes.
+            maxDiffPixelRatio: 0.025,
           },
         );
       });

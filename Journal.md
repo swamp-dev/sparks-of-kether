@@ -4971,3 +4971,21 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 **Voices Epic #251 — fully complete.** All 4 tickets (T1 #252 + T2 #253 + T3 #254 + T4 #255) shipped 2026-05-01.
 
 **Commit(s):** `62b5df4` (failing test) + `20e1a85` (impl + flow reorder) + `ee8e8f7` (review fixes) + this Journal entry.
+
+## 2026-05-01T16:44:19-04:00 — fix(visual): bump VR threshold 0.005 → 0.025 to unblock hosted CI
+
+**Pushed:** One-line change in `e2e/visual-regression.spec.ts` plus an expanded inline comment. `maxDiffPixelRatio` was `0.005` (0.5%); hosted CI's ubuntu-latest runner consistently produces 1–2% pixel diffs vs local Linux on text-heavy routes (codex / sefirah / about / tokens) — uniform across baselines, fingerprint of font / SVG anti-aliasing differences (different freetype, fontconfig fallbacks, or subpixel positioning between the two Linux flavours). Largest observed delta in the run that exposed this most clearly (PR #371's CI): 21 687 px / 1 280×800 = 2.12%.
+
+The previous 0.005 threshold has been failing hosted e2e on every PR for weeks, requiring admin-merge bypass per the documented `project_hosted_ci_billing_blocked` memory and the Journal entries from #366 onward. Worth fixing rather than continuing to admin-merge each PR.
+
+**Why 0.025 specifically:** the noise floor is ~2.12%; 0.025 (2.5%) gives ~0.4 pp of headroom over the worst observed. Tighter (0.02) would barely cover the worst case with no margin; looser (0.05) gratuitously masks real regressions. Real layout changes — a 4 px padding tighten or a colour swap — diff well over 5%, easily caught at 0.025.
+
+**Notes:**
+- One commit (`de2de43`); single-line numeric change + multi-paragraph comment.
+- `code-reviewer` subagent verdict: **Ship** with zero findings. Calibration, comment quality, and risk-window analysis all praised.
+- The new comment explicitly tells future maintainers NOT to bump again as a reflex if drift grows — the right move then is to root-cause renderer divergence (font loading, freetype version, device-pixel-ratio).
+- Follow-up worth filing after merge: a "root-cause local-vs-hosted Linux renderer divergence" issue. Out of scope for this PR.
+- `pnpm ci:local` (full): all four jobs green. Local was already passing under 0.005; 0.025 is strictly looser and doesn't change local outcomes.
+- This PR unblocks the four open PRs (#371, #372, #374, #377) that were all hitting the same hosted-CI failure pattern. After this lands, those PRs can rebase and their hosted CI should go green without admin-merge.
+
+**Commit(s):** `de2de43` (threshold + comment) + this Journal entry.
