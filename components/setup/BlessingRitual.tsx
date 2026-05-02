@@ -162,6 +162,7 @@ export function BlessingRitual({
     return (
       <Summary
         stats={stats as StatSheet}
+        blessingState={blessing === null ? 'null' : 'set'}
         onContinue={handleContinue}
         className={className}
       />
@@ -181,6 +182,12 @@ export function BlessingRitual({
       data-step={stepIndex}
       data-sefirah={currentSefirah.key}
       data-status={stepStatus}
+      // #380: explicit observability of the blessing-state invariant.
+      // `blessing` must be null in every state except 'rolled'. The
+      // attribute lets tests assert the invariant directly instead of
+      // relying on DOM absence (which is also guaranteed by the
+      // conditional render and so doesn't catch state-leak regressions).
+      data-blessing-state={blessing === null ? 'null' : 'set'}
       aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
       className={`mx-auto max-w-md text-center ${className ?? ''}`}
     >
@@ -382,10 +389,12 @@ function RollDisplay({
 
 function Summary({
   stats,
+  blessingState,
   onContinue,
   className,
 }: {
   stats: StatSheet;
+  blessingState: 'set' | 'null';
   onContinue: () => void;
   className: string | undefined;
 }): JSX.Element {
@@ -393,6 +402,7 @@ function Summary({
     <section
       data-blessing-ritual
       data-status="complete"
+      data-blessing-state={blessingState}
       aria-label="Blessing ritual complete; final stats"
       className={`mx-auto max-w-md text-center ${className ?? ''}`}
     >

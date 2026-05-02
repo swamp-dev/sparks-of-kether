@@ -462,22 +462,39 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     expect(sefirahBlessings.malkuth.taurus).toContain(quote?.textContent?.trim());
   });
 
-  it('quote also clears when Skip — roll all remaining is clicked mid-roll (#255 review)', () => {
+  it('Skip — roll all remaining mid-roll clears blessing state (state-machine invariant, #380)', () => {
     // The skip-ceremony path advances stepIndex to sefirot.length and
-    // jumps to the Summary screen. Without clearing `blessing` state,
-    // the value would linger in the closure even though Summary
-    // doesn't render it. State-machine invariant: blessing is null
-    // outside the 'rolled' state.
+    // jumps to the Summary screen. The state-machine invariant says
+    // blessing is null outside the 'rolled' step state.
+    //
+    // The previous version of this test asserted DOM absence of the
+    // [data-blessing-quote] element after Skip — but DOM absence is
+    // already guaranteed by the conditional render (Summary takes over,
+    // RollDisplay unmounts), so the assertion would pass even if
+    // setBlessing(null) were silently removed from handleSkipCeremony.
+    //
+    // The fix asserts against the data-blessing-state attribute on the
+    // Summary section, which is sourced from the actual `blessing`
+    // state value. Removing setBlessing(null) from handleSkipCeremony
+    // now causes data-blessing-state to read 'set' instead of 'null'
+    // and the test fails — true regression coverage.
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    // Sanity: blessing IS set in the rolled state.
+    expect(container.querySelector('[data-blessing-ritual]')?.getAttribute('data-blessing-state')).toBe('set');
     expect(container.querySelector('[data-blessing-quote]')).not.toBeNull();
+
     fireEvent.click(screen.getByRole('button', { name: /Skip — roll all remaining/i }));
-    // Now on Summary screen — RollDisplay is unmounted, no quote.
-    expect(container.querySelector('[data-blessing-quote]')).toBeNull();
-    // Verify we're on the Summary screen.
-    expect(container.querySelector('[data-blessing-ritual]')?.getAttribute('data-status')).toBe('complete');
+
+    // Verify we're on the Summary screen (data-status='complete').
+    const root = container.querySelector('[data-blessing-ritual]');
+    expect(root?.getAttribute('data-status')).toBe('complete');
+    // Load-bearing assertion: blessing state was cleared by the skip
+    // handler. Removing `setBlessing(null)` from handleSkipCeremony
+    // would flip this to 'set' and fail the test.
+    expect(root?.getAttribute('data-blessing-state')).toBe('null');
   });
 
   it('quote disappears after Next is clicked (next step is in awaiting state)', () => {

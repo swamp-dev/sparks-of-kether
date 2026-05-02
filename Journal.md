@@ -5060,6 +5060,27 @@ The previous 0.005 threshold has been failing hosted e2e on every PR for weeks, 
 
 **Commit(s):** `b3d3991` — single commit adding the three PNGs and this Journal entry.
 
+## 2026-05-02T15:11:00-04:00 — #380: strengthen BlessingRitual skip-during-roll regression test
+
+**Pushed:** One commit. Replaces a false-positive regression test added in PR #378 (#255 T4) with one that actually catches the bug it claims to guard. Adds a new `data-blessing-state` observability attribute on the BlessingRitual root (both play-screen and Summary sections) so tests can assert the state-machine invariant directly.
+
+**Why:** Surfaced by retroactive code-review of PR #378. The original "quote also clears when Skip — roll all remaining is clicked mid-roll" test asserted DOM absence of `[data-blessing-quote]` after Skip — but DOM absence is guaranteed by the conditional render (Summary takes over, RollDisplay unmounts) regardless of whether `setBlessing(null)` actually fires in `handleSkipCeremony`. Removing `setBlessing(null)` from production code left the test green, so the state-machine invariant was unguarded.
+
+**Fix:**
+- `BlessingRitual.tsx` gains `data-blessing-state={blessing === null ? 'null' : 'set'}` on its play-screen `<section>` root (line ~190).
+- The `Summary` subcomponent gains a `blessingState: 'set' | 'null'` prop, threaded from the parent's `blessing === null` check at the call site, and the same attribute on its `<section>` root.
+- The test asserts `data-blessing-state='null'` on the post-Skip Summary section instead of asserting DOM absence.
+
+**Empirical verification before commit:** I temporarily commented out `setBlessing(null)` from `handleSkipCeremony`, ran the new test, and watched it fail (`data-blessing-state` reads `'set'`). Then restored `setBlessing(null)` and the test passes. True regression coverage.
+
+**Notes:**
+- `code-reviewer` subagent verdict: **Ship** with zero issues. Source correctness confirmed (attribute reads directly from `useState` value in same render closure, not stale), prop type-safe (`'set' | 'null'` not `string`), play-screen and Summary attribute consistency confirmed, sanity check on the rolled state correctly targets the play-screen root pre-Skip.
+- Other state-machine paths (`handleAdvance` for Next, `handleContinue`, etc.) — the reviewer confirmed Skip was the only path with a real regression risk; adding `data-blessing-state` assertions to the Next path would be nice-to-have but not a blocker (the existing DOM-absence test there is structurally weaker but the path is lower-risk: synchronous re-render into 'awaiting' state).
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 1893 tests passing.
+- Hosted CI may fail e2e on visual-regression — UI surface is unchanged structurally, only attribute additions, so visual regression should pass under #381's threshold. Admin-merge bypass criteria met regardless.
+
+**Commit(s):** `9be1b60` (data attribute + test rewrite) + this Journal entry.
+
 ## 2026-05-02T15:10:00-04:00 — #379: polish Kether § Pisces v2 wording (closes "comes by feel" doubling)
 
 **Pushed:** Two commits (failing test pin → wording fix in design + data). Surfaced by the retroactive literary review of PR #373 (#252 T1 blessing matrix) — the post-#252-review v2 line for Kether § Pisces had "comes by feel" appearing twice in the same sentence (subject lead + second-person address), reading as a tautology.
