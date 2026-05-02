@@ -5059,3 +5059,20 @@ The previous 0.005 threshold has been failing hosted e2e on every PR for weeks, 
 **Notes:** Docs-only change. No code, no tests, no engine touch. Pre-push hook (`pnpm ci:local:fast`) is the gate; full `pnpm ci:local` not warranted for image-only diff. Hosted CI on the PR will follow the project's current pattern (visual-regression failures unrelated to diff per #366's note); admin-merge criteria apply if hosted CI fails on the now-routine visual-regression delta.
 
 **Commit(s):** `b3d3991` — single commit adding the three PNGs and this Journal entry.
+
+## 2026-05-02T15:10:00-04:00 — #379: polish Kether § Pisces v2 wording (closes "comes by feel" doubling)
+
+**Pushed:** Two commits (failing test pin → wording fix in design + data). Surfaced by the retroactive literary review of PR #373 (#252 T1 blessing matrix) — the post-#252-review v2 line for Kether § Pisces had "comes by feel" appearing twice in the same sentence (subject lead + second-person address), reading as a tautology.
+
+**Why:** Process-gap closure. The original PR #373 review-fix commit (`2d89854`) introduced the doubling when replacing the Selene-coded "rain-receiver" with "the one who comes by feel" — but the same phrase already appeared as the subject of the same sentence. The retroactive review caught it; this PR ships the fix.
+
+**Replacement:** "The Crown gathers what comes by feel. You — who reach meaning before words — counted in our cohering before arrival." Captures Pisces's intuitive-before-articulating Native gift, stays in the Crown's collective participial-phrase register ("the keeper of undertone" Cancer / "the catcher of the small thing" Virgo / etc.), and breaks the doubling cleanly.
+
+**Notes:**
+- TDD held — failing test pin commit first (asserts the new wording on `sefirahBlessings.kether.pisces[1]`); fix went green.
+- **Both source files updated in lockstep** — `design/sefirah-blessings.md` § 3.1 Kether/Pisces v2 + `data/sefirah-blessings.ts` `ketherBlessings.pisces[1]`. The verbatim string-pin in `data/__tests__/sefirah-blessings.test.ts` catches drift if either source touches this cell again.
+- `code-reviewer` subagent verdict: **Ship**. Voice consistency confirmed (matches the participial-phrase pattern across the matrix, no deity-coded language slipping in), grammar correct ("you who reach" not "you who reaches" — the relative clause modifies second-person "you"), file parity confirmed byte-for-byte.
+- `pnpm typecheck && pnpm test --run data/__tests__/sefirah-blessings.test.ts` green (146 tests). `pnpm test --run tests/docs` green (129 link-resolve tests).
+- Hosted CI will fail e2e on visual-regression as it does for every PR; diff is docs + data only — admin-merge bypass criteria met.
+
+**Commit(s):** `e87fefb` (failing test pin) + `61bc0d7` (design + data update) + this Journal entry.

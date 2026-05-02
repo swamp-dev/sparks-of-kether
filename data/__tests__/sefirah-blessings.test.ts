@@ -96,6 +96,12 @@ describe('sefirahBlessings — verbatim string-pins (typo drift catchers)', () =
     );
   });
 
+  it('Kether § Pisces v2 — post-#379 polish (no "comes by feel" doubling)', () => {
+    expect(sefirahBlessings.kether.pisces[1]).toBe(
+      'The Crown gathers what comes by feel. You — who reach meaning before words — counted in our cohering before arrival.',
+    );
+  });
+
   it('Chokmah § Pisces v1 — Athena ruler-tier opener (post-review warm)', () => {
     expect(sefirahBlessings.chokmah.pisces[0]).toBe(
       'Yes — strategy lives where you already see. The depth is the sight. Cleanly recognized.',

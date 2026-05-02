@@ -102,7 +102,7 @@ Sign personality capsules and dignity tier tables are in [`avatars.md`](avatars.
 
 ### ♓ Pisces — `neutral`
 1. We await the dissolver of edges. Your floating to meaning, you among us, already received.
-2. The Crown gathers what comes by feel. You — the one who comes by feel — counted in our cohering before arrival.
+2. The Crown gathers what comes by feel. You — who reach meaning before words — counted in our cohering before arrival.
 3. When the team arrives whole, your softening of borders will be how the many became one mouth.
 ## 3.2 Chokmah (Neptune) — voiced by Athena
 

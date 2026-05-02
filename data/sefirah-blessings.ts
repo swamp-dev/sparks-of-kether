@@ -84,7 +84,7 @@ const ketherBlessings = {
   ],
   pisces: [
     'We await the dissolver of edges. Your floating to meaning, you among us, already received.',
-    'The Crown gathers what comes by feel. You — the one who comes by feel — counted in our cohering before arrival.',
+    'The Crown gathers what comes by feel. You — who reach meaning before words — counted in our cohering before arrival.',
     'When the team arrives whole, your softening of borders will be how the many became one mouth.',
   ],
 } as const;
