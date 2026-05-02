@@ -23,9 +23,10 @@ import { SHELL_COPY } from './shell-copy';
  *                  "Banished at <Sefirah>" caption renders below.
  *
  * Two modes:
- *   - panel mode (default) — ten slots in a 5-up or 10-up grid with
+ *   - panel mode (default) — ten slots in a 5-up grid (2 rows) with
  *     full effect copy on active slots, ideal for the side aside on
- *     `PlayScreen`.
+ *     `PlayScreen`. Five columns hold the keyword labels (FRAGMENTATION,
+ *     STAGNATION, etc.) without horizontal collision (fixed in #383).
  *   - `compact` mode — single-row strip with size hierarchy
  *     (dormant 50 %, active 100 %, banished 75 %) so the strip stays
  *     scannable mid-game. No inline effect copy in compact mode;
@@ -117,7 +118,15 @@ export function ShellPanel({
   const listLayout = compact ? 'compact' : 'panel';
   const listClass = compact
     ? 'flex flex-row flex-wrap items-end justify-center gap-2'
-    : 'grid grid-cols-5 gap-3 sm:grid-cols-10';
+    : // #383: stay at 5 columns × 2 rows on every breakpoint. The
+      // previous `sm:grid-cols-10` collapsed to a single row at sm:
+      // and up, but in the live PlayScreen the panel sits in a fixed
+      // 400 px aside — at 10 columns each cell was ~36 px, and the
+      // 8–13-character uppercase keywords (FRAGMENTATION, STAGNATION,
+      // …) overflowed and ran together. Two rows of 5 reads cleanly
+      // at every panel surface (the demo page and the PlayScreen
+      // sidebar both have ample horizontal room for a 5-up grid).
+      'grid grid-cols-5 gap-3';
   return (
     <section
       aria-label="Shell pressure panel"

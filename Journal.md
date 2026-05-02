@@ -4972,6 +4972,22 @@ The post-confirm run-wide lock works correctly today — it's enforced at `prep-
 
 **Commit(s):** `62b5df4` (failing test) + `20e1a85` (impl + flow reorder) + `ee8e8f7` (review fixes) + this Journal entry.
 
+## 2026-05-01T17:03:13-04:00 — #383: ShellPanel keeps 5-column layout so keyword labels stay legible
+
+**Pushed:** Two commits (failing test → impl). The `ShellPanel` panel-mode grid was `grid-cols-5 sm:grid-cols-10`, collapsing to a single row of 10 at sm: and up. In the live PlayScreen the panel sits in a fixed 400 px aside (`PlayScreen.tsx:308` — `lg:grid-cols-[1fr_400px]`), so 10 columns gave each cell ~36 px and the 8–13-character uppercase keywords (FRAGMENTATION, STAGNATION, DECEPTION, …) overflowed into illegible text. Drop the `sm:grid-cols-10` variant entirely; stay at 5 cols × 2 rows everywhere.
+
+**Why:** Bug surfaced in the user playtest 2026-05-01. Issue #383 proposed Option A (`grid-cols-5 sm:grid-cols-5 xl:grid-cols-10`) or "stay at 5 columns × 2 rows everywhere." Option A doesn't actually fix the production case — the PlayScreen aside is 400 px regardless of viewport, so even at xl: (1280 px+) the sidebar would still squeeze. The 5-cols-everywhere choice is robust on both surfaces (the demo page has plenty of vertical room; the production sidebar already accommodates two rows).
+
+**Notes:**
+- TDD held — failing test commit first. New test in `ShellPanel.seals.test.tsx` pins both the positive (`grid-cols-5` is present) and negative (`grid-cols-10` must NOT appear at any breakpoint) so future regressions are caught.
+- Compact mode (the flex-row strip with size hierarchy) is unchanged. It already suppresses keyword labels and serves a different surface.
+- SVG sigil rendering, copy, sound hooks, accessibility — all unchanged.
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 1881 tests pass; 1 todo unchanged.
+- **Visual-regression baseline regeneration expected.** The committed PNGs for `/play` (desktop/tablet) and `/demo/shell-panel` (all three viewports) will diff because the panel mode now lays out as 2 rows instead of 1 at sm: and up. A follow-up commit will regenerate the baselines after `pnpm ci:local` flags them.
+- Hosted CI is billing-blocked per memory; local-CI gate per `local-ci-and-admin-merge.md` applies.
+
+**Commit(s):** `f25e04f` (failing test) + `08dda5e` (impl) + this Journal entry.
+
 ## 2026-05-01T17:20:00-04:00 — #382: SoulDoors renders soul card once with Sefirah-tinted door chips
 
 **Pushed:** Three commits (failing test → impl + existing-test update → self-review polish). Fixes the SoulDoors render shape in `components/setup/sign-picker/SignStage.tsx`. Previously the component looped over the 1–2 doors and rendered an `<ArcanumCard />` per iteration, so a 2-door sign (most signs) showed the same Major Arcana card twice. The fix renders the soul card ONCE at the top and the doors as a row of Sefirah-tinted chips (Hebrew glyph + transliterated label + per-Sefirah accent dot, border-tinted in the Sefirah's signature colour) below it.

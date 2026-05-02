@@ -162,6 +162,24 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
       const list = container.querySelector('ul');
       expect(list?.getAttribute('data-shell-layout')).toBe('compact');
     });
+
+    it('panel mode uses a 5-column grid at every breakpoint so keyword labels do not overlap (#383)', () => {
+      // The original layout used `grid-cols-5 sm:grid-cols-10`, which
+      // collapsed to 10 columns at sm: and up. In the live PlayScreen
+      // the panel sits in a fixed 400-px aside, so 10 columns gave each
+      // cell ~36 px — far too narrow for keywords like FRAGMENTATION /
+      // STAGNATION. The fix: stay at 5 columns × 2 rows everywhere so
+      // each cell has ~70-110 px regardless of surface.
+      const { container } = render(<ShellPanel shells={EMPTY_SHELL_STATE} />);
+      const list = container.querySelector('ul');
+      expect(list?.getAttribute('data-shell-layout')).toBe('panel');
+      const className = list?.className ?? '';
+      // 5-column base is required.
+      expect(className).toMatch(/\bgrid-cols-5\b/);
+      // Must NOT break to 10 columns at any breakpoint — that's the
+      // regression we're guarding against.
+      expect(className).not.toMatch(/grid-cols-10\b/);
+    });
   });
 
   describe('sound transition hooks', () => {
