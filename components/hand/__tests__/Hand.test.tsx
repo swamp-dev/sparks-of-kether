@@ -150,6 +150,32 @@ describe('Hand — interaction', () => {
     expect(slot2?.getAttribute('data-selected')).toBe('true');
   });
 
+  it('unselected cards stack left-over-right so leftmost is not occluded (#368)', () => {
+    // The fan overlaps each card by ~55% with later DOM-order cards
+    // rendering on top by default. That means the **leftmost** card's
+    // right ~55% (including its bounding-box centre) sits under card 1.
+    // A pointer click at card 0's geometric centre dispatches to card 1
+    // (#368). The fix: stack the fan so left cards paint over right
+    // cards, with the selected card winning regardless via #340.
+    const { container } = render(
+      <Hand hand={[2, 5, 13]} visible={true} onCardSelect={vi.fn()} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const [first, middle, last] = slots;
+    if (!first || !middle || !last) {
+      throw new Error('expected three slots in the rendered hand');
+    }
+    // zIndex must strictly decrease left → right so the leftmost
+    // card's centre is not occluded by its right-hand neighbour.
+    const z0 = parseInt(first.style.zIndex || '0', 10);
+    const z1 = parseInt(middle.style.zIndex || '0', 10);
+    const z2 = parseInt(last.style.zIndex || '0', 10);
+    expect(z0).toBeGreaterThan(z1);
+    expect(z1).toBeGreaterThan(z2);
+  });
+
   it('selected card stacks above its neighbours (#340)', () => {
     // The fan overlaps cards via negative marginLeft; without a z-index
     // bump on the selected card, later cards in DOM order paint over
@@ -180,6 +206,37 @@ describe('Hand — interaction', () => {
     const firstZ = parseInt(first.style.zIndex || '0', 10);
     const lastZ = parseInt(last.style.zIndex || '0', 10);
     expect(selectedZ).toBeGreaterThan(firstZ);
+    expect(selectedZ).toBeGreaterThan(lastZ);
+  });
+
+  it('selected at slot 0 still wins against the highest unselected slot (#340 + #368)', () => {
+    // Adversarial case for the new #368 stacking: when the selected
+    // card IS slot 0 (which under the unselected formula already has
+    // the highest zIndex `hand.length`), the lift must still raise it
+    // above. This pins the invariant that `hand.length + 1` for
+    // selected stays strictly above `hand.length - 0` for the
+    // leftmost-and-not-selected case — which collapses to the same
+    // slot here, so the formula picks `hand.length + 1` (selected
+    // branch). Pin the result.
+    const { container } = render(
+      <Hand
+        hand={[2, 5, 13]}
+        visible={true}
+        selectedArcanum={2}
+        onCardSelect={vi.fn()}
+      />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const [first, middle, last] = slots;
+    if (!first || !middle || !last) {
+      throw new Error('expected three slots in the rendered hand');
+    }
+    const selectedZ = parseInt(first.style.zIndex || '0', 10);
+    const middleZ = parseInt(middle.style.zIndex || '0', 10);
+    const lastZ = parseInt(last.style.zIndex || '0', 10);
+    expect(selectedZ).toBeGreaterThan(middleZ);
     expect(selectedZ).toBeGreaterThan(lastZ);
   });
 });

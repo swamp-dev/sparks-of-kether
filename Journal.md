@@ -5060,6 +5060,29 @@ The previous 0.005 threshold has been failing hosted e2e on every PR for weeks, 
 
 **Commit(s):** `b3d3991` — single commit adding the three PNGs and this Journal entry.
 
+## 2026-05-01T13:40:55-04:00 — #368: hand fan leftmost-card click occlusion
+
+**Pushed:** Fix for #368 — the leftmost card in the hand fan had its bounding-box centre occluded by the next card's SVG, so a pointer click at card 0's geometric centre dispatched to card 1. Confirmed during the 2026-05-01 playtest via `document.elementFromPoint` round-trip and a Playwright "subtree intercepts pointer events" failure.
+
+The fix is a stacking-context change in `components/hand/Hand.tsx`: invert the fan stacking from "later DOM cards on top" to "leftmost on top, decreasing rightward" via `zIndex: hand.length - i` for unselected cards. The selected card lifts to `hand.length + 1` so it always wins regardless of slot index, preserving the #340 invariant. Max zIndex stays ≤ 9 (over-cap Meditate path), well below the close button's `z-10`.
+
+Five commits:
+1. `test(hand)` — failing unit test for #368 (strictly-decreasing zIndex left → right)
+2. `fix(hand)` — the formula change in Hand.tsx
+3. `test(visual)` — refresh `demo-hand` baselines (3 viewports) — the fix visibly inverts the fan stack so the leftmost card paints over its right neighbour, which is the legitimate consequence
+4. `test(hand)` — additional tests folded in after `code-reviewer` pass: an e2e assertion in `play-flow.spec.ts` that `[data-card-slot="0"]` is clickable without `{ force: true }` (browser-level proof the regression can't silently reappear), and a unit test pinning the adversarial case (selected = slot 0)
+5. This Journal entry (in this commit)
+
+**Why:** Filed during the 2026-05-01 hot-seat playtest as part of the bug triage that produced #368/#369/#370. Pointer-occlusion bug — affects any tool that targets the geometric centre (voice control, automated tests, some assistive tech). Keyboard interaction was unaffected. Smallest of the three filed bugs to fix end-to-end, so it went first.
+
+**Notes:**
+- TDD held — failing test commit before fix; both passed once the formula change landed.
+- `code-reviewer` subagent verdict: **Ship**. Two Note-level test gaps were folded in as commit 4 (e2e click-dispatch, selected-at-slot-0 unit test). Re-review skipped — both are pure test additions, no behaviour change, and the reviewer had explicitly OK'd shipping without them.
+- `pnpm ci:local` (full: verify + build + e2e + integration) green at the head commit. 1700+ tests pass.
+- Hosted CI on the PR will follow the project's current pattern (visual-regression failures unrelated to diff per #366's note); for this PR the visual-regression diff IS the diff (the demo-hand baselines moved), so hosted CI's visual-regression job should now agree with local — but other unrelated baselines may still differ. Admin-merge criteria apply if hosted CI fails on something else.
+
+**Commit(s):** `8627550` (test) + `ccf8b4f` (fix) + `94e0f15` (visual baselines) + `ed07d58` (review cleanup) + this Journal entry.
+
 ## 2026-05-02T15:11:00-04:00 — #380: strengthen BlessingRitual skip-during-roll regression test
 
 **Pushed:** One commit. Replaces a false-positive regression test added in PR #378 (#255 T4) with one that actually catches the bug it claims to guard. Adds a new `data-blessing-state` observability attribute on the BlessingRitual root (both play-screen and Summary sections) so tests can assert the state-machine invariant directly.

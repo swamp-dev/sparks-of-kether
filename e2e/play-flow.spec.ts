@@ -125,4 +125,16 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
     'data-phase',
     'move',
   );
+
+  // #368: clicking the leftmost card must succeed without force-click.
+  // Pre-fix, the SVG of card 1 occluded card 0's bounding-box centre,
+  // and `page.locator('[data-card-slot="0"]').click()` failed with
+  // "subtree intercepts pointer events". The unit test in Hand.test
+  // pins the zIndex order; this assertion proves the actual hit-test
+  // resolves to card 0's button so the regression cannot silently
+  // reappear (e.g. if a future overlap rule re-orders the stack).
+  const card0 = page.locator('[data-card-slot="0"]');
+  await expect(card0).toBeVisible();
+  await card0.click({ timeout: 5_000 });
+  await expect(card0).toHaveAttribute('data-selected', 'true');
 });

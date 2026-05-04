@@ -242,10 +242,27 @@ export function Hand({
               // takes effect predictably (without it, the property is
               // ignored on a static button and the selected card stays
               // buried under its right-hand neighbour in DOM order).
-              // Selected card lifts to z=1 — above siblings (default
-              // 0/auto) but below the parent's z-10 close button.
+              //
+              // #368: stack the fan so left cards paint over right cards.
+              // The fan overlaps each card by ~55% with later DOM-order
+              // cards rendering on top by default — that put card 0's
+              // bounding-box centre under card 1's SVG, so a pointer
+              // click at card 0's centre dispatched to card 1. Inverting
+              // the stacking with `hand.length - i` makes the leftmost
+              // card the topmost, decreasing rightward; the rightmost
+              // card stays at the bottom of the stack but is fully
+              // visible (nothing overlaps its right edge), so this
+              // doesn't trade one occlusion for another.
+              //
+              // Selected lifts one above the highest unselected slot
+              // (`hand.length`) regardless of its own index, so #340
+              // holds for any selection. We deliberately stay below the
+              // parent's `z-10` close button (#340 comment block below);
+              // this caps at `hand.length + 1`, which is ≤ HAND_CAP + 1
+              // = 7 for the normal cap and ≤ 9 even on the over-cap
+              // Meditate path (#291) — both well below 10.
               position: 'relative',
-              zIndex: isSelected ? 1 : undefined,
+              zIndex: isSelected ? hand.length + 1 : hand.length - i,
               transform: `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`,
               transformOrigin: 'bottom center',
               // #290: marginLeft is set in card-relative rem units so
