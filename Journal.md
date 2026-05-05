@@ -5260,3 +5260,24 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - Hosted CI is the merge gate going forward (#396 removed the pre-push hook earlier this session); this PR's local checks pass and hosted CI will be the final gate.
 
 **Commit(s):** `52d21f1` (feat) + `899ddbc` (chore: delete legacy) + `f959455` (test: a11y) + `fb3c732` (test: e2e + demo route) + `d832f9f` (review fix) + this Journal entry.
+
+## 2026-05-05T17:00:00-04:00 — #294: avatars voice-consistency proofread — fresh independent pass
+
+**Pushed:** Single commit landing the second literary-critic review of `design/avatars.md` + 5 high-confidence inline touch-ups. Adds `design/avatars-review-2026-05.md` (275 lines, the new findings doc) and preserves the original 2026-04-30 review at `design/avatars-review.md` for historical reference.
+
+**Why:** #294 explicitly asked for a fresh independent literary critique on top of the touch-ups already applied during #276 closing. Dispatched a `general-purpose` subagent prompted as a classical-humanities critic + dramaturg with websearch for source verification.
+
+**The 5 inline fixes (high-confidence findings, all citation-backed):**
+1. **L307 Hermes×Aries pass v3** — torch image is Demeter/Hekate iconography (*Homeric Hymn to Demeter* II.47–51), not Hermes. Replaced with non-borrowed road-yields phrasing.
+2. **L317 Hermes×Aquarius pass v1** — bare `Pass —` tag violates the §2 voice spec ("Hermes is too clever for procedural stamps"). Changed to `Crossed —`.
+3. **L376 Athena×Pisces pass v1** — Athena under water is a category error against *Glaukopis* (γλαυκός + ὤψ = light-blazing-from-eyes). Replaced with eye-saw-before-mind phrasing that keeps the recognition without putting Athena in the water.
+4. **L575 Selene×Virgo pass v1** — `parsed` is a Hermes-coded verb. Replaced with phase-verb that's native to Selene's lunar register.
+5. **L80–81 + L133 Demeter rationale** — `*stopped the seasons*` → `*made the earth barren*`. Per *Homeric Hymn to Demeter* II.305–333, Demeter caused famine; the seasonal alternation is Zeus's brokered resolution, not her weapon.
+
+**Notes:**
+- Subagent verdict: **fix-then-ship**. 3 critical findings (1, 2, 3 above), 2 significant (4, 5 above), 4 deferred to author judgment (Capricorn formula-hardening across 5 player-lines, paraphrase clusters in 7 fail cells, Aquarius construction-drift across 6 cells, Selene×Libra weighed-verb borderline). The deferred items are stylistic re-angles requiring authorial choice over which angle each variant takes — the ticket's intent is "author chooses which suggestions to apply," so left for matrix author.
+- **Both reviews preserved.** The original `avatars-review.md` (initial pass during #276 closing) stays untouched; the new pass lands at `avatars-review-2026-05.md`. The two together let future passes diff what changed between the first and second critique.
+- `code-reviewer` verdict: **Ship.** Two minor stylistic nits below threshold (`anyway` is a hedged Athena affirmation; "the messenger" reflexive phrasing in the Hermes Aries replacement). No regressions, no fabricated sources, scope discipline correct.
+- `pnpm ci:local` green: 1928 tests + 1 todo pass; typecheck + lint green; e2e 81/144 pass + 63 skipped (visual-regression baselines unaffected by docs-only diff); integration 12/12.
+
+**Commit(s):** single commit (`design/avatars.md` 5 fixes + new `design/avatars-review-2026-05.md` + this Journal entry).
