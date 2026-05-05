@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render } from '@testing-library/react';
 import { TreeBoard } from '../TreeBoard';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
+import { makeState } from '@/test/fixtures';
 
 describe('TreeBoard', () => {
   it('renders an accessible SVG root using the figure pattern', () => {
@@ -169,5 +170,56 @@ describe('TreeBoard', () => {
   it('matches snapshot (geometry stability guard)', () => {
     const { container } = render(<TreeBoard />);
     expect(container.firstChild).toMatchSnapshot();
+  });
+});
+
+// #384: the Sefirah click target on the Tree is mode-aware. Without an
+// `onSefirahClick` handler (the default — used by `/codex` and the
+// /demo route), each node renders an `<a href="/sefirah/{key}">` so
+// click navigates to the Codex detail page. With an `onSefirahClick`
+// handler (the /play mount), the node instead renders a `<button>`
+// that fires the handler — no navigation, no game-state loss.
+describe('TreeBoard — #384 mode-aware Sefirah click', () => {
+  it('without onSefirahClick: renders <a href="/sefirah/{key}"> per node (Codex navigation default)', () => {
+    const { container } = render(<TreeBoard state={makeState()} />);
+    const links = container.querySelectorAll<HTMLAnchorElement>(
+      'a[data-sefirah-link]',
+    );
+    expect(links.length).toBe(10);
+    for (const link of links) {
+      const key = link.getAttribute('data-sefirah-link');
+      expect(link.getAttribute('href')).toBe(`/sefirah/${key}`);
+    }
+    expect(container.querySelectorAll('button[data-sefirah-link]').length).toBe(0);
+  });
+
+  it('with onSefirahClick: renders <button> per node (no href, no anchor)', () => {
+    const onSefirahClick = vi.fn();
+    const { container } = render(
+      <TreeBoard state={makeState()} onSefirahClick={onSefirahClick} />,
+    );
+    const buttons = container.querySelectorAll<HTMLButtonElement>(
+      'button[data-sefirah-link]',
+    );
+    expect(buttons.length).toBe(10);
+    expect(container.querySelectorAll('a[data-sefirah-link]').length).toBe(0);
+    for (const button of buttons) {
+      expect(button.getAttribute('type')).toBe('button');
+    }
+  });
+
+  it('clicking a node with onSefirahClick fires the handler with the Sefirah key — no navigation', () => {
+    const onSefirahClick = vi.fn();
+    const { container } = render(
+      <TreeBoard state={makeState()} onSefirahClick={onSefirahClick} />,
+    );
+    const tiferetButton = container.querySelector<HTMLButtonElement>(
+      'button[data-sefirah-link="tiferet"]',
+    );
+    expect(tiferetButton).not.toBeNull();
+    if (tiferetButton === null) return;
+    fireEvent.click(tiferetButton);
+    expect(onSefirahClick).toHaveBeenCalledTimes(1);
+    expect(onSefirahClick).toHaveBeenCalledWith('tiferet');
   });
 });

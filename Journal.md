@@ -5154,3 +5154,24 @@ Three commits:
 - Surfaced by code-review of PR #388 (#385 fix); filed as a separate ticket per workflow.
 
 **Commit(s):** `46da4e7` (failing test) + `a338041` (guard) + this Journal entry.
+
+## 2026-05-04T21:18:16-04:00 — #384: in-game Sefirah click opens inline popover
+
+**Pushed:** Three implementation commits + one review-fix commit closing #384. Mode-aware Sefirah click on the Tree of Life: TreeBoard accepts an optional `onSefirahClick: (key: SefirahKey) => void` prop. When provided, each node renders as a `<button type="button">` that calls the handler — no anchor, no href, no navigation. When omitted, the existing `<a href="/sefirah/{key}">` Codex-navigation behavior stands (preserved as the no-op default; the Codex page does not currently mount TreeBoard, but a future Codex-tree-as-navigator pattern would inherit this default).
+
+The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `SefirahInfoPopover` — a centred modal-ish dialog (role=dialog + aria-modal + aria-labelledby) showing the Sefirah's English name, Hebrew, one-line meaning, stat label, soul-door indicator (when active player's zodiac sign is known), team Sparks count, and a `target="_blank" rel="noopener noreferrer"` "Read more in Codex" link. Closes via X button, backdrop click, or Escape key. Game state survives the popover entirely (the play page's local React state is untouched).
+
+**Why:** Surfaced during the 2026-05-01 hot-seat playtest: "clicking the sefirah opens information about them, but how do you go back to the game?" Pre-fix, the in-game Tree click navigated to `/sefirah/[key]` and stranded the player on a Codex page with no return-to-game affordance, losing all game state on browser-back. The fix follows option (a) from the issue body — `onSefirahClick` prop overrides navigation — which matches the way TreeBoard's other interactivity prop (`onPathClick`) is shaped.
+
+**Tests:**
+- `components/tree/__tests__/TreeBoard.test.tsx` — three new tests pinning the prop contract (without prop: `<a href>`; with prop: `<button>`; click fires handler with right key).
+- `components/game/__tests__/PlayScreen.sefirahPopover.test.tsx` (new) — six integration tests covering button-not-anchor in /play, click opens popover with correct key, close button + Escape + backdrop click all dismiss, popover content surfaces (name, Hebrew, stat, sparks), and clicking a second Sefirah while one is open swaps to the new key without flash.
+
+**Notes:**
+- TDD held — failing TreeBoard tests committed before the implementation; tests went green once the prop was wired.
+- `code-reviewer` first verdict: **Fix**. Two Significant blockers — (a) inline `onClose` closure in PlayScreen would have churned the popover's document keydown listener on every parent re-render (sound effects, turn timer, etc.); (b) four `!` non-null assertions in new tests blocked `pnpm lint`. Plus three improvements: dead `e.stopPropagation()` on document keydown, redundant `zodiacSign` undefined-guard, and missing tests for backdrop click + popover swap.
+- All five items addressed in the review-fix commit. Listener now reads `onClose` through `onCloseRef` so the keydown effect mounts exactly once. Tests use the repo's established `expect(x).not.toBeNull()` + `if (x === null) return;` narrowing pattern. The redundant guard simplified after changing the prop type to `activePlayerSign: ZodiacSignKey | undefined` (matches `exactOptionalPropertyTypes: true`). Two new tests added.
+- `code-reviewer` re-review verdict: **Ship**. Ref pattern correct, listener mounts once, lint clean, prop type right, all 1909 tests + 1 todo green.
+- `pnpm typecheck && pnpm lint && pnpm test` green at HEAD.
+
+**Commit(s):** `8d24878` (failing TreeBoard tests) + `23c0f2a` (TreeBoard prop wiring) + `f6c14fa`-equivalent merge from main + `(third-impl)` (PlayScreen wiring + popover component + integration tests) + `60099c2` (review fixes: listener stability, lint, exactOptional, two new tests) + this Journal entry.

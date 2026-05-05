@@ -187,6 +187,19 @@ interface TreeBoardProps {
    * deciding whether to keep or play it.
    */
   readonly highlightedCard?: number;
+  /**
+   * #384 — mode-aware Sefirah click. When set, each node renders as
+   * a `<button>` that calls this handler with the Sefirah key on
+   * click; nothing navigates. When omitted, the default behaviour
+   * stands: each node renders as an `<a href="/sefirah/{key}">`
+   * that navigates to the Codex detail page.
+   *
+   * The /play mount provides a handler so a mid-game Sefirah click
+   * opens an inline popover instead of stranding the player on a
+   * Codex page that has no "return to game" affordance and no
+   * persisted gameplay state to come back to.
+   */
+  readonly onSefirahClick?: (key: SefirahKey) => void;
 }
 
 export function TreeBoard({
@@ -196,6 +209,7 @@ export function TreeBoard({
   onPathClick,
   movesEnabled = true,
   highlightedCard,
+  onSefirahClick,
 }: TreeBoardProps): JSX.Element {
   // Scope IDs per render so two TreeBoards in the same DOM don't fight
   // over global #treeBackground / gradient references.
@@ -662,23 +676,38 @@ export function TreeBoard({
                   />
                 ) : null}
                 {/*
-                  Hover/focus surface. The transparent <a> sits over
-                  the node so pointer events land on it (the breath
-                  halo above it is `pointer-events-none`). The
-                  `peer` enables a Tailwind sibling selector for the
-                  tooltip below.
+                  Hover/focus surface. The transparent overlay sits
+                  over the node so pointer events land on it (the
+                  breath halo above is `pointer-events-none`). The
+                  `peer` class enables a Tailwind sibling selector
+                  for the tooltip below.
 
-                  Sefirah Codex pages live at /sefirah/[key]; that
-                  route lands in #320. Until then this is a graceful
-                  404 — the click is a real navigation, not a no-op.
+                  #384: mode-aware. Without `onSefirahClick`, the
+                  surface is an `<a href="/sefirah/{key}">` so click
+                  navigates to the Codex detail page. With
+                  `onSefirahClick` (the /play mount), the surface is
+                  a `<button>` that fires the handler — a mid-game
+                  click opens an inline popover instead of stranding
+                  the player on a Codex page.
                 */}
-                <a
-                  data-sefirah-link={sefirah.key}
-                  href={`/sefirah/${sefirah.key}`}
-                  aria-label={`Open ${sefirah.englishName} in the Codex`}
-                  aria-describedby={tooltipId}
-                  className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
-                />
+                {onSefirahClick !== undefined ? (
+                  <button
+                    type="button"
+                    data-sefirah-link={sefirah.key}
+                    aria-label={`Open ${sefirah.englishName} info`}
+                    aria-describedby={tooltipId}
+                    onClick={() => onSefirahClick(sefirah.key)}
+                    className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                  />
+                ) : (
+                  <a
+                    data-sefirah-link={sefirah.key}
+                    href={`/sefirah/${sefirah.key}`}
+                    aria-label={`Open ${sefirah.englishName} in the Codex`}
+                    aria-describedby={tooltipId}
+                    className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                  />
+                )}
                 {/*
                   Tooltip surface. `peer-hover` / `peer-focus` reveals
                   it; otherwise it sits in the DOM (so AT users with

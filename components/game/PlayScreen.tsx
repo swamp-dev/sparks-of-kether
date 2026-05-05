@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
+import type { SefirahKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
@@ -8,6 +9,7 @@ import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { DiscardPrompt } from '@/components/game/DiscardPrompt';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
+import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
 import type {
   ChallengeContext,
@@ -94,6 +96,15 @@ export function PlayScreen({
   const [thresholdResult, setThresholdResult] =
     useState<FinalThresholdResult | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
+  // #384: in-game Sefirah info popover. The Tree's `onSefirahClick`
+  // sets this; the popover renders an overlay with name / Hebrew /
+  // meaning / stat / soul-door indicator and a "Read more in Codex"
+  // link that opens in a new tab so reading the full Codex page
+  // doesn't lose game state. Closed via the X button, the backdrop,
+  // or Escape.
+  const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(
+    undefined,
+  );
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -331,6 +342,10 @@ export function PlayScreen({
           state={turn.state}
           {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
           onPathClick={handlePathClick}
+          // #384: opens an inline popover instead of navigating to
+          // the Codex detail page (which would strand the player
+          // off-game with no return-to-game affordance).
+          onSefirahClick={(key) => setOpenSefirah(key)}
           // #129: only highlight paths during the move phase. Once
           // the player has moved, the board is decorative until the
           // next turn begins; the action panel below carries the
@@ -516,6 +531,22 @@ export function PlayScreen({
           it inside the main layout for SR ordering, but the
           component itself uses `position: fixed` so it floats. */}
       <SettingsButton />
+      {/* #384: in-game Sefirah info popover. Mounted at the play-
+          screen root so the backdrop covers the full viewport, but
+          inside <main> so accessibility-tree ordering keeps it
+          adjacent to the play surface that triggered it. */}
+      {openSefirah !== undefined ? (
+        <SefirahInfoPopover
+          sefirahKey={openSefirah}
+          teamSparks={
+            turn.state.players.filter((p) =>
+              p.sparksHeld.has(openSefirah),
+            ).length
+          }
+          activePlayerSign={activePlayer?.zodiacSign}
+          onClose={() => setOpenSefirah(undefined)}
+        />
+      ) : null}
     </main>
   );
 }
