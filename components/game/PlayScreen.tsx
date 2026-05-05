@@ -15,8 +15,8 @@ import type {
   ChallengeContext,
   ChallengeResolution,
 } from '@/lib/challenge-types';
-import { FinalThreshold } from '@/components/game/FinalThreshold';
-import type { FinalThresholdResult } from '@/engine/endgame';
+import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
+import { isKetherHeld } from '@/engine/kether';
 import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
 import { useSound } from '@/lib/sound/useSound';
@@ -44,7 +44,11 @@ import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
  *   - EncounterScreen opens automatically when the active player arrives at
  *     an uncleared `'check'`-kind Sefirah (replaces the prior ChallengeModal
  *     in #228; ChallengeModal stays alive for `/demo/challenge` only).
- *   - FinalThreshold takes over when all players reach Kether
+ *   - FinalThresholdScreen (K3 of #285) takes over when phase ===
+ *     'kether' (the engine's all-at-Kether trigger from #344). Held
+ *     seats — players already at Kether but waiting for the team —
+ *     also route through FinalThresholdScreen for the pre-ritual hold
+ *     view (per `design/final-threshold.md` § 2.1).
  *
  * The orchestrator does not own GameState authoritatively — `useTurn`
  * exposes a `setState` hook for server pushes (Phase 5). For now the
@@ -93,8 +97,6 @@ export function PlayScreen({
   roomCode,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
-  const [thresholdResult, setThresholdResult] =
-    useState<FinalThresholdResult | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
   // #384: in-game Sefirah info popover. The Tree's `onSefirahClick`
   // sets this; the popover renders an overlay with name / Hebrew /
@@ -213,18 +215,37 @@ export function PlayScreen({
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
-  const allAtKether =
-    turn.state.players.length > 0 &&
-    turn.state.players.every((p) => p.position === 'kether');
 
-  // Final Threshold takeover: once all players reach Kether, the play
-  // surface yields to the threshold ritual. The engine runs the actual
-  // win/loss check inside `resolveFinalThreshold`.
-  if (allAtKether && thresholdResult === null) {
+  // Final Threshold takeover: once the engine flips `phase: 'kether'`
+  // (K1's `maybeTriggerKetherRitual` fires when every player has
+  // arrived), the play surface yields to the FinalThresholdScreen for
+  // the round-robin witness ritual. Per § 4.1 Kether is a Shell-free
+  // zone — no shell-panel render in this branch (the early-return is
+  // the gate).
+  if (turn.phase === 'kether' && activePlayer !== undefined) {
     return (
-      <FinalThreshold
+      <FinalThresholdScreen
         state={turn.state}
-        onResolved={(r) => setThresholdResult(r)}
+        player={activePlayer}
+        turn={turn}
+        mode={roomCode !== undefined ? 'multiplayer' : 'hot-seat'}
+        {...(className !== undefined ? { className } : {})}
+      />
+    );
+  }
+
+  // Pre-ritual hold view: a player has arrived at Kether but the rest
+  // of the team has not. Their seat is held — skipped in turn rotation,
+  // hand frozen — and they see a "waiting for the team" surface
+  // instead of the normal turn UI. The active player (still climbing)
+  // sees their normal play surface; only held seats route here.
+  if (activePlayer !== undefined && isKetherHeld(turn.state, activePlayer.id)) {
+    return (
+      <FinalThresholdScreen
+        state={turn.state}
+        player={activePlayer}
+        turn={turn}
+        mode={roomCode !== undefined ? 'multiplayer' : 'hot-seat'}
         {...(className !== undefined ? { className } : {})}
       />
     );

@@ -5237,3 +5237,26 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - Design-doc historical references in `design/doc-audit-2026-04.md` and `design/playability-priorities.md` are intentionally left alone — those are point-in-time audit/priority docs, not operational instructions. Surfaced in the PR body so a future agent doesn't open a chase-ticket.
 
 **Commit(s):** single commit (deletions + doc rewrites + this Journal entry).
+
+## 2026-05-05T15:17:04-04:00 — #351: FinalThresholdScreen — K3 of #285
+
+**Pushed:** Five commits closing #351. Replaces the legacy `FinalThreshold` component for `phase === 'kether'` with the round-robin Card-Witness Ritual UI defined in `design/final-threshold.md` § 7.1. K3 wires three sub-states + a pre-ritual hold view, all driven by the K1/K2/K4 engine surface (#344, #348, #365 — already merged).
+
+**The five commits:**
+1. `feat(play): FinalThresholdScreen — K3 of #285` — new component (687 LoC), new test file (17 tests, dispatch round-trips through the real `useTurn` hook), PlayScreen rewiring.
+2. `chore(play): delete legacy FinalThreshold component` — removes the now-dead pre-#344 endgame component (298 LoC) and its test (152 LoC). Legacy `engine/endgame.ts:resolveFinalThreshold` engine fn intentionally left in place — separate engine cleanup.
+3. `test(a11y): axe-clean coverage for FinalThresholdScreen` — extends `components/__tests__/a11y.test.tsx` with 3 new tests covering hold/witness/close shapes (the closure test seeds a staged Spark so axe sees both `aria-pressed` button states).
+4. `test(e2e): drive a 2-player ritual through the UI` — new `/demo/final-threshold` route + `e2e/final-threshold.spec.ts`. The demo mounts FinalThresholdScreen against deterministic seeded fixture state (matches `/demo/challenge`, `/demo/ritual` precedent) so the e2e can exercise the production component without driving a full game from /play through random card draws.
+5. `fix(play): #351 review — drop dead useTurnHook wrapper, pin corruption fallback` — review-fix folding in 2 of 5 reviewer improvements. (a) demo-route's `useTurnHook` wrapper was dead extraction that re-created the RNG on every render; replaced with `useRef(seededRng(1)).current` so the RNG identity stays stable. (b) Added a dedicated test for the `phase === 'kether' + ritual === undefined` defensive guard.
+
+**Why:** Surfaced as the WIP from a prior session — the component was authored but never committed; ticket #351 had been opened a while back as the K3 spawn from Epic #285. This session moved the WIP into ticket-ready commits, fixed one typecheck error (mutation of a readonly `ketherRitual` property in the close test), deleted the now-dead old component, and added the a11y + e2e coverage the ticket called for.
+
+**Notes:**
+- TDD framing: the WIP existed as untracked files when this session started, so the failing-test-first cycle for the bulk of the implementation was reconstructed-after-the-fact rather than literal red-then-green commits. The single review-fix commit (the `useRef` change + the new corruption-fallback test) followed proper TDD shape. Noted in commit messages.
+- `code-reviewer` first verdict: **Ship** with zero blockers, 5 non-blocking improvements. Two folded in (the dead wrapper + the corruption test). Three skipped: a redundant `<ol role="list">` (pure style; axe passes regardless), a design-spec § 3.3 drift vs the K2 authorize gate (separate ticket — flag below), and a post-Confirm e2e assertion already documented inline.
+- `code-reviewer` re-review verdict: **Ship**. The `useRef` pattern correctly pins identity; the new test exercises the targeted branch (not short-circuiting on `phase` first); the describe-block rename accurately reflects the two-test contents.
+- 1928 vitest tests + 1 todo pass at HEAD. `pnpm typecheck && pnpm lint` green. e2e: 3/3 chromium tests pass on the new spec.
+- **Spec-drift flag** (for follow-up): `design/final-threshold.md` § 3.3 says `kether-close-stage-spark` / `kether-close-unstage-spark` are "authorized for the Spark's `playerId` only", but K2's authorize gate (`lib/authorize.ts:112-119`) deliberately allows any-player stage/unstage/confirm citing cooperative design intent. The K3 UI follows K2's actual behavior (any-player buttons enabled when staged), but the spec text needs updating before someone files a "undo other player's staged Spark" bug as a regression.
+- Hosted CI is the merge gate going forward (#396 removed the pre-push hook earlier this session); this PR's local checks pass and hosted CI will be the final gate.
+
+**Commit(s):** `52d21f1` (feat) + `899ddbc` (chore: delete legacy) + `f959455` (test: a11y) + `fb3c732` (test: e2e + demo route) + `d832f9f` (review fix) + this Journal entry.

@@ -9,6 +9,8 @@ import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { ChallengeModal } from '@/components/challenge/ChallengeModal';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
+import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
+import { initKetherRitual } from '@/engine/kether';
 import { useTurn } from '@/lib/use-turn';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
@@ -433,6 +435,151 @@ describe('a11y — major UI surfaces', () => {
       // Wait for the panel to mount (synchronous in this codepath —
       // useState set + render — but the click handler may be batched).
       await new Promise((resolve) => setTimeout(resolve, 0));
+      expectNoViolations(await axe(container));
+    });
+  });
+
+  /**
+   * #351: FinalThresholdScreen has three render shapes — pre-ritual
+   * hold view, witness sub-state, and closure sub-state — each with
+   * a distinct DOM surface, polite live region, and affordance set.
+   * Audit each independently. The hold view and witness/close paths
+   * have nothing in common DOM-wise (separate <section> roots,
+   * different aria-label / aria-live wiring), so per-shape coverage
+   * is a real signal, not redundant.
+   */
+  describe('FinalThresholdScreen (#351)', () => {
+    function makeKetherPlayer(overrides: { id: string; name: string }) {
+      return makePlayer({
+        id: overrides.id,
+        name: overrides.name,
+        position: 'kether',
+        hand: [10, 11],
+        zodiacSign: 'aries',
+      });
+    }
+
+    it('pre-ritual hold view is axe-clean', async () => {
+      // One player at Kether, one still climbing — held view renders
+      // for the held seat. `phase !== 'kether'` keeps the ritual
+      // un-triggered so the held branch fires.
+      const held = makeKetherPlayer({ id: 'p1', name: 'Alex' });
+      const climbing = makePlayer({
+        id: 'p2',
+        name: 'Bea',
+        position: 'tiferet',
+        hand: [4, 5, 6],
+        zodiacSign: 'leo',
+      });
+      const state = makeState(
+        {},
+        { players: [held, climbing], activePlayerId: 'p1' },
+      );
+      const { result } = renderHook(() =>
+        useTurn({ initialState: state, rng: seededRng(1) }),
+      );
+      const { container } = render(
+        <FinalThresholdScreen
+          state={state}
+          player={held}
+          turn={result.current}
+          mode="hot-seat"
+        />,
+      );
+      expectNoViolations(await axe(container));
+    });
+
+    it('witness sub-state is axe-clean', async () => {
+      // Both players at Kether, ritual initialised. Active witness
+      // (last-arrived first per design § 2.2) renders the Play/Pass
+      // surface — distinct from the read-only view.
+      const p1 = makeKetherPlayer({ id: 'p1', name: 'Alex' });
+      const p2 = makeKetherPlayer({ id: 'p2', name: 'Bea' });
+      const base = makeState(
+        {},
+        { players: [p1, p2], activePlayerId: 'p1' },
+      );
+      const initResult = initKetherRitual(base, { p1: 100, p2: 200 });
+      if (!initResult.ok) {
+        throw new Error(
+          `a11y witness setup: initKetherRitual rejected — ${initResult.reason.kind}`,
+        );
+      }
+      const state = initResult.value;
+      const witnessPlayer = state.players.find((p) => p.id === 'p2');
+      if (!witnessPlayer) throw new Error('witnessPlayer missing');
+      const { result } = renderHook(() =>
+        useTurn({ initialState: state, rng: seededRng(1) }),
+      );
+      const { container } = render(
+        <FinalThresholdScreen
+          state={state}
+          player={witnessPlayer}
+          turn={result.current}
+          mode="hot-seat"
+        />,
+      );
+      expectNoViolations(await axe(container));
+    });
+
+    it('close sub-state is axe-clean', async () => {
+      // Hand-roll the ritual into 'close' and stage one Spark so the
+      // axe pass exercises both the staged and unstaged button states
+      // (different aria-pressed values; different visual treatments).
+      const p1Sparks = new Set(['gevurah', 'tiferet'] as const);
+      const p2Sparks = new Set(['hod'] as const);
+      const p1 = makePlayer({
+        id: 'p1',
+        name: 'Alex',
+        position: 'kether',
+        hand: [],
+        zodiacSign: 'aries',
+        sparksHeld: p1Sparks,
+      });
+      const p2 = makePlayer({
+        id: 'p2',
+        name: 'Bea',
+        position: 'kether',
+        hand: [],
+        zodiacSign: 'leo',
+        sparksHeld: p2Sparks,
+      });
+      const base = makeState(
+        {},
+        { players: [p1, p2], activePlayerId: 'p1' },
+      );
+      const initResult = initKetherRitual(base, { p1: 100, p2: 200 });
+      if (!initResult.ok) {
+        throw new Error(
+          `a11y close setup: initKetherRitual rejected — ${initResult.reason.kind}`,
+        );
+      }
+      const witnessState = initResult.value;
+      const baseRitual = witnessState.ketherRitual;
+      if (baseRitual === undefined) {
+        throw new Error('a11y close setup: ritual missing');
+      }
+      const state = {
+        ...witnessState,
+        ketherRitual: {
+          ...baseRitual,
+          subPhase: 'close' as const,
+          stagedClosureSparks: [
+            { playerId: 'p1', sefirah: 'gevurah' as const },
+          ],
+        },
+      };
+      const { result } = renderHook(() =>
+        useTurn({ initialState: state, rng: seededRng(1) }),
+      );
+      const { container } = render(
+        <FinalThresholdScreen
+          state={state}
+          player={p1}
+          turn={result.current}
+          mode="hot-seat"
+        />,
+      );
       expectNoViolations(await axe(container));
     });
   });
