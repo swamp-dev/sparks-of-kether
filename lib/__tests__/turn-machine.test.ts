@@ -1501,6 +1501,35 @@ describe('turnReducer — react sub-phase: react-continue (#385)', () => {
     expect(result.reason.actual).toBe('prep');
   });
 
+  // #389: symmetry with `react-continue`. A confused or buggy
+  // client that fires `accept-setback` mid-`prep` would otherwise
+  // skip the encounter resolve entirely (Separation tick + phase
+  // transition apply with no roll). Reachable through the UI?
+  // No — EncounterScreen only renders the Accept Setback button
+  // in the react sub-phase. Reachable through the wire format?
+  // Yes, until this guard exists.
+  it('rejects accept-setback when sub-phase is not react', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'prep',
+        },
+      },
+      { kind: 'accept-setback', sefirah: 'gevurah' },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('wrong-sub-phase');
+    if (result.reason.kind !== 'wrong-sub-phase') return;
+    expect(result.reason.expected).toBe('react');
+    expect(result.reason.actual).toBe('prep');
+  });
+
   it('rejects react-continue when lastOutcome is a fail (callers should use accept-setback)', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] });

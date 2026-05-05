@@ -1283,6 +1283,22 @@ export function turnReducer(
       if (phase !== 'challenge') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'challenge', actual: phase } };
       }
+      // #389: symmetry with `react-continue`. The UI only renders
+      // the Accept Setback button in the react sub-phase, but the
+      // wire format admits a mid-prep dispatch — without this guard
+      // a buggy or confused client would skip the encounter resolve
+      // entirely (Separation tick + phase transition apply with no
+      // roll). Mirror the react-continue guard shape.
+      if (challengeSubPhase !== 'react') {
+        return {
+          ok: false,
+          reason: {
+            kind: 'wrong-sub-phase',
+            expected: 'react',
+            actual: challengeSubPhase,
+          },
+        };
+      }
       const next = acceptSetback(state, {
         playerId: player.id,
         sefirah: event.sefirah,

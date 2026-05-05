@@ -5120,3 +5120,18 @@ Five commits:
 - Hosted CI will fail e2e on visual-regression as it does for every PR; diff is docs + data only — admin-merge bypass criteria met.
 
 **Commit(s):** `e87fefb` (failing test pin) + `61bc0d7` (design + data update) + this Journal entry.
+
+## 2026-05-04T18:31:34-04:00 — #389: accept-setback sub-phase guard
+
+**Pushed:** Two commits (failing test → guard) closing #389. The `react-continue` and `accept-setback` arms of `lib/turn-machine.ts` were asymmetric — `react-continue` validated both `phase === 'challenge'` AND `challengeSubPhase === 'react'`, but `accept-setback` validated only `phase`. This shipped a latent contract violation: a wire-format dispatch of `accept-setback` from `prep` would silently skip the encounter resolve (apply +1/+2 Separation tick, transition phase to `'draw'`, with no roll). Unreachable through hot-seat UI today (EncounterScreen only renders the Accept Setback button in the react sub-phase), but reachable through the wire format.
+
+**Fix:** mirror the existing `react-continue` guard exactly — separate `phase` and `challengeSubPhase` checks, identical reason shape `{ kind: 'wrong-sub-phase', expected: 'react', actual: challengeSubPhase }`. Five-line behaviour change.
+
+**Test:** sibling test to the existing `rejects react-continue when sub-phase is not react` (line 1482), placed inside the same describe block. Asserts the rejection from `phase: 'challenge', challengeSubPhase: 'prep'`. TDD held — test fails on the test-only commit, passes after the guard lands.
+
+**Notes:**
+- `code-reviewer` subagent verdict: **Ship** with zero blockers. One minor note (test could move to the main accept-setback describe block on a future sweep) — not worth a follow-up. Red-green verified by the reviewer.
+- All 1895 tests + 1 todo pass.
+- Surfaced by code-review of PR #388 (#385 fix); filed as a separate ticket per workflow.
+
+**Commit(s):** `46da4e7` (failing test) + `a338041` (guard) + this Journal entry.
