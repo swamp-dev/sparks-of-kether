@@ -106,16 +106,16 @@ async function walkToPlayScreen(page: Page): Promise<void> {
   // confirms it directly without cycling.
   await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
 
-  // Player 2: ritual, then cycle to Leo (aries is taken, so the cycle
-  // helper skips it; four clicks of Next from aries-taken land on
-  // leo via taurus → gemini → cancer → leo).
+  // Player 2: ritual, then cycle to Leo. Aries is taken; #370 makes
+  // the picker open on the first available sign (taurus), so three
+  // clicks of Next reach leo (taurus → gemini → cancer → leo).
   await page
     .getByRole('button', { name: /skip.*roll all remaining/i })
     .click();
   await page.getByRole('button', { name: /^continue$/i }).click();
   await page.locator('[data-zodiac-sign-picker]').waitFor();
   const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     await nextArrow.click();
   }
   await page.getByRole('button', { name: /^Confirm Leo$/ }).click();

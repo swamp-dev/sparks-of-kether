@@ -391,10 +391,19 @@ describe('ZodiacSignPicker — confirm + selection (preserved + #314)', () => {
     ).toBeInTheDocument();
   });
 
-  it('Confirm is disabled when the focused sign is taken', () => {
-    render(<ZodiacSignPicker onPick={vi.fn()} taken={{ aries: 'Andy' }} />);
-    // Aries is the default focus + it's taken → confirm should be
-    // disabled and cycling should skip-on-arrow toward taurus.
+  it('Confirm is disabled in the pathological all-signs-taken case (#370 fallback)', () => {
+    // Pre-#370 this test exercised the much more common case of
+    // "default focus is aries, aries is taken → Confirm disabled."
+    // After #370 the picker skips taken signs at mount, so reaching
+    // a taken-focused state requires every sign to be taken — the
+    // pathological 12-player case the fallback in
+    // ZodiacSignPicker's `initialFocusedIndex` covers. Pin that the
+    // fallback (index 0) lands on a disabled Confirm rather than
+    // blowing up or somehow enabling pick.
+    const allTaken = Object.fromEntries(
+      zodiacSigns.map((s) => [s.key, 'someone']),
+    );
+    render(<ZodiacSignPicker onPick={vi.fn()} taken={allTaken} />);
     const confirm = screen.getByRole('button', { name: /^Confirm/ }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
   });
@@ -432,6 +441,44 @@ describe('ZodiacSignPicker — taken signs (preserved from #212/#236)', () => {
     expect(taurus.getAttribute('aria-checked')).toBe('false');
     expect(
       container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
+    ).toBe('current');
+  });
+
+  it('initial focus skips taken signs — opens on the first available (#370)', () => {
+    // Per #370 option (a): when the picker mounts with `taken`
+    // already including the default-focus sign (aries), the carousel
+    // should anchor on the first AVAILABLE sign instead of dropping
+    // the player on a sign they cannot pick. This eliminates the
+    // ambiguous "Confirm Aries" CTA P2 saw when aries was taken by
+    // P1 — the cycle-skip helper already handled navigation but the
+    // initial state was unconditionally aries.
+    const { container } = render(
+      <ZodiacSignPicker onPick={vi.fn()} taken={{ aries: 'Andy' }} />,
+    );
+    expect(
+      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
+      'aries should not be the current stage when taken',
+    ).not.toBe('current');
+    expect(
+      container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage'),
+      'taurus is the next available sign in zodiacal order',
+    ).toBe('current');
+    // The Confirm CTA should reflect the new initial focus, not aries.
+    expect(screen.queryByRole('button', { name: /^Confirm Aries$/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Confirm Taurus$/ })).toBeInTheDocument();
+  });
+
+  it('initial focus walks past consecutive taken signs to the first available', () => {
+    // If aries AND taurus are both taken, the initial focus lands on
+    // gemini. The walk uses the same skip-table the cycle helper does.
+    const { container } = render(
+      <ZodiacSignPicker
+        onPick={vi.fn()}
+        taken={{ aries: 'Andy', taurus: 'Bea' }}
+      />,
+    );
+    expect(
+      container.querySelector('[data-sign="gemini"]')?.getAttribute('data-stage'),
     ).toBe('current');
   });
 

@@ -5121,6 +5121,27 @@ Five commits:
 
 **Commit(s):** `e87fefb` (failing test pin) + `61bc0d7` (design + data update) + this Journal entry.
 
+## 2026-05-01T14:52:43-04:00 — #370: sign picker opens on first available sign
+
+**Pushed:** Fix for #370 — option (a) from the investigate ticket. The hot-seat sign picker used to anchor on `aries` even when aries was already taken, putting P2 face-to-face with a dimmed-but-readable "Confirm Aries" CTA. The picker now opens on the first AVAILABLE sign at mount: with nothing taken, that's still aries (P1 unaffected); with aries taken (P2 after P1's pick), it opens on taurus.
+
+Four commits:
+1. `test(picker)` — failing tests for the new contract: aries-taken → focus on taurus; aries+taurus-taken → focus on gemini.
+2. `fix(picker)` — the implementation. Replaces unconditional `useState<number>(0)` with a derived first-available index. Rewrites the existing "Confirm is disabled when the focused sign is taken" test (now exercising an unreachable state) into the all-signs-taken pathological fallback case.
+3. `test(e2e)` — updates four e2e specs (encounter, sound, screenshots.review, plus play-flow touched in #2) from 4 → 3 next-clicks for P2's Leo pick, since the picker auto-skips aries.
+4. `fix(picker)` — code-review fix: swap the `useMemo`-then-`useState` pattern for a lazy `useState` initialiser. The previous shape was dead code after mount (initial value read once) and misleading. Comment expanded to explain why no auto-jump is needed if `taken` changes mid-session.
+
+**Why:** Filed during the 2026-05-01 hot-seat playtest. UX clarity bug — P2's first impression of the picker was a sign they couldn't confirm. Option (a) eliminates the bug at its source rather than papering over it; the cycle-skip helper already proves the picker can compute "first available" correctly.
+
+**Notes:**
+- TDD held — failing test commit before the fix; both passed once the implementation landed. The pre-existing test that exercised the now-unreachable state was rewritten rather than deleted, to keep coverage of the defensive `focusedDisabled` branch in its only-now-reachable shape.
+- `code-reviewer` subagent verdict: **Ship** with one Significant finding (the dead `useMemo`). Folded in inline as commit 4. Re-review skipped — the fix is mechanical, in the same scope as the original review, and `pnpm ci:local` re-ran green afterward.
+- `pnpm ci:local` (full: verify + build + e2e + integration) green at the head commit. 1700 tests pass.
+- Cross-spec audit: searched all four e2e files (`encounter`, `play-flow`, `screenshots.review`, `sound`) for the 4-click pattern; all updated. No other consumers of the picker's initial state were affected.
+- Hosted CI may fail on unrelated visual-regression baselines per the project's current pattern; this PR doesn't touch any committed visual-regression baselines (the picker's visual surface didn't change), so any failures will be pre-existing drift.
+
+**Commit(s):** `b17a349` (failing tests) + `c4a0a28` (fix + test rewrite + play-flow e2e) + `f756604` (other 3 e2e specs) + `de779aa` (review fix: lazy useState initialiser) + this Journal entry.
+
 ## 2026-05-01T14:00:59-04:00 — #369: themed app/not-found.tsx replaces bare Next.js fallback
 
 **Pushed:** Fix for #369 — added `app/not-found.tsx` so any unknown URL (mistyped Sefirah, stale codex link, deep link to a deleted route) renders the site's themed page rather than Next.js's white-on-black default. Headline "Off the Tree", quiet flavour copy, `Open the Codex` primary CTA + `Return home` secondary link. ColorBloom tinted with the canonical `gevurah` token (#dc143c) for a whisper of severity. Server-rendered, no client state. Visual-regression baselines committed for desktop / tablet / mobile.

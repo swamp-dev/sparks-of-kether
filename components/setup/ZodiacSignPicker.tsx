@@ -104,12 +104,31 @@ export function ZodiacSignPicker({
   // when we want the cycle / jump helpers to recompute their skip
   // table.
   const takenMap = useMemo(() => taken ?? {}, [taken]);
-  // Default focus = aries (index 0). Predictable + matches the
-  // zodiacal order. If aries is taken at mount, the Confirm CTA
-  // renders disabled until the player cycles forward — the cycling
-  // helpers below skip taken signs so one keystroke moves the player
-  // off the disabled stage.
-  const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  // Default focus = the first AVAILABLE sign in zodiacal order. With
+  // no `taken` prop that's aries (index 0) — the original behaviour
+  // and what every solo / first-player flow already gets. With aries
+  // taken (e.g. P2 entering after P1 already picked aries, #370),
+  // the picker anchors on taurus instead so the player never opens
+  // on a sign they cannot confirm. The walk uses the same skip-table
+  // the cycle helper does. If every sign were taken (12-player
+  // hypothetical, not reachable with `MAX_PLAYERS_PER_ROOM = 4` per
+  // `lib/rooms.ts`), we fall back to index 0; the Confirm CTA renders
+  // disabled in that pathological case rather than blowing up.
+  //
+  // Lazy `useState` initialiser rather than a derived `useMemo` —
+  // the index is the *initial* state of the picker, not a reactive
+  // value. If `taken` changes after mount (a sign gets grabbed
+  // mid-browse), `focusedDisabled` already reads live from
+  // `takenMap[focusedSign.key]` so the Confirm CTA disables and the
+  // player can cycle off — there's no need (and no UX precedent in
+  // this picker) for an auto-jump.
+  const [focusedIndex, setFocusedIndex] = useState<number>(() => {
+    const initial = taken ?? {};
+    const found = zodiacSigns.findIndex(
+      (s) => initial[s.key] === undefined,
+    );
+    return found === -1 ? 0 : found;
+  });
 
   const focusedSign = signAt(focusedIndex);
   const focusedDisabled = takenMap[focusedSign.key] !== undefined;

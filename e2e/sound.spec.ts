@@ -41,10 +41,13 @@ test('settings cog opens, toggles sound, persists to localStorage, closes via Es
       page.getByRole('heading', { name: /Choose your sign/i }),
     ).toBeVisible();
     if (player === 2) {
+      // #370: picker auto-skips taken aries and opens on taurus, so
+      // P2 needs 3 next-clicks to reach leo (taurus → gemini →
+      // cancer → leo), not 4.
       const nextArrow = page
         .getByRole('button', { name: /^Next sign$/ })
         .first();
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 3; i++) {
         await nextArrow.click();
       }
     }

@@ -64,11 +64,17 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
     await expect(
       page.getByRole('heading', { name: /Choose your sign/i }),
     ).toBeVisible();
+    // #314 carousel: with nothing taken, aries is the default-focused
+    // stage. P1 confirms it directly. P2's picker mounts after P1
+    // picked aries, so aries is in `taken`; #370 makes the picker
+    // open on the first available sign (taurus, idx 1), so P2 needs
+    // three Next clicks to reach leo (taurus → gemini → cancer →
+    // leo).
     if (player === 2) {
       const nextArrow = page
         .getByRole('button', { name: /^Next sign$/ })
         .first();
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 3; i++) {
         await nextArrow.click();
       }
     }
