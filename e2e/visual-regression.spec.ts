@@ -46,6 +46,14 @@ test.skip(
 interface Route {
   readonly path: string;
   readonly slug: string;
+  /**
+   * Expected HTTP status. Defaults to "any 2xx/3xx" (`< 400`). Set
+   * explicitly only for routes that are expected to render at a
+   * non-2xx status — currently the 404 page (#369), where the whole
+   * point of the baseline is "this status code surfaces the themed
+   * page, not the framework default".
+   */
+  readonly expectedStatus?: number;
 }
 
 const ROUTES: readonly Route[] = [
@@ -73,6 +81,15 @@ const ROUTES: readonly Route[] = [
   { path: '/sefirah/tiferet', slug: 'sefirah-tiferet' },
   { path: '/arcana/13', slug: 'arcana-13' },
   { path: '/path/22', slug: 'path-22' },
+  // #369 themed 404. Hit a deliberately-bogus URL so the framework
+  // serves `app/not-found.tsx`. Pinning the baseline guarantees a
+  // regression to the bare Next.js default surfaces here, not in
+  // production.
+  {
+    path: '/this-route-does-not-exist-369',
+    slug: 'not-found',
+    expectedStatus: 404,
+  },
 ];
 
 interface Viewport {
@@ -95,10 +112,17 @@ for (const viewport of VIEWPORTS) {
       test(`regression ${route.slug}`, async ({ page }) => {
         const response = await page.goto(route.path);
         await page.waitForLoadState('networkidle');
-        expect(
-          response?.status(),
-          `expected a 2xx response from ${route.path} (${viewport.name})`,
-        ).toBeLessThan(400);
+        if (route.expectedStatus !== undefined) {
+          expect(
+            response?.status(),
+            `expected status ${route.expectedStatus} from ${route.path} (${viewport.name})`,
+          ).toBe(route.expectedStatus);
+        } else {
+          expect(
+            response?.status(),
+            `expected a 2xx response from ${route.path} (${viewport.name})`,
+          ).toBeLessThan(400);
+        }
 
         await expect(page).toHaveScreenshot(
           `${route.slug}-${viewport.name}.png`,

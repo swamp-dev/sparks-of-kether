@@ -5121,6 +5121,25 @@ Five commits:
 
 **Commit(s):** `e87fefb` (failing test pin) + `61bc0d7` (design + data update) + this Journal entry.
 
+## 2026-05-01T14:00:59-04:00 — #369: themed app/not-found.tsx replaces bare Next.js fallback
+
+**Pushed:** Fix for #369 — added `app/not-found.tsx` so any unknown URL (mistyped Sefirah, stale codex link, deep link to a deleted route) renders the site's themed page rather than Next.js's white-on-black default. Headline "Off the Tree", quiet flavour copy, `Open the Codex` primary CTA + `Return home` secondary link. ColorBloom tinted with the canonical `gevurah` token (#dc143c) for a whisper of severity. Server-rendered, no client state. Visual-regression baselines committed for desktop / tablet / mobile.
+
+Three commits:
+1. `fix(404)` — the themed page + 3 unit tests (heading, link hrefs, data-marker)
+2. `fix(404)` — code-review fixes: `#dc2626` → `#dc143c`, VR baseline + Route interface `expectedStatus` field, Metadata export, comment tweaks
+3. This Journal entry (in this commit)
+
+**Why:** Filed during the 2026-05-01 hot-seat playtest. The bare framework default broke immersion and gave no recovery affordance. Smallest of the three filed bugs to land after #368.
+
+**Notes:**
+- `code-reviewer` first verdict: **Fix**. Two Significant items addressed (palette token, VR baseline) plus a Minor (Metadata export). Re-review verdict: **Ship** — no new issues introduced by the fix commit, Route interface change backward-compatible (every existing route hits the unchanged `< 400` branch), `expectedStatus: 404` is the exact right shape.
+- The 404 component renders the same React tree for both unmatched routes (e.g. `/this-route-does-not-exist-369`) and programmatic `notFound()` callers (`app/sefirah/[name]/page.tsx:44`, `app/arcana/[id]/page.tsx:40`, `app/path/[id]/page.tsx`). The VR baseline only exercises the unmatched-route path, but a regression in the component would surface there too — acceptable scope.
+- `pnpm ci:local` (full: verify + build + e2e + integration): all jobs green. 1697 tests pass.
+- Hosted CI may fail on unrelated visual-regression baselines per the project's current pattern (#366); this PR's own VR baselines were generated locally on Linux so the not-found-* baselines should match in hosted.
+
+**Commit(s):** `0714b72` (page + unit tests) + `a294e75` (review fixes + VR baselines) + this Journal entry.
+
 ## 2026-05-04T18:31:34-04:00 — #389: accept-setback sub-phase guard
 
 **Pushed:** Two commits (failing test → guard) closing #389. The `react-continue` and `accept-setback` arms of `lib/turn-machine.ts` were asymmetric — `react-continue` validated both `phase === 'challenge'` AND `challengeSubPhase === 'react'`, but `accept-setback` validated only `phase`. This shipped a latent contract violation: a wire-format dispatch of `accept-setback` from `prep` would silently skip the encounter resolve (apply +1/+2 Separation tick, transition phase to `'draw'`, with no roll). Unreachable through hot-seat UI today (EncounterScreen only renders the Accept Setback button in the react sub-phase), but reachable through the wire format.
