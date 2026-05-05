@@ -560,6 +560,131 @@ describe('applyClientAction — react-retry', () => {
   });
 });
 
+describe('applyClientAction — react-continue (#390)', () => {
+  // Wire-format round-trip: a multiplayer player who passes a
+  // challenge and clicks Continue must be able to advance phase
+  // out of `challenge.react`. Pre-#390 the wire format had no
+  // `react-continue` arm, so the dispatcher had no path to apply
+  // the engine event — pre-#385's "phase frozen at challenge.react"
+  // bug would silently re-appear in multiplayer.
+  it('advances phase from challenge.react to draw on a passed challenge', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const state = makeState(
+      {},
+      { players: [player] },
+    );
+    const passedState: typeof state = {
+      ...state,
+      phase: 'challenge',
+      challengeSubPhase: 'react',
+      lastOutcome: {
+        rolled: 18,
+        statContribution: 5,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 23,
+        effectiveDC: 16,
+        pass: true,
+      },
+    };
+    const result = applyClientAction(
+      passedState,
+      { kind: 'react-continue', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.phase).toBe('draw');
+    expect(result.newState.challengeSubPhase).toBeUndefined();
+    expect(result.newState.lastOutcome).toBeUndefined();
+  });
+
+  it('surfaces the engine rejection shape when fired from a non-challenge phase', () => {
+    // Defense in depth — if a buggy multiplayer client fires
+    // react-continue from `phase: 'draw'`, the engine's existing
+    // wrong-phase guard rejects it and the dispatcher surfaces the
+    // rejection back through the prep error envelope.
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState(
+      {},
+      { players: [player] },
+    );
+    const drawState: typeof state = { ...state, phase: 'draw' };
+    const result = applyClientAction(
+      drawState,
+      { kind: 'react-continue', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('prep');
+    if (result.error.kind !== 'prep') return;
+    expect(result.error.cause.kind).toBe('wrong-phase');
+  });
+
+  it('rejects with wrong-sub-phase when fired from challenge.prep', () => {
+    // Parity with the existing react-retry coverage — a buggy
+    // client firing react-continue mid-prep would reach the
+    // engine's sub-phase guard. Pin the rejection envelope at
+    // the wire layer.
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState(
+      {},
+      { players: [player] },
+    );
+    const prepState: typeof state = {
+      ...state,
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+    };
+    const result = applyClientAction(
+      prepState,
+      { kind: 'react-continue', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('prep');
+    if (result.error.kind !== 'prep') return;
+    expect(result.error.cause.kind).toBe('wrong-sub-phase');
+  });
+
+  it('rejects with react-continue-on-fail when lastOutcome.pass is false', () => {
+    // The mirror of react-retry's pass-only test — react-continue
+    // is the post-PASS path. A wire dispatch from challenge.react
+    // with lastOutcome.pass=false must route through accept-setback
+    // instead; the engine's defensive guard rejects it cleanly
+    // rather than skipping the Separation tick.
+    const player = makePlayer({ id: 'p1', position: 'gevurah' });
+    const state = makeState(
+      {},
+      { players: [player] },
+    );
+    const failedReactState: typeof state = {
+      ...state,
+      phase: 'challenge',
+      challengeSubPhase: 'react',
+      lastOutcome: {
+        rolled: 4,
+        statContribution: 5,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 9,
+        effectiveDC: 16,
+        pass: false,
+      },
+    };
+    const result = applyClientAction(
+      failedReactState,
+      { kind: 'react-continue', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('prep');
+    if (result.error.kind !== 'prep') return;
+    expect(result.error.cause.kind).toBe('react-continue-on-fail');
+  });
+});
+
 describe('applyClientAction — accept-setback', () => {
   it('ticks separation +1 on a regular failure', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });

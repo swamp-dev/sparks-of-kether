@@ -43,6 +43,10 @@ const actions: { kind: ClientAction['kind']; build: (id: string) => ClientAction
     build: (id) => ({ kind: 'react-retry', playerId: id }),
   },
   {
+    kind: 'react-continue',
+    build: (id) => ({ kind: 'react-continue', playerId: id }),
+  },
+  {
     kind: 'accept-setback',
     build: (id) => ({ kind: 'accept-setback', playerId: id, sefirah: 'gevurah' }),
   },

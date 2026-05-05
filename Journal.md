@@ -5121,6 +5121,26 @@ Five commits:
 
 **Commit(s):** `e87fefb` (failing test pin) + `61bc0d7` (design + data update) + this Journal entry.
 
+## 2026-05-04T19:08:41-04:00 — #390: react-continue ClientAction wire-format
+
+**Pushed:** Two commits (initial wire-format addition + review fix) closing #390. Adds the `{ kind: 'react-continue', playerId }` arm to `lib/room-actions.ts`'s `ClientAction` discriminated union plus a dispatcher case forwarding to `dispatchPrepEvent` (the engine's `react-continue` reducer arm fully owns the post-pass teardown — clears phase, sub-phase, lastOutcome, encounter, pendingModifiers — so no inline state surgery is needed, mirroring the `react-retry` shape).
+
+Today's wire layer is benign: `PlayScreen` instantiates `useTurn` without `dispatchClientAction` so multiplayer Play isn't actually wired (T4 of #117's Phase 5 still pending). When multiplayer Play lands, this arm prevents pre-#385's "phase frozen at challenge.react after a passed challenge" bug from silently re-appearing.
+
+**Tests added:**
+- Round-trip happy path (challenge.react + lastOutcome.pass=true → react-continue → draw with sub-phase / lastOutcome cleared).
+- Defense-in-depth: wrong-phase rejection (fired from draw → `wrong-phase` error envelope).
+- Parity with `react-retry`'s test depth: wrong-sub-phase (fired from challenge.prep) + react-continue-on-fail (fired from challenge.react with lastOutcome.pass=false).
+- `authorize.ts` doc comment + `authorize.test.ts` parameterized matrix now list `react-continue` alongside `react-retry`. The `authorize` switch's default branch already gated `react-continue` correctly at runtime (universal active-player gate), but the doc + test gap was a coverage hole.
+
+**Notes:**
+- TDD verified: removing the dispatcher case turns both new happy-path/wrong-phase tests red AND fails `pnpm typecheck` (non-exhaustive switch on the discriminated union); restoring the case turns all 1902 tests green.
+- `code-reviewer` first verdict: **Ship** with one Significant finding (the authorize doc/test gap above) and two test-depth improvements (the wrong-sub-phase + react-continue-on-fail parity tests). All three folded into the review-fix commit.
+- `code-reviewer` re-review verdict: **Ship**. Doc comment correctly placed between `react-retry` and `accept-setback`, parameterized matrix entry follows the existing build-shape pattern, the two new tests use the file's standard narrowing pattern, no new issues introduced.
+- `pnpm typecheck && pnpm lint && pnpm test` all green. 1902 tests pass.
+
+**Commit(s):** `e1a5722` (wire-format + initial tests) + `5b84d21` (review fix: authorize doc + matrix + parity tests) + this Journal entry.
+
 ## 2026-05-01T14:52:43-04:00 — #370: sign picker opens on first available sign
 
 **Pushed:** Fix for #370 — option (a) from the investigate ticket. The hot-seat sign picker used to anchor on `aries` even when aries was already taken, putting P2 face-to-face with a dimmed-but-readable "Confirm Aries" CTA. The picker now opens on the first AVAILABLE sign at mount: with nothing taken, that's still aries (P1 unaffected); with aries taken (P2 after P1's pick), it opens on taurus.
@@ -5140,7 +5160,7 @@ Four commits:
 - Cross-spec audit: searched all four e2e files (`encounter`, `play-flow`, `screenshots.review`, `sound`) for the 4-click pattern; all updated. No other consumers of the picker's initial state were affected.
 - Hosted CI may fail on unrelated visual-regression baselines per the project's current pattern; this PR doesn't touch any committed visual-regression baselines (the picker's visual surface didn't change), so any failures will be pre-existing drift.
 
-**Commit(s):** `b17a349` (failing tests) + `c4a0a28` (fix + test rewrite + play-flow e2e) + `f756604` (other 3 e2e specs) + `de779aa` (review fix: lazy useState initialiser) + this Journal entry.
+**Commit(s):** `b17a349` (failing tests) + `c4a0a28` (fix + test rewrite + play-flow e2e) + `de779aa` (review fix: lazy useState initialiser) + this Journal entry.
 
 ## 2026-05-01T14:00:59-04:00 — #369: themed app/not-found.tsx replaces bare Next.js fallback
 

@@ -57,8 +57,8 @@ export type AuthorizationResult =
  *     authorize is also called in unit tests and from any future
  *     in-process consumer, so the check belongs here too.
  *   - Turn-locked actions (`move`, `prep-*`, `react-retry`,
- *     `accept-setback`, `meditate`, `discard`, `end-turn`) require
- *     the caller to be the active player.
+ *     `react-continue`, `accept-setback`, `meditate`, `discard`,
+ *     `end-turn`) require the caller to be the active player.
  *   - Kether ritual actions (#350 / `design/final-threshold.md` § 3.3
  *     and § 5.3) bypass the active-player gate in favour of per-action
  *     rules:

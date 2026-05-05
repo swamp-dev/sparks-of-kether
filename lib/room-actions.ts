@@ -83,6 +83,20 @@ export type ClientAction =
       readonly playerId: string;
     }
   | {
+      /**
+       * #390: pass-path teardown of the challenge cycle. Wire-format
+       * sibling of the `react-continue` TurnEvent (#385). Hot-seat
+       * play wires this through `useTurn.reactContinue()` directly;
+       * multiplayer Play (when wired) needs it on the wire format
+       * so a player who passes a challenge and clicks Continue can
+       * advance phase out of `challenge.react`. Without this arm,
+       * pre-#385's "phase frozen at challenge.react" bug would
+       * re-appear in multiplayer.
+       */
+      readonly kind: 'react-continue';
+      readonly playerId: string;
+    }
+  | {
       readonly kind: 'accept-setback';
       readonly playerId: string;
       readonly sefirah: SefirahKey;
@@ -257,6 +271,15 @@ export function applyClientAction(
       );
     case 'react-retry':
       return dispatchPrepEvent(state, rng, { kind: 'react-retry' });
+    case 'react-continue':
+      // #390: forward to the engine's `react-continue` reducer arm
+      // (#385). The reducer's existing guards — `phase === 'challenge'`,
+      // `challengeSubPhase === 'react'`, `lastOutcome.pass === true` —
+      // gate the legitimate post-pass path. A wire dispatch from any
+      // other state lands in the reducer's rejection shape, which
+      // `dispatchPrepEvent` surfaces back as `{ ok: false, error:
+      // { kind: 'prep', cause: <TurnReducerError> } }`.
+      return dispatchPrepEvent(state, rng, { kind: 'react-continue' });
     case 'accept-setback': {
       const next = acceptSetback(state, {
         playerId: action.playerId,
