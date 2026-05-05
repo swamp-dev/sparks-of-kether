@@ -69,24 +69,20 @@ Every ticket follows this loop. There are no shortcuts.
    test commit from the implementation commit so the history tells the
    story. For non-TDD work (most UI, docs), one commit per logical unit
    is fine.
-5. **Local CI must be green** before review (and again after any
-   review-driven fix, before merge). The canonical command is:
+5. **Hosted CI is the merge gate.** Every PR runs the full four-job
+   matrix (verify, build, e2e, integration) on GitHub Actions; that
+   green check is the source of truth before merge. For local
+   sanity-checking before you push there's:
    ```bash
-   pnpm ci:local         # full: verify + build + e2e + integration
-   pnpm ci:local:fast    # verify + build only (used by the pre-push hook)
+   pnpm ci:local         # opt-in: verify + build + e2e + integration
+   pnpm ci:local:fast    # opt-in: verify + build only
    ```
-   For dev iteration `pnpm typecheck && pnpm lint && pnpm test` is fine.
-   `pnpm ci:local` mirrors every job in `.github/workflows/ci.yml`
-   exactly; pushing without it green is the move that gets caught later
-   by hosted CI (when it works) or by the per-PR checklist (always).
-   See `~/.claude/rules/local-ci-and-admin-merge.md` for the full
-   per-PR checklist and the narrow conditions under which an admin
-   merge bypassing hosted CI is allowed.
-
-   A native git pre-push hook is auto-installed by `pnpm install`
-   (via `scripts/install-git-hooks.mjs` from the `prepare` lifecycle
-   script). It runs `pnpm ci:local:fast` on every push so obvious
-   failures never reach GitHub.
+   `pnpm ci:local` mirrors `.github/workflows/ci.yml` exactly, so a
+   green local run predicts a green hosted run. For tight dev
+   iteration `pnpm typecheck && pnpm lint && pnpm test` is enough.
+   Neither is auto-run on push — hosted CI catches anything you miss.
+   See `~/.claude/rules/local-ci-and-admin-merge.md` for the narrow
+   admin-merge conditions when hosted CI itself is broken.
 6. **Code review before PR.** Invoke the `code-reviewer` subagent on the
    diff. Fix all critical and significant findings. Minor findings can
    be deferred (note them in the PR description).
@@ -166,8 +162,7 @@ the problem is upstream — fix it there.
 ## Test commands
 
 ```bash
-pnpm install            # one-time. Also installs the pre-push git
-                        # hook via the `prepare` lifecycle script.
+pnpm install            # one-time
 pnpm dev                # run the Next.js dev server
 pnpm build              # production build (mirrors CI build job)
 pnpm typecheck          # tsc --noEmit
@@ -183,28 +178,27 @@ pnpm mutation           # stryker mutation testing pilot
 pnpm format             # prettier --write
 pnpm format:check       # prettier --check (no fixing)
 
-# Aggregates that mirror the full CI workflow locally:
+# Opt-in aggregates that mirror the full hosted-CI workflow locally:
 pnpm ci:local           # verify + build + e2e + integration. Fail-fast.
-pnpm ci:local:fast      # verify + build only. Run by the pre-push hook.
+pnpm ci:local:fast      # verify + build only.
 ```
 
-CI runs the four jobs in `.github/workflows/ci.yml` (verify, build,
-e2e, real-Supabase integration) on every PR to `main`. The `pnpm
-ci:local` aggregate mirrors all four — running it locally before a
-merge is mandatory per `~/.claude/rules/local-ci-and-admin-merge.md`.
+Hosted CI is the merge gate — the four-job matrix in
+`.github/workflows/ci.yml` (verify, build, e2e, real-Supabase
+integration) runs on every PR to `main` and that green check is the
+source of truth. `pnpm ci:local` mirrors all four locally for opt-in
+sanity-checking before you push, but is no longer auto-run.
 
-Skip flags for `ci:local` (use sparingly, never on the actual
-PR-merge run):
+Skip flags for `ci:local` (local-iteration escape hatches, never set
+on the definitive pre-merge run):
 
 ```bash
-SKIP_E2E=1 pnpm ci:local           # skip Playwright (saves ~15s)
-SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot (saves ~70s)
+SKIP_E2E=1 pnpm ci:local           # skip Playwright
+SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot
 ```
 
 <!-- code-ref: package.json -->
 <!-- code-ref: scripts/ci-local.sh -->
-<!-- code-ref: scripts/install-git-hooks.mjs -->
-<!-- code-ref: .githooks/pre-push -->
 
 ---
 

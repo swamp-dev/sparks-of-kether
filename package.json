@@ -21,8 +21,7 @@
     "format:check": "prettier --check .",
     "ci:local": "bash scripts/ci-local.sh",
     "ci:local:fast": "SKIP_E2E=1 SKIP_INTEGRATION=1 bash scripts/ci-local.sh",
-    "archive:journal": "node scripts/archive-journal.mjs",
-    "prepare": "node scripts/install-git-hooks.mjs"
+    "archive:journal": "node scripts/archive-journal.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",

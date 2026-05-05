@@ -9,7 +9,7 @@ journey up the Kabbalistic Tree of Life with real-time multiplayer. See
 ```bash
 git clone git@github.com:swamp-dev/sparks-of-kether.git
 cd sparks-of-kether
-pnpm install     # also installs a git pre-push hook via the `prepare` script
+pnpm install
 pnpm dev
 ```
 
@@ -22,25 +22,25 @@ Open http://localhost:3000.
 2. Comment on a ticket to claim it (avoids duplicated work).
 3. Fork the repo (external contributors) or create a branch (maintainers).
 4. Follow the workflow in [`CLAUDE.md`](CLAUDE.md) (read it once before
-   your first PR) — worktree off `main`, TDD where it makes sense, green
-   `pnpm ci:local`, code review, PR with `Closes #NN`.
+   your first PR) — worktree off `main`, TDD where it makes sense, code
+   review, PR with `Closes #NN`. Hosted CI on the PR is the merge gate.
 5. Open a PR. The maintainer merges.
 
 ## Local CI
 
-Run the full CI suite locally before review and again before merge:
+Hosted CI on GitHub Actions runs the full four-job matrix on every PR
+to `main` and is the source of truth before merge. For local
+sanity-checking before you push:
 
 ```bash
-pnpm ci:local         # full: typecheck + lint + test:coverage + build + e2e + integration
-pnpm ci:local:fast    # verify + build only (the pre-push hook runs this automatically)
+pnpm ci:local         # opt-in: typecheck + lint + test:coverage + build + e2e + integration
+pnpm ci:local:fast    # opt-in: verify + build only
 ```
 
-`pnpm ci:local` mirrors every job in `.github/workflows/ci.yml`. The git
-pre-push hook (auto-installed by `pnpm install` via
-`scripts/install-git-hooks.mjs`) runs the fast variant on every push so
-obvious failures never reach GitHub. [`CLAUDE.md`](CLAUDE.md) carries the
-operational details of the per-PR checklist and the conditions under
-which an admin merge bypassing hosted CI is allowed.
+`pnpm ci:local` mirrors every job in `.github/workflows/ci.yml` so a
+green local run predicts a green hosted run. Neither is auto-run on
+push — hosted CI catches what you miss. [`CLAUDE.md`](CLAUDE.md) carries
+the operational details.
 
 ## Doc drift-checks
 

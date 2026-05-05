@@ -5216,3 +5216,24 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm typecheck && pnpm lint && pnpm test` green at HEAD.
 
 **Commit(s):** `8d24878` (failing TreeBoard tests) + `23c0f2a` (TreeBoard prop wiring) + `f6c14fa`-equivalent merge from main + `(third-impl)` (PlayScreen wiring + popover component + integration tests) + `60099c2` (review fixes: listener stability, lint, exactOptional, two new tests) + this Journal entry.
+
+## 2026-05-05T13:04:35-04:00 — chore: remove auto-installed pre-push hook
+
+**Pushed:** Repo housekeeping. Hosted CI on GitHub Actions and `pnpm ci:local` run the *exact same four jobs* (verify=typecheck+lint+test:coverage, build, e2e/Playwright, integration/Supabase). The local pre-push hook only ran the fast subset (verify+build) and hosted CI was the truth anyway, so the hook was duplicate work that gated every push slow-locally for no end-state safety gain.
+
+**Changes:**
+- Delete `.githooks/pre-push` (the hook that ran `pnpm ci:local:fast` on push) and `scripts/install-git-hooks.mjs` (the helper that set `core.hooksPath` from the `prepare` lifecycle script).
+- `package.json`: drop the `prepare` script (it only invoked the deleted helper).
+- `CLAUDE.md` working-agreement step 5: rewrite from "Local CI must be green" to "Hosted CI is the merge gate", with `pnpm ci:local` downgraded to opt-in. Cross-reference to `~/.claude/rules/local-ci-and-admin-merge.md` preserved for the admin-merge path. Test commands section updated to match; two stale `<!-- code-ref: -->` anchors pointing at the deleted scripts removed.
+- `CONTRIBUTING.md`: drop the "also installs a pre-push hook" comment from `pnpm install`. Step 4's stale "green `pnpm ci:local`" gate language updated to "Hosted CI on the PR is the merge gate" matching the rewritten Local CI section.
+
+**Why:** User's call after seeing the four-job parity directly: hosted CI is the source of truth before merge; the local hook was friction without uplift. The opt-in `pnpm ci:local` survives as a tool for sanity-checking before push when you want it.
+
+**Notes:**
+- `pnpm typecheck && pnpm lint && pnpm test` all green at HEAD. 1915 tests + 1 todo pass.
+- `code-reviewer` first verdict: **Fix** with one Significant blocker (CONTRIBUTING.md step 4 still said "green `pnpm ci:local`", contradicting the new opt-in framing in the same diff) plus two improvements (re-add the `local-ci-and-admin-merge.md` cross-reference; tighten the skip-flags wording from "a clean pre-merge run" to "the definitive pre-merge run"). All three folded in.
+- `code-reviewer` re-review verdict: **Ship**. CONTRIBUTING.md + CLAUDE.md now agree throughout; admin-merge path cross-referenced; no contradictions introduced.
+- **Stranded local config**: this repo's `.git/config` still has `core.hooksPath = .githooks` from the original install. Now that `.githooks/` is gone, git silently treats it as no-hooks (which is the desired state). Project policy bans agent `git config` writes, so cleaning that up is the user's call: `git config --local --unset core.hooksPath` clears it. Surfaced in the PR body.
+- Design-doc historical references in `design/doc-audit-2026-04.md` and `design/playability-priorities.md` are intentionally left alone — those are point-in-time audit/priority docs, not operational instructions. Surfaced in the PR body so a future agent doesn't open a chase-ticket.
+
+**Commit(s):** single commit (deletions + doc rewrites + this Journal entry).
