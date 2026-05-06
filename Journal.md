@@ -5372,3 +5372,22 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1937 + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (component + this Journal entry).
+
+## 2026-05-06T11:10:00-04:00 — #404: in-game Tree spheres carry the home-page glow (all 10 baseline-lit)
+
+**Pushed:** Single commit. Extended `ALWAYS_LIT` in `TreeBoard.tsx` from `{kether, malkuth}` to all 10 keys so the in-gameplay Tree carries the same atmosphere as the home-page Hero (`components/home/Hero.tsx`). The cleared-status signal moves to the disc's existing `data-cleared` attribute + `sefirah-clear-pulse` keyframe — a more intense pulse on top of the always-on baseline.
+
+**Why:** Playtest 2026-05-05 ticket #4. The in-game Tree was a progress diagram (only cleared + endpoints lit) where the home page promised a mesmerizing surface (all 10 lit). User: *"this game board should be mesmerizing and enchanting."* The fix aligns the two surfaces.
+
+**Notes:**
+- **Verification path was non-trivial.** Initial Explore agent reported the halo tokens *were* applied (true — `shadow-glow-{key}` is wired) but missed that the gating (`litSefirot`) only included endpoints + cleared, leaving 8 of 10 unlit at any given mid-game moment. Re-screenshot would have shown that gap — went straight to the code instead.
+- The pre-existing test asserted "chesed has no halo when not cleared" — true under the old design, wrong under the new one. Rewrote the breath-test contracts:
+  1. All 10 Sefirot lit during gameplay (loop covering all 10 keys).
+  2. Cleared status read from disc's `data-cleared` attribute, independent of the halo layer.
+  3. Demo route still flat (no `state` prop → empty `litSefirot` → no halos render).
+- **Visual-regression coverage gap.** `e2e/visual-regression.spec.ts` covers `/play` (sign-picker post-#255) and `/demo/tree` (no state, no halos), but not a state-present TreeBoard render. No baselines need regen because the regression suite never captured this surface. Unit-test rewrite carries the contract instead. Worth filing a follow-up to add a state-present TreeBoard route to visual-regression.
+- Code-reviewer flagged a dead loop after the change (`for (player of state.players) { for (key of player.clearedSefirot) lit.add(key); }` adds keys already in ALWAYS_LIT). Simplified `litSefirot` to `state ? ALWAYS_LIT : new Set()` — no behavioral change.
+- `code-reviewer` verdict: **ship.** Zero critical, zero significant.
+- `pnpm ci:local` green: 1937 + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (component + tests + this Journal entry).

@@ -143,9 +143,31 @@ const GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
   malkuth: 'shadow-glow-malkuth',
 };
 
-/** Sefirot whose halo is on regardless of clearedSefirot — endpoints of the Tree. */
+/**
+ * Sefirot whose halo is on regardless of clearedSefirot.
+ *
+ * #404 — every in-gameplay Sefirah is now baseline-lit so the Tree
+ * carries the home-page Hero's atmosphere (all 10 halos breathing).
+ * Previously only the endpoints (Kether + Malkuth) were always lit
+ * and the rest waited for `clearedSefirot` membership; that read as
+ * a progress diagram rather than a living surface. Cleared Sefirot
+ * still pulse harder via the disc's `sefirah-clear-pulse` keyframe
+ * (see line ~560), so progress is visible against the baseline.
+ *
+ * Static / no-state renders (e.g. `/demo/tree`) skip the halo layer
+ * entirely — `litSefirot` returns an empty Set when `state` is
+ * undefined — so the demo surface stays flat for tooling captures.
+ */
 const ALWAYS_LIT: ReadonlySet<SefirahKey> = new Set<SefirahKey>([
   'kether',
+  'chokmah',
+  'binah',
+  'chesed',
+  'gevurah',
+  'tiferet',
+  'netzach',
+  'hod',
+  'yesod',
   'malkuth',
 ]);
 
@@ -234,17 +256,17 @@ export function TreeBoard({
     }
     return lit;
   }, [highlightedCard]);
-  // Sefirot to draw breath halos for. Endpoints (Kether + Malkuth)
-  // are always on; cleared Sefirot light up too. Static / no-state
-  // renders skip the layer entirely so the demo route stays flat.
-  const litSefirot = useMemo<ReadonlySet<SefirahKey>>(() => {
-    if (!state) return new Set();
-    const lit = new Set<SefirahKey>(ALWAYS_LIT);
-    for (const player of state.players) {
-      for (const key of player.clearedSefirot) lit.add(key);
-    }
-    return lit;
-  }, [state]);
+  // Sefirot to draw breath halos for. #404: every Sefirah is lit
+  // during gameplay (`ALWAYS_LIT` covers all 10), so the in-gameplay
+  // Tree carries the home-page Hero's atmosphere. Cleared status is
+  // signaled separately on the disc's `data-cleared` attribute (see
+  // line ~560), which runs the harder `sefirah-clear-pulse` keyframe.
+  // Static / no-state renders skip the layer entirely so the demo
+  // route (`/demo/tree`) stays flat.
+  const litSefirot = useMemo<ReadonlySet<SefirahKey>>(
+    () => (state ? ALWAYS_LIT : new Set<SefirahKey>()),
+    [state],
+  );
   // Per-Sefirah team Sparks count, cached by state identity. The
   // tooltip panels read these counts on render; computing once per
   // state change is cheaper than rederiving on every hover.

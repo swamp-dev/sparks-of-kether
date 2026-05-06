@@ -5,11 +5,15 @@ import { makePlayer, makeState } from '@/test/fixtures';
 
 /**
  * #312 — "make the Tree of Life breathe."
+ * #404 — extended: every in-gameplay Sefirah carries a baseline halo
+ * (matches the home-page Hero), not just endpoints + cleared. The
+ * cleared-state pulse rides on top of the baseline via the disc's
+ * `sefirah-clear-pulse` keyframe (separate from the breath layer).
  *
  * Pinning the contracts for:
- *   1. Lit-Sefirah breath halos (Kether + Malkuth always lit; any
- *      Sefirah cleared by any current player is also lit). Each lit
- *      node carries a `motion-safe:animate-breath` class plus the
+ *   1. Lit-Sefirah breath halos (every Sefirah lit during gameplay;
+ *      no halos at all on the static demo route). Each lit node
+ *      carries a `motion-safe:animate-breath` class plus the
  *      Sefirah's `shadow-glow-{key}` token.
  *   2. Path-light-from-card: when `highlightedCard` (an arcanum
  *      number 0..21) is set, every path whose `arcanumNumber` matches
@@ -24,26 +28,36 @@ import { makePlayer, makeState } from '@/test/fixtures';
  *      the number reads on top.
  */
 describe('TreeBoard — #312 breath halos', () => {
-  it('renders breath-halo overlays for Kether and Malkuth even on a fresh game', () => {
-    // The endpoints of the Tree are always lit so the player can see
-    // start (Malkuth) and destination (Kether) on a fresh game with
-    // no clearedSefirot. The halo overlay carries the per-Sefirah
-    // shadow-glow class and the breath animation under motion-safe.
+  it('renders breath-halo overlays for all 10 Sefirot on a fresh game (#404)', () => {
+    // #404 — the in-gameplay Tree carries the home-page Hero's
+    // atmosphere: every Sefirah is baseline-lit so the board reads
+    // as a living surface, not a progress diagram. Each halo overlay
+    // carries the per-Sefirah `shadow-glow-{key}` class and the
+    // breath animation under `motion-safe`.
     const player = makePlayer({ id: 'p1', position: 'malkuth' });
     const state = makeState({}, { players: [player] });
     const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
 
-    const ketherHalo = container.querySelector('[data-breath-halo="kether"]');
-    const malkuthHalo = container.querySelector('[data-breath-halo="malkuth"]');
-    expect(ketherHalo, 'kether breath halo').not.toBeNull();
-    expect(malkuthHalo, 'malkuth breath halo').not.toBeNull();
-    expect(ketherHalo?.getAttribute('class')).toMatch(/motion-safe:animate-breath/);
-    expect(ketherHalo?.getAttribute('class')).toMatch(/shadow-glow-kether/);
-    expect(malkuthHalo?.getAttribute('class')).toMatch(/motion-safe:animate-breath/);
-    expect(malkuthHalo?.getAttribute('class')).toMatch(/shadow-glow-malkuth/);
+    // All 10 keys; the helper makes the test's failure message tell
+    // you which one is missing rather than just "expected 10, got 9".
+    const allKeys = [
+      'kether', 'chokmah', 'binah', 'chesed', 'gevurah',
+      'tiferet', 'netzach', 'hod', 'yesod', 'malkuth',
+    ] as const;
+    for (const key of allKeys) {
+      const halo = container.querySelector(`[data-breath-halo="${key}"]`);
+      expect(halo, `${key} breath halo`).not.toBeNull();
+      expect(halo?.getAttribute('class')).toMatch(/motion-safe:animate-breath/);
+      expect(halo?.getAttribute('class')).toMatch(new RegExp(`shadow-glow-${key}`));
+    }
   });
 
-  it('lights a Sefirah halo once any player has cleared it', () => {
+  it('cleared status is signaled on the disc, independent of the baseline halo (#404)', () => {
+    // Pre-#404 the halo *was* the cleared-status signal — only cleared
+    // + endpoints lit up. Post-#404 every Sefirah carries a halo, so
+    // cleared status rides on the disc's `data-cleared` attribute and
+    // its `sefirah-clear-pulse` keyframe — a separate, more intense
+    // pulse on top of the always-on baseline. Pin the new layering.
     const player = makePlayer({
       id: 'p1',
       position: 'tiferet',
@@ -52,13 +66,16 @@ describe('TreeBoard — #312 breath halos', () => {
     const state = makeState({}, { players: [player] });
     const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
 
+    // Every Sefirah, cleared or not, has a baseline halo.
     expect(container.querySelector('[data-breath-halo="gevurah"]'))
       .not.toBeNull();
-    expect(container.querySelector('[data-breath-halo="hod"]'))
+    expect(container.querySelector('[data-breath-halo="chesed"]'))
       .not.toBeNull();
-    // A non-cleared Sefirah doesn't get a halo (chesed has not been
-    // cleared, isn't kether/malkuth — so no halo).
-    expect(container.querySelector('[data-breath-halo="chesed"]')).toBeNull();
+    // The cleared signal is on the disc's data-cleared attribute.
+    const gevurahNode = container.querySelector('[data-sefirah="gevurah"]');
+    const chesedNode = container.querySelector('[data-sefirah="chesed"]');
+    expect(gevurahNode?.getAttribute('data-cleared')).toBe('true');
+    expect(chesedNode?.getAttribute('data-cleared')).toBe('false');
   });
 
   it('omits all breath halos when no `state` is provided (decorative/static render)', () => {
