@@ -5423,3 +5423,20 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1939 + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (data + component + tests + 1 baseline + this Journal entry).
+
+## 2026-05-06T11:45:00-04:00 — #405: path-light-from-card persists across all play sub-states
+
+**Pushed:** Single commit. Extended the existing #312 path-light-from-card behavior to fire on hover/focus (not just click) and across all play phases except `'challenge'` (the resolution moment). New `onCardHover` prop on `Hand` wires `mouseenter`/`mouseleave`/`focus`/`blur` on each card; `PlayScreen` owns separate `hoveredCard` and `selectedCard` state, with hovered taking precedence and selected as a sticky fallback.
+
+**Why:** Playtest 2026-05-05 ticket #7. The Tree-hand relationship was opaque outside `phase === 'move'`. Most acutely, during `'draw'` the player can't evaluate which card to keep/discard because the Tree gives no feedback for the cards they're holding. Path-light-on-hover during draw closes that loop.
+
+**Notes:**
+- **Touch via focus.** Tap-to-focus already fires `onFocus` on all major mobile browsers, which fires `onCardHover(arcanum)`. Tap elsewhere blurs. Skipping pointerdown/pointerup disambiguation per the simpler-pattern principle; reviewer endorsed.
+- **Hidden-hand no-leak.** `onCardHover` handlers are `undefined` when `!visible`, so face-down hands cannot leak the arcanum back through the hover callback. Test pins this contract.
+- **Stale-state bug caught in review.** First pass left `hoveredCard` and `selectedCard` set across `endTurn()`, so the new player's Tree opened with the previous player's path-light until first interaction. Fixed with `useEffect(() => { setSelectedCard(undefined); setHoveredCard(undefined); }, [turn.activePlayerIndex])`. Re-reviewed; ship.
+- **Phase-gate inversion** from `=== 'move'` to `!== 'challenge'`. `'kether'` early-returns above the Hand render, so hover can't fire there. `'end'` and `'draw'` now light — both intentional.
+- **TS gotcha:** `exactOptionalPropertyTypes` rejected the conditional spread; wrapped the `highlightedCard` prop in an IIFE for type-safe narrowing.
+- `code-reviewer` verdict (re-reviewed after stale-state fix): **ship.**
+- `pnpm ci:local` green: 1940 + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (Hand + PlayScreen + Hand tests + this Journal entry).

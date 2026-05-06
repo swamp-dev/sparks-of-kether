@@ -30,6 +30,16 @@ interface HandProps {
   readonly hand: readonly number[];
   readonly visible: boolean;
   readonly onCardSelect?: (arcanumNumber: number) => void;
+  /**
+   * Hover/focus callback. Fires with the arcanum on `mouseenter` /
+   * `focus` and with `undefined` on `mouseleave` / `blur`. The
+   * consumer typically threads this into the Tree's path-light so
+   * the player sees "this card opens these paths" without having
+   * to commit to a click. (#405) Tapping on a touch device lands
+   * focus on the card, which fires this with the arcanum — release
+   * (focus moving away) fires with undefined.
+   */
+  readonly onCardHover?: (arcanumNumber: number | undefined) => void;
   /** Highlights the named card with a focus ring (e.g. selection). */
   readonly selectedArcanum?: number;
   /** Aria label for the whole hand region (e.g. "Andy's hand, 4 cards"). */
@@ -71,6 +81,7 @@ export function Hand({
   hand,
   visible,
   onCardSelect,
+  onCardHover,
   selectedArcanum,
   ariaLabel,
   defaultOpen = true,
@@ -209,6 +220,16 @@ export function Hand({
         const handleClick = interactive
           ? () => onCardSelect(arcanum)
           : undefined;
+        // #405: hover/focus → fire onCardHover so the consumer can
+        // light corresponding paths on the Tree. Disabled or
+        // face-down cards don't fire (visible gates the entire hover
+        // contract). Mouse leave / blur clears with undefined.
+        const handleHoverEnter = onCardHover && visible
+          ? () => onCardHover(arcanum)
+          : undefined;
+        const handleHoverLeave = onCardHover && visible
+          ? () => onCardHover(undefined)
+          : undefined;
         // Major Arcana are unique within a single deck; the project's
         // 3–4-player rule allows two decks, so a future hand might
         // contain duplicates. Keying on arcanum + slot keeps DOM
@@ -235,6 +256,10 @@ export function Hand({
             disabled={htmlDisabled}
             aria-disabled={ariaDisabled}
             onClick={handleClick}
+            onMouseEnter={handleHoverEnter}
+            onMouseLeave={handleHoverLeave}
+            onFocus={handleHoverEnter}
+            onBlur={handleHoverLeave}
             onKeyDown={(e) => handleKey(e, i, arcanum)}
             tabIndex={i === focusIndex ? 0 : -1}
             style={{

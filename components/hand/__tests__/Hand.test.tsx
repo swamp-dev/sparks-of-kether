@@ -103,6 +103,59 @@ describe('Hand — interaction', () => {
     expect(document.activeElement).toBe(second);
   });
 
+  it('fires onCardHover on mouseenter / mouseleave (#405)', () => {
+    const onCardHover = vi.fn();
+    const { container } = render(
+      <Hand
+        hand={[2, 5, 13]}
+        visible={true}
+        onCardSelect={vi.fn()}
+        onCardHover={onCardHover}
+      />,
+    );
+    const second = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
+    fireEvent.mouseEnter(second);
+    expect(onCardHover).toHaveBeenLastCalledWith(5);
+    fireEvent.mouseLeave(second);
+    expect(onCardHover).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('fires onCardHover on focus / blur (keyboard + touch path) (#405)', () => {
+    const onCardHover = vi.fn();
+    const { container } = render(
+      <Hand
+        hand={[2, 5, 13]}
+        visible={true}
+        onCardSelect={vi.fn()}
+        onCardHover={onCardHover}
+      />,
+    );
+    const third = container.querySelector('[data-card-slot="2"]') as HTMLButtonElement;
+    third.focus();
+    expect(onCardHover).toHaveBeenLastCalledWith(13);
+    third.blur();
+    expect(onCardHover).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('does not fire onCardHover when hand is hidden (#405)', () => {
+    // Hidden hands MUST NOT leak the arcanum via hover — the onCardHover
+    // callback would otherwise pass it back to the consumer (which then
+    // could put it in the DOM via highlightedCard, leaking to other
+    // players in a multiplayer view).
+    const onCardHover = vi.fn();
+    const { container } = render(
+      <Hand
+        hand={[2, 5]}
+        visible={false}
+        onCardHover={onCardHover}
+      />,
+    );
+    const slot = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+    fireEvent.mouseEnter(slot);
+    fireEvent.focus(slot);
+    expect(onCardHover).not.toHaveBeenCalled();
+  });
+
   it('Enter and Space activate the focused card', () => {
     const onCardSelect = vi.fn();
     const { container } = render(

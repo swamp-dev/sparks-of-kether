@@ -98,6 +98,21 @@ export function PlayScreen({
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
+  // #405: separate hover state, so path-light fires on card hover/focus
+  // BEFORE the player commits to a click. Hovered takes precedence over
+  // selected when both are set; clearing hover (mouseleave/blur) falls
+  // back to the selected card so a clicked-then-mouse-moved-away card
+  // still keeps the Tree lit. Across all phases except `'challenge'` —
+  // the Tree should not compete with movement-resolution animation.
+  const [hoveredCard, setHoveredCard] = useState<number | undefined>(undefined);
+  // #405: clear both card-state values when the turn rotates. Without
+  // this, the new player's Tree would open with a stale highlight from
+  // the previous player's hovered/selected card and self-heal only on
+  // their first interaction.
+  useEffect(() => {
+    setSelectedCard(undefined);
+    setHoveredCard(undefined);
+  }, [turn.activePlayerIndex]);
   // #384: in-game Sefirah info popover. The Tree's `onSefirahClick`
   // sets this; the popover renders an overlay with name / Hebrew /
   // meaning / stat / soul-door indicator and a "Read more in Codex"
@@ -372,16 +387,21 @@ export function PlayScreen({
           // next turn begins; the action panel below carries the
           // available affordances (Draw, End Turn, etc.).
           movesEnabled={turn.phase === 'move'}
-          // #312: surface the currently-selected card on the Tree as
-          // a card-lit path so the player sees "this card travels
-          // here" before committing to the click. Independent of
-          // `validPaths` — even if the player can't reach the path
-          // from their current Sefirah, they should still see what
-          // the card would do. Only set during 'move' phase; once
-          // they've moved, the highlight no longer matters.
-          {...(turn.phase === 'move' && selectedCard !== undefined
-            ? { highlightedCard: selectedCard }
-            : {})}
+          // #312 + #405: light the corresponding paths on the Tree
+          // when the player is considering a card. The signal source
+          // is `hoveredCard` (mouse / focus) with `selectedCard` as
+          // a sticky fallback — a clicked card stays lit even when
+          // the mouse moves to the Tree. Active across all phases
+          // except `'challenge'` (the resolution moment) so the
+          // path-light doesn't compete with movement animation.
+          // Lighting during `'draw'` is the #405 ask — it lets the
+          // player evaluate which card to keep / discard by seeing
+          // what each one opens.
+          {...((): { highlightedCard?: number } => {
+            if (turn.phase === 'challenge') return {};
+            const effective = hoveredCard ?? selectedCard;
+            return effective === undefined ? {} : { highlightedCard: effective };
+          })()}
           className="w-full max-w-xl"
         />
         <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
@@ -444,6 +464,7 @@ export function PlayScreen({
             hand={activePlayer.hand}
             visible={isHandVisible(turn.state, activePlayer.id, activePlayer.id)}
             onCardSelect={(n) => setSelectedCard(n)}
+            onCardHover={(n) => setHoveredCard(n)}
             {...(selectedCard !== undefined ? { selectedArcanum: selectedCard } : {})}
             ariaLabel={`${activePlayer.name}'s hand`}
             className="w-full max-w-xl"
