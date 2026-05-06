@@ -5490,3 +5490,17 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - Append-only Journal collision on rebase: A2 #426 landed first; my entry rebased cleanly with chronological insert.
 
 **Commit(s):** single commit (SKILL.md + this Journal entry).
+
+## 2026-05-06T13:30:32-04:00 — #434: /ship-ticket cleanup removes node_modules symlink before git worktree remove
+
+**Pushed:** `.claude/skills/ship-ticket/SKILL.md` step 7 now has two ordered guards before `git worktree remove`. Step 7a — real-directory check: if `node_modules` exists as a real directory (not a symlink), stop and report; that means the agent ran a per-worktree `pnpm install` and there may be user data. Step 7b — symlink unlink: if `node_modules` is a symlink (or dangling symlink), `rm` it, with explicit `|| { echo …; exit 1; }` to surface FS / permission failures cleanly. Then proceed to `git worktree remove` and `git branch -d`. The "Never `--force`" invariant still holds — the symlink unlink is non-coercive (only removes the pointer; the shared store stays intact).
+
+**Why:** Spawned during A2/A3 ship — both encountered "fatal: '<worktree>' contains modified or untracked files" because `git worktree remove` saw the new symlink as untracked. Manual workaround used both times (`rm node_modules && git worktree remove`); this codifies the right pattern. Filed via the new A3 (#427) auto-tech-debt convention as the first real exercise of that flow.
+
+**Notes:**
+- `code-reviewer` first verdict: **fix** — 1 significant (silent `rm` failure would mask the actual cause when worktree-remove failed afterward; added explicit error guard) + 1 improvement (block ordering: check real-dir first, then symlink — reads "real dir? stop. symlink? remove. proceed." instead of "remove maybe. real dir? stop."). Re-review verdict: **ship.**
+- Live test of A1 #425 path-filter: this PR modifies only `.claude/skills/` (not in any of `code` / `e2e` / `integration` filters), so hosted CI should run `verify` + `detect changes` and skip `build` / `e2e` / `integration`. /ship-ticket gate accepts the skips when `detect changes` passed — first end-to-end exercise of that contract. If this PR ships without the heavy jobs running, the path-filter savings are live.
+- Eating dogfood: worktree created with `ln -s ../sparks-of-kether/node_modules` (A2 #426 codified this); typecheck + lint clean without `pnpm install`.
+- typecheck + lint clean; tests/docs 133 passed.
+
+**Commit(s):** single commit (SKILL.md + this Journal entry).

@@ -175,13 +175,39 @@ expected." If there is, name it specifically.
 From the **main repo directory** (not the worktree being removed):
 
 ```bash
+# Step 7a: gate on a real-directory node_modules first.
+# /start-ticket symlinks node_modules to the main repo (skips
+# pnpm install). If node_modules exists as a real directory instead,
+# the agent must have run `pnpm install` inside the worktree at some
+# point — per /start-ticket invariants, rare but possible — and the
+# install wrote a private directory. User data may be there; the
+# human decides. Refuse cleanup so nothing gets clobbered.
+if [ -d "../sok-<N>-<slug>/node_modules" ] && [ ! -L "../sok-<N>-<slug>/node_modules" ]; then
+  echo "Refusing cleanup: ../sok-<N>-<slug>/node_modules is a real directory, not a symlink. The worktree had a per-worktree pnpm install. Inspect and clean up manually."
+  exit 1
+fi
+
+# Step 7b: drop the symlink (or dangling symlink) so git stops calling
+# it untracked. `-L` tests the link inode, so dangling symlinks are
+# also handled correctly. Removing the symlink only unlinks the
+# pointer; the shared store in the main repo stays intact. Surface rm
+# failures explicitly — a silent rm failure followed by a
+# worktree-remove failure makes the actual cause hard to diagnose.
+if [ -L "../sok-<N>-<slug>/node_modules" ]; then
+  rm "../sok-<N>-<slug>/node_modules" || {
+    echo "Failed to remove node_modules symlink at ../sok-<N>-<slug>/node_modules — check permissions / filesystem."
+    exit 1
+  }
+fi
+
 git worktree remove ../sok-<N>-<slug>
 git branch -d <type>/<N>-<slug>
 ```
 
-Never `--force` either. If `git worktree remove` fails (uncommitted
-changes in the worktree), **stop** and tell the user — they may have
-in-flight work the merge didn't pick up. If `git branch -d` fails
+Never `--force` either `worktree remove` or `branch -d`. If
+`git worktree remove` still fails after the symlink unlink (other
+untracked or modified files), **stop** and tell the user — they may
+have in-flight work the merge didn't pick up. If `git branch -d` fails
 (branch not fully merged into main according to local refs), run
 `git fetch origin main` first; if it still fails, stop and report.
 
