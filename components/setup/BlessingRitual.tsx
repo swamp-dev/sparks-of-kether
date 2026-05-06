@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { sefirot } from '@/data';
-import type { Sefirah, StatKey, ZodiacSignKey } from '@/data';
+import type { Sefirah, SefirahKey, StatKey, ZodiacSignKey } from '@/data';
 import type { Rng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 import {
@@ -273,6 +273,14 @@ export function BlessingRitual({
  * letter stays legible across all 10 sefirah colours (Kether's white
  * and Tiferet's gold need dark glyphs; Binah's charcoal needs a
  * light one). Robust to future palette tweaks.
+ *
+ * #408 — the halo is the per-Sefirah `shadow-glow-{key}` token from
+ * `tailwind.config.ts § boxShadow` plus `motion-safe:animate-breath`
+ * (the 6 s slow-opacity loop from `design/motion.md`). Crown-step
+ * thus reads gold-white, Tiferet gold, Binah deep blue-violet, etc.
+ * — the same halo recipe the in-game Tree's lit Sefirot use.
+ * `prefers-reduced-motion` users see the static halo without the
+ * breath animation.
  */
 function SefirahHero({ sefirah }: { sefirah: Sefirah }): JSX.Element {
   const glyphColor = relativeLuminance(sefirah.color) > 0.4 ? '#1a1542' : '#f8f8ff';
@@ -281,11 +289,8 @@ function SefirahHero({ sefirah }: { sefirah: Sefirah }): JSX.Element {
       data-sefirah-hero
       data-sefirah={sefirah.key}
       aria-hidden="true"
-      className="mx-auto mt-2 flex h-24 w-24 items-center justify-center rounded-full"
-      style={{
-        backgroundColor: sefirah.color,
-        boxShadow: `0 0 24px ${hexAlpha(sefirah.color, '66')}, 0 0 48px ${hexAlpha(sefirah.color, '33')}`,
-      }}
+      className={`mx-auto mt-2 flex h-24 w-24 items-center justify-center rounded-full ${HALO_CLASS_BY_KEY[sefirah.key]} motion-safe:animate-breath`}
+      style={{ backgroundColor: sefirah.color }}
     >
       <span
         className="font-hebrew text-4xl"
@@ -303,17 +308,23 @@ function SefirahHero({ sefirah }: { sefirah: Sefirah }): JSX.Element {
 }
 
 /**
- * Append a 2-digit hex alpha to a 6-digit hex colour. Throws on
- * non-conforming input so a future palette regression is loud
- * instead of silently broken (e.g. `#fff` → `#fff66` would be
- * invalid CSS that browsers ignore).
+ * Per-Sefirah halo class. Tailwind's JIT requires the literal
+ * classnames in source — no template-string concat — so the table
+ * is the canonical way to thread `key` → `shadow-glow-<key>`.
+ * Mirrors the same map in `components/tree/TreeBoard.tsx`.
  */
-function hexAlpha(hex: string, alpha: string): string {
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
-    throw new Error(`hexAlpha: expected 6-digit hex, got ${hex}`);
-  }
-  return `${hex}${alpha}`;
-}
+const HALO_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
+  kether: 'shadow-glow-kether',
+  chokmah: 'shadow-glow-chokmah',
+  binah: 'shadow-glow-binah',
+  chesed: 'shadow-glow-chesed',
+  gevurah: 'shadow-glow-gevurah',
+  tiferet: 'shadow-glow-tiferet',
+  netzach: 'shadow-glow-netzach',
+  hod: 'shadow-glow-hod',
+  yesod: 'shadow-glow-yesod',
+  malkuth: 'shadow-glow-malkuth',
+};
 
 /** WCAG-style relative luminance for a 6-digit hex colour, in [0, 1]. */
 function relativeLuminance(hex: string): number {

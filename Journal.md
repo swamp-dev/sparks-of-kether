@@ -5357,3 +5357,18 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green.
 
 **Commit(s):** single commit (component + 3 baselines + this Journal entry).
+
+## 2026-05-06T11:00:00-04:00 — #408: per-Sefirah halo glow on the BlessingRitual orb
+
+**Pushed:** Single commit. Replaced the BlessingRitual hero badge's inline 2-layer custom `boxShadow` with the canonical `shadow-glow-{sefirahKey}` Tailwind token + `motion-safe:animate-breath` (the 6 s slow-opacity loop from `design/motion.md`). Each ritual step's orb now pulses in its own Sefirah's color: Crown gold-white, Tiferet gold, Binah deep blue-violet, etc. — the same halo recipe the in-game Tree's lit Sefirot use. `prefers-reduced-motion` users see the static halo without the breath.
+
+**Why:** Playtest 2026-05-05 ticket #4. Each blessing step felt visually identical (same plain medallion); the Sefirah color was on the disc fill but the surrounding halo was an inline custom shadow rather than the design-system token, so it didn't carry the project's own atmosphere language.
+
+**Notes:**
+- Mirrors the `HALO_CLASS_BY_KEY` static lookup-table pattern from `TreeBoard.tsx:133` so Tailwind's JIT picks up the literal `shadow-glow-{key}` classnames.
+- Removed the now-unused `hexAlpha` helper — only callers were the inline boxShadow that's gone.
+- Visual-regression: the new 3-layer token shadow has tighter falloff and slightly lower alpha than the old 2-layer custom, but the snapshot uses `animations: 'disabled'` so the breath is paused at frame 0 and the static diff fits under the 2.5% threshold without baseline regen.
+- `code-reviewer` verdict: **ship.** Zero critical, zero significant. "Textbook application of the project's own design system."
+- `pnpm ci:local` green: 1937 + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (component + this Journal entry).
