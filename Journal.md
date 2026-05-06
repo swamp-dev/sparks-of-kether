@@ -5453,4 +5453,20 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - Eating own dogfood: this PR's worktree was created with the symlink approach (`ln -s ../sparks-of-kether/node_modules`); `pnpm typecheck` ran without `pnpm install`. Confirmed working.
 - typecheck + lint clean; `tests/docs` 133 passed (the change is `.claude/skills/` only — once A1 #425 lands, the path filter will auto-skip build/e2e/integration for this kind of PR).
 
+**Commit(s):** efc46cf
+
+## 2026-05-06T12:32:08-04:00 — #427: /finish-ticket auto-files tech-debt issues for deferred minors
+
+**Pushed:** New step 8b in `.claude/skills/finish-ticket/SKILL.md`: after the code-review/re-review loop settles and **before** PR open, walks the deferred-minor findings from the reviewer pass and (with per-finding user confirmation) files each as a `tech-debt`-labeled GitHub issue linking the parent. Idempotent first-run label setup using the stable `gh label list --json name --jq '.[].name'` interface. Three-way prompt: `y` files, `n` defers to "Considered but not tracked" PR-body section, `skip-rest` does the same for all remaining. Step 9 (PR open) gains two new required body sections: "Tech-debt follow-ups" (filed issue numbers) and "Considered but not tracked" (skipped summaries). Updated Invariants to require per-finding confirmation; bulk-file mode forbidden.
+
+**Why:** Third Tier-A quick win from PR #419's six-improvement plan. Minor findings deferred to PR descriptions vanish on merge; the closed PR description is nobody's backlog. This step closes the loop so the deferred minors at least exist as tracked issues with parent links.
+
+**Notes:**
+- `code-reviewer` first verdict: **fix** — 7 findings, mixed quality. Honest assessment with the user: 2 real (Journal-entry timing bug claiming a "next push" that doesn't exist; ordering — file issues before PR open so numbers can land in the PR body), 1 low-cost-defensive (`gh label list | awk` → `--json name --jq` for stability across CLI versions), 2 useful improvements (memory-compaction fragility — agent must persist deferred-minors list explicitly; `skip-rest` consequences underspecified — added "Considered but not tracked" PR-body section), and 2 false positives (project-specific example "too narrow" — example is illustrative, kept; GH API rate-limit guardrail for hypothetical 25+ findings — speculative, per-finding confirmation already serializes the prompts). Documented disagreements explicitly: kept inline in the SKILL.md prose (the example justification) and in this journal entry (rate-limit reasoning).
+- Reviewer also flagged `gh issue create` failure handling, which the original draft missed — added a paragraph on partial-failure recovery (surface to user, capture which were filed, retry/skip/abort).
+- Restructured 9a → 8b. 8b runs after the 8/8a loop settles, before step 9 opens the PR. This means issue numbers can land in the PR body where they're durable across the merge — was the reviewer's main structural ask. Journal entries pre-date the issue filing and are append-only, so the audit trail for spawned issues lives in the PR body + the spawned-issues' `Parent: #<N>` links, not in the journal.
+- `code-reviewer` re-review verdict: **ship.** False-positive in this round too: claimed a "stale step 9a reference in Guardrails" that doesn't exist (`grep` confirms zero stale refs). Two reviewer false-positives in two rounds — opening this as a calibration data point for a future "code-review style" doc if we want to formalize false-positive mitigation.
+- typecheck + lint clean; `tests/docs` 133 passed (the diff is `.claude/skills/` only, ~92 lines added).
+- Append-only Journal collision on rebase: A2 #426 landed first; my entry rebased cleanly with chronological insert.
+
 **Commit(s):** single commit (SKILL.md + this Journal entry).

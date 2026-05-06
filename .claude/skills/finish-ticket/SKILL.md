@@ -163,6 +163,86 @@ to verify the per-PR checklist actually ran. A line like
 
 For every push during 8/8a, follow the per-push Journal rule.
 
+### 8b. File tech-debt issues for deferred minors
+
+Code-reviewer's minor-severity findings often get deferred to the PR
+body and then vanish on merge — the closed PR description is nobody's
+backlog. This step turns each deferred minor into a tracked
+`tech-debt` issue so they don't rot. Runs **before** step 9 so the
+spawned issue numbers can be linked in the PR body where they're
+durable across the merge.
+
+**Persist the deferred-minors list explicitly before leaving step
+8/8a.** Write it to a scratch variable, temp file, or visible chat
+block — anything that survives a context summarization between the
+reviewer's output and step 8b. Don't rely on the reviewer's text still
+being in window.
+
+**First-run label setup** — check whether the `tech-debt` label
+exists; create if missing. Use `--json name` (the stable interface)
+not the default tabular output:
+
+```bash
+gh label list --limit 200 --json name --jq '.[].name' | grep -qx "tech-debt" \
+  || gh label create tech-debt \
+    --description "Deferred minor finding from a /finish-ticket review" \
+    --color "fbca04"
+```
+
+**Enumerate deferred minors.** From the persisted list, drop anything
+actually fixed during step 8/8a (those already shipped in the diff).
+What remains are the deferred-minor candidates.
+
+**Confirm one-by-one with the user.** For each candidate:
+
+```
+Open tech-debt issue for: "<short summary>"?
+Body would link parent: #<N> (this PR's ticket).
+[y / n / skip-rest]
+```
+
+- `y` → file the issue (next step).
+- `n` → don't file this one; note it for the "Considered but not
+  tracked" PR-body section; continue to the next.
+- `skip-rest` → don't file any remaining; note all skipped for the
+  PR-body section; continue to step 9.
+
+**Per-finding confirmation is required.** Bulk-file mode is rejected
+explicitly — chatty reviewers would otherwise spam the backlog with
+nice-to-haves no one asked to track.
+
+**File each confirmed issue:**
+
+```bash
+gh issue create \
+  --label tech-debt \
+  --title "<short summary derived from the finding>" \
+  --body "$(cat <<'BODY'
+Deferred from #<N> review (PR #<P>).
+
+<full finding text from code-reviewer, verbatim>
+
+Parent: #<N>.
+BODY
+)"
+```
+
+The title should be ≤ 70 characters and describe the *fix*, not the
+finding. Example: code-reviewer says "test using `>= 1` instead of
+`=== 1` is unnecessarily lax" → issue title `test(sefirah): tighten
+unique-color assertion to === 1`. (The example uses a real prior
+finding from this repo for concreteness; agents should keep the
+shape — `<scope>: <fix-imperative>` — and adapt to the language of
+the actual finding.)
+
+**On `gh issue create` failure** (network blip, auth hiccup, label
+race), surface the failure to the user immediately, ask whether to
+retry / skip / abort the rest. Capture which issues were filed so
+far. A partial run that filed 2 of 5 is fine — note it in the PR
+body alongside the others.
+
+Capture each new issue number for step 9 to embed in the PR body.
+
 ### 9. Open the PR
 
 ```bash
@@ -178,6 +258,15 @@ The body must include:
 - **Test plan** — checklist of what was verified.
 - **Journal entries** — copy the relevant Journal entries from `Journal.md`
   for this branch's pushes (read-only reference — `Journal.md` is source of truth).
+- **Tech-debt follow-ups** (if any from step 8b) — list the spawned
+  issue numbers (e.g. `Tech-debt follow-ups: #441, #442`). Issue
+  numbers live in the PR body, not in the Journal entry — the journal
+  push that mentions this PR pre-dates the tech-debt issues being
+  filed and is append-only.
+- **Considered but not tracked** (if any `n` / `skip-rest` from
+  step 8b) — list the deferred-minor summaries the user chose not to
+  file. So the record exists somewhere even if it didn't earn a
+  ticket.
 - **Closes #NN** — on its own line so GitHub auto-links.
 
 ### 10. Print the PR URL and hand off to /ship-ticket
@@ -204,5 +293,8 @@ skill — the wait for hosted CI is asynchronous and operator-driven.
 - The five-step per-PR checklist runs every time. Step 5 (re-review)
   uses the heuristic in step 8a above — `/ship-ticket` will refuse to
   merge a PR whose Journal does not show the checklist completing.
+- Tech-debt follow-up issues (step 8b) are filed **per finding with
+  explicit user confirmation**. Bulk-file mode is forbidden — the
+  failure mode is backlog spam from chatty reviewer runs.
 - Hooks and signing are never bypassed.
 - If in doubt, ask the user.
