@@ -82,6 +82,28 @@ describe('SefirahDetail', () => {
     expect(swatch?.getAttribute('title')).toBe('#ffffff');
   });
 
+  it('renders the Voice row with the named avatar (#409)', () => {
+    // #409 — closes the loop between the codex page and the
+    // encounter system. Tiferet's avatar is Apollo per
+    // design/avatars.md § 1.
+    const { container, getByText } = render(<SefirahDetail sefirahKey="tiferet" />);
+    const dt = getByText('Voice');
+    expect(dt.tagName).toBe('DT');
+    const voiceDd = container.querySelector('[data-sefirah-voice]');
+    expect(voiceDd?.textContent).toBe('Apollo');
+  });
+
+  it("Kether's Voice row reads 'the team becomes the avatar' (#409)", () => {
+    // Kether has no single deity — its Final Threshold is collective.
+    // Per design/avatars.md the row reads as the in-doc descriptor.
+    const { container } = render(<SefirahDetail sefirahKey="kether" />);
+    const voiceDd = container.querySelector('[data-sefirah-voice]');
+    expect(voiceDd?.textContent).toMatch(/team becomes the avatar/i);
+    // Italicised — pin the rendering decision so it doesn't
+    // silently regress.
+    expect(voiceDd?.querySelector('em')).not.toBeNull();
+  });
+
   it('renders the Hebrew letter (single-letter glyph) somewhere on the page if a path letter applies', () => {
     // Sefirot themselves don't have Hebrew letters — the LETTERS map
     // to paths. So this test confirms the page does NOT erroneously

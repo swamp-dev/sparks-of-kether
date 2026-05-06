@@ -104,6 +104,22 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
             <dd>{sefirah.bodyPart}</dd>
             <dt className="font-display tracking-widest opacity-70">Stat</dt>
             <dd className="capitalize">{sefirah.stat}</dd>
+            {/*
+              #409 — the avatar (per design/avatars.md § 1) closes
+              the loop between the codex and the encounter system.
+              For Kether the Final Threshold is collective so there
+              is no single deity — render the in-doc descriptor.
+              Follow-up: a /avatar/[name] page or "See in encounter"
+              link per the ticket's optional affordance.
+            */}
+            <dt className="font-display tracking-widest opacity-70">Voice</dt>
+            <dd data-sefirah-voice>
+              {codex.avatar === null ? (
+                <em className="opacity-80">The team becomes the avatar</em>
+              ) : (
+                codex.avatar
+              )}
+            </dd>
           </dl>
 
           <section aria-labelledby="stat-heading" className="space-y-2">

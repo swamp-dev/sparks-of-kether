@@ -5408,3 +5408,18 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1937 + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (component + tests + this Journal entry).
+
+## 2026-05-06T11:18:00-04:00 — #409: codex Sefirah Voice row referencing the avatar
+
+**Pushed:** Single commit. Added an `avatar: string | null` field to `SefirahCodexContent` and populated all 10 entries with their Greek deity per `design/avatars.md § 1`: Athena / Demeter / Zeus / Ares / Apollo / Aphrodite / Hermes / Selene / Hestia. Kether is `null` because its Final Threshold is collective ("the team becomes the avatar"). The codex Sefirah detail page now renders a "Voice" row in the meta table with the avatar name, or an italicised "The team becomes the avatar" descriptor for Kether.
+
+**Why:** Playtest 2026-05-05 ticket #5. The codex Sefirah page listed Pillar / Planet / Color / Body / Stat — but not Avatar. Adding Voice closes the loop between the codex and the encounter system (player who reads the Tiferet codex page now sees Apollo cited).
+
+**Notes:**
+- **Scope deferral on the link affordance.** Ticket asked the row to "link to either inlined content or an avatar page." Went with the simplest viable: avatar name as visible text, no link. Shipping a `/avatar/[name]` route that 404s or renders blank would be worse than no link. Code comment in `SefirahDetail.tsx` documents the deferral as a follow-up. Reviewer confirmed: "stub link is acceptable now" was the explicit fallback.
+- Visual-regression: only the mobile sefirah-tiferet baseline failed (the new dl row pushed content past the visible mobile region by enough pixels). Desktop and tablet fit under the 2.5% threshold. Mobile baseline regenerated.
+- Test coverage: pinned Tiferet ("Apollo") and Kether (the null-branch descriptor + `<em>` element). Reviewer flagged the eight other Sefirot lack incidental coverage; not a blocker, considered for a follow-up.
+- `code-reviewer` verdict: **ship.** Zero critical, zero significant. Data-shape choice (`string | null`) and partial-deferral both endorsed.
+- `pnpm ci:local` green: 1939 + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (data + component + tests + 1 baseline + this Journal entry).
