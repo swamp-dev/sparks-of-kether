@@ -93,10 +93,12 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
             <dd>
               <span
                 aria-hidden="true"
+                data-sefirah-swatch
+                title={sefirah.color}
                 className="mr-2 inline-block h-3 w-3 rounded-sm align-middle"
                 style={{ backgroundColor: sefirah.color }}
               />
-              <code>{sefirah.color}</code>
+              <code>{`bg-${sefirahKey}`}</code>
             </dd>
             <dt className="font-display tracking-widest opacity-70">Body</dt>
             <dd>{sefirah.bodyPart}</dd>

@@ -55,17 +55,31 @@ describe('SefirahDetail', () => {
     expect(arcanaLinks.length).toBeGreaterThanOrEqual(8);
   });
 
-  it('renders the Sefirah-color hex as a visible code label in the dl table', () => {
-    // The dl table surfaces the canonical color token next to a small
-    // swatch chip — useful for designers / debuggers checking the
-    // token without inspecting CSS. Different from the data-attribute
-    // contract above (which is the test seam).
+  it('renders the Sefirah-color Tailwind token name (not raw hex) as the visible code label', () => {
+    // #400: hand-coded hex is the design-system inconsistency the
+    // T-axis of design/ui-review.md penalizes. The visible label is
+    // the token name (`bg-kether`); the raw hex stays accessible via
+    // the swatch's title for designers / debuggers.
     const { container } = render(<SefirahDetail sefirahKey="kether" />);
     const codeNodes = container.querySelectorAll('code');
+    const tokenCodes = Array.from(codeNodes).filter(
+      (n) => n.textContent === 'bg-kether',
+    );
+    expect(tokenCodes.length).toBe(1);
+    // The hex must NOT appear as visible text in any <code> node — it
+    // belongs in the swatch's title attribute now.
     const hexCodes = Array.from(codeNodes).filter(
       (n) => n.textContent === '#ffffff',
     );
-    expect(hexCodes.length).toBeGreaterThanOrEqual(1);
+    expect(hexCodes.length).toBe(0);
+  });
+
+  it('keeps the hex accessible via the swatch title attribute', () => {
+    // The raw hex is still useful for designers / debuggers — it
+    // survives as the title of the colored swatch span.
+    const { container } = render(<SefirahDetail sefirahKey="kether" />);
+    const swatch = container.querySelector('[data-sefirah-swatch]');
+    expect(swatch?.getAttribute('title')).toBe('#ffffff');
   });
 
   it('renders the Hebrew letter (single-letter glyph) somewhere on the page if a path letter applies', () => {

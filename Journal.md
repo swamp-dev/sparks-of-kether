@@ -5296,3 +5296,19 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1928 tests + 1 todo, typecheck + lint clean, e2e 81 passed + 63 skipped, integration 12/12. `pnpm screenshots` 63/63 green.
 
 **Commit(s):** single commit (`e2e/screenshots.review.spec.ts` + this Journal entry).
+
+## 2026-05-06T09:56:31-04:00 — #400: codex Sefirah color row → Tailwind token name
+
+**Pushed:** Single commit. The Sefirah codex page (`/sefirah/<name>`) Color row showed `<code>#ffd700</code>` for Tiferet (etc.) — raw hex in user-visible content is the design-system inconsistency the T-axis of `design/ui-review.md` penalizes. Swapped the visible label to the Tailwind token name (`bg-tiferet`, `bg-kether`, etc., derived from the canonical `SefirahKey`); the hex stays accessible via the swatch's `title` attribute for designers and DOM inspectors.
+
+**Why:** Playtest 2026-05-05 finding #2. The hex was *correct* but inconsistent with how the rest of the project references colors.
+
+**Notes:**
+- TDD: updated existing test asserting hex visibility → now asserts the token name is the visible code label AND the hex doesn't appear as visible code text. Added a separate test covering the title-attr fallback.
+- a11y: swatch keeps `aria-hidden="true"`; the visible `<code>` already names the color, so screen readers get the canonical name without redundancy. `title` here is decorative-only (browser tooltip / DOM inspection) — `aria-hidden` correctly gates it from AT.
+- Visual-regression: the diff (small text width change in one `<dl>` cell) fits under the 2.5% maxDiffPixelRatio threshold; baselines unchanged. Confirmed by `pnpm ci:local` green.
+- Change is at the shared `SefirahDetail` component, so all 10 Sefirah pages get the new contract uniformly.
+- `code-reviewer` verdict: **ship.** Zero critical, zero significant. One minor (positive test using `>= 1` instead of `=== 1`) addressed.
+- `pnpm ci:local` green: 1929 tests + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (component + test + this Journal entry).
