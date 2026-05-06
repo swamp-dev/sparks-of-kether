@@ -249,12 +249,12 @@ function CurrentStage({
           <h3 className="font-display text-3xl tracking-widest text-veil">
             {sign.name}
           </h3>
-          <p className="text-xs uppercase tracking-[0.3em] opacity-60">
+          <p className="text-sm uppercase tracking-[0.25em] opacity-60">
             Soul card: {soulCardName} · Path {pathNumber}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 text-xs uppercase tracking-widest">
+        <div className="flex items-center gap-3 text-sm uppercase tracking-widest">
           <span
             data-chip="element"
             data-element={sign.element}
@@ -422,10 +422,15 @@ interface StatWeightsProps {
 }
 
 function StatWeights({ bonusEntries }: StatWeightsProps): JSX.Element {
+  // #410: stack to one column on narrower widths (mobile center stage
+  // ~375px) and split to two columns at sm+ where body text bumped to
+  // `text-base` would otherwise crowd. Keeps the wins-left / costs-
+  // right reading order on desktop, and a single readable column when
+  // there isn't room for it.
   return (
     <ul
       data-stat-weights
-      className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-2"
+      className="grid w-full max-w-md grid-cols-1 gap-x-4 gap-y-2 text-base sm:grid-cols-2"
     >
       {bonusEntries.map(({ stat, delta }) => (
         <li
@@ -447,7 +452,7 @@ function StatWeights({ bonusEntries }: StatWeightsProps): JSX.Element {
                 }`}
               />
             ))}
-            <span className="ml-1 text-xs text-veil/60">
+            <span className="ml-1 text-base text-veil/60">
               {delta > 0 ? '+' : '−'}
               {Math.abs(delta)}
             </span>
@@ -484,10 +489,10 @@ function SoulDoors({
       >
         <ArcanumCard
           number={soulCardNumber}
-          className="h-32 w-20 sm:h-36 sm:w-[5.5rem]"
+          className="h-40 w-24 sm:h-44 sm:w-[7rem]"
         />
       </span>
-      <p className="text-xs uppercase tracking-[0.3em] opacity-60">
+      <p className="text-sm uppercase tracking-[0.25em] opacity-60">
         {doors.length === 1 ? 'Soul Door' : 'Soul Doors'}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -496,7 +501,7 @@ function SoulDoors({
         ))}
       </div>
       {isPisces ? (
-        <p className="mt-1 max-w-xs text-center text-xs italic opacity-70">
+        <p className="mt-1 max-w-xs text-center text-sm italic opacity-70">
           Malkuth has no Challenge — so Pisces has one Door instead of
           two (path 29 ends at Malkuth).
         </p>
@@ -537,15 +542,19 @@ function SoulDoorChip({ door }: SoulDoorChipProps): JSX.Element {
         className="inline-block h-2 w-2 rounded-full"
         style={{ background: sefirah.color }}
       />
+      {/* #410 typography: bumped chip text by one step (text-xs →
+          text-sm). Hebrew sits at text-lg per the +1 step rule in
+          docs/typography.md so the two read as equivalent visual
+          weight despite Hebrew's shorter glyph geometry. */}
       <span
         aria-hidden="true"
         lang="he"
-        className="font-hebrew text-base"
+        className="font-hebrew text-lg"
         style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
       >
         {sefirah.hebrewName}
       </span>
-      <span aria-hidden="true" className="font-display text-xs uppercase tracking-widest">
+      <span aria-hidden="true" className="font-display text-sm uppercase tracking-widest">
         {transliterated(door)}
       </span>
     </span>

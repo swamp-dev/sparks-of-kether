@@ -5343,3 +5343,17 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1929 tests + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (type + data + component + test + snapshot + this Journal entry).
+
+## 2026-05-06T10:50:00-04:00 — #410: sign-picker center-stage text size + readability bump
+
+**Pushed:** Single commit. Bumped body text on the focused SignStage by one typographic step per `docs/typography.md`. Soul-card caption / chips / Soul Doors heading / Pisces note: `text-xs` → `text-sm`. Stat weights: `text-sm` → `text-base`, with the magnitude span at parity (`text-base`) so the salient numeric reads at the same weight as the stat label. Stat-weights grid stacks one column on `< sm` widths to avoid crowding when text grows. Soul-Door chip Hebrew sized `text-lg` (one step above the `text-sm` Latin transliteration) per the +1 Hebrew rule. Mini Arcana card enlarged from `h-32 w-20 sm:h-36 sm:w-[5.5rem]` to `h-40 w-24 sm:h-44 sm:w-[7rem]` so "04 / The Emperor / Aries" reads at arm's length. Tracking on the upbumped uppercase captions reduced from `0.3em` → `0.25em` to keep line widths roughly equivalent.
+
+**Why:** Playtest 2026-05-05 ticket #1. The center-stage was theatrically correct but supporting text sat at small-caps registers that didn't carry from a normal viewing distance.
+
+**Notes:**
+- Visual-regression baselines regenerated for `/play` desktop / tablet / mobile (the sign-picker is the post-#255 default landing). After rebase onto #401's TreeBoard transliteration change, the regenerated baselines still pass — the two changes capture different surfaces (`/play` = sign-picker; `play-mid-game` = TreeBoard).
+- `code-reviewer` verdict (re-reviewed after hierarchy fix): **ship.** First pass flagged the magnitude-span hierarchy inversion (`text-sm` magnitude inside a `text-base` row). Fixed by promoting the magnitude span to `text-base`; second-pass reviewer confirmed the hierarchy is correct.
+- No test churn — none of the existing SignStage tests assert text-size classes, so the typography bumps don't break test expectations.
+- `pnpm ci:local` green.
+
+**Commit(s):** single commit (component + 3 baselines + this Journal entry).
