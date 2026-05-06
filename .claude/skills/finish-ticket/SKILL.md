@@ -141,15 +141,6 @@ with a note in the PR body.
 Note the commit SHA at the moment of the first review (`git rev-parse HEAD`)
 — step 8a uses it to compute "what changed since the first review."
 
-> **Mechanical stamp auto-written** (per #428): the
-> `PostToolUse:Agent` hook in `.claude/settings.json` writes
-> `.claude/state/checklist-<sanitized-branch>.json` capturing the
-> branch, HEAD SHA, and reviewer verdict. `/ship-ticket` reads this
-> stamp to gate the merge (see `/ship-ticket` step 3). If the stamp
-> doesn't appear after a `code-reviewer` call, the hook is
-> misconfigured; surface to the user before continuing — `/ship-ticket`
-> will refuse without it.
-
 ### 8a. Re-review on substantial fixes
 
 After fixes are committed, decide whether step 5 of the per-PR checklist
