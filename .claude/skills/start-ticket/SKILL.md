@@ -88,6 +88,47 @@ git worktree add ../sok-<N>-<slug> -b <type>/<N>-<slug> origin/main
 If the branch name already exists locally or on origin, **stop** —
 ticket numbers should be one-to-one with branches.
 
+### 6a. Symlink `node_modules` from the main repo
+
+**Run from the main repo directory** (the same cwd step 6 ran from —
+the parent of the new worktree). The relative path in `ln -s` is
+resolved from the link's location, not from cwd, but the command
+itself must be run somewhere `../sparks-of-kether/node_modules` and
+`../sok-<N>-<slug>/` are sibling-resolvable from the parent. Running
+this from inside the worktree creates a self-referential broken link.
+
+```bash
+ln -s ../sparks-of-kether/node_modules ../sok-<N>-<slug>/node_modules
+```
+
+Skips the 30–90s `pnpm install` penalty on every fresh worktree —
+worktrees share the same `package.json` and `pnpm-lock.yaml` with the
+branch's HEAD, so the resolved `node_modules` is bit-identical between
+the main repo and any branch off `origin/main`. The symlink resolves
+to the same content-addressable pnpm store either way.
+
+**Stop conditions** — handle each before invoking `ln -s`:
+
+- `../sparks-of-kether/node_modules` doesn't exist → stop, tell the
+  user to run `pnpm install` in the main repo first, then re-invoke
+  `/start-ticket`.
+- `../sok-<N>-<slug>/node_modules` already exists as a symlink
+  pointing at the right place → no-op, log "node_modules already
+  symlinked", continue.
+- `../sok-<N>-<slug>/node_modules` exists as anything else (regular
+  dir, file, dangling symlink) → stop and report. Re-invocations after
+  partial failure should fail loudly, not silently corrupt state.
+
+**⚠️ Warning — `pnpm install` inside the worktree mutates the MAIN
+repo's `node_modules`.** The symlink is followed; the underlying
+directory is shared. If the agent runs `pnpm install` from inside a
+worktree (e.g. to update deps for a ticket that touches
+`package.json`), the install writes through to the shared store and
+every other worktree's deps update too. This is intentional — dep
+changes propagate — but it's the opposite of what most developers
+expect from a per-worktree directory. Surface this in the Journal if
+the agent does it.
+
 ### 7. Print next steps
 
 Tell the user:
@@ -109,3 +150,11 @@ Then **stop**. Do not start writing code in the same skill invocation.
 - Never modify the ticket body, state, or labels.
 - Never branch from anything except `origin/main`.
 - One ticket = one worktree = one branch.
+- The `node_modules` symlink is intentional shared state — follow-the-
+  symlink semantics mean `pnpm install` from inside a worktree mutates
+  the shared store. If the agent needs per-worktree dependency
+  isolation (rare — only for testing dep upgrades against a specific
+  branch), it must `rm node_modules` (which removes the symlink only,
+  **not** the shared target — never `rm -rf` here) and then
+  `pnpm install` to populate a private directory, and document that
+  drift in the Journal.

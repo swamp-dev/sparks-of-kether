@@ -5440,3 +5440,17 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1940 + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (Hand + PlayScreen + Hand tests + this Journal entry).
+
+## 2026-05-06T12:18:14-04:00 — #426: /start-ticket symlinks node_modules from main repo
+
+**Pushed:** New step 6a in `.claude/skills/start-ticket/SKILL.md`: after `git worktree add`, `ln -s ../sparks-of-kether/node_modules ../sok-<N>-<slug>/node_modules` from the main repo directory. Worktrees share `package.json` + `pnpm-lock.yaml` with `origin/main`'s HEAD, so the resolved `node_modules` is bit-identical between the main repo and any branch off main. Skips the 30–90s `pnpm install` penalty per ticket. Three explicit stop-conditions: source missing → ask user to install first; target already correctly symlinked → no-op; target exists as anything else → stop and report. Updated Invariants section to flag follow-the-symlink shared-state semantics and forbid `rm -rf node_modules` (only `rm node_modules` removes the symlink without nuking the shared store).
+
+**Why:** Second Tier-A quick win from PR #419's six-improvement plan. Across a `/full-send` of 5 tickets that's ~5 min of pure install latency for code already installed in the main repo. The dependencies are identical; no reason to install twice.
+
+**Notes:**
+- `code-reviewer` first verdict: **fix** — 2 significant findings. (1) The `ln -s` command had no cwd anchor, so an agent running it from inside the new worktree would create a self-referential broken link. Added explicit "Run from the main repo directory" instruction with a one-line explanation of why. (2) Single stop-condition (source missing) didn't cover the target-already-exists case — re-invocations after partial failure would get an opaque shell error. Replaced with three explicit cases. Plus 2 minor wording tightenings: bold ⚠️ Warning block for the "pnpm install in worktree mutates main" caveat (was easy to skim past); explicit `rm node_modules` (not `rm -rf`) in the per-worktree-isolation invariant.
+- `code-reviewer` re-review verdict: **ship.** All four findings cleanly resolved, no internal contradictions in the SKILL.md prose.
+- Eating own dogfood: this PR's worktree was created with the symlink approach (`ln -s ../sparks-of-kether/node_modules`); `pnpm typecheck` ran without `pnpm install`. Confirmed working.
+- typecheck + lint clean; `tests/docs` 133 passed (the change is `.claude/skills/` only — once A1 #425 lands, the path filter will auto-skip build/e2e/integration for this kind of PR).
+
+**Commit(s):** single commit (SKILL.md + this Journal entry).
