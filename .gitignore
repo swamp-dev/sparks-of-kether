@@ -9,6 +9,12 @@ Thumbs.db
 *.swo
 *~
 
+# Per-PR checklist stamp files written by scripts/checklist-stamp.mjs
+# (the PostToolUse:Agent hook). Per-machine, per-branch state used by
+# /ship-ticket to verify the per-PR checklist actually ran for the
+# current HEAD SHA. Never committed.
+.claude/state/
+
 # Node / Next.js
 node_modules/
 # Anchored variant matches the worktree-symlink form (`node_modules` as

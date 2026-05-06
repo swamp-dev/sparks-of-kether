@@ -66,10 +66,16 @@ By default in `~/.dotfiles/.claude/rules/collaboration.md`, agents do not
 relaxed under explicit conditions.** The agent may `gh pr merge` (via
 `/ship-ticket`) when **all** of the following hold:
 
-- The agent personally ran the per-PR checklist on **this specific PR**
-  in **this session**.
+- A **checklist stamp** at `.claude/state/checklist-<sanitized-branch>.json`
+  exists with `verdict=ship` AND `head_sha` matching the PR's current
+  HEAD (per #428's mechanical gate). The stamp is written by the
+  `PostToolUse:Agent` hook in `.claude/settings.json` whenever
+  `code-reviewer` runs, so its existence is mechanical proof the
+  reviewer actually ran on this commit. Missing / stale-SHA / non-ship
+  stamp → `/ship-ticket` fails closed.
 - Hosted CI is green at the merge moment — `gh pr checks <P>` shows
-  every job passing, none in-flight, none stale.
+  every job passing or legitimately skipped (filter-skip per #425), none
+  in-flight, none stale.
 - One PR per `/ship-ticket` invocation. The skill refuses a list of PRs.
   The agent never sweeps "all green PRs" or anything resembling the
   2026-04 11-PR autonomous-merge incident.
@@ -77,7 +83,9 @@ relaxed under explicit conditions.** The agent may `gh pr merge` (via
   silent edits between checklist completion and merge.
 
 If any condition fails, `/ship-ticket` stops and reports. The user
-merges manually from there.
+merges manually from there. The stamp is the load-bearing mechanical
+gate; the Journal entry remains the human-readable audit record but is
+no longer the gate.
 
 **This is not the admin-merge bypass** in
 `~/.dotfiles/.claude/rules/local-ci-and-admin-merge.md`. That bypass is
