@@ -1817,7 +1817,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="200"
           y="60"
         >
-          Crown
+          Kether
         </text>
       </g>
       <g
@@ -1849,7 +1849,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="320"
           y="150"
         >
-          Wisdom
+          Chokmah
         </text>
       </g>
       <g
@@ -1873,7 +1873,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           dominant-baseline="middle"
           fill="#f8f8ff"
           font-family="var(--font-display), serif"
-          font-size="7"
+          font-size="9"
           font-weight="600"
           letter-spacing="0.5"
           style="text-transform: uppercase;"
@@ -1881,7 +1881,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="80"
           y="150"
         >
-          Understanding
+          Binah
         </text>
       </g>
       <g
@@ -1913,7 +1913,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="320"
           y="280"
         >
-          Mercy
+          Chesed
         </text>
       </g>
       <g
@@ -1937,7 +1937,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           dominant-baseline="middle"
           fill="#f8f8ff"
           font-family="var(--font-display), serif"
-          font-size="8"
+          font-size="9"
           font-weight="600"
           letter-spacing="0.5"
           style="text-transform: uppercase;"
@@ -1945,7 +1945,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="80"
           y="280"
         >
-          Severity
+          Gevurah
         </text>
       </g>
       <g
@@ -1977,7 +1977,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="200"
           y="340"
         >
-          Beauty
+          Tiferet
         </text>
       </g>
       <g
@@ -2009,7 +2009,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="320"
           y="430"
         >
-          Victory
+          Netzach
         </text>
       </g>
       <g
@@ -2033,7 +2033,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           dominant-baseline="middle"
           fill="#0e1320"
           font-family="var(--font-display), serif"
-          font-size="8"
+          font-size="9"
           font-weight="600"
           letter-spacing="0.5"
           style="text-transform: uppercase;"
@@ -2041,7 +2041,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="80"
           y="430"
         >
-          Splendor
+          Hod
         </text>
       </g>
       <g
@@ -2065,7 +2065,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           dominant-baseline="middle"
           fill="#0e1320"
           font-family="var(--font-display), serif"
-          font-size="7"
+          font-size="9"
           font-weight="600"
           letter-spacing="0.5"
           style="text-transform: uppercase;"
@@ -2073,7 +2073,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="200"
           y="490"
         >
-          Foundation
+          Yesod
         </text>
       </g>
       <g
@@ -2105,7 +2105,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           x="200"
           y="560"
         >
-          Kingdom
+          Malkuth
         </text>
       </g>
     </g>

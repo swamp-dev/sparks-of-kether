@@ -524,9 +524,10 @@ export function TreeBoard({
         <g data-layer="nodes">
           {sefirot.map((sefirah) => {
             const pos = nodeLayout[sefirah.key];
-            // #214: declutter — only the English transliteration is
-            // rendered as visible text on the board. Hebrew script and
-            // the 1-10 number are gone visually (still in `data/sefirot.ts`
+            // #214 + #401: declutter — only the Hebrew-name
+            // transliteration (Kether, Tiferet, …) is rendered as
+            // visible text on the board. Hebrew script and the 1-10
+            // number are gone visually (still in `data/sefirot.ts`
             // and used by other surfaces like BlessingRitual's hero
             // badge). The `aria-label` keeps the position number so
             // screen-reader users still get spatial context (e.g.
@@ -576,12 +577,20 @@ export function TreeBoard({
                   }}
                 />
                 {/*
-                  #289: render the English name INSIDE the circle so the
-                  Sefirah is identifiable at a single glance, instead of
-                  forcing the eye from disc → label-below → disc again.
+                  #289: render the Sefirah name INSIDE the circle so it's
+                  identifiable at a single glance, instead of forcing
+                  the eye from disc → label-below → disc again.
                   `dominantBaseline="middle"` centres the glyph box on
                   `pos.y` so the visible text sits at the geometric
                   centre of the disc, not below it.
+
+                  #401: the visible label is the Hebrew transliteration
+                  (Kether, Chokmah, Binah, …) — the form by which the
+                  Sefirah is invoked in the tradition — rather than the
+                  English meaning-translation. The aria-label keeps
+                  englishName + position number (e.g. "Beauty (6)") so
+                  screen-reader users still get the descriptive gloss
+                  AND the spatial cue.
 
                   Fill is picked per-Sefirah by `contrastTextColour` —
                   with ten different fills (white, gold, near-black,
@@ -595,14 +604,14 @@ export function TreeBoard({
                   y={pos.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={fontSizeForName(sefirah.englishName)}
+                  fontSize={fontSizeForName(sefirah.transliteration)}
                   fontFamily="var(--font-display), serif"
                   fontWeight={600}
                   fill={contrastTextColour(sefirah.color)}
                   letterSpacing={0.5}
                   style={{ textTransform: 'uppercase' }}
                 >
-                  {sefirah.englishName}
+                  {sefirah.transliteration}
                 </text>
               </g>
             );
@@ -764,16 +773,17 @@ export function TreeBoard({
  * SVG paint order keeps node clicks landing on the nodes regardless.
  */
 /**
- * Pick a font size for a Sefirah's English name based on character
+ * Pick a font size for a Sefirah's display label based on character
  * count, so labels fit inside the 28-radius disc without horizontal
  * overflow. Tuned by visual review:
- *   - ≤ 7 chars (CROWN, MERCY, BEAUTY, VICTORY, KINGDOM, WISDOM): 9
- *   - 8-9 chars (SEVERITY, SPLENDOR, FOUNDATION): 8
- *   - 10+ chars (UNDERSTANDING, LOVINGKINDNESS): 7
+ *   - ≤ 7 chars (KETHER, CHOKMAH, BINAH, CHESED, GEVURAH, TIFERET,
+ *     NETZACH, HOD, YESOD, MALKUTH — all transliterations fit here): 9
+ *   - 8-9 chars: 8
+ *   - 10+ chars: 7
  *
- * Some visual unevenness across Sefirot is the cost of keeping every
- * label inside its circle. The alternative — `textLength` + glyph
- * compression — produced smeared letterforms at small font sizes.
+ * Bucket boundaries are kept in case future labels (codex / English
+ * meanings reused in alt views) push longer; all current
+ * transliterations land in bucket 1.
  */
 function fontSizeForName(name: string): number {
   if (name.length <= 7) return 9;

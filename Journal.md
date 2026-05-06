@@ -5327,3 +5327,19 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1936 tests + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (helper + test + page wiring + this Journal entry).
+
+## 2026-05-06T10:30:00-04:00 — #401: Hebrew transliterations as in-game Tree labels
+
+**Pushed:** Single commit. Added a `transliteration` field to the `Sefirah` interface, populated all 10 entries (Kether, Chokmah, Binah, Chesed, Gevurah, Tiferet, Netzach, Hod, Yesod, Malkuth), and switched `TreeBoard.tsx`'s visible disc text from `englishName` to `transliteration`. The aria-label keeps `englishName + position number` so screen-reader users still get the descriptive gloss.
+
+**Why:** Playtest 2026-05-05 ticket #3. The English meaning-translation (CROWN, BEAUTY, UNDERSTANDING) is a *gloss*, not the canonical name; the Sefirot are invoked in the tradition by their Hebrew-name transliterations. The in-game Tree should reflect the form players will encounter elsewhere in Kabbalistic literature.
+
+**Notes:**
+- Pre-existing test #214 had a comment calling the English meanings "transliteration" — actual mistranslation in the comment, but it was asserting `englishName`. Updated to match #401's actual contract: visible text = `sefirah.transliteration`, aria-label still includes `englishName + position number`.
+- Snapshot regen via `vitest -u` for the geometry-stability guard at `__snapshots__/TreeBoard.test.tsx.snap`. Single-token relabel; no geometry change.
+- All 10 transliterations land in the existing `≤ 7-char` font-size bucket (longest: 7 — CHOKMAH, GEVURAH, TIFERET, NETZACH, MALKUTH). `fontSizeForName` works as-is.
+- **Codex Sefirah pages: scope-deferred.** The ticket asked to review whether to switch the codex h1 to transliteration too. Decision: defer. Codex hero strip currently uses `englishName` as h1 with Hebrew below; switching to transliteration-as-h1 + Hebrew-primary + English-gloss is coherent with scholarly conventions but is a layout reorganization that crosses into the codex-redesign space. Would also force visual-regression baselines on 10 pages. Better as a separate ticket once codex IA is otherwise touched.
+- `code-reviewer` verdict: **ship.** Zero critical, zero significant. One minor (stale comment at TreeBoard.tsx:527 saying "English transliteration") fixed inline.
+- `pnpm ci:local` green: 1929 tests + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (type + data + component + test + snapshot + this Journal entry).

@@ -54,6 +54,14 @@ export interface Sefirah {
   readonly number: number;
   readonly hebrewName: string;
   readonly englishName: string;
+  /**
+   * Latin-script transliteration of the Hebrew name — the form by
+   * which the Sefirah is conventionally invoked in the tradition
+   * (Kether, Chokmah, Binah, …). The in-game Tree of Life uses this
+   * as the primary label; `englishName` is the meaning-translation
+   * gloss used elsewhere (codex hero, screen-reader labels).
+   */
+  readonly transliteration: string;
   readonly pillar: Pillar;
   /** Planetary attribution, phrased as in `reference/sefirot.md`. */
   readonly planet: string;

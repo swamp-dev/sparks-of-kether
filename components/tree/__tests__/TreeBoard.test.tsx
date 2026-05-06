@@ -16,31 +16,34 @@ describe('TreeBoard', () => {
     expect(title?.textContent).toMatch(/tree of life/i);
   });
 
-  it('renders all 10 Sefirot — each labelled with the English Hebrew-name spelling only (#214)', () => {
-    // #214: declutter the board. Drop the Hebrew script and the
-    // 1-10 numbering on each Sefirah node; keep the English
-    // transliteration (Malkuth, Yesod, Netzach, Tiferet, etc).
-    // Other surfaces (BlessingRitual hero badge) still use the
-    // Hebrew text — the data layer is unchanged.
+  it('renders all 10 Sefirot — each labelled with the Hebrew-name transliteration (#214 + #401)', () => {
+    // #214 declutter pass: drop Hebrew script + position number from
+    // the visible disc; keep one short label.
+    // #401 content swap: that visible label is the Hebrew-name
+    // *transliteration* (Kether, Chokmah, Binah, Chesed, Gevurah,
+    // Tiferet, Netzach, Hod, Yesod, Malkuth) — the form by which
+    // each Sefirah is invoked in the tradition — rather than the
+    // English meaning-translation. The aria-label keeps the
+    // englishName + position number for screen-reader gloss.
     const { container } = render(<TreeBoard />);
     // Precondition: with no `state` prop the player-token layer is
     // omitted entirely, so the only text descendants of each node
-    // <g> are the English-name <text> elements. If a future change
-    // ever nests tokens under the node group, this assertion will
-    // fail loudly instead of leaking an initial into the visibleText
-    // comparison below.
+    // <g> are the transliteration <text> elements. If a future
+    // change ever nests tokens under the node group, this assertion
+    // will fail loudly instead of leaking an initial into the
+    // visibleText comparison below.
     expect(container.querySelectorAll('[data-layer="players"]')).toHaveLength(0);
     for (const sefirah of sefirot) {
       const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
       expect(node, `node for ${sefirah.key}`).not.toBeNull();
-      expect(node?.textContent).toContain(sefirah.englishName);
+      expect(node?.textContent).toContain(sefirah.transliteration);
       expect(node?.textContent).not.toContain(sefirah.hebrewName);
-      // The visible textContent of the node is exactly the English
-      // name (whitespace-normalised). A permissive
-      // `not.toContain(String(number))` would false-positive on
-      // Sefirah names containing a digit glyph (none today; safer).
+      // The visible textContent of the node is exactly the
+      // transliteration (whitespace-normalised; transliterations
+      // happen to be single tokens but the normalisation is kept
+      // for resilience).
       const visibleText = (node?.textContent ?? '').replace(/\s+/g, '').trim();
-      expect(visibleText).toBe(sefirah.englishName.replace(/\s+/g, ''));
+      expect(visibleText).toBe(sefirah.transliteration.replace(/\s+/g, ''));
     }
   });
 
