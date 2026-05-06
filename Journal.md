@@ -5281,3 +5281,18 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1928 tests + 1 todo pass; typecheck + lint green; e2e 81/144 pass + 63 skipped (visual-regression baselines unaffected by docs-only diff); integration 12/12.
 
 **Commit(s):** single commit (`design/avatars.md` 5 fixes + new `design/avatars-review-2026-05.md` + this Journal entry).
+
+## 2026-05-06T09:44:23-04:00 — #399: screenshots.review walkToPlayScreen — post-#255 phase order
+
+**Pushed:** Single commit rewriting three helpers in `e2e/screenshots.review.spec.ts` to walk the post-#255 phase order on `/play` (sign(P1) → ritual(P1) → sign(P2) → ritual(P2) → lobby → play). Pre-#255 order was ritual-first; the spec was clicking `Skip — roll all remaining` on a page that was actually showing the ZodiacSignPicker, timing out on 9 of 63 captures (`play`, `play-sign-picker`, `play-mid-game` × 3 viewports).
+
+**Why:** Restore `pnpm screenshots` to green so downstream UI tickets can update visual-regression baselines without first untangling unrelated CI noise.
+
+**Notes:**
+- **Scope correction:** ticket directed me to port `walkToLobby()` from `e2e/playtest-session.spec.ts` and delete that file. That file does not exist in main — confirmed by `ls e2e/`. So the fix is rewriting the helpers inline rather than porting. Acceptance criterion "delete `playtest-session.spec.ts`" is N/A.
+- Extracted `pickAriesAtSignPicker(page)` as a shared helper between `rollFiveTimes` and `walkToPlayScreen`. Replaced `skipRitualToSignPicker` with `awaitSignPicker` since `/play` lands directly on the picker post-#255 — no pre-skip needed; just a `waitFor` for fail-fast diagnostics.
+- P2 cycling math: Aries taken; #370 opens picker on first available (taurus), so 3 Next clicks reach leo (taurus → gemini → cancer → leo). Verified against `data/zodiac-signs.ts`.
+- `code-reviewer` verdict: **ship.** Zero critical, zero significant. Two minor theoretical observations (sign-picker visibility race, Confirm-button-disabled silent miss) — neither applies to current code.
+- `pnpm ci:local` green: 1928 tests + 1 todo, typecheck + lint clean, e2e 81 passed + 63 skipped, integration 12/12. `pnpm screenshots` 63/63 green.
+
+**Commit(s):** single commit (`e2e/screenshots.review.spec.ts` + this Journal entry).

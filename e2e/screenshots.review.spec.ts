@@ -51,14 +51,24 @@ test.beforeAll(async () => {
 // to be idempotent within a single test (one fresh page per test).
 
 /**
- * /play default lands on STEP 1 OF 10 with the ledger empty. The
- * BlessingRitual flow per step is `awaiting → rolled` — clicking
- * "Roll 3d6" reveals the d20 result + a "Next" button; clicking
- * "Next" advances to the next Sefirah and re-shows "Roll 3d6". So
- * five completed rolls = five (Roll → Next) pairs. After the 5th
- * Next, the page is on STEP 6 OF 10 with five ledger entries filled
- * and the "Roll 3d6" button visible — exactly the "in motion" framing
- * we want.
+ * Post-#255 the ZodiacSignPicker is the first screen on `/play`. P1
+ * confirms Aries (the default-focused carousel stage) to advance to
+ * the BlessingRitual.
+ */
+async function pickAriesAtSignPicker(page: Page): Promise<void> {
+  await page.locator('[data-zodiac-sign-picker]').waitFor();
+  await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
+}
+
+/**
+ * Drive P1's BlessingRitual to STEP 6 OF 10 with a partial ledger —
+ * five (Roll → Next) cycles. The ritual flow per step is
+ * `awaiting → rolled`: clicking "Roll 3d6" reveals the d20 result +
+ * a "Next" button; clicking "Next" advances to the next Sefirah and
+ * re-shows "Roll 3d6".
+ *
+ * Post-#255 the sign picker precedes the ritual, so we pick Aries
+ * first to enter P1's ritual.
  *
  * Fragile: matches button labels by literal text. If the BlessingRitual
  * UI ever changes either button's copy, the helper hangs until the
@@ -66,6 +76,7 @@ test.beforeAll(async () => {
  * label rename (rather than a substring change) fails fast.
  */
 async function rollFiveTimes(page: Page): Promise<void> {
+  await pickAriesAtSignPicker(page);
   for (let i = 0; i < 5; i++) {
     await page.getByRole('button', { name: /^roll 3d6$/i }).click();
     await page.getByRole('button', { name: /^next$/i }).click();
@@ -73,52 +84,44 @@ async function rollFiveTimes(page: Page): Promise<void> {
 }
 
 /**
- * /play default lands on the BlessingRitual. Skip past it to land on
- * the ZodiacSignPicker — Epic #212's headline UI, otherwise invisible
- * in any current capture.
+ * Post-#255 `/play` lands directly on the ZodiacSignPicker — no
+ * pre-pipeline to skip. Wait for it to render before capturing so a
+ * regression that breaks the default landing fails with a meaningful
+ * locator error instead of a blank screenshot.
  */
-async function skipRitualToSignPicker(page: Page): Promise<void> {
-  // Skip rolls all remaining stats + lands on the Summary panel.
-  // Continue (#215 gate) calls onComplete and the parent transitions
-  // to the sign phase.
-  await page
-    .getByRole('button', { name: /skip.*roll all remaining/i })
-    .click();
-  await page.getByRole('button', { name: /^continue$/i }).click();
+async function awaitSignPicker(page: Page): Promise<void> {
   await page.locator('[data-zodiac-sign-picker]').waitFor();
 }
 
 /**
- * /play default lands on the BlessingRitual. Walk the full setup
- * pipeline (ritual P1 → sign P1 → ritual P2 → sign P2 → lobby → Begin)
- * to land on the live PlayScreen. The picked signs are stable so the
- * capture is reproducible.
+ * Walk the full setup pipeline post-#255 to land on the live
+ * PlayScreen. Phase order is documented at app/play/page.tsx:23-24:
+ * sign(P1) → ritual(P1) → sign(P2) → ritual(P2) → lobby → play.
+ * The picked signs are stable so the capture is reproducible.
  */
 async function walkToPlayScreen(page: Page): Promise<void> {
-  // Player 1: skip ritual, click Continue past the Summary, pick Aries.
+  // P1 sign → P1 ritual → P1 summary continue.
+  await pickAriesAtSignPicker(page);
   await page
     .getByRole('button', { name: /skip.*roll all remaining/i })
     .click();
   await page.getByRole('button', { name: /^continue$/i }).click();
-  await page.locator('[data-zodiac-sign-picker]').waitFor();
-  // #314: the carousel renders the focused sign at the centre stage.
-  // Aries is the default-focused stage on first mount — Player 1
-  // confirms it directly without cycling.
-  await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
 
-  // Player 2: ritual, then cycle to Leo. Aries is taken; #370 makes
-  // the picker open on the first available sign (taurus), so three
-  // clicks of Next reach leo (taurus → gemini → cancer → leo).
-  await page
-    .getByRole('button', { name: /skip.*roll all remaining/i })
-    .click();
-  await page.getByRole('button', { name: /^continue$/i }).click();
+  // P2 sign: Aries is taken; #370 makes the picker open on the first
+  // available sign (taurus), so three Next clicks reach leo
+  // (taurus → gemini → cancer → leo).
   await page.locator('[data-zodiac-sign-picker]').waitFor();
   const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
   for (let i = 0; i < 3; i++) {
     await nextArrow.click();
   }
   await page.getByRole('button', { name: /^Confirm Leo$/ }).click();
+
+  // P2 ritual → P2 summary continue.
+  await page
+    .getByRole('button', { name: /skip.*roll all remaining/i })
+    .click();
+  await page.getByRole('button', { name: /^continue$/i }).click();
 
   // Lobby: click Begin to land on the live PlayScreen.
   await page.getByRole('button', { name: /^begin$/i }).click();
@@ -160,7 +163,7 @@ const ROUTES: readonly Route[] = [
   {
     path: '/play',
     slug: 'play-sign-picker',
-    setup: skipRitualToSignPicker,
+    setup: awaitSignPicker,
   },
   // /play after the full setup pipeline → live PlayScreen.
   { path: '/play', slug: 'play-mid-game', setup: walkToPlayScreen },
