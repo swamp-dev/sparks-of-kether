@@ -61,50 +61,73 @@ Capture the branch name (`headRefName`) — it should match
 `<type>/<N>-<slug>`. Derive `<N>` and the worktree path
 `../sok-<N>-<slug>` for the cleanup steps.
 
-### 3. Verify per-PR checklist ran in this session
+### 3. Verify the per-PR checklist stamp (mechanical gate)
 
-Read this branch's per-ticket Journal file. From the branch name
-captured in step 2, derive `<N>` (issue number) and find the matching
-file under `journal/`:
+`/finish-ticket` step 8.5 writes a stamp file at
+`.claude/state/checklist-<sanitized-branch>.json` via
+`scripts/checklist-stamp.mjs` after each `code-reviewer` invocation.
+The `PostToolUse:Agent` hook in `.claude/settings.json` writes the
+same stamp automatically when the hook is loaded, but the explicit
+step is the load-bearing path. **This is the mechanical gate** —
+unlike a Journal entry the agent writes itself, the stamp is the
+output of running a script with the reviewer's actual response text.
 
 ```bash
-# Branch shape is <type>/<N>-<slug>. The first run of digits after the
-# `/` is always the ticket number — `/start-ticket` enforces this.
-# Branch is e.g. chore/434-ship-ticket-cleanup-symlink → N=434
-N=$(echo "$headRefName" | sed 's|.*/\([0-9]\+\)-.*|\1|')
+# Variables: $PR_NUMBER and $headRefName were captured in step 2.
+# Sanitize the branch name the same way the script does. Use
+# `printf '%s'` (NOT echo) so no trailing newline gets fed into tr —
+# `tr -c` would replace the newline with `_` and the resulting
+# filename wouldn't match what the script writes.
+branch_safe=$(printf '%s' "$headRefName" | tr -c 'a-zA-Z0-9._-' '_')
+stamp=".claude/state/checklist-${branch_safe}.json"
 
-# Defensive: refuse to proceed if the derivation didn't yield a number
-# (would happen if a branch name doesn't follow the convention).
-if ! [[ "$N" =~ ^[0-9]+$ ]]; then
-  echo "Could not derive ticket number from branch name '$headRefName' — expected <type>/<N>-<slug>. Stop."
+if [ ! -f "$stamp" ]; then
+  echo "Refusing merge: no checklist stamp at $stamp. Run /finish-ticket (which invokes scripts/checklist-stamp.mjs in step 8.5) for this branch first."
   exit 1
 fi
 
-journal_file=$(ls journal/${N}-*.md 2>/dev/null | head -1)
-[ -n "$journal_file" ] && cat "$journal_file" || echo "no journal file for #${N}"
+stamp_sha=$(jq -r '.head_sha' "$stamp")
+stamp_verdict=$(jq -r '.verdict' "$stamp")
+
+# Capture HEAD_SHA fresh — the gate must validate against the LIVE PR
+# HEAD, not a value carried from earlier in the session.
+HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
+
+if [ "$stamp_sha" != "$HEAD_SHA" ]; then
+  echo "Refusing merge: stamp is for SHA $stamp_sha but PR HEAD is $HEAD_SHA. Re-run code-reviewer + step 8.5 on the current commit."
+  exit 1
+fi
+if [ "$stamp_verdict" != "ship" ]; then
+  echo "Refusing merge: stamp records verdict='$stamp_verdict' (expected 'ship'). Address findings and re-run reviewer + step 8.5."
+  exit 1
+fi
 ```
 
-If the file doesn't exist, the branch was created before B2 #429 and
-its journal is in the legacy `Journal.md` instead — fall back to
-`tail -200 Journal.md` and look for the marker by ticket number.
+This gate is **fail-closed**: missing stamp, stale SHA, or non-`ship`
+verdict all stop the skill. The script overwrites the stamp on each
+invocation, so the re-review loop in `/finish-ticket` step 8a
+naturally produces a fresh stamp at the new HEAD.
 
-Look for a `/finish-ticket`-shape entry for the most recent push that
-mentions either "code-reviewer clean" or "re-reviewed after fixes;
-reviewer returned clean" — the marker `/finish-ticket` step 8a writes.
+The per-ticket Journal file (`journal/<NN>-<slug>.md` per #429)
+remains the **human-readable audit record** of why the verdict was
+what it was — but it's no longer the gate. The stamp file is.
 
-If the marker is missing or the file does not match the agent's own
-session memory of having run the reviewer, **ask the user explicitly**:
+**Adversarial limit**: a determined agent with Write tool access
+could forge the stamp file. The mechanical gate is robust against:
+- accidental skip ("I forgot to run code-reviewer / step 8.5")
+- context compaction ("the reviewer output got summarized away")
+- false-positive Journal markers (the prior honor-system pattern)
+- bootstrap chicken-and-egg (`/finish-ticket` step 8.5 doesn't
+  depend on settings.json being loaded; the script call works
+  whether the hook fires or not)
 
-> "I do not see this PR's per-PR checklist completed in this session.
-> Run `/finish-ticket` first, or confirm explicitly that the
-> code-reviewer pass + (if needed) re-review happened in this session."
-
-Treat this as an audit record, not a security gate — the Journal is
-written by the agent itself and the marker can be faked. The
-load-bearing safety is the agent's own discipline. Never infer the
-checklist happened from a green CI result alone — CI green means the
-code compiles and tests pass; it does not mean the human-judgment
-review steps happened.
+It is NOT robust against an agent intentionally bypassing review.
+The gap from "the script ran with reviewer-shaped data" to "the
+reviewer actually produced that data" is unavoidable as long as the
+agent has Write access and can construct synthetic payloads. The
+stamp's `verdict_hash` is recorded for forensic audit but never
+validated by the gate; future tooling could add live cross-validation
+against the captured reviewer output if needed.
 
 ### 4. Confirm hosted CI is green against the current commit
 

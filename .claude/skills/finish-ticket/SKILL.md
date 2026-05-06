@@ -141,6 +141,46 @@ with a note in the PR body.
 Note the commit SHA at the moment of the first review (`git rev-parse HEAD`)
 — step 8a uses it to compute "what changed since the first review."
 
+### 8.5. Write the checklist stamp
+
+The `PostToolUse:Agent` hook in `.claude/settings.json` ALSO writes
+the stamp automatically when settings.json is loaded at session
+start, but the explicit invocation here is the **load-bearing path** —
+it doesn't depend on hook config being loaded. Belt-and-suspenders.
+The hook is the redundant safety net; this step is the gate.
+
+Save the reviewer's full markdown response to a temp file (use the
+Write tool — the agent already has the response in context), then
+invoke the script:
+
+```bash
+sha=$(git rev-parse --short HEAD)
+out=/tmp/checklist-reviewer-${sha}.md
+# Write tool saves the reviewer's full response to $out, then:
+node scripts/checklist-stamp.mjs --reviewer-output "$out"
+rm "$out"
+```
+
+The script reads the file, parses the verdict from the `## Verdict`
+markdown header, and writes
+`.claude/state/checklist-<sanitized-branch>.json` with `{ branch,
+head_sha, ran_at, verdict, verdict_hash, written_via }`.
+
+**Verify the stamp was written and the verdict is what you expect**
+before continuing:
+
+```bash
+jq '{verdict, head_sha, written_via}' .claude/state/checklist-*.json
+```
+
+Expected: `verdict` matches what the reviewer returned (`ship`, `fix`,
+`block`, or `rework`); `head_sha` matches current HEAD;
+`written_via` is `explicit`. If `verdict` is `unknown`, the reviewer
+output is missing the `## Verdict` markdown header (truncation /
+unusual format) — re-run code-reviewer asking for a clean verdict
+section before continuing. If anything else looks off, surface to
+the user — `/ship-ticket` will refuse without a fresh, valid stamp.
+
 ### 8a. Re-review on substantial fixes
 
 After fixes are committed, decide whether step 5 of the per-PR checklist
@@ -163,9 +203,12 @@ git diff <first-review-sha>..HEAD --stat
 genuinely minor (typo, formatting, comment tweak, single-line guard).
 When in doubt, re-review; the cost is small and the safety is real.
 
-Loop steps 8 → 8a until either the reviewer returns no critical/
+Loop steps 8 → 8.5 → 8a until either the reviewer returns no critical/
 significant findings or the user explicitly accepts the remaining
-findings as deferred-minor.
+findings as deferred-minor. **Each re-review must also re-run step
+8.5** — the stamp script — so the stamp captures the latest verdict
+at the latest HEAD SHA. The script overwrites the stamp on each
+invocation; nothing extra needed beyond running it again.
 
 **Record the re-review in the Journal entry for the push that
 contained the fixes** — `/ship-ticket` reads `journal/<NN>-<slug>.md`
