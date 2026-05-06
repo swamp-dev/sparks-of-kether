@@ -5441,6 +5441,26 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 
 **Commit(s):** single commit (Hand + PlayScreen + Hand tests + this Journal entry).
 
+## 2026-05-06T12:05:14-04:00 — #425: path-filter CI jobs (build/e2e/integration) for docs-only PRs
+
+**Pushed:** New `changes` job in `.github/workflows/ci.yml` using `dorny/paths-filter@v3`; outputs `code` / `e2e` / `integration` booleans driving `if:` gates on `build` / `e2e` / `integration` (verify always runs). Workflow files in all three filter categories so CI changes self-validate. Mirrored into `scripts/ci-local.sh` via new `maybe_apply_path_filter()` that diffs against `origin/main`, sets `SKIP_BUILD`/`SKIP_E2E`/`SKIP_INTEGRATION` based on regexes that mirror the YAML globs. Added `SKIP_BUILD=1` and `SKIP_PATH_FILTER=1` env-var support. Updated `.claude/skills/ship-ticket/SKILL.md` step 4 so the merge gate accepts `conclusion=skipped` as success-equivalent for the gated jobs, but only when `verify` and `detect changes` both succeeded — distinguishes path-filter skip (legitimate) from dependency-skip (illegitimate).
+
+**Why:** Hosted CI runs the full four-job matrix on every PR regardless of diff. For docs-only / agent-config-only PRs, e2e (Playwright) and integration (real-Supabase) are wasted minutes — nothing they exercise has changed. First Tier-A quick win from PR #419's six-improvement plan. Every subsequent PR benefits.
+
+**Notes:**
+- Path filter categories (kept in lock-step between YAML and bash):
+  - `code` (build): `app/**`, `components/**`, `lib/**`, `engine/**`, `data/**`, `tests/**`, `test/**`, `__tests__/**`, configs, `package.json`, `pnpm-lock.yaml`, `.github/workflows/**`
+  - `e2e`: `app/**`, `components/**`, `engine/**`, `lib/**`, `e2e/**`, `public/**`, configs, deps, workflows
+  - `integration`: `lib/db/**`, `supabase/**`, `tests/integration/**`, deps, workflows
+- `code-reviewer` first verdict: **fix** — 2 significant findings. (1) `engine/`, `test/`, `__tests__/` directories were missing from the filter — engine-only PRs would have skipped build silently. Added all three to `code`; engine + lib added to `e2e`. (2) `git status --porcelain | sed -E 's/^...//'` mishandled rename outputs (`R old -> new`); replaced with three clean queries: `git diff --name-only "$base" HEAD`, `git diff --name-only HEAD`, `git ls-files --others --exclude-standard`. (3) Minor SKILL.md wording: tightened so `detect changes` itself being skipped/cancelled also counts as failure for downstream skip legitimacy.
+- `code-reviewer` re-review verdict: **ship.** All three findings cleanly resolved, no regressions.
+- This PR touches `.github/workflows/**` so its own auto-detection correctly leaves all three categories enabled — the path filter self-validates.
+- Eating /start-ticket A2's dogfood: symlinked `node_modules` into the worktree (`ln -s ../sparks-of-kether/node_modules node_modules`) so `pnpm typecheck` ran without first running `pnpm install`. Saved ~30s. A2 codifies this into the skill.
+- typecheck + lint clean; full vitest 1945 pass + 1 todo.
+- **CI did not auto-trigger after the workflow-file change push.** Pushed empty trigger commits twice; still no CI run. GitHub policy on workflow-modifying PRs needing manual approval. User intervened via the GitHub UI / settings; rebased onto main + force-pushed to retrigger after approval. Append-only Journal collision: rebased through #426 + #427 entries with chronological insert.
+
+**Commit(s):** eeab813 + rebase chain.
+
 ## 2026-05-06T12:18:14-04:00 — #426: /start-ticket symlinks node_modules from main repo
 
 **Pushed:** New step 6a in `.claude/skills/start-ticket/SKILL.md`: after `git worktree add`, `ln -s ../sparks-of-kether/node_modules ../sok-<N>-<slug>/node_modules` from the main repo directory. Worktrees share `package.json` + `pnpm-lock.yaml` with `origin/main`'s HEAD, so the resolved `node_modules` is bit-identical between the main repo and any branch off main. Skips the 30–90s `pnpm install` penalty per ticket. Three explicit stop-conditions: source missing → ask user to install first; target already correctly symlinked → no-op; target exists as anything else → stop and report. Updated Invariants section to flag follow-the-symlink shared-state semantics and forbid `rm -rf node_modules` (only `rm node_modules` removes the symlink without nuking the shared store).

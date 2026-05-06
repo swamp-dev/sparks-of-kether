@@ -16,6 +16,80 @@ permissions:
   contents: read
 
 jobs:
+  # Path-filter signal: which categories of file did this push touch?
+  # Downstream jobs gate on these so docs-only / agent-config-only PRs
+  # skip the heavy jobs (build/e2e/integration) without sacrificing
+  # the verify safety net. `verify` always runs because typecheck and
+  # the unit suite catch more than just runtime regressions and they
+  # are cheap.
+  #
+  # `.claude/skills/ship-ticket/SKILL.md` step 4 documents how the
+  # merge gate interprets `skipped` here: a job that skips because
+  # its filter didn't match counts as success-equivalent, provided
+  # `verify` and `changes` both passed.
+  changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      integration: ${{ steps.filter.outputs.integration }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Compute path filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            # Workflow + lockfile changes are self-validation triggers:
+            # any change to CI itself or to the dep graph should run
+            # every job as a safety net.
+            code:
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'engine/**'
+              - 'data/**'
+              - 'tests/**'
+              - 'test/**'
+              - '__tests__/**'
+              - 'next.config.*'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'vitest.config.*'
+              - 'playwright.config.*'
+              - '.github/workflows/**'
+            e2e:
+              - 'app/**'
+              - 'components/**'
+              - 'engine/**'
+              - 'lib/**'
+              - 'e2e/**'
+              - 'public/**'
+              - 'next.config.*'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'playwright.config.*'
+              - '.github/workflows/**'
+            integration:
+              - 'lib/db/**'
+              - 'supabase/**'
+              - 'tests/integration/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/**'
+
   verify:
     name: typecheck + lint + test
     runs-on: ubuntu-latest
@@ -67,7 +141,11 @@ jobs:
     name: production build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: verify
+    needs: [verify, changes]
+    # Skip when no runtime/build files changed. `verify` already
+    # typechecks; `next build` would only re-discover what tsc + lint
+    # covered.
+    if: needs.changes.outputs.code == 'true'
 
     steps:
       - name: Check out the repository
@@ -96,7 +174,10 @@ jobs:
     name: end-to-end (playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: verify
+    needs: [verify, changes]
+    # Skip when nothing user-facing changed. Routes/components/styles
+    # are the only surfaces Playwright actually exercises.
+    if: needs.changes.outputs.e2e == 'true'
     # Without this env var, every spec self-skips (see
     # `playwright.config.ts`). The runner installs chromium below so
     # the suite actually executes; previously CI ran no e2e at all
@@ -145,7 +226,11 @@ jobs:
     name: real-Supabase integration
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: verify
+    needs: [verify, changes]
+    # Skip when nothing touches the DB layer or migrations. Booting
+    # Supabase is the most expensive job; gating it on actual db
+    # changes is the highest single per-PR savings.
+    if: needs.changes.outputs.integration == 'true'
 
     steps:
       - name: Check out the repository

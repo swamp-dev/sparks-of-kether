@@ -9,13 +9,82 @@
 # declared done.
 #
 # Skip flags via env var:
+#   SKIP_BUILD=1        — skip production build
 #   SKIP_E2E=1          — skip end-to-end (Playwright)
 #   SKIP_INTEGRATION=1  — skip real-Supabase integration
+#   SKIP_PATH_FILTER=1  — disable auto-detection (run everything)
 #
-# Both are escape hatches for local iteration; never set them when
-# running the checklist for a PR that's about to merge.
+# Manual skip flags are escape hatches for local iteration; never set
+# them when running the checklist for a PR that's about to merge.
+#
+# Auto path-filter: when none of the above are set, the script
+# diff-checks against `origin/main` and auto-skips jobs whose paths
+# weren't touched. Mirrors `.github/workflows/ci.yml`'s `changes` job
+# so local + hosted runs gate on identical conditions. Conservative —
+# any uncertainty (no merge-base, on main, untracked files) means run
+# everything.
 
 set -euo pipefail
+
+# Auto path-filter: set SKIP_BUILD / SKIP_E2E / SKIP_INTEGRATION based
+# on what the current branch touched relative to origin/main. The path
+# globs here mirror the `changes` job filters in
+# `.github/workflows/ci.yml`. Drift breaks the local/hosted parity
+# guarantee — keep them in sync.
+maybe_apply_path_filter() {
+  if [[ "${SKIP_PATH_FILTER:-}" == "1" ]]; then
+    return 0
+  fi
+  # Need a merge-base with origin/main. If origin/main isn't fetched
+  # yet, or HEAD is at the merge-base (we're on main / brand-new
+  # branch), bail out — running everything is the safe default.
+  local base
+  base=$(git merge-base origin/main HEAD 2>/dev/null) || return 0
+  if [[ "$base" == "$(git rev-parse HEAD)" ]]; then
+    return 0
+  fi
+
+  # Combine committed diff + dirty working tree so a pre-commit run
+  # gates on what's actually about to land. `--name-only` against the
+  # working tree picks up untracked + modified + renamed-destination
+  # consistently; `git status --porcelain` would emit `R old -> new`
+  # which a naive strip mishandles.
+  local changed
+  changed=$({
+    git diff --name-only "$base" HEAD
+    git diff --name-only HEAD
+    git ls-files --others --exclude-standard
+  } | sort -u)
+  if [[ -z "$changed" ]]; then
+    return 0
+  fi
+
+  # Returns 0 (match) if any line in $changed matches one of the
+  # ERE alternation patterns passed as args.
+  matches() {
+    local pattern="$1"
+    printf '%s\n' "$changed" | grep -Eq "$pattern"
+  }
+
+  # Keep these globs in lock-step with the `changes` job filters in
+  # `.github/workflows/ci.yml`. Workflow-file edits trigger every
+  # category so CI changes self-validate.
+  local code_re='^(app/|components/|lib/|engine/|data/|tests/|test/|__tests__/|next\.config\.|tailwind\.config\.|postcss\.config\.|package\.json$|pnpm-lock\.yaml$|tsconfig.*\.json$|vitest\.config\.|playwright\.config\.|\.github/workflows/)'
+  local e2e_re='^(app/|components/|engine/|lib/|e2e/|public/|next\.config\.|tailwind\.config\.|postcss\.config\.|package\.json$|pnpm-lock\.yaml$|playwright\.config\.|\.github/workflows/)'
+  local integration_re='^(lib/db/|supabase/|tests/integration/|package\.json$|pnpm-lock\.yaml$|\.github/workflows/)'
+
+  if [[ -z "${SKIP_BUILD:-}" ]] && ! matches "$code_re"; then
+    export SKIP_BUILD=1
+  fi
+  if [[ -z "${SKIP_E2E:-}" ]] && ! matches "$e2e_re"; then
+    export SKIP_E2E=1
+  fi
+  if [[ -z "${SKIP_INTEGRATION:-}" ]] && ! matches "$integration_re"; then
+    export SKIP_INTEGRATION=1
+  fi
+}
+
+maybe_apply_path_filter
 
 # Colour helpers (disable if not a TTY).
 if [[ -t 1 ]]; then
@@ -37,14 +106,18 @@ pnpm lint || fail "lint"
 pnpm test:coverage || fail "test:coverage"
 ok "verify passed"
 
-# 2. build — production Next.js build
-step "build (next build)"
-pnpm build || fail "build"
-ok "build passed"
+# 2. build — production Next.js build (skip via SKIP_BUILD=1)
+if [[ "${SKIP_BUILD:-}" == "1" ]]; then
+  step "build — SKIPPED (no code-path changes since origin/main)"
+else
+  step "build (next build)"
+  pnpm build || fail "build"
+  ok "build passed"
+fi
 
 # 3. e2e — Playwright (skip via SKIP_E2E=1)
 if [[ "${SKIP_E2E:-}" == "1" ]]; then
-  step "e2e — SKIPPED (SKIP_E2E=1)"
+  step "e2e — SKIPPED (no e2e-relevant paths changed, or SKIP_E2E=1)"
 else
   step "e2e (Playwright)"
   # Install browsers idempotently. `--with-deps` needs sudo, which
@@ -58,7 +131,7 @@ fi
 
 # 4. integration — real-Supabase (skip via SKIP_INTEGRATION=1)
 if [[ "${SKIP_INTEGRATION:-}" == "1" ]]; then
-  step "integration — SKIPPED (SKIP_INTEGRATION=1)"
+  step "integration — SKIPPED (no integration-relevant paths changed, or SKIP_INTEGRATION=1)"
 else
   step "integration (real-Supabase via local stack)"
   # Boot the full Supabase stack — Postgres + GoTrue + PostgREST +

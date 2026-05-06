@@ -106,12 +106,32 @@ gh api "repos/{owner}/{repo}/commits/$HEAD_SHA/check-runs" \
   --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion) \(.head_sha)"'
 ```
 
-All four jobs (`verify`, `build`, `e2e`, `integration`) must show
-`status=completed conclusion=success` AND `head_sha=$HEAD_SHA`. If any
-job is `pending`, `in_progress`, `failure`, `skipped`, or ran against
-a different SHA than `$HEAD_SHA`, stop and report — the latter case
-means a push landed after CI ran and the checks are stale; ask the
-user to wait for CI to re-run against the new HEAD.
+**`verify`** and **`detect changes`** must show `status=completed
+conclusion=success` AND `head_sha=$HEAD_SHA`. These two always run
+regardless of what changed, so they're the load-bearing signal that
+the workflow itself ran cleanly.
+
+**`build`**, **`end-to-end (playwright)`**, and **`real-Supabase
+integration`** must each show one of:
+- `conclusion=success` — the job ran and passed; OR
+- `conclusion=skipped` — the `detect changes` job's path filter said
+  this job's paths weren't touched by the diff. Skipped-by-filter is
+  success-equivalent for the merge gate (the job had nothing to do).
+
+If any of those three jobs is `pending`, `in_progress`, `failure`, or
+`cancelled`, stop and report. If any job ran against a different SHA
+than `$HEAD_SHA`, stop and report — the latter case means a push
+landed after CI ran and the checks are stale; ask the user to wait
+for CI to re-run against the new HEAD.
+
+**Refuse `skipped` if `detect changes` is anything other than
+`conclusion=success`.** A downstream skip can mean "filter said no"
+(legitimate) OR "a needed job failed and this one was
+dependency-skipped" (illegitimate) OR "the workflow itself partially
+ran due to runner outage." Cross-checking `detect changes` distinguishes
+the legitimate case — if `detect changes` is `failure`, `cancelled`,
+`skipped`, or didn't run at all, treat any downstream `skipped` as a
+failure and stop.
 
 **Never `--admin` merge from this skill** — that path is governed by
 the narrow conditions in
