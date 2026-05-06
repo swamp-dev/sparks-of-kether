@@ -44,82 +44,25 @@ If a ticket wants to change one of these, the Epic (issue #1) must be
 
 ## Working agreement
 
-Every ticket follows this loop. There are no shortcuts.
+The canonical 8-step workflow lives in [`docs/workflow.md`](docs/workflow.md).
+Read it before starting any ticket.
 
-1. **Read the ticket.** Then read the linked sections of `design/` and
-   `reference/`. Do not begin coding until you can name the acceptance
-   criteria out loud.
-2. **Create a worktree** off the latest `main`:
-   ```bash
-   git fetch origin main
-   # Worktree dir uses an sok- prefix to avoid collisions with other
-   # repos in ~/dev/. Branch uses the type prefix; ticket number links
-   # directory and branch together for easy cleanup.
-   git worktree add ../sok-<N>-<slug> -b <type>/<N>-<slug> origin/main
-   cd ../sok-<N>-<slug>
-   ```
-   Branch prefix follows the ticket type: `feat/`, `fix/`, `chore/`,
-   `refactor/`, `test/`, `docs/`. `<N>` is the ticket number.
-3. **TDD when it makes sense.** Engine logic, reducers, pure functions,
-   game-rule edge cases — write the failing test first. UI is fine to
-   test after implementation where writing the test first would mean
-   mocking too much.
-4. **Small, focused commits.** Conventional-commit format:
-   `<type>(<scope>): <short summary>`. For TDD work, separate the failing
-   test commit from the implementation commit so the history tells the
-   story. For non-TDD work (most UI, docs), one commit per logical unit
-   is fine.
-5. **Hosted CI is the merge gate.** Every PR runs the full four-job
-   matrix (verify, build, e2e, integration) on GitHub Actions; that
-   green check is the source of truth before merge. For local
-   sanity-checking before you push there's:
-   ```bash
-   pnpm ci:local         # opt-in: verify + build + e2e + integration
-   pnpm ci:local:fast    # opt-in: verify + build only
-   ```
-   `pnpm ci:local` mirrors `.github/workflows/ci.yml` exactly, so a
-   green local run predicts a green hosted run. For tight dev
-   iteration `pnpm typecheck && pnpm lint && pnpm test` is enough.
-   Neither is auto-run on push — hosted CI catches anything you miss.
-   See `~/.claude/rules/local-ci-and-admin-merge.md` for the narrow
-   admin-merge conditions when hosted CI itself is broken.
-6. **Code review before PR.** Invoke the `code-reviewer` subagent on the
-   diff. Fix all critical and significant findings. Minor findings can
-   be deferred (note them in the PR description).
-7. **Journal every push.** Every single `git push` on the branch —
-   initial, review fixes, doc tweaks, CI-green attempts — gets **one**
-   entry appended to the bottom of [`Journal.md`](Journal.md). Write the
-   entry *before* the push so it lands in the same push. Never edit past
-   entries — append only.
+In summary: `/start-ticket <N>` (worktree + branch + read ticket) →
+implement with TDD where it makes sense → `/finish-ticket` (code-review,
+fix, re-review on substantial fixes, final-push Journal entry, push,
+open PR; intermediate-push Journal entries happen as those pushes
+happen, not via this skill) → wait for hosted CI green → `/ship-ticket <P>`
+(merge + cleanup, **one PR per invocation**).
 
-   Required format (full template at top of `Journal.md`):
+The five-step per-PR checklist (review → address → run all CI locally
+→ fix → re-review on low confidence) is mandatory and lives in
+`~/.dotfiles/.claude/rules/local-ci-and-admin-merge.md`.
 
-   ```markdown
-   ## YYYY-MM-DDTHH:MM:SS±ZZ:ZZ — #NN: Short context line
-
-   **Pushed:** what this push contains.
-   **Why:** motivation (e.g. "draft 1", "review fixes for X").
-   **Notes:** anything worth remembering; "None" is fine.
-   **Commit(s):** `<sha-short>`
-   ```
-
-   Commit the Journal update alongside the rest of the push. Suggested
-   commit name: `docs(journal): entry for #NN <short tag>`. For tiny
-   pushes, fold the Journal entry into the main commit.
-8. **Open the PR** with title in conventional-commit format and
-   `Closes #NN` in the body. Copy the Journal entry from `Journal.md`
-   into the PR body as a read-only reference. **If you need to revise,
-   edit `Journal.md` and regenerate the PR body** — `Journal.md` is the
-   source of truth.
-9. **Stop.** The user merges on their own schedule. Agents do not
-   `gh pr merge`. Your session on this ticket ends here.
-10. **In a separate session, after the user says the PR was merged**,
-    clean up:
-    ```bash
-    git worktree remove ../sok-<N>-<slug>
-    git branch -d <type>/<N>-<slug>
-    ```
-    Do not wait around in the same session for the merge — leave.
+Self-merge authority for this project is conditional — `/ship-ticket`
+gates it on the per-PR checklist running in the same session AND
+hosted CI green for that specific PR. See `docs/workflow.md` § Self-merge
+authority for the exact conditions, and `~/.dotfiles/.claude/rules/collaboration.md`
+for the cross-project default ("user always merges") this relaxes.
 
 ---
 
@@ -127,7 +70,7 @@ Every ticket follows this loop. There are no shortcuts.
 
 These are tripwires. If you find yourself about to do one, stop and ask.
 
-- **Never `gh pr merge`.** The user merges. Not you. Not ever unless explicitly authorized in the current session for a specific PR.
+- **Never `gh pr merge` outside the conditions in [`docs/workflow.md`](docs/workflow.md) § Self-merge authority.** The conditions are tight: per-PR checklist run on this specific PR in this session AND hosted CI green at the merge moment AND one PR per `/ship-ticket` invocation. Never sweep multiple PRs in a single shot. Outside those conditions, the user merges.
 - **Never skip hooks** (`--no-verify`, `--no-gpg-sign`). If a hook fails, fix the underlying issue.
 - **Never force-push** to `main` or any shared branch.
 - **Never amend a pushed commit.** Create a new commit instead.

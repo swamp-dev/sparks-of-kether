@@ -1,13 +1,14 @@
 ---
 name: finish-ticket
-description: Close out a Sparks of Kether ticket end-to-end — run the local gate, invoke code-reviewer, append the final push's Journal entry, commit, push, and open a PR with Closes #NN. Use after the functional work on a ticket is done. Journal entries for intermediate pushes are handled as they happen (per CLAUDE.md step 7); this skill is for the final push + PR-open step only. Stops short of merging — the user merges.
+description: Close out a Sparks of Kether ticket through PR-open — run the local gate, invoke code-reviewer (and re-review on substantial fixes), append the final push's Journal entry, commit, push, and open a PR with Closes #NN. Use after the functional work on a ticket is done. Journal entries for intermediate pushes are handled as they happen (per docs/workflow.md); this skill handles the final push + PR-open. Stops short of merging — `/ship-ticket` handles step 7 (CI verify + merge + cleanup) once hosted CI is green.
 ---
 
 # /finish-ticket
 
-Ticket closeout routine for this repo. Codifies the last-mile PR-opening
-steps from `CLAUDE.md` so they happen consistently and nothing gets
-skipped.
+Steps 3–6 of the canonical 8-step workflow in [`docs/workflow.md`](../../../docs/workflow.md):
+code-review → fix → re-review on substantial fixes → open PR. After this
+skill the agent stops; `/ship-ticket <P>` handles the merge once hosted
+CI is green.
 
 > **Per-push journaling is the default rule** (CLAUDE.md step 7). Every
 > `git push` on a feature branch has its own Journal entry. This skill
@@ -114,7 +115,7 @@ git commit -m "<type>(<scope>): <short summary> (#NN)"
 git push
 ```
 
-### 8. Invoke code-reviewer
+### 8. Invoke code-reviewer (first pass)
 
 Call the `code-reviewer` subagent on the diff. Prompt it with:
 
@@ -126,9 +127,41 @@ Surface findings to the user by severity (CRITICAL / SIGNIFICANT / MINOR).
 Fix all CRITICAL and SIGNIFICANT findings. Minor findings may be deferred
 with a note in the PR body.
 
-If fixes are made: commit them, append a **new** Journal entry for that
-push, push again, re-run code-reviewer if meaningful changes were made.
-Each of those pushes follows the per-push Journal rule.
+Note the commit SHA at the moment of the first review (`git rev-parse HEAD`)
+— step 8a uses it to compute "what changed since the first review."
+
+### 8a. Re-review on substantial fixes
+
+After fixes are committed, decide whether step 5 of the per-PR checklist
+fires. Compare the diff between the first-review SHA and current HEAD:
+
+```bash
+git diff <first-review-sha>..HEAD --stat
+```
+
+**Re-fire `code-reviewer` if any of the following hold:**
+
+- New files were added that weren't in the first review.
+- More than 50 net lines added since the first review.
+- A new exported symbol was introduced as a fix to a critical or
+  significant finding (not as part of a typo / formatting fix).
+- The fixes landed in an area the first pass flagged CRITICAL or
+  SIGNIFICANT (not just minor lint nits).
+
+**Skip re-review only if all four are false** — i.e. the fixes were
+genuinely minor (typo, formatting, comment tweak, single-line guard).
+When in doubt, re-review; the cost is small and the safety is real.
+
+Loop steps 8 → 8a until either the reviewer returns no critical/
+significant findings or the user explicitly accepts the remaining
+findings as deferred-minor.
+
+**Record the re-review in the Journal entry for the push that
+contained the fixes** — `/ship-ticket` reads recent Journal entries
+to verify the per-PR checklist actually ran. A line like
+`Notes: re-reviewed after fixes; reviewer returned clean` is enough.
+
+For every push during 8/8a, follow the per-push Journal rule.
 
 ### 9. Open the PR
 
@@ -147,35 +180,29 @@ The body must include:
   for this branch's pushes (read-only reference — `Journal.md` is source of truth).
 - **Closes #NN** — on its own line so GitHub auto-links.
 
-### 10. Print the PR URL and stop
+### 10. Print the PR URL and hand off to /ship-ticket
 
-Print the PR URL for the user. Then stop.
+Print the PR URL for the user. Then **stop** this skill.
 
-**Do NOT:**
+Once hosted CI is green, the agent (or user) runs `/ship-ticket <P>`
+to merge and clean up. Do not invoke `/ship-ticket` from inside this
+skill — the wait for hosted CI is asynchronous and operator-driven.
 
-- Run `gh pr merge` — ever.
+**Do NOT from inside this skill:**
+
+- Run `gh pr merge` — that's `/ship-ticket`'s job, and only after the
+  conditions in `docs/workflow.md` § Self-merge authority hold.
 - Force-push.
 - Auto-approve the PR.
-- Continue with the next ticket without explicit user direction.
-
-The user merges on their own schedule. Your session ends here.
-
-### 11. Cleanup (separate session, after merge)
-
-When the user returns in a later session and says the PR was merged, run:
-
-```bash
-git worktree remove ../sok-<N>-<slug>
-git branch -d <type>/<N>-<slug>
-```
-
-Do not perform cleanup in the same session as the PR open — leave after
-step 10.
+- Remove the worktree or delete the branch — those happen in
+  `/ship-ticket` after merge.
 
 ## Invariants
 
 - One ticket = one branch = one PR.
 - Every push has a Journal entry; `Journal.md` grows, never shrinks.
-- User merges; agents do not.
+- The five-step per-PR checklist runs every time. Step 5 (re-review)
+  uses the heuristic in step 8a above — `/ship-ticket` will refuse to
+  merge a PR whose Journal does not show the checklist completing.
 - Hooks and signing are never bypassed.
 - If in doubt, ask the user.
