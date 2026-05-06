@@ -11,6 +11,7 @@ import { initializeGame } from '@/engine/setup';
 import type { PlayerSetup } from '@/engine/setup';
 import { seededRng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
+import { resolvePlaySeed } from '@/lib/play-seed';
 
 /**
  * The actual play surface. Single-page state machine that walks each
@@ -42,8 +43,6 @@ type Phase =
   | { readonly kind: 'lobby' }
   | { readonly kind: 'play'; readonly setupComplete: PlayerSetup[] };
 
-const RNG_SEED = 1729; // arbitrary; the seed itself doesn't matter for a demo
-
 export default function PlayPage(): JSX.Element {
   // #255 reorder: sign-pick happens BEFORE the blessing ritual so
   // BlessingRitual can render per-sign blessing quotes (Voices Epic
@@ -55,14 +54,24 @@ export default function PlayPage(): JSX.Element {
     { id: 'p2', name: 'Player 2' },
   ]);
 
+  // #402: Resolved once per session via useState's lazy initializer
+  // — Date.now() so every fresh hot-seat session deals a different
+  // hand, with `?seed=N` as a recovery affordance for memorable runs.
+  // SSR safety: the initializer can run on the server during App
+  // Router pre-render, so guard window/URLSearchParams access.
+  const [seed] = useState<number>(() => {
+    if (typeof window === 'undefined') return Date.now();
+    return resolvePlaySeed(new URLSearchParams(window.location.search));
+  });
+
   // Per-player ritual RNGs — independent sequences so adding a roll
   // in one player's ritual doesn't shift the other player's stats.
   // Hot-seat for now; Phase 5 will move RNG seeding server-side.
   const ritualRngs = useMemo(
-    () => [seededRng(RNG_SEED), seededRng(RNG_SEED + 1)] as const,
-    [],
+    () => [seededRng(seed), seededRng(seed + 1)] as const,
+    [seed],
   );
-  const playRng = useMemo(() => seededRng(RNG_SEED + 2), []);
+  const playRng = useMemo(() => seededRng(seed + 2), [seed]);
 
   const finishSign = (idx: 0 | 1, sign: ZodiacSignKey): void => {
     setSlots((prev) => {

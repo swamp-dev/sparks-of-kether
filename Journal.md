@@ -5312,3 +5312,18 @@ The /play mount in `PlayScreen.tsx` passes a handler that opens an inline `Sefir
 - `pnpm ci:local` green: 1929 tests + 1 todo, typecheck + lint clean, e2e + integration green.
 
 **Commit(s):** single commit (component + test + this Journal entry).
+
+## 2026-05-06T10:14:49-04:00 — #402: hot-seat RNG seed = Date.now() with ?seed=N override
+
+**Pushed:** Single commit. Replaced `RNG_SEED = 1729` constant in `app/play/page.tsx` with a per-session resolved seed via the new `lib/play-seed.ts` helper. Date.now()-derived by default; `?seed=N` query param overrides for reproducibility. Logged via `console.info` so the seed is recoverable from devtools.
+
+**Why:** Playtest 2026-05-05 ticket #8 — *"The cards are always the same in the hotseat run."* Fixed seed was correct for tests and right while /play was a demo, but for actual gameplay every replay was identical.
+
+**Notes:**
+- Seed is resolved once per session via `useState`'s lazy initializer so RNGs stay stable across re-renders. SSR-safe (`typeof window === 'undefined'` guard).
+- **Truncation bug caught in review.** First pass passed the un-truncated `Date.now()` (~1.7e12) to `seededRng()`, which silently does `seed >>> 0` internally — meaning the logged "replay with ?seed=N" URL didn't actually reproduce the session. Fixed: both branches now `>>> 0` before returning AND before logging, so the URL the user sees matches what the RNG uses. Test added pinning the contract: `2^32+1 → 1`.
+- Test seam: `resolvePlaySeed(searchParams?: URLSearchParams)` — pure helper, exhaustive coverage (explicit/empty/non-numeric/no-args, log format on both branches, truncation contract). Page wiring just calls the helper from `useState`'s initializer.
+- `code-reviewer` verdict (re-reviewed after truncation fix): **ship.** Zero critical, zero significant remaining.
+- `pnpm ci:local` green: 1936 tests + 1 todo, typecheck + lint clean, e2e + integration green.
+
+**Commit(s):** single commit (helper + test + page wiring + this Journal entry).
