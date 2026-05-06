@@ -19,7 +19,7 @@ this repo.
 - Rules: [`design/mechanics.md`](design/mechanics.md), [`design/shells.md`](design/shells.md)
 - Reference data: [`reference/`](reference/) (sefirot, paths, arcana, letters, correspondences)
 - Long-form ideation archive: [`KabballahGame.md`](KabballahGame.md) (historical only; do not treat as spec)
-- Build log: [`Journal.md`](Journal.md) — append-only, updated at ticket closeout
+- Build log: [`journal/<NN>-<slug>.md`](journal/README.md) — per-ticket files, append-only, one entry per push. Legacy archive at [`Journal.md`](Journal.md) (frozen as of #429).
 
 ---
 
@@ -159,7 +159,7 @@ SKIP_INTEGRATION=1 pnpm ci:local   # skip Supabase boot
 | What does each screen look like? | `docs/screens.md` |
 | How does typography work (display / body / Hebrew)? | `docs/typography.md` |
 | How do motion tokens / glow scale / atmosphere layers work? | `docs/motion.md` |
-| What was built, by whom, what surprised them? | `Journal.md` (recent ~30 days) + `docs/journal-archive/` (older months, sliced by `pnpm archive:journal`) |
+| What was built, by whom, what surprised them? | `journal/<NN>-<slug>.md` per ticket (current convention, post-#429) + `Journal.md` (legacy / frozen) + `docs/journal-archive/` (older months, sliced by `pnpm archive:journal` from the legacy file) |
 | What work is queued? | GitHub issues (milestone: _MVP: Playable web version_) |
 | What's the master plan? | Epic issue #1 |
 

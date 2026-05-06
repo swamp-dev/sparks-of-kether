@@ -1,14 +1,22 @@
-# Sparks of Kether — Build Journal
+# Sparks of Kether — Build Journal (legacy / frozen)
 
-> **Append only.** Never edit or delete past entries. This file is the
-> long-term memory of the project — a record of **every push**, what it
-> contained, and why.
+> **🛑 No new entries here.** As of #429 (B2), new push entries live in
+> per-ticket files at [`journal/<NN>-<slug>.md`](journal/README.md).
+> This file is the historical archive — every push from project bootstrap
+> through the last pre-B2 PR lives below. B2 and everything after are in
+> per-ticket files. A planned follow-up will move this archive into
+> `docs/journal-archive/` once the per-ticket convention has settled.
 
-## Rule
+> **Append-only (for the historical entries already below — no new
+> entries).** Never edit or delete past entries. This file remains the
+> long-term memory of the project for work done before B2; the per-ticket
+> files in `journal/` are the long-term memory going forward.
 
-**Every `git push` gets one Journal entry.** Append at the bottom of this
-file, commit the entry *with* (or immediately before) the pushed work so
-the branch and the log stay in sync. Each entry carries:
+## Legacy rule (frozen)
+
+The rule until #429 was: **every `git push` gets one Journal entry.** Append
+at the bottom of this file, commit the entry *with* (or immediately before)
+the pushed work so the branch and the log stay in sync. Each entry carries:
 
 - An **ISO-8601 timestamp** with time and timezone (`YYYY-MM-DDTHH:MM:SS±ZZ:ZZ`).
 - A **ticket number** (`#NN`) in the heading.

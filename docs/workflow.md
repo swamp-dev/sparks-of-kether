@@ -16,7 +16,7 @@ workflow, change it here first.
 | 3 | Code review via the `code-reviewer` subagent | `/finish-ticket` |
 | 4 | Fix critical and significant findings | manual |
 | 5 | Re-review if the fixes were substantial (see heuristic below) | `/finish-ticket` re-fires the reviewer |
-| 6 | Open the PR — Conventional-Commit title, `Closes #NN` in body, Journal entry copied in | `/finish-ticket` |
+| 6 | Open the PR — Conventional-Commit title, `Closes #NN` in body, link to `journal/<NN>-<slug>.md` + short excerpt | `/finish-ticket` |
 | 7 | When hosted CI is green, **merge** | `/ship-ticket <P>` |
 | 8 | Cleanup — comment closeout note on the ticket(s), remove worktree, delete branch | `/ship-ticket <P>` |
 
@@ -114,9 +114,10 @@ Cleanup runs in the same session as the merge. There is no longer a
   `<type>(<scope>): <short summary>`. For TDD work, separate the failing-
   test commit from the implementation commit.
 - **PR title:** Conventional-Commit format. **PR body** must contain
-  `Closes #NN` on its own line and copy the relevant Journal entries
-  in as a read-only reference. `Journal.md` stays the source of truth —
-  if you revise, edit `Journal.md` and regenerate the PR body.
+  `Closes #NN` on its own line and link to the per-ticket Journal file
+  (`journal/<NN>-<slug>.md`) plus a short excerpt of the most recent
+  entry. The per-ticket file stays the source of truth — if you revise,
+  edit the file and regenerate the PR body.
 
 ---
 
@@ -124,14 +125,23 @@ Cleanup runs in the same session as the merge. There is no longer a
 
 Every `git push` on a feature branch — initial, review fixes, doc
 tweaks, CI-green attempts — gets **one** entry appended to the bottom
-of [`../Journal.md`](../Journal.md). Append-only; never edit past
-entries. Write the entry *before* the push so it lands in the same
-push.
+of **this branch's per-ticket file** at
+[`../journal/<NN>-<slug>.md`](../journal/README.md). Append-only;
+never edit past entries. Write the entry *before* the push so it
+lands in the same push.
 
-`/finish-ticket` handles the Journal entry for the final pre-PR push;
-intermediate pushes journal themselves as they happen.
+The per-ticket layout (#429 / B2) replaced the legacy monolithic
+`Journal.md` to eliminate the merge-conflict surface where every
+concurrent PR fought for the bottom of one file. `Journal.md` at the
+repo root is **frozen** — read-only history; never write to it.
 
-`/ship-ticket` reads recent Journal entries as an **audit record** that
+`/finish-ticket` handles the entry for the final pre-PR push;
+intermediate pushes journal themselves as they happen. `/start-ticket`
+should create `journal/<NN>-<slug>.md` with the header template; if
+the file is missing on first journal write, the agent creates it
+inline using the template in [`../journal/README.md`](../journal/README.md).
+
+`/ship-ticket` reads the per-ticket file as an **audit record** that
 the per-PR checklist ran. The Journal is written by the agent itself,
 so the marker is a documentation artifact, not a security control —
 nothing stops an agent from writing "code-reviewer clean" without
@@ -155,7 +165,8 @@ load-bearing safety is the agent's own discipline.
 | This project's stack, naming, test commands | [`../CLAUDE.md`](../CLAUDE.md) |
 | Game design (rules) | [`../design/`](../design/) |
 | Symbolic reference data | [`../reference/`](../reference/) |
-| Build log | [`../Journal.md`](../Journal.md) |
+| Build log (current per-ticket entries) | [`../journal/`](../journal/README.md) |
+| Build log (legacy / pre-#429 history) | [`../Journal.md`](../Journal.md) |
 
 ---
 

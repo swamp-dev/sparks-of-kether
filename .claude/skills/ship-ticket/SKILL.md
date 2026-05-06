@@ -63,21 +63,36 @@ Capture the branch name (`headRefName`) — it should match
 
 ### 3. Verify per-PR checklist ran in this session
 
-Read the tail of `Journal.md`:
+Read this branch's per-ticket Journal file. From the branch name
+captured in step 2, derive `<N>` (issue number) and find the matching
+file under `journal/`:
 
 ```bash
-tail -100 Journal.md
+# Branch shape is <type>/<N>-<slug>. The first run of digits after the
+# `/` is always the ticket number — `/start-ticket` enforces this.
+# Branch is e.g. chore/434-ship-ticket-cleanup-symlink → N=434
+N=$(echo "$headRefName" | sed 's|.*/\([0-9]\+\)-.*|\1|')
+
+# Defensive: refuse to proceed if the derivation didn't yield a number
+# (would happen if a branch name doesn't follow the convention).
+if ! [[ "$N" =~ ^[0-9]+$ ]]; then
+  echo "Could not derive ticket number from branch name '$headRefName' — expected <type>/<N>-<slug>. Stop."
+  exit 1
+fi
+
+journal_file=$(ls journal/${N}-*.md 2>/dev/null | head -1)
+[ -n "$journal_file" ] && cat "$journal_file" || echo "no journal file for #${N}"
 ```
+
+If the file doesn't exist, the branch was created before B2 #429 and
+its journal is in the legacy `Journal.md` instead — fall back to
+`tail -200 Journal.md` and look for the marker by ticket number.
 
 Look for a `/finish-ticket`-shape entry for the most recent push that
 mentions either "code-reviewer clean" or "re-reviewed after fixes;
 reviewer returned clean" — the marker `/finish-ticket` step 8a writes.
 
-Note `<N>` here is the issue number (from the branch name `<type>/<N>-<slug>`),
-not the PR number. Issue and PR numbers can differ, so prefer scanning
-recent Journal entries chronologically rather than grepping by number.
-
-If the marker is missing or the Journal does not match the agent's own
+If the marker is missing or the file does not match the agent's own
 session memory of having run the reviewer, **ask the user explicitly**:
 
 > "I do not see this PR's per-PR checklist completed in this session.

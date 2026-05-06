@@ -11,6 +11,10 @@ Thumbs.db
 
 # Node / Next.js
 node_modules/
+# Anchored variant matches the worktree-symlink form (`node_modules` as
+# a symlink, not a directory) created by /start-ticket step 6a. The
+# directory pattern above doesn't match a symlink; this rule does.
+/node_modules
 .next/
 out/
 dist/

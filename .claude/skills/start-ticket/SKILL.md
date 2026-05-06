@@ -129,6 +129,31 @@ changes propagate — but it's the opposite of what most developers
 expect from a per-worktree directory. Surface this in the Journal if
 the agent does it.
 
+### 6b. Create the per-ticket Journal file
+
+Per the convention codified in #429 (B2), each branch has its own
+Journal file at `journal/<NN>-<slug>.md`. Create it now with the
+header template so `/finish-ticket` and intermediate-push journaling
+have a destination from the first push:
+
+```bash
+cat > ../sok-<N>-<slug>/journal/<N>-<slug>.md <<EOF
+# Journal — #<N>: <ticket title>
+
+Append-only. Never edit or delete past entries. One entry per \`git push\`
+on this branch.
+
+---
+EOF
+```
+
+Use the ticket's title from step 1 in the header. Stop and report if
+the file already exists (would mean a stale leftover from a prior
+incomplete worktree setup).
+
+See [`journal/README.md`](../../../journal/README.md) for the entry
+template and the per-ticket-vs-legacy-`Journal.md` rule.
+
 ### 7. Print next steps
 
 Tell the user:

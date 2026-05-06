@@ -10,12 +10,13 @@ code-review → fix → re-review on substantial fixes → open PR. After this
 skill the agent stops; `/ship-ticket <P>` handles the merge once hosted
 CI is green.
 
-> **Per-push journaling is the default rule** (CLAUDE.md step 7). Every
-> `git push` on a feature branch has its own Journal entry. This skill
-> handles the Journal entry for the *final* push that immediately
-> precedes opening the PR. Intermediate pushes — e.g. during TDD
-> iteration or while addressing review feedback — journal themselves
-> as they happen, not through this skill.
+> **Per-push journaling is the default rule** (see [`docs/workflow.md`](../../../docs/workflow.md)
+> § Journal every push). Every `git push` on a feature branch has its
+> own entry in `journal/<NN>-<slug>.md`. This skill handles the entry
+> for the *final* push that immediately precedes opening the PR.
+> Intermediate pushes — e.g. during TDD iteration or while addressing
+> review feedback — journal themselves as they happen, not through
+> this skill.
 
 ## Preconditions
 
@@ -61,17 +62,23 @@ gh pr checks --watch 2>/dev/null || true
 
 Skip if there's no PR yet (first time running for this ticket).
 
-### 4. Verify Journal.md is current
+### 4. Verify the per-ticket Journal file is current
 
-Walk backwards through the branch's commit log:
+This branch's Journal lives at `journal/<NN>-<slug>.md` (matching the
+branch name). Walk backwards through the branch's commit log:
 
 ```bash
 git log --oneline origin/main..HEAD
 ```
 
-Every push that appears there should already have a corresponding Journal
-entry. If any push is missing an entry, **stop** and tell the user —
-append the missing entries first, then resume.
+Every push that appears there should already have a corresponding entry
+in `journal/<NN>-<slug>.md`. If any push is missing an entry, **stop**
+and tell the user — append the missing entries first, then resume.
+
+If the file doesn't exist yet (e.g. branch was created before B2 #429
+landed), create it with the header template from
+[`journal/README.md`](../../../journal/README.md) before adding the
+entry.
 
 This skill only adds the entry for the final (still-unpushed) push.
 
@@ -85,15 +92,15 @@ Ask the user four questions:
 4. **Which commit(s)?** (the agent can compute this from `git log`, but
    confirm with the user if ambiguous)
 
-### 6. Append to `Journal.md`
+### 6. Append to `journal/<NN>-<slug>.md`
 
-Append a new block at the **bottom** of `Journal.md`, using the current
-ISO-8601 timestamp with timezone. The date should come from
+Append a new block at the **bottom** of the per-ticket file, using the
+current ISO-8601 timestamp with timezone. The date should come from
 `date -Iseconds` or equivalent:
 
 ```markdown
 
-## YYYY-MM-DDTHH:MM:SS±ZZ:ZZ — #NN: Short context line
+## YYYY-MM-DDTHH:MM:SS±ZZ:ZZ — push N context line
 
 **Pushed:** <field 1>
 **Why:** <field 2>
@@ -101,7 +108,11 @@ ISO-8601 timestamp with timezone. The date should come from
 **Commit(s):** `<sha-short>` (or range)
 ```
 
+Note the heading no longer carries `#NN` — the filename already does.
 Never edit or delete past entries — append only.
+
+**Never write to the legacy `Journal.md` at the repo root.** That file
+is frozen as of B2 (#429) and exists only as the historical archive.
 
 ### 7. Commit the Journal entry + any outstanding work
 
@@ -157,7 +168,7 @@ significant findings or the user explicitly accepts the remaining
 findings as deferred-minor.
 
 **Record the re-review in the Journal entry for the push that
-contained the fixes** — `/ship-ticket` reads recent Journal entries
+contained the fixes** — `/ship-ticket` reads `journal/<NN>-<slug>.md`
 to verify the per-PR checklist actually ran. A line like
 `Notes: re-reviewed after fixes; reviewer returned clean` is enough.
 
@@ -256,8 +267,10 @@ The body must include:
 - **Summary** — 1-paragraph description.
 - **Changes** — bullet list of key changes.
 - **Test plan** — checklist of what was verified.
-- **Journal entries** — copy the relevant Journal entries from `Journal.md`
-  for this branch's pushes (read-only reference — `Journal.md` is source of truth).
+- **Journal entries** — link to `journal/<NN>-<slug>.md` (the source
+  of truth) plus a short excerpt of the most recent entry inline as
+  context. The full audit trail lives in the per-ticket file; the PR
+  body excerpt is for at-a-glance review.
 - **Tech-debt follow-ups** (if any from step 8b) — list the spawned
   issue numbers (e.g. `Tech-debt follow-ups: #441, #442`). Issue
   numbers live in the PR body, not in the Journal entry — the journal
@@ -289,10 +302,13 @@ skill — the wait for hosted CI is asynchronous and operator-driven.
 ## Invariants
 
 - One ticket = one branch = one PR.
-- Every push has a Journal entry; `Journal.md` grows, never shrinks.
+- Every push has a Journal entry; the per-ticket file
+  (`journal/<NN>-<slug>.md`) grows, never shrinks. The legacy
+  `Journal.md` at the repo root is frozen — never write to it.
 - The five-step per-PR checklist runs every time. Step 5 (re-review)
   uses the heuristic in step 8a above — `/ship-ticket` will refuse to
-  merge a PR whose Journal does not show the checklist completing.
+  merge a PR whose per-ticket Journal file does not show the checklist
+  completing.
 - Tech-debt follow-up issues (step 8b) are filed **per finding with
   explicit user confirmation**. Bulk-file mode is forbidden — the
   failure mode is backlog spam from chatty reviewer runs.
