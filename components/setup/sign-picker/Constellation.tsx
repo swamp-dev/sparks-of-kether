@@ -3,7 +3,7 @@ import type { ZodiacSignKey } from '@/data';
 
 /**
  * Faint per-sign asterism rendered behind the focused sign on the
- * carousel center stage (#314). Decorative — `aria-hidden="true"`.
+ * carousel center stage (#314 / #406). Decorative — `aria-hidden="true"`.
  *
  * Geometry comes from `data/zodiac-constellations.ts`. Coordinates are
  * normalised to `[0..1]`; we scale them into the SVG viewBox at draw
@@ -11,10 +11,16 @@ import type { ZodiacSignKey } from '@/data';
  * glyph and Hebrew letter remain dominant; edges are 1px lines at
  * even lower alpha that sketch the asterism shape.
  *
- * Motion: the whole svg breathes via `motion-safe:animate-breath`
- * (Tailwind variant — reduced-motion users get the static rendering)
- * so the constellation reads as quietly alive without competing with
- * the foreground breath halo on the glyph itself.
+ * Motion: the whole svg rotates slowly via
+ * `motion-safe:animate-constellation-rotate` (60s full turn, linear,
+ * infinite — Tailwind variant, so reduced-motion users get the static
+ * constellation). The SVG element's default transform-origin is its
+ * own centre (50% 50%), so rotation pivots on the asterism's middle
+ * inside its square containing box without explicit `transform-origin`
+ * styling. Picked rotation over the prior `animate-breath` opacity
+ * cycle because #406's acceptance criterion is "Slow rotation visible
+ * at default motion settings" — opacity pulse alone wasn't enough; the
+ * spin reads as the night sky drifting overhead.
  */
 
 const VIEW = 320;
@@ -26,10 +32,7 @@ interface ConstellationProps {
   readonly className?: string;
 }
 
-export function Constellation({
-  sign,
-  className,
-}: ConstellationProps): JSX.Element {
+export function Constellation({ sign, className }: ConstellationProps): JSX.Element {
   const { stars, edges } = ZODIAC_CONSTELLATIONS[sign];
   return (
     <svg
@@ -37,7 +40,7 @@ export function Constellation({
       aria-hidden="true"
       viewBox={`0 0 ${VIEW} ${VIEW}`}
       xmlns="http://www.w3.org/2000/svg"
-      className={`pointer-events-none motion-safe:animate-breath ${className ?? ''}`}
+      className={`pointer-events-none motion-safe:animate-constellation-rotate ${className ?? ''}`}
     >
       <g stroke="currentColor" strokeWidth={1} strokeOpacity={0.18} fill="none">
         {edges.map(([from, to], i) => {
@@ -48,9 +51,7 @@ export function Constellation({
           const a = stars[from];
           const b = stars[to];
           if (a === undefined || b === undefined) {
-            throw new Error(
-              `Constellation: edge ${i} references missing star (${from}→${to})`,
-            );
+            throw new Error(`Constellation: edge ${i} references missing star (${from}→${to})`);
           }
           return (
             <line

@@ -184,12 +184,17 @@ const config: Config = {
         // `motion-safe:` at the call site so reduced-motion users
         // see the static seals.
         'shell-dormant-spin': 'shell-dormant-spin 30s linear infinite',
-        'shell-active-wobble':
-          'shell-active-wobble 8000ms cubic-bezier(0.65, 0, 0.35, 1) infinite',
-        'shell-awaken':
-          'shell-awaken 500ms cubic-bezier(0.22, 1, 0.36, 1) both',
-        'shell-banish':
-          'shell-banish 600ms cubic-bezier(0.65, 0, 0.35, 1) both',
+        'shell-active-wobble': 'shell-active-wobble 8000ms cubic-bezier(0.65, 0, 0.35, 1) infinite',
+        'shell-awaken': 'shell-awaken 500ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'shell-banish': 'shell-banish 600ms cubic-bezier(0.65, 0, 0.35, 1) both',
+        // #406: slow rotation for the per-sign constellation behind
+        // the focused sign-picker stage. Reuses the `shell-dormant-spin`
+        // 0→360 keyframe; the constellation just spins at half the
+        // shell-dormant cadence (60s vs 30s) so it reads as starlight
+        // drift rather than wobble. Authored under `motion-safe:` at
+        // the call site so reduced-motion users see the static
+        // constellation.
+        'constellation-rotate': 'shell-dormant-spin 60s linear infinite',
       },
       // #311: reserved easings. `emerge` is for things appearing on
       // screen (mounts, modals opening, halos lighting up); `flow` is
@@ -230,23 +235,33 @@ const config: Config = {
       // double-painting the colour. See `docs/motion.md` for the
       // composition guide and mobile cost notes.
       boxShadow: {
-        'glow-kether': '0 0 8px rgba(255, 255, 255, 0.45), 0 0 18px rgba(255, 255, 255, 0.28), 0 0 36px rgba(255, 255, 255, 0.16)',
-        'glow-chokmah': '0 0 8px rgba(192, 192, 192, 0.45), 0 0 18px rgba(192, 192, 192, 0.28), 0 0 36px rgba(192, 192, 192, 0.16)',
+        'glow-kether':
+          '0 0 8px rgba(255, 255, 255, 0.45), 0 0 18px rgba(255, 255, 255, 0.28), 0 0 36px rgba(255, 255, 255, 0.16)',
+        'glow-chokmah':
+          '0 0 8px rgba(192, 192, 192, 0.45), 0 0 18px rgba(192, 192, 192, 0.28), 0 0 36px rgba(192, 192, 192, 0.16)',
         // Binah is dark-form; its "glow" is a deep blue-violet halo
         // rather than a literal Binah-near-black glow. Using the
         // canonical hex would produce no visible halo on the void.
-        'glow-binah': '0 0 8px rgba(75, 0, 130, 0.55), 0 0 18px rgba(75, 0, 130, 0.30), 0 0 36px rgba(75, 0, 130, 0.16)',
-        'glow-chesed': '0 0 8px rgba(65, 105, 225, 0.50), 0 0 18px rgba(65, 105, 225, 0.30), 0 0 36px rgba(65, 105, 225, 0.16)',
-        'glow-gevurah': '0 0 8px rgba(220, 20, 60, 0.50), 0 0 18px rgba(220, 20, 60, 0.30), 0 0 36px rgba(220, 20, 60, 0.16)',
-        'glow-tiferet': '0 0 8px rgba(255, 215, 0, 0.55), 0 0 18px rgba(255, 215, 0, 0.32), 0 0 36px rgba(255, 215, 0, 0.18)',
-        'glow-netzach': '0 0 8px rgba(34, 139, 34, 0.50), 0 0 18px rgba(34, 139, 34, 0.30), 0 0 36px rgba(34, 139, 34, 0.16)',
-        'glow-hod': '0 0 8px rgba(255, 140, 0, 0.55), 0 0 18px rgba(255, 140, 0, 0.32), 0 0 36px rgba(255, 140, 0, 0.18)',
-        'glow-yesod': '0 0 8px rgba(147, 112, 219, 0.50), 0 0 18px rgba(147, 112, 219, 0.30), 0 0 36px rgba(147, 112, 219, 0.16)',
+        'glow-binah':
+          '0 0 8px rgba(75, 0, 130, 0.55), 0 0 18px rgba(75, 0, 130, 0.30), 0 0 36px rgba(75, 0, 130, 0.16)',
+        'glow-chesed':
+          '0 0 8px rgba(65, 105, 225, 0.50), 0 0 18px rgba(65, 105, 225, 0.30), 0 0 36px rgba(65, 105, 225, 0.16)',
+        'glow-gevurah':
+          '0 0 8px rgba(220, 20, 60, 0.50), 0 0 18px rgba(220, 20, 60, 0.30), 0 0 36px rgba(220, 20, 60, 0.16)',
+        'glow-tiferet':
+          '0 0 8px rgba(255, 215, 0, 0.55), 0 0 18px rgba(255, 215, 0, 0.32), 0 0 36px rgba(255, 215, 0, 0.18)',
+        'glow-netzach':
+          '0 0 8px rgba(34, 139, 34, 0.50), 0 0 18px rgba(34, 139, 34, 0.30), 0 0 36px rgba(34, 139, 34, 0.16)',
+        'glow-hod':
+          '0 0 8px rgba(255, 140, 0, 0.55), 0 0 18px rgba(255, 140, 0, 0.32), 0 0 36px rgba(255, 140, 0, 0.18)',
+        'glow-yesod':
+          '0 0 8px rgba(147, 112, 219, 0.50), 0 0 18px rgba(147, 112, 219, 0.30), 0 0 36px rgba(147, 112, 219, 0.16)',
         // Malkuth's canonical brown is too low-chroma to read as a
         // halo on the void. We reach for an earthier amber tone that
         // still references the Malkuth-earth correspondence without
         // disappearing.
-        'glow-malkuth': '0 0 8px rgba(184, 115, 51, 0.50), 0 0 18px rgba(184, 115, 51, 0.30), 0 0 36px rgba(184, 115, 51, 0.16)',
+        'glow-malkuth':
+          '0 0 8px rgba(184, 115, 51, 0.50), 0 0 18px rgba(184, 115, 51, 0.30), 0 0 36px rgba(184, 115, 51, 0.16)',
       },
     },
   },

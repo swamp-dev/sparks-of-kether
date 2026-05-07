@@ -39,4 +39,16 @@ describe('Constellation', () => {
     const expectedEdges = ZODIAC_CONSTELLATIONS.aries.edges.length;
     expect(lines.length).toBe(expectedEdges);
   });
+
+  it('rotates slowly under default motion settings (#406)', () => {
+    // Acceptance criterion: "Slow rotation visible at default motion
+    // settings." Pinned via the `motion-safe:` variant so reduced-
+    // motion users get the static constellation — the same Tailwind
+    // pattern the codebase uses for every other infinite animation.
+    const { container } = render(<Constellation sign="leo" />);
+    const svg = container.querySelector('svg');
+    expect(svg?.className.baseVal ?? svg?.getAttribute('class') ?? '').toMatch(
+      /motion-safe:animate-constellation-rotate/,
+    );
+  });
 });
