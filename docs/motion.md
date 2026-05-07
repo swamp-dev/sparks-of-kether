@@ -106,6 +106,20 @@ Don't reach for `duration-breath` (or `animate-breath`) for UI
 feedback — it's too slow. 600ms is already at the edge of "did
 anything happen?" territory.
 
+### Named one-shot animations
+
+Use these named utilities (defined in `tailwind.config.ts`) instead
+of authoring new keyframes per call site:
+
+| Token | Recipe | Use for |
+|---|---|---|
+| `animate-avatar-emerge` | 600ms `ease-emerge` `forwards` — opacity 0→1 + 12px slide-up + scale 0.92→1 | Encounter prep stage avatar entrance (#481). Settles confidently; the `forwards` fill-mode keeps the wrapper at the 100% keyframe state after the 600ms — without it the element would snap back to the 0% frame when the animation ends. The breath halo on the inner frame is on a separate element and is unaffected. |
+| `animate-shell-awaken` | 500ms `cubic-bezier(0.22, 1, 0.36, 1)` `both` — opacity 0→1 + scale 0.92→1 | Shell sigil awakening transition (#317). |
+| `animate-shell-banish` | 600ms `ease-flow` `both` — three-stop opacity + scale | Shell sigil banishing transition (#317). |
+
+All three are gated under `motion-safe:` at the call site so
+reduced-motion users see the static end-state.
+
 ---
 
 ## Glow scale

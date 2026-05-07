@@ -166,6 +166,26 @@ const config: Config = {
           '60%': { opacity: '0.85', transform: 'scale(0.96)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        // #481: avatar emerge. The encounter prep stage avatar
+        // (`AvatarPortrait` with `size='stage'`) slides up + scales
+        // in + fades from 0 to 1 on first mount — reads as "the
+        // avatar arrives" rather than appearing flat in place.
+        // ~600 ms with `ease-emerge` (out-expo) so the settle lands
+        // confidently. Paired with `forwards` at the animation
+        // utility so the wrapper stays at the keyframe's 100%
+        // state after the 600ms — without `forwards` the element
+        // would snap back to opacity 0 / 12px-down / 0.92-scale
+        // when the animation ends.
+        'avatar-emerge': {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(12px) scale(0.92)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0) scale(1)',
+          },
+        },
       },
       animation: {
         'hand-fade-in': 'hand-fade-in 180ms ease-out',
@@ -195,6 +215,16 @@ const config: Config = {
         // than wobble. Authored under `motion-safe:` at the call site
         // so reduced-motion users see the static constellation.
         'constellation-rotate': 'rotate-360 60s linear infinite',
+        // #481: encounter-prep stage avatar entrance. ~600ms with
+        // `ease-emerge` (out-expo) so the settle reads as "arrived".
+        // `forwards` keeps the wrapper at the 100% keyframe state
+        // after the 600ms; without it the element would snap back
+        // to the 0% state (opacity 0 / 12px-down / 0.92-scale) when
+        // the animation ends. The breath halo lives on a separate
+        // child element and is unaffected by this fill-mode.
+        // Applied under `motion-safe:` at the AvatarPortrait call
+        // site (only the `stage` size variant gets it).
+        'avatar-emerge': 'avatar-emerge 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
       // #311: reserved easings. `emerge` is for things appearing on
       // screen (mounts, modals opening, halos lighting up); `flow` is

@@ -81,13 +81,30 @@ export function AvatarPortrait({
       ? `relative h-60 w-44 overflow-hidden rounded-[40%] border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`
       : `relative flex h-16 w-16 items-center justify-center rounded-full border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`;
 
+  // Entrance animation (#481): the stage variant slides up + scales
+  // in + fades on first mount via `animate-avatar-emerge` — the
+  // avatar reads as "arriving" rather than appearing flat in place.
+  // Applied on the outermost wrapper so the entire component (frame
+  // + name label + caption) animates as one unit. The inner frame
+  // keeps its `animate-breath` halo independently — wrapping the
+  // animations on different elements avoids Tailwind's
+  // last-class-wins behavior on the CSS `animation` property.
+  // Reduced-motion users skip both animations and see the portrait
+  // mounted in place. The small variant has no entrance — it
+  // appears mid-encounter (resolve / react) where an emerge would
+  // feel like re-arrival.
+  const wrapperClass =
+    size === 'stage'
+      ? `flex flex-col items-center gap-2 motion-safe:animate-avatar-emerge ${className ?? ''}`
+      : `flex flex-col items-center gap-2 ${className ?? ''}`;
+
   return (
     <div
       data-avatar-portrait
       data-sefirah={sefirah}
       data-avatar-state={state}
       data-avatar-size={size}
-      className={`flex flex-col items-center gap-2 ${className ?? ''}`}
+      className={wrapperClass}
     >
       <div className={frameClass}>
         {showPortraitImage && character !== undefined ? (

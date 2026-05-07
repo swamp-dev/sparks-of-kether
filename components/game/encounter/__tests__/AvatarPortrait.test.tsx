@@ -85,6 +85,48 @@ describe('AvatarPortrait', () => {
       expect(portrait?.getAttribute('data-avatar-size')).toBe('small');
       expect(document.querySelector('[data-avatar-portrait-image]')).toBeNull();
     });
+
+    it('does not apply the entrance animation (small variants appear mid-encounter)', () => {
+      // #481: only the `stage` variant gets `animate-avatar-emerge`.
+      // The small variant is used in resolve / react where the avatar
+      // is already established; an emerge animation there would read
+      // as re-arrival.
+      render(<AvatarPortrait sefirah="hod" state="pass" size="small" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.className).not.toContain('animate-avatar-emerge');
+    });
+  });
+
+  describe('entrance animation (#481)', () => {
+    it('applies motion-safe:animate-avatar-emerge to the stage wrapper', () => {
+      // The stage avatar slides up + scales in + fades on first mount
+      // via the `avatar-emerge` keyframe in `tailwind.config.ts`.
+      // Class is applied at the outermost wrapper (where data-attrs
+      // live) so the entire component animates as one unit; the
+      // inner frame's `animate-breath` halo is on a different element
+      // and continues independently after the emerge settles.
+      render(<AvatarPortrait sefirah="hod" state="prep" size="stage" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.className).toContain('motion-safe:animate-avatar-emerge');
+    });
+
+    it('keeps the breath halo on the inner frame, not the wrapper', () => {
+      // Two separate animations on two separate elements — Tailwind's
+      // `animation` CSS property is last-class-wins on a single
+      // element, so the emerge wrapper and the breath frame must stay
+      // distinct. Negative assertions use the full `motion-safe:`
+      // prefix to distinguish "absent" from "present-under-prefix".
+      render(<AvatarPortrait sefirah="hod" state="prep" size="stage" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      // Wrapper has emerge but NOT breath.
+      expect(portrait?.className).not.toContain('motion-safe:animate-breath');
+      // Inner frame has breath. The frame is the first child <div>.
+      const innerFrame = portrait?.firstElementChild as HTMLElement | null;
+      expect(innerFrame?.className).toContain('motion-safe:animate-breath');
+      expect(innerFrame?.className).not.toContain(
+        'motion-safe:animate-avatar-emerge',
+      );
+    });
   });
 
   describe('caption + name label', () => {
