@@ -65,8 +65,19 @@ function signLabelFor(key: ZodiacSignKey): string {
 // a player's chosen sign tints their ready-halo. Mirrors the recipe
 // shape of the per-Sefirah `shadow-glow-{key}` tokens in
 // `tailwind.config.ts` (three stacked shadows at 8 / 18 / 36 px).
-function hexToRgbTriplet(hex: string): string {
-  const c = hex.replace('#', '');
+//
+// Exported only for `__tests__/hex-to-rgb-triplet.test.ts`. Strict
+// `#rrggbb` shape: anything else (3-digit shorthand, `rgb(...)`, CSS
+// color names) used to silently produce `rgba(NaN, NaN, NaN, …)` —
+// browsers ignore that and the glow vanishes with no error. Throw
+// at render time instead so a future SIGN_COLORS change surfaces
+// the break loudly.
+const HEX_RRGGBB_RE = /^#[0-9a-fA-F]{6}$/;
+export function hexToRgbTriplet(hex: string): string {
+  if (!HEX_RRGGBB_RE.test(hex)) {
+    throw new Error(`hexToRgbTriplet: expected #rrggbb, got ${JSON.stringify(hex)}`);
+  }
+  const c = hex.slice(1);
   const r = parseInt(c.slice(0, 2), 16);
   const g = parseInt(c.slice(2, 4), 16);
   const b = parseInt(c.slice(4, 6), 16);
