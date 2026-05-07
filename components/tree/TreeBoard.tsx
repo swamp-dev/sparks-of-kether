@@ -1,5 +1,6 @@
 import { useId, useMemo, type KeyboardEvent } from 'react';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
+import { TREE_VIEW_H, TREE_VIEW_W, treeNodeLayout, type NodeLayout } from '@/data/tree-layout';
 import { GROUND, TIFERET_GOLD, VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 import type { GameState } from '@/engine/types';
@@ -64,29 +65,13 @@ import { SefirahTooltip } from './SefirahTooltip';
  * SVG's aspect ratio so node coordinates resolve identically.
  */
 
-const VIEW_W = 400;
-// 620 not 600: gives Malkuth's label below the bottom node room to render
-// without clipping (label baseline sits at malkuth.y + radius + 14 = 602).
-const VIEW_H = 620;
+// TREE_VIEW_W / TREE_VIEW_H / treeNodeLayout / NodeLayout were previously inline
+// here; pulled into `data/tree-layout` so the home Hero, the lobby
+// backdrop, and this play board all read from one source. The
+// 620 (rather than 600) viewBox height is intentional — gives
+// Malkuth's label below the bottom node room to render without
+// clipping (label baseline sits at malkuth.y + radius + 14 = 602).
 const NODE_RADIUS = 28;
-
-interface NodeLayout {
-  readonly x: number;
-  readonly y: number;
-}
-
-const nodeLayout: Readonly<Record<SefirahKey, NodeLayout>> = {
-  kether: { x: 200, y: 60 },
-  chokmah: { x: 320, y: 150 },
-  binah: { x: 80, y: 150 },
-  chesed: { x: 320, y: 280 },
-  gevurah: { x: 80, y: 280 },
-  tiferet: { x: 200, y: 340 },
-  netzach: { x: 320, y: 430 },
-  hod: { x: 80, y: 430 },
-  yesod: { x: 200, y: 490 },
-  malkuth: { x: 200, y: 560 },
-};
 
 /**
  * Per-path label offset from the geometric midpoint, used by the
@@ -240,9 +225,7 @@ export function TreeBoard({
   // #129: respect `movesEnabled`. When the orchestrator's phase has
   // advanced past `'move'`, no path should highlight or accept
   // clicks — even if the player still holds the right card.
-  const validPaths = movesEnabled
-    ? computeValidPaths(state, activePlayerId)
-    : EMPTY_VALID_PATHS;
+  const validPaths = movesEnabled ? computeValidPaths(state, activePlayerId) : EMPTY_VALID_PATHS;
   const interactive = onPathClick !== undefined;
   // Path numbers lit by `highlightedCard`. A card's arcanum maps to
   // exactly one path today (`pathByArcanum`); we use the more
@@ -300,7 +283,7 @@ export function TreeBoard({
       style={{ width: '100%' }}
     >
       <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        viewBox={`0 0 ${TREE_VIEW_W} ${TREE_VIEW_H}`}
         role="figure"
         xmlns="http://www.w3.org/2000/svg"
         className="block w-full"
@@ -323,8 +306,8 @@ export function TreeBoard({
           {paths.map((path) => {
             const fromColor = sefirahByKey(path.from).color;
             const toColor = sefirahByKey(path.to).color;
-            const a = nodeLayout[path.from];
-            const b = nodeLayout[path.to];
+            const a = treeNodeLayout[path.from];
+            const b = treeNodeLayout[path.to];
             return (
               <linearGradient
                 key={`card-lit-${path.number}`}
@@ -342,14 +325,14 @@ export function TreeBoard({
           })}
         </defs>
 
-        <rect width={VIEW_W} height={VIEW_H} fill={`url(#${gradientId})`} />
+        <rect width={TREE_VIEW_W} height={TREE_VIEW_H} fill={`url(#${gradientId})`} />
 
         <Starfield />
 
         <g data-layer="paths">
           {paths.map((path) => {
-            const a = nodeLayout[path.from];
-            const b = nodeLayout[path.to];
+            const a = treeNodeLayout[path.from];
+            const b = treeNodeLayout[path.to];
             // #213: trimmed coordinates for the invisible hit-line.
             // The visible line still runs a→b; only the click target
             // is shrunk to live in the gap between the node circles.
@@ -385,9 +368,7 @@ export function TreeBoard({
             const clickable = interactive && isValid;
             const onClickHandler = onPathClick;
             const handleClick =
-              clickable && onClickHandler
-                ? () => onClickHandler(path.number)
-                : undefined;
+              clickable && onClickHandler ? () => onClickHandler(path.number) : undefined;
             const handleKey =
               clickable && onClickHandler
                 ? (e: KeyboardEvent<SVGGElement>): void => {
@@ -502,8 +483,8 @@ export function TreeBoard({
             badge.
           */}
           {paths.map((path) => {
-            const a = nodeLayout[path.from];
-            const b = nodeLayout[path.to];
+            const a = treeNodeLayout[path.from];
+            const b = treeNodeLayout[path.to];
             const offset = LABEL_OFFSETS[path.number] ?? { dx: 0, dy: 0 };
             const mx = (a.x + b.x) / 2 + offset.dx;
             const my = (a.y + b.y) / 2 + offset.dy;
@@ -545,7 +526,7 @@ export function TreeBoard({
 
         <g data-layer="nodes">
           {sefirot.map((sefirah) => {
-            const pos = nodeLayout[sefirah.key];
+            const pos = treeNodeLayout[sefirah.key];
             // #214 + #401: declutter — only the Hebrew-name
             // transliteration (Kether, Tiferet, …) is rendered as
             // visible text on the board. Hebrew script and the 1-10
@@ -580,7 +561,9 @@ export function TreeBoard({
                   stroke={VEIL}
                   strokeOpacity={0.6}
                   strokeWidth={1.5}
-                  className={cleared ? 'animate-sefirah-clear-pulse motion-reduce:animate-none' : ''}
+                  className={
+                    cleared ? 'animate-sefirah-clear-pulse motion-reduce:animate-none' : ''
+                  }
                   // `transform-box: fill-box` + `transform-origin: center`
                   // anchors the scale at the circle's geometric centre
                   // cross-browser. CSS px transform-origins on raw SVG
@@ -662,20 +645,19 @@ export function TreeBoard({
           // Intentionally NOT aria-hidden: the overlay carries the
           // hover/focus links and tooltips that AT users depend on.
           className="pointer-events-none absolute inset-0"
-          style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+          style={{ aspectRatio: `${TREE_VIEW_W} / ${TREE_VIEW_H}` }}
         >
           {sefirot.map((sefirah) => {
-            const pos = nodeLayout[sefirah.key];
-            const leftPct = (pos.x / VIEW_W) * 100;
-            const topPct = (pos.y / VIEW_H) * 100;
+            const pos = treeNodeLayout[sefirah.key];
+            const leftPct = (pos.x / TREE_VIEW_W) * 100;
+            const topPct = (pos.y / TREE_VIEW_H) * 100;
             const lit = litSefirot.has(sefirah.key);
             const tooltipId = `sefirah-tip-${reactId}-${sefirah.key}`;
             // #312 — flip the tooltip ABOVE the node for the bottom
             // two Sefirot (Yesod, Malkuth) so it doesn't clip the SVG
             // edge or rely on an overflow:visible ancestor that we
             // can't guarantee. Top-tree nodes always render below.
-            const tooltipFlip =
-              sefirah.key === 'yesod' || sefirah.key === 'malkuth';
+            const tooltipFlip = sefirah.key === 'yesod' || sefirah.key === 'malkuth';
             return (
               <div
                 key={sefirah.key}
@@ -759,9 +741,7 @@ export function TreeBoard({
                 <div
                   data-tooltip-position={tooltipFlip ? 'above' : 'below'}
                   className={`absolute left-1/2 top-1/2 z-10 -translate-x-1/2 opacity-0 transition-opacity duration-200 ease-emerge peer-hover:opacity-100 peer-focus-visible:opacity-100 ${
-                    tooltipFlip
-                      ? '-translate-y-full -mt-6'
-                      : 'translate-y-6'
+                    tooltipFlip ? '-translate-y-full -mt-6' : 'translate-y-6'
                   }`}
                 >
                   <SefirahTooltip
@@ -935,7 +915,7 @@ function PlayerTokens({
     const groupAtPos = groups.get(player.position) ?? [];
     const positionInGroup = groupAtPos.findIndex((p) => p.id === player.id);
     const groupSize = groupAtPos.length;
-    const node = nodeLayout[player.position];
+    const node = treeNodeLayout[player.position];
     // Center the row: each token sits at offset (i - (n-1)/2) * spacing
     // from the node's x. With one player the offset is 0; with two,
     // ±(spacing/2); etc.
@@ -945,14 +925,12 @@ function PlayerTokens({
     const tokenY = node.y + NODE_RADIUS + 4 + TOKEN_RADIUS;
     const color = tokenColorForId(player.id);
     const isActive = player.id === activePlayerId;
-    const initial =
-      (player.name.charAt(0) || player.id.charAt(0) || '?').toUpperCase();
+    const initial = (player.name.charAt(0) || player.id.charAt(0) || '?').toUpperCase();
     // #312: data-just-moved is true iff this player's last arrival
     // path is recorded (which means they moved at least once). The
     // active-ring picks up the `path-travel-pulse` keyframe in that
     // case, painting a brief gold afterglow.
-    const justMoved =
-      isActive && player.lastArrivalPathNumber !== undefined;
+    const justMoved = isActive && player.lastArrivalPathNumber !== undefined;
     tokens.push(
       <g
         key={player.id}
@@ -987,9 +965,7 @@ function PlayerTokens({
             // is fine: the orchestrator transitions out of `'move'`
             // phase shortly after, unmounting the just-moved flag.
             className={
-              justMoved
-                ? 'motion-safe:animate-path-travel-pulse motion-reduce:animate-none'
-                : ''
+              justMoved ? 'motion-safe:animate-path-travel-pulse motion-reduce:animate-none' : ''
             }
           />
         ) : null}

@@ -1,11 +1,12 @@
 import { sefirot } from '@/data/sefirot';
 import { paths } from '@/data/paths';
+import { TREE_VIEW_H, TREE_VIEW_W, treeNodeLayout } from '@/data/tree-layout';
 import { TIFERET_GOLD, VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 
 /**
  * Tree-of-Life hero for the home page (#313). Stripped-down rendering
- * of the play board's geometry — same layout (`nodeLayout` mirrors
+ * of the play board's geometry — same layout (`treeNodeLayout` mirrors
  * `TreeBoard.tsx`), same path graph from `data/paths` — but no
  * interactivity, no player tokens, no path numbers, no per-node
  * label text. Decorative.
@@ -46,29 +47,9 @@ interface HeroProps {
   readonly className?: string;
 }
 
-const VIEW_W = 400;
-const VIEW_H = 620;
-
-interface NodeLayout {
-  readonly x: number;
-  readonly y: number;
-}
-
-// Mirrors `TreeBoard.tsx`'s nodeLayout exactly — the hero shows the
-// same Tree the player will navigate. Drift here would create a
-// silent "first impression vs gameplay" mismatch.
-const nodeLayout: Readonly<Record<SefirahKey, NodeLayout>> = {
-  kether: { x: 200, y: 60 },
-  chokmah: { x: 320, y: 150 },
-  binah: { x: 80, y: 150 },
-  chesed: { x: 320, y: 280 },
-  gevurah: { x: 80, y: 280 },
-  tiferet: { x: 200, y: 340 },
-  netzach: { x: 320, y: 430 },
-  hod: { x: 80, y: 430 },
-  yesod: { x: 200, y: 490 },
-  malkuth: { x: 200, y: 560 },
-};
+// Geometry now lives in `data/tree-layout` so TreeBoard / Hero /
+// LobbyBackdrop all read from one source. Drift between hero and
+// gameplay used to require manual three-way synchronization.
 
 // Tailwind class for each Sefirah's glow shadow. Pre-mapped so the
 // JIT picks them up — Tailwind's content scanner needs the literal
@@ -111,7 +92,7 @@ export function Hero({ className }: HeroProps): JSX.Element {
       className={`pointer-events-none relative w-full ${className ?? ''}`}
     >
       <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        viewBox={`0 0 ${TREE_VIEW_W} ${TREE_VIEW_H}`}
         // Sized as a fraction of the viewport so the Tree dominates
         // first impression at every breakpoint:
         //   mobile  ~42vh — primary visual without crowding the title.
@@ -128,8 +109,8 @@ export function Hero({ className }: HeroProps): JSX.Element {
             with no labels, no numbers, no hit areas. */}
         <g data-layer="paths">
           {paths.map((path) => {
-            const a = nodeLayout[path.from];
-            const b = nodeLayout[path.to];
+            const a = treeNodeLayout[path.from];
+            const b = treeNodeLayout[path.to];
             return (
               <line
                 key={path.number}
@@ -149,8 +130,8 @@ export function Hero({ className }: HeroProps): JSX.Element {
             centre. Faint enough to read as a glow, not as a literal
             ring. */}
         <circle
-          cx={nodeLayout.tiferet.x}
-          cy={nodeLayout.tiferet.y}
+          cx={treeNodeLayout.tiferet.x}
+          cy={treeNodeLayout.tiferet.y}
           r={NODE_RADIUS + 14}
           fill="none"
           stroke={TIFERET_GOLD}
@@ -163,7 +144,7 @@ export function Hero({ className }: HeroProps): JSX.Element {
             for the CSS box-shadow overlay to have visible reach. */}
         <g data-layer="halos">
           {sefirot.map((sefirah) => {
-            const pos = nodeLayout[sefirah.key];
+            const pos = treeNodeLayout[sefirah.key];
             const isCentre = sefirah.key === 'tiferet';
             return (
               <circle
@@ -182,7 +163,7 @@ export function Hero({ className }: HeroProps): JSX.Element {
         {/* Sefirah discs — canonical colour, sat over the halo. */}
         <g data-layer="nodes">
           {sefirot.map((sefirah) => {
-            const pos = nodeLayout[sefirah.key];
+            const pos = treeNodeLayout[sefirah.key];
             const isCentre = sefirah.key === 'tiferet';
             return (
               <circle
@@ -225,12 +206,12 @@ export function Hero({ className }: HeroProps): JSX.Element {
         data-layer="halo-overlay"
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-1/2 h-[42vh] -translate-x-1/2 -translate-y-1/2 sm:h-[58vh] md:h-[70vh]"
-        style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+        style={{ aspectRatio: `${TREE_VIEW_W} / ${TREE_VIEW_H}` }}
       >
         {sefirot.map((sefirah, index) => {
-          const pos = nodeLayout[sefirah.key];
-          const leftPct = (pos.x / VIEW_W) * 100;
-          const topPct = (pos.y / VIEW_H) * 100;
+          const pos = treeNodeLayout[sefirah.key];
+          const leftPct = (pos.x / TREE_VIEW_W) * 100;
+          const topPct = (pos.y / TREE_VIEW_H) * 100;
           const isCentre = sefirah.key === 'tiferet';
           // Offset cycle by half a breath on alternating indices so
           // halos don't pulse synchronously. The breath animation

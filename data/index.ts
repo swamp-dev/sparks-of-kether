@@ -44,6 +44,7 @@ export { soulDoorsBySign } from './soul-doors';
 export { sefirahBlessings, pickBlessing } from './sefirah-blessings';
 export type { SefirahBlessingMatrix } from './sefirah-blessings';
 export { sefirahMarkLetter } from './sefirah-glyphs';
+export { TREE_VIEW_W, TREE_VIEW_H, treeNodeLayout, type NodeLayout } from './tree-layout';
 export * from './types';
 
 // ──────────────── Indexes (built once) ────────────────
@@ -132,10 +133,7 @@ export function arcanumByPath(pathNumber: number): Arcanum {
 export function isPathShortcut(pathNumber: number): boolean {
   const path = tryPathByNumber(pathNumber);
   if (!path) return false;
-  return (
-    path.pillarsCrossed[0] === 'balance' &&
-    path.pillarsCrossed[1] === 'balance'
-  );
+  return path.pillarsCrossed[0] === 'balance' && path.pillarsCrossed[1] === 'balance';
 }
 
 /** Arcanum → Path: the inverse of `arcanumByPath`. */

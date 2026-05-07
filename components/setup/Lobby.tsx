@@ -1,6 +1,9 @@
 'use client';
+import type { CSSProperties } from 'react';
 import { zodiacSignByKey } from '@/data';
 import type { ZodiacSignKey } from '@/data';
+import { LobbyBackdrop } from '@/components/atmosphere/LobbyBackdrop';
+import { attributionColor } from '@/components/cards/attribution-colors';
 
 /**
  * Lobby — between-setup-and-play screen. Shows each player's name +
@@ -13,6 +16,14 @@ import type { ZodiacSignKey } from '@/data';
  *
  * Soul Aspects were retired in #237 (Epic #212 T8); the Lobby now
  * surfaces the player's zodiac-sign class instead.
+ *
+ * #403 — atmosphere treatment: a faint breathing Tree-of-Life
+ * silhouette fills the section behind the centred content; a
+ * ceremonial subtitle quote sits under the header; each ready
+ * player's row carries a halo tinted by their zodiac sign; the
+ * host's Begin button gathers a Tiferet-gold aura when every
+ * seat is ready. Reduced-motion flattens the cycling animations
+ * but retains the static atmosphere layer.
  */
 
 export interface LobbyPlayer {
@@ -49,6 +60,23 @@ function signLabelFor(key: ZodiacSignKey): string {
   return `${sign.glyph} ${sign.name}`;
 }
 
+// `#rrggbb` → "r, g, b" — feeds the per-row glow's `rgba()` stack so
+// a player's chosen sign tints their ready-halo. Mirrors the recipe
+// shape of the per-Sefirah `shadow-glow-{key}` tokens in
+// `tailwind.config.ts` (three stacked shadows at 8 / 18 / 36 px).
+function hexToRgbTriplet(hex: string): string {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+function signGlowShadow(key: ZodiacSignKey): string {
+  const rgb = hexToRgbTriplet(attributionColor({ kind: 'sign', value: key }));
+  return `0 0 8px rgba(${rgb}, 0.50), 0 0 18px rgba(${rgb}, 0.30), 0 0 36px rgba(${rgb}, 0.16)`;
+}
+
 export function Lobby({
   players,
   isHost = false,
@@ -74,76 +102,118 @@ export function Lobby({
     players.length <= 4 &&
     players.every((p) => p.ready && p.zodiacSign !== null) &&
     !hasDuplicateSigns;
-  const canBegin =
-    isHost && allReady && onBegin !== undefined && !beginning;
+  const canBegin = isHost && allReady && onBegin !== undefined && !beginning;
 
   return (
     <section
       data-lobby
       aria-label="Game lobby"
-      className={`mx-auto max-w-md ${className ?? ''}`}
+      className={`relative flex w-full min-h-[80vh] items-center justify-center ${className ?? ''}`}
     >
-      <header className="mb-4 text-center">
-        <h2 className="font-display text-2xl tracking-widest">Lobby</h2>
-        <p className="mt-1 text-sm opacity-70">
-          {players.length} player{players.length === 1 ? '' : 's'}
-          {' · '}
-          {players.length < 2
-            ? 'Waiting for more players'
-            : allReady
-              ? 'Everyone is ready'
-              : 'Waiting for everyone to ready up'}
-        </p>
-      </header>
+      <LobbyBackdrop />
 
-      <ul role="list" data-lobby-players className="space-y-2">
-        {players.map((p) => {
-          const isCurrent = p.id === currentPlayerId;
-          const signLabel = p.zodiacSign ? signLabelFor(p.zodiacSign) : null;
-          return (
-            <li
-              key={p.id}
-              data-lobby-row={p.id}
-              data-ready={p.ready ? 'true' : 'false'}
-              className={`flex items-center justify-between rounded border px-3 py-2 ${
-                p.ready ? 'border-illumination/60' : 'border-veil/30'
-              }`}
-            >
-              <div className="flex flex-col">
-                <span className="font-display tracking-widest">
-                  {p.name}
-                  {isCurrent ? (
-                    <span className="ml-2 text-xs uppercase opacity-60">(you)</span>
-                  ) : null}
-                </span>
-                <span className="text-xs opacity-70">
-                  {signLabel ?? 'Choosing sign…'}
-                </span>
-              </div>
-              <ReadyIndicator
-                ready={p.ready}
-                canToggle={isCurrent && onToggleReady !== undefined}
-                onToggle={() => onToggleReady?.(p.id)}
-              />
-            </li>
-          );
-        })}
-      </ul>
-
-      {isHost ? (
-        <div className="mt-6 flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={canBegin ? onBegin : undefined}
-            disabled={!canBegin}
-            data-action="begin"
-            className="rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground disabled:cursor-not-allowed disabled:opacity-30"
+      <div className="relative z-10 mx-auto w-full max-w-md py-6">
+        <header className="mb-6 text-center">
+          <h2 className="font-display text-2xl tracking-widest">Lobby</h2>
+          <p className="mt-1 text-sm opacity-70">
+            {players.length} player{players.length === 1 ? '' : 's'}
+            {' · '}
+            {players.length < 2
+              ? 'Waiting for more players'
+              : allReady
+                ? 'Everyone is ready'
+                : 'Waiting for everyone to ready up'}
+          </p>
+          <p
+            data-lobby-quote
+            className="mx-auto mt-4 max-w-xs font-display text-base italic leading-relaxed text-veil/55"
           >
-            {beginning ? 'Beginning…' : 'Begin'}
-          </button>
-          <BeginHint players={players} />
-        </div>
-      ) : null}
+            Two seekers. One Tree. The light ascends together.
+          </p>
+        </header>
+
+        <ul role="list" data-lobby-players className="space-y-2">
+          {players.map((p) => {
+            const isCurrent = p.id === currentPlayerId;
+            const signLabel = p.zodiacSign ? signLabelFor(p.zodiacSign) : null;
+            // Inline box-shadow rather than a Tailwind class because the
+            // halo's colour is dynamic (12 zodiac signs × 3 layered
+            // shadows). Pre-baking 12 entries in `tailwind.config.ts`
+            // would duplicate the SIGN_COLORS table from
+            // `attribution-colors.ts`; computing inline keeps a single
+            // source of truth for the per-sign colour.
+            //
+            // `p.ready && p.zodiacSign !== null` is at the use site
+            // (rather than via an intermediate boolean) so TypeScript
+            // narrows `p.zodiacSign` to `ZodiacSignKey` without a cast
+            // — a drift in the gating condition cannot then silently
+            // hand a null to `signGlowShadow` (would throw at runtime
+            // inside `hex.replace`).
+            const rowStyle: CSSProperties | undefined =
+              p.ready && p.zodiacSign !== null
+                ? { boxShadow: signGlowShadow(p.zodiacSign) }
+                : undefined;
+            return (
+              <li
+                key={p.id}
+                data-lobby-row={p.id}
+                data-ready={p.ready ? 'true' : 'false'}
+                data-glow-on={rowStyle !== undefined ? 'true' : 'false'}
+                style={rowStyle}
+                className={`flex items-center justify-between rounded border px-3 py-2 motion-safe:transition-shadow motion-safe:duration-700 motion-safe:ease-emerge ${
+                  p.ready ? 'border-illumination/60' : 'border-veil/30'
+                }`}
+              >
+                <div className="flex flex-col">
+                  <span className="font-display tracking-widest">
+                    {p.name}
+                    {isCurrent ? (
+                      <span className="ml-2 text-xs uppercase opacity-60">(you)</span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs opacity-70">{signLabel ?? 'Choosing sign…'}</span>
+                </div>
+                <ReadyIndicator
+                  ready={p.ready}
+                  canToggle={isCurrent && onToggleReady !== undefined}
+                  onToggle={() => onToggleReady?.(p.id)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+
+        {isHost ? (
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <span className="relative inline-block">
+              {/* Gathering aura — a sibling layer behind the button
+                  that carries the breathing Tiferet glow when every
+                  seat is ready. Painted on a separate element so the
+                  breath keyframe's opacity dip does not flicker the
+                  button's text. Reduced-motion users see the static
+                  halo (no animate-breath cycling). */}
+              {allReady ? (
+                <span
+                  aria-hidden="true"
+                  data-begin-aura
+                  className="pointer-events-none absolute inset-0 rounded shadow-glow-tiferet motion-safe:animate-breath"
+                />
+              ) : null}
+              <button
+                type="button"
+                onClick={canBegin ? onBegin : undefined}
+                disabled={!canBegin}
+                data-action="begin"
+                data-allready={allReady ? 'true' : 'false'}
+                className="relative rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                {beginning ? 'Beginning…' : 'Begin'}
+              </button>
+            </span>
+            <BeginHint players={players} />
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -161,17 +231,10 @@ export function Lobby({
  * amount of readying up will let Begin go through). We only render one
  * hint at a time to keep the call to action focused.
  */
-function BeginHint({
-  players,
-}: {
-  players: readonly LobbyPlayer[];
-}): JSX.Element | null {
+function BeginHint({ players }: { players: readonly LobbyPlayer[] }): JSX.Element | null {
   if (players.length < 2) {
     return (
-      <p
-        data-begin-hint="too-few-players"
-        className="text-xs uppercase tracking-widest opacity-60"
-      >
+      <p data-begin-hint="too-few-players" className="text-xs uppercase tracking-widest opacity-60">
         Need at least 2 players
       </p>
     );
@@ -267,9 +330,7 @@ function ReadyIndicator({
   return (
     <span
       data-readiness
-      className={`text-xs uppercase tracking-widest ${
-        ready ? 'text-illumination' : 'opacity-50'
-      }`}
+      className={`text-xs uppercase tracking-widest ${ready ? 'text-illumination' : 'opacity-50'}`}
     >
       {ready ? 'Ready' : 'Not ready'}
     </span>

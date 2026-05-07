@@ -7,13 +7,7 @@ import { Lobby, type LobbyPlayer } from '../Lobby';
 // gate (mirrors `validateAndBuildSetup`) doesn't silently disable
 // Begin in tests that don't care about signs. Tests that DO care
 // override `zodiacSign` explicitly.
-const DEFAULT_SIGNS: readonly ZodiacSignKey[] = [
-  'aries',
-  'leo',
-  'virgo',
-  'pisces',
-  'taurus',
-];
+const DEFAULT_SIGNS: readonly ZodiacSignKey[] = ['aries', 'leo', 'virgo', 'pisces', 'taurus'];
 
 function defaultSignForId(id: string): ZodiacSignKey {
   const match = /(\d+)/.exec(id);
@@ -54,18 +48,12 @@ describe('Lobby — rendering', () => {
         currentPlayerId="p2"
       />,
     );
-    expect(
-      container.querySelector('[data-lobby-row="p2"]')?.textContent,
-    ).toMatch(/\(you\)/i);
-    expect(
-      container.querySelector('[data-lobby-row="p1"]')?.textContent,
-    ).not.toMatch(/\(you\)/i);
+    expect(container.querySelector('[data-lobby-row="p2"]')?.textContent).toMatch(/\(you\)/i);
+    expect(container.querySelector('[data-lobby-row="p1"]')?.textContent).not.toMatch(/\(you\)/i);
   });
 
   it('shows "Choosing sign…" when zodiacSign is null', () => {
-    const { container } = render(
-      <Lobby players={[player('p1', { zodiacSign: null })]} />,
-    );
+    const { container } = render(<Lobby players={[player('p1', { zodiacSign: null })]} />);
     expect(container.textContent).toMatch(/Choosing sign/);
   });
 });
@@ -74,10 +62,7 @@ describe('Lobby — Begin button', () => {
   it('Begin not rendered for non-host', () => {
     render(
       <Lobby
-        players={[
-          player('p1', { ready: true }),
-          player('p2', { ready: true }),
-        ]}
+        players={[player('p1', { ready: true }), player('p2', { ready: true })]}
         isHost={false}
       />,
     );
@@ -89,10 +74,7 @@ describe('Lobby — Begin button', () => {
       <Lobby
         isHost
         onBegin={vi.fn()}
-        players={[
-          player('p1', { ready: true }),
-          player('p2', { ready: false }),
-        ]}
+        players={[player('p1', { ready: true }), player('p2', { ready: false })]}
       />,
     );
     const begin = screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement;
@@ -105,10 +87,7 @@ describe('Lobby — Begin button', () => {
       <Lobby
         isHost
         onBegin={onBegin}
-        players={[
-          player('p1', { ready: true }),
-          player('p2', { ready: true }),
-        ]}
+        players={[player('p1', { ready: true }), player('p2', { ready: true })]}
       />,
     );
     const begin = screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement;
@@ -120,28 +99,22 @@ describe('Lobby — Begin button', () => {
   it('Begin disabled below 2 players or above 4 players', () => {
     const onBegin = vi.fn();
     const { rerender } = render(
-      <Lobby
-        isHost
-        onBegin={onBegin}
-        players={[player('p1', { ready: true })]}
-      />,
+      <Lobby isHost onBegin={onBegin} players={[player('p1', { ready: true })]} />,
     );
-    expect(
-      (screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect((screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
 
     rerender(
       <Lobby
         isHost
         onBegin={onBegin}
-        players={Array.from({ length: 5 }, (_, i) =>
-          player(`p${i}`, { ready: true }),
-        )}
+        players={Array.from({ length: 5 }, (_, i) => player(`p${i}`, { ready: true }))}
       />,
     );
-    expect(
-      (screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect((screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 
   it('Begin disabled if any player has not chosen a sign', () => {
@@ -149,15 +122,12 @@ describe('Lobby — Begin button', () => {
       <Lobby
         isHost
         onBegin={vi.fn()}
-        players={[
-          player('p1', { ready: true, zodiacSign: null }),
-          player('p2', { ready: true }),
-        ]}
+        players={[player('p1', { ready: true, zodiacSign: null }), player('p2', { ready: true })]}
       />,
     );
-    expect(
-      (screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect((screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 
   it('Begin disabled if two players share the same zodiac sign', () => {
@@ -176,9 +146,9 @@ describe('Lobby — Begin button', () => {
         ]}
       />,
     );
-    expect(
-      (screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect((screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 });
 
@@ -215,9 +185,7 @@ describe('Lobby — Begin hint (host only)', () => {
         ]}
       />,
     );
-    const hint = container.querySelector(
-      '[data-begin-hint="duplicate-zodiac-signs"]',
-    );
+    const hint = container.querySelector('[data-begin-hint="duplicate-zodiac-signs"]');
     expect(hint).not.toBeNull();
   });
 
@@ -239,15 +207,9 @@ describe('Lobby — Begin hint (host only)', () => {
 
   it('shows too-few-players hint with a single player', () => {
     const { container } = render(
-      <Lobby
-        isHost
-        onBegin={vi.fn()}
-        players={[player('p1', { ready: true })]}
-      />,
+      <Lobby isHost onBegin={vi.fn()} players={[player('p1', { ready: true })]} />,
     );
-    expect(
-      container.querySelector('[data-begin-hint="too-few-players"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-begin-hint="too-few-players"]')).not.toBeNull();
   });
 
   it('renders no hint when everyone is ready and signed', () => {
@@ -255,10 +217,7 @@ describe('Lobby — Begin hint (host only)', () => {
       <Lobby
         isHost
         onBegin={vi.fn()}
-        players={[
-          player('p1', { ready: true }),
-          player('p2', { ready: true }),
-        ]}
+        players={[player('p1', { ready: true }), player('p2', { ready: true })]}
       />,
     );
     expect(container.querySelector('[data-begin-hint]')).toBeNull();
@@ -268,13 +227,89 @@ describe('Lobby — Begin hint (host only)', () => {
     const { container } = render(
       <Lobby
         isHost={false}
-        players={[
-          player('p1', { ready: true, zodiacSign: null }),
-          player('p2', { ready: true }),
-        ]}
+        players={[player('p1', { ready: true, zodiacSign: null }), player('p2', { ready: true })]}
       />,
     );
     expect(container.querySelector('[data-begin-hint]')).toBeNull();
+  });
+});
+
+describe('Lobby — atmosphere (#403)', () => {
+  it('renders the LobbyBackdrop Tree silhouette behind content', () => {
+    const { container } = render(<Lobby players={[player('p1'), player('p2')]} />);
+    const backdrop = container.querySelector('[data-atmosphere="lobby-backdrop"]');
+    expect(backdrop).not.toBeNull();
+    // 22 paths + 10 nodes — the canonical Tree-of-Life graph.
+    expect(backdrop?.querySelectorAll('line').length).toBe(22);
+    expect(backdrop?.querySelectorAll('[data-node]').length).toBe(10);
+    // Decorative — must not advertise itself to AT.
+    expect(backdrop?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('renders a ceremonial subtitle quote in display face italic', () => {
+    const { container } = render(<Lobby players={[player('p1'), player('p2')]} />);
+    const quote = container.querySelector('[data-lobby-quote]');
+    expect(quote).not.toBeNull();
+    expect(quote?.textContent).toMatch(/Two seekers/);
+    // Italic + display face — the ticket's "restrained" register.
+    expect(quote?.className).toMatch(/italic/);
+    expect(quote?.className).toMatch(/font-display/);
+  });
+
+  it('a ready+signed player row carries an inline glow tinted by their sign', () => {
+    const { container } = render(
+      <Lobby
+        players={[
+          player('p1', { ready: true, zodiacSign: 'aries' }),
+          player('p2', { ready: false, zodiacSign: 'leo' }),
+        ]}
+      />,
+    );
+    const row1 = container.querySelector('[data-lobby-row="p1"]') as HTMLElement;
+    expect(row1.getAttribute('data-glow-on')).toBe('true');
+    // Aries is fire/red — the inline shadow should reference the
+    // sign's RGB triplet stack from `attribution-colors.ts`.
+    expect(row1.style.boxShadow).toMatch(/rgba\(192, 57, 43,/);
+
+    const row2 = container.querySelector('[data-lobby-row="p2"]') as HTMLElement;
+    expect(row2.getAttribute('data-glow-on')).toBe('false');
+    expect(row2.style.boxShadow).toBe('');
+  });
+
+  it('a ready player without a sign does not glow (sign-required)', () => {
+    const { container } = render(
+      <Lobby
+        players={[player('p1', { ready: true, zodiacSign: null }), player('p2', { ready: true })]}
+      />,
+    );
+    const row = container.querySelector('[data-lobby-row="p1"]') as HTMLElement;
+    expect(row.getAttribute('data-glow-on')).toBe('false');
+  });
+
+  it('Begin gathers a Tiferet-gold aura sibling when every seat is ready', () => {
+    const { container, rerender } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[player('p1', { ready: true }), player('p2', { ready: false })]}
+      />,
+    );
+    expect(container.querySelector('[data-begin-aura]')).toBeNull();
+
+    rerender(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={[player('p1', { ready: true }), player('p2', { ready: true })]}
+      />,
+    );
+    const aura = container.querySelector('[data-begin-aura]');
+    expect(aura).not.toBeNull();
+    // Static glow class — visible to reduced-motion users; the
+    // breath cycle adds the "gathering" feel under motion-safe.
+    expect(aura?.className).toMatch(/shadow-glow-tiferet/);
+    expect(aura?.className).toMatch(/motion-safe:animate-breath/);
+    expect(aura?.getAttribute('aria-hidden')).toBe('true');
   });
 });
 
