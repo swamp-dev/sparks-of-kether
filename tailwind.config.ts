@@ -135,13 +135,12 @@ const config: Config = {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
         },
-        // #317: dormant Shell sigils rotate barely-perceptibly so
-        // the seal feels asleep rather than dead. Linear, full
-        // 360° turn over ~30 s. Authored via the `animate-shell-dormant-spin`
-        // utility below; reduced-motion users see the static
-        // sigil because the utility is paired with `motion-safe:`
-        // at the call site.
-        'shell-dormant-spin': {
+        // Generic 0→360° rotation keyframe. Cadence is set on the
+        // consuming animation utility, not the keyframe — currently
+        // shared by `shell-dormant-spin` (Shell sigils at rest) and
+        // `constellation-rotate` (per-sign constellation behind the
+        // sign-picker stage).
+        'rotate-360': {
           '0%': { transform: 'rotate(0deg)' },
           '100%': { transform: 'rotate(360deg)' },
         },
@@ -183,18 +182,19 @@ const config: Config = {
         // #317: Shell-state animations. All authored under
         // `motion-safe:` at the call site so reduced-motion users
         // see the static seals.
-        'shell-dormant-spin': 'shell-dormant-spin 30s linear infinite',
+        // #317: dormant Shell sigils rotate barely-perceptibly so the
+        // seal feels asleep rather than dead — linear, full 360° over
+        // ~30 s, paired with `motion-safe:` at the call site.
+        'shell-dormant-spin': 'rotate-360 30s linear infinite',
         'shell-active-wobble': 'shell-active-wobble 8000ms cubic-bezier(0.65, 0, 0.35, 1) infinite',
         'shell-awaken': 'shell-awaken 500ms cubic-bezier(0.22, 1, 0.36, 1) both',
         'shell-banish': 'shell-banish 600ms cubic-bezier(0.65, 0, 0.35, 1) both',
         // #406: slow rotation for the per-sign constellation behind
-        // the focused sign-picker stage. Reuses the `shell-dormant-spin`
-        // 0→360 keyframe; the constellation just spins at half the
-        // shell-dormant cadence (60s vs 30s) so it reads as starlight
-        // drift rather than wobble. Authored under `motion-safe:` at
-        // the call site so reduced-motion users see the static
-        // constellation.
-        'constellation-rotate': 'shell-dormant-spin 60s linear infinite',
+        // the focused sign-picker stage. Half the shell-dormant
+        // cadence (60s vs 30s) so it reads as starlight drift rather
+        // than wobble. Authored under `motion-safe:` at the call site
+        // so reduced-motion users see the static constellation.
+        'constellation-rotate': 'rotate-360 60s linear infinite',
       },
       // #311: reserved easings. `emerge` is for things appearing on
       // screen (mounts, modals opening, halos lighting up); `flow` is
