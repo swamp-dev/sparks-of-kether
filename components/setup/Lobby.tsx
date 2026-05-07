@@ -26,6 +26,8 @@ import { attributionColor } from '@/components/cards/attribution-colors';
  * but retains the static atmosphere layer.
  */
 
+const LOBBY_QUOTE = 'Two seekers. One Tree. The light ascends together.';
+
 export interface LobbyPlayer {
   readonly id: string;
   readonly name: string;
@@ -128,7 +130,7 @@ export function Lobby({
             data-lobby-quote
             className="mx-auto mt-4 max-w-xs font-display text-base italic leading-relaxed text-veil/55"
           >
-            Two seekers. One Tree. The light ascends together.
+            {LOBBY_QUOTE}
           </p>
         </header>
 
