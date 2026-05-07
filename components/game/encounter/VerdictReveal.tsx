@@ -66,7 +66,7 @@ export function VerdictReveal({
         <span data-avatar-name className="not-italic font-semibold">
           {avatarName}:
         </span>{' '}
-        <RevealLine text={verdictLine} />
+        <RevealLine text={verdictLine} reducedMotionOverride={reducedMotion} />
       </>
     ) : (
       'The gate considers you.'
