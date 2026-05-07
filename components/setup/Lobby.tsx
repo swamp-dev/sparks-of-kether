@@ -1,9 +1,8 @@
 'use client';
 import type { CSSProperties } from 'react';
-import { zodiacSignByKey } from '@/data';
+import { attributionColor, zodiacSignByKey } from '@/data';
 import type { ZodiacSignKey } from '@/data';
 import { LobbyBackdrop } from '@/components/atmosphere/LobbyBackdrop';
-import { attributionColor } from '@/components/cards/attribution-colors';
 
 /**
  * Lobby — between-setup-and-play screen. Shows each player's name +

@@ -1,4 +1,4 @@
-import type { Attribution, Element, Planet, ZodiacSignKey } from '@/data';
+import type { Attribution, Element, Planet, ZodiacSignKey } from './types';
 
 /**
  * Map each astrological attribution to a single accent color used for

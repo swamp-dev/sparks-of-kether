@@ -45,6 +45,7 @@ export { sefirahBlessings, pickBlessing } from './sefirah-blessings';
 export type { SefirahBlessingMatrix } from './sefirah-blessings';
 export { sefirahMarkLetter } from './sefirah-glyphs';
 export { TREE_VIEW_W, TREE_VIEW_H, treeNodeLayout, type NodeLayout } from './tree-layout';
+export { attributionColor, attributionLabel } from './attribution-colors';
 export * from './types';
 
 // ──────────────── Indexes (built once) ────────────────

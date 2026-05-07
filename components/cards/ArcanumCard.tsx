@@ -1,9 +1,8 @@
 import { useId } from 'react';
-import { arcanumByNumber, letterByKey } from '@/data';
+import { arcanumByNumber, attributionColor, attributionLabel, letterByKey } from '@/data';
 import type { Arcanum } from '@/data';
 import { GLYPHS } from './glyphs';
 import { ARCANUM_GLYPHS } from './glyph-mapping';
-import { attributionColor, attributionLabel } from './attribution-colors';
 import { GROUND, VEIL } from '@/data/colors';
 
 /**
