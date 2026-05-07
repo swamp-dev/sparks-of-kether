@@ -245,7 +245,13 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
         destination: 'yesod',
         arrivalPath: 30, // NOT a shortcut (Hod ↔ Yesod)
       });
-      const rng = seededRng(7);
+      // Seed 13: after EncounterScreen consumes 2 `rng.int(0, 2)` draws
+      // (one each for `pickPlayerResponse` #277 and `pickFraming` #478)
+      // before the Roll click, `rollCheck` sees d20=2 — total 1+2=3 < 12,
+      // guaranteed fail. Was seed 7 pre-#478 (which produced d20=1 with
+      // a single prior int draw); update both the seed and any future
+      // pre-d20 rng-draw additions in the same place.
+      const rng = seededRng(13);
       render(<PlayScreen initialState={initial} rng={rng} />);
 
       act(() => {
@@ -258,13 +264,14 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
       if (!acceptBtn) {
         throw new Error(
-          'test setup (seed 7, stat=1, DC 12 non-shortcut): the ' +
+          'test setup (seed 13, stat=1, DC 12 non-shortcut): the ' +
             'first d20 the seeded rng produces was high enough to pass ' +
-            '— total ≥ 12. Seed 7 was chosen because it produces d20=1 ' +
-            'here so total = 1 + 1 = 2 < 12. ChallengeModal calls ' +
-            'rng.d20() once on the Roll click; if the seed changes (or ' +
-            'assist-stats / shells introduce earlier rng draws), pick ' +
-            'a seed whose first d20 face is < 11.',
+            '— total ≥ 12. Seed 13 was chosen because, after the two ' +
+            'pre-d20 `rng.int(0, 2)` draws EncounterScreen consumes ' +
+            '(pickPlayerResponse #277 + pickFraming #478), the d20 face ' +
+            'is 2 — total 1 + 2 = 3 < 12. If new pre-d20 rng draws are ' +
+            'added (more matrices, shells, assist-stats), pick a fresh ' +
+            'seed whose post-draw d20 face is ≤ 10.',
         );
       }
       act(() => {
@@ -290,10 +297,18 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
         destination: 'yesod',
         arrivalPath: 30, // NOT a shortcut
       });
-      // Seed 7 produces d20=1 — guarantees fail vs DC 12 (stat 1 + 1 < 12).
-      // With seed 1 (d20=13) the non-shortcut path passes (1+13=14 vs DC 12)
-      // even though the same roll fails on the shortcut path (vs DC 15).
-      const rng = seededRng(7);
+      // Seed 13 produces d20=2 (after the 2 pre-Roll int draws — see
+      // sibling test above) — guarantees fail vs DC 12 (stat 1 + 2 = 3 < 12).
+      // With seed 1 (post-draw d20 high) the non-shortcut path passes
+      // (1+13=14 vs DC 12) even though the same roll fails on the
+      // shortcut path (vs DC 15).
+      // Seed 13: after EncounterScreen consumes 2 `rng.int(0, 2)` draws
+      // (one each for `pickPlayerResponse` #277 and `pickFraming` #478)
+      // before the Roll click, `rollCheck` sees d20=2 — total 1+2=3 < 12,
+      // guaranteed fail. Was seed 7 pre-#478 (which produced d20=1 with
+      // a single prior int draw); update both the seed and any future
+      // pre-d20 rng-draw additions in the same place.
+      const rng = seededRng(13);
       render(<PlayScreen initialState={initial} rng={rng} />);
 
       const sepReadout = (): Element | null =>
@@ -312,13 +327,14 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       );
       if (!acceptBtn) {
         throw new Error(
-          'test setup (seed 7, stat=1, DC 12 non-shortcut): the ' +
+          'test setup (seed 13, stat=1, DC 12 non-shortcut): the ' +
             'first d20 the seeded rng produces was high enough to pass ' +
-            '— total ≥ 12. Seed 7 was chosen because it produces d20=1 ' +
-            'here so total = 1 + 1 = 2 < 12. ChallengeModal calls ' +
-            'rng.d20() once on the Roll click; if the seed changes (or ' +
-            'assist-stats / shells introduce earlier rng draws), pick ' +
-            'a seed whose first d20 face is < 11.',
+            '— total ≥ 12. Seed 13 was chosen because, after the two ' +
+            'pre-d20 `rng.int(0, 2)` draws EncounterScreen consumes ' +
+            '(pickPlayerResponse #277 + pickFraming #478), the d20 face ' +
+            'is 2 — total 1 + 2 = 3 < 12. If new pre-d20 rng draws are ' +
+            'added (more matrices, shells, assist-stats), pick a fresh ' +
+            'seed whose post-draw d20 face is ≤ 10.',
         );
       }
 

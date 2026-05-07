@@ -9,7 +9,10 @@ import {
   pickPlayerResponse,
   pickVerdict,
 } from '@/data/sefirah-verdicts';
-import { sefirahFramingPlaceholder } from '@/data/sefirah-framing';
+import {
+  pickFraming,
+  sefirahFramingPlaceholder,
+} from '@/data/sefirah-framing';
 import { sefirahTwist } from '@/data/sefirah-twists';
 import {
   CARD_BURN_BONUS,
@@ -247,6 +250,25 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const [playerResponse] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
     return pickPlayerResponse(avatarKey, context.playerSign, rng);
+  });
+  // Trial-framing line for the prep stage (#478). Picked ONCE per
+  // encounter via the same lazy-initializer pattern as
+  // `playerResponse` so the line stays stable across prep ↔ resolve ↔
+  // react re-renders, including a `react-retry` loopback. Calls into
+  // the same seeded `rng` so deterministic seeds replay deterministic
+  // copy. Sign-less callers (demo / tests) hit the placeholder
+  // fallback below — see `framingLine` derivation.
+  //
+  // ⚠️ **Pre-d20 rng-draw ordering matters for seeded tests.** The
+  // initializer below consumes one `rng.int(0, 2)` after
+  // `playerResponse` has consumed one — both fire before the d20
+  // inside `rollCheck`. `PlayScreen.shortcut.test.tsx` calibrates
+  // its seeds against this ordering. If you add another pre-Roll
+  // rng draw between these two `useState` calls (or before either),
+  // rebase the seeds in that file too.
+  const [pickedFraming] = useState<string | undefined>(() => {
+    if (!avatarHasCopy || context.playerSign === undefined) return undefined;
+    return pickFraming(avatarKey, context.playerSign, rng);
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
 
@@ -608,13 +630,15 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       ? avatarNames[avatarKey].greek
       : undefined;
 
-  // Trial-framing copy for the re-skinned prep stage. Placeholder
-  // until #478 (B1) ships the sign-aware multi-variant matrix; for
-  // now one deterministic line per Sefirah from
-  // `data/sefirah-framing.ts`. Kether/Malkuth are already ruled out
-  // by the `challenge.kind === 'check'` guard at mount time, so the
+  // Trial-framing line for the prep stage. Sign-aware multi-variant
+  // copy from `pickFraming` when the encounter context carries a
+  // player sign (#478); falls back to the deterministic per-avatar
+  // placeholder from `sefirahFramingPlaceholder` when not (demo /
+  // tests). Kether/Malkuth are already ruled out by the
+  // `challenge.kind === 'check'` guard at mount time, so the
   // narrowed `avatarKey` lookup is total.
-  const framingLine = sefirahFramingPlaceholder[avatarKey];
+  const framingLine =
+    pickedFraming ?? sefirahFramingPlaceholder[avatarKey];
 
   // "Twist" banner — only Sefirot with shipped per-Sefirah mechanics
   // (#353 Hod Word-Match, #354 Yesod Dream-Peek) get a banner today.
