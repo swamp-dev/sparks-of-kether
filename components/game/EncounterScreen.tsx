@@ -34,6 +34,7 @@ import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { D20Button } from './encounter/D20Button';
+import { RevealLine } from './encounter/RevealLine';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
 import { StatReadout } from './encounter/StatReadout';
 import { VerdictReveal } from './encounter/VerdictReveal';
@@ -271,6 +272,13 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     return pickFraming(avatarKey, context.playerSign, rng);
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
+  // #482 framing-complete signal. Flips to `true` when `RevealLine`
+  // finishes the staggered reveal of the trial-framing line. Surfaced
+  // via the `data-framing-complete` attribute on the prep stage so
+  // future polish can gate the d20 button on it (the AC's example
+  // use case) without that gate landing in this PR — see PR body for
+  // the deferral rationale and test-impact survey.
+  const [framingComplete, setFramingComplete] = useState(false);
 
   // Reset staged counters when the engine sub-phase loops back to
   // 'prep' (a `react-retry`). The engine's `pendingModifiers` carries
@@ -308,6 +316,11 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // reroll the player's "voice" mid-encounter, which reads
       // wrong. (#277)
       setVerdictLine(undefined);
+      // Reset the framing-complete signal so the retry round shows
+      // the avatar speak again from the top. The framing line itself
+      // is stable across retries (#478 picks once per encounter via
+      // `useState` lazy init), but the reveal animation re-runs.
+      setFramingComplete(false);
     }
   }, [turn.challengeSubPhase]);
 
@@ -780,6 +793,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           */}
           <div
             data-encounter-prep-stage
+            data-framing-complete={framingComplete ? 'true' : 'false'}
             className="mt-6 flex flex-col items-center gap-4"
           >
             <AvatarPortrait
@@ -797,7 +811,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
               data-encounter-framing
               className="max-w-2xl text-balance text-center font-display text-lg italic leading-relaxed opacity-90"
             >
-              {framingLine}
+              <RevealLine
+                text={framingLine}
+                onComplete={() => setFramingComplete(true)}
+              />
             </p>
             {twistLine !== undefined ? (
               <p

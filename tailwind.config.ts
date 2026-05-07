@@ -186,6 +186,24 @@ const config: Config = {
             transform: 'translateY(0) scale(1)',
           },
         },
+        // #482: word-by-word reveal for the avatar's framing line and
+        // verdict line in the EncounterScreen. Each word fades in on a
+        // shared keyframe with a staggered `animation-delay` set
+        // inline by `RevealLine`. Pairs with `forwards` so words stay
+        // visible after the keyframe completes.
+        //
+        // **Opacity-only — no transform.** An earlier revision used
+        // `translateY` for a subtle slide-up, but that required each
+        // word to be `inline-block`, which caused a layout drift
+        // between local and hosted Chromium on the encounter mobile
+        // baseline (29px page-height delta, PR #506 e2e failure).
+        // Inline spans render text identically to a plain text node,
+        // and `transform` doesn't apply to inline elements anyway —
+        // opacity is the universally-supported channel.
+        'word-reveal': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
         'hand-fade-in': 'hand-fade-in 180ms ease-out',
@@ -225,6 +243,12 @@ const config: Config = {
         // Applied under `motion-safe:` at the AvatarPortrait call
         // site (only the `stage` size variant gets it).
         'avatar-emerge': 'avatar-emerge 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
+        // #482: each word in the avatar's framing / verdict line
+        // fades in over 320ms with `ease-emerge` so the rhythm reads
+        // like speech, not subtitles. Stagger between words is set
+        // inline by `RevealLine` (default 40ms / word). `forwards`
+        // pins the final opacity so words stay visible.
+        'word-reveal': 'word-reveal 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
       // #311: reserved easings. `emerge` is for things appearing on
       // screen (mounts, modals opening, halos lighting up); `flow` is

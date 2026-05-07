@@ -1,4 +1,5 @@
 import type { CheckOutcome } from '@/engine/checks';
+import { RevealLine } from './RevealLine';
 
 /**
  * Staged verdict reveal for the EncounterScreen (#315). Branches on
@@ -53,13 +54,19 @@ export function VerdictReveal({
   // the encounter context didn't carry a sign (demo / test path).
   // Italic style is the existing #277 contract; we preserve it so
   // tests targeting `[data-avatar-verdict]` still match.
+  // Verdict body: avatar name (rendered immediately, not staggered)
+  // followed by the verdict line wrapped in `<RevealLine>` so the
+  // line reads word-by-word like speech (#482). The avatar name is
+  // outside the staggered flow because the speaker should be named
+  // immediately — the avatar isn't speaking themselves; the parent
+  // is. Reduced-motion users see the same DOM with no stagger.
   const verdictBody =
     avatarName !== undefined && verdictLine !== undefined ? (
       <>
         <span data-avatar-name className="not-italic font-semibold">
           {avatarName}:
         </span>{' '}
-        {verdictLine}
+        <RevealLine text={verdictLine} />
       </>
     ) : (
       'The Sefirah responds.'

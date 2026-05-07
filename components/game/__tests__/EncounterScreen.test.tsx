@@ -1675,4 +1675,44 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
     expect(portraits.length).toBe(1);
     expect(portraits[0]?.getAttribute('data-avatar-size')).toBe('stage');
   });
+
+  // #482: framing-complete signal. The prep stage exposes a
+  // `data-framing-complete` attribute that flips from "false" to
+  // "true" when `RevealLine` finishes the staggered reveal. Future
+  // polish can gate the d20 button on it; for now the wire is just
+  // observable so the contract is end-to-end testable.
+  it('exposes data-framing-complete=false on initial prep mount', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const stage = document.querySelector('[data-encounter-prep-stage]');
+    expect(stage?.getAttribute('data-framing-complete')).toBe('false');
+  });
+
+  it('flips data-framing-complete to true after the RevealLine timer fires', () => {
+    vi.useFakeTimers();
+    try {
+      renderEncounter({
+        mode: 'hot-seat',
+        initialState: makeChallengeState(),
+      });
+      const stage = document.querySelector('[data-encounter-prep-stage]');
+      expect(stage?.getAttribute('data-framing-complete')).toBe('false');
+      // The placeholder framing line for Gevurah ("Ares names the
+      // cost. Pay in strength, or be sent back the way you came.")
+      // is 13 words. With default 40ms stagger, the last word starts
+      // at 12 × 40 = 480ms; with 320ms keyframe duration, completion
+      // fires at 800ms. Advance well past that.
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      const stageAfter = document.querySelector(
+        '[data-encounter-prep-stage]',
+      );
+      expect(stageAfter?.getAttribute('data-framing-complete')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
