@@ -1,7 +1,7 @@
 import { isPathShortcut, sefirahByKey } from '@/data';
 import type { Pillar, SefirahKey } from '@/data';
 import { applyMove } from '@/engine/movement';
-import { maybeTriggerKetherRitual } from '@/engine/kether';
+import { isKetherHeld, maybeTriggerKetherRitual } from '@/engine/kether';
 import {
   acceptSetback,
   resolveChallenge,
@@ -661,6 +661,50 @@ export function turnReducer(
         return { ok: true, value: { next: { state: newState } } };
       }
       const movedPlayer = newState.players.find((p) => p.id === player.id);
+      // #447: a Kether arrival that didn't complete convergence puts
+      // the moving seat into the pre-ritual hold (`isKetherHeld`).
+      // Their hand is frozen; no challenge / draw applies; and the
+      // hot-seat auto-advance hook in PlayScreen only fires on
+      // `phase: 'end'`, so the cadence-driven endTurn never runs.
+      // Without this branch the active seat sticks on the held
+      // player and the held screen renders with no path forward.
+      // Route the arrival through `endTurnReducer` immediately so
+      // the next still-climbing player gets their turn. The reducer
+      // skips held seats internally (#335), so wrap-around on
+      // 3+ player tables is handled.
+      if (movedPlayer !== undefined && isKetherHeld(newState, movedPlayer.id)) {
+        const turned = endTurnReducer(newState);
+        // Defensive: `endTurnReducer` returns the input state
+        // unchanged when `state.pendingDiscard.count > 0`. That can't
+        // happen at `phase: 'move'` today — `meditate` is the only
+        // writer of `pendingDiscard` and it transitions to `phase: 'end'`
+        // — but if a future ticket adds a `pendingDiscard` path at
+        // `phase: 'move'`, returning the unchanged state here would
+        // re-introduce the soft-lock this fix exists to prevent. Throw
+        // loudly so the corruption surfaces at the offending ticket
+        // instead of becoming an invisible regression.
+        if (turned === newState) {
+          throw new Error(
+            '#447: endTurnReducer refused to advance during Kether auto-rotate (pendingDiscard at phase: move?)',
+          );
+        }
+        // Phase reset to 'move' for the next still-climbing player.
+        // `challengeSubPhase` and `lastOutcome` are already undefined
+        // at `phase: 'move'` entry (the move handler's phase guard
+        // ensures that), so the explicit clears are defensive — they
+        // guarantee the next seat starts clean even if a future
+        // change leaves stale challenge state on the input. `encounter`
+        // is cleared for the same reason (matches the existing
+        // `end-turn` case at line 1395).
+        const stateAfter: GameState = {
+          ...turned,
+          phase: 'move',
+          challengeSubPhase: undefined,
+          lastOutcome: undefined,
+          encounter: undefined,
+        };
+        return { ok: true, value: { next: { state: stateAfter } } };
+      }
       // Decide the next phase: if the arrival is an uncleared
       // standard-check Sefirah, enter `challenge`; otherwise jump
       // straight to `draw` (Malkuth's no-check, Kether's collective,

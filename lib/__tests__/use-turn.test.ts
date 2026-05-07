@@ -9,6 +9,7 @@ import type {
   PlayerState,
   Result,
 } from '@/engine/types';
+import { isKetherHeld } from '@/engine/kether';
 import type { KetherRejection } from '@/engine/kether';
 import type { PrepModifier } from '../turn-machine';
 import type { ClientAction } from '../room-actions';
@@ -84,6 +85,112 @@ describe('useTurn — phase machine', () => {
     expect(result.current.isActive('p2')).toBe(true);
     // The active id now lives in GameState — confirm it's not just
     // local hook state. Server snapshots can be diff'd against this.
+    expect(result.current.state.activePlayerId).toBe('p2');
+  });
+
+  it('auto-rotates when a player arrives at Kether without triggering the ritual (#447)', () => {
+    // Hot-seat soft-lock regression: when the active player's move
+    // lands them at Kether but at least one other player is still
+    // climbing, the just-arrived seat is `isKetherHeld === true` and
+    // the held screen renders. Without this auto-rotate, the seat
+    // stays on the held player — `phase: 'draw'` is reached, the
+    // hot-seat auto-advance hook only fires on `phase === 'end'`,
+    // and there's no UI affordance on the held screen to call
+    // endTurn. The result is a soft-lock for both players.
+    //
+    // The fix in `lib/turn-machine.ts`'s move handler routes the
+    // arrival through `endTurnReducer` immediately, which skips the
+    // now-held seat (per `engine/turn.ts` #335) and lands on the
+    // next still-climbing player in `phase: 'move'`.
+    const initialState = makeState(
+      {},
+      {
+        players: [
+          // p1 is adjacent to Kether on the Mercy pillar (Chokmah)
+          // and holds Aleph (arcanum 0 → path 11: Kether-Chokmah),
+          // so `move(11)` arrives at Kether.
+          makePlayer({ id: 'p1', name: 'Andy', position: 'chokmah', hand: [0] }),
+          // p2 is still climbing — arrives nowhere this turn.
+          makePlayer({ id: 'p2', name: 'Bea', position: 'malkuth', hand: [4] }),
+        ],
+        deck: [10, 11, 12, 13, 14, 15, 16, 17],
+      },
+    );
+    const { result } = renderHook(() =>
+      useTurn({ initialState, rng: seededRng(1) }),
+    );
+    expect(result.current.activePlayerIndex).toBe(0);
+    expect(result.current.phase).toBe('move');
+    let outcome: ReturnType<typeof result.current.move> | undefined;
+    act(() => {
+      outcome = result.current.move(11);
+    });
+    expect(outcome?.ok).toBe(true);
+    // p1 arrived at Kether AND is now in the held state — the core
+    // invariant the fix protects. Without this direct assertion the
+    // rotation check below could pass even if a future change cleared
+    // `position` or `arrivedAtKetherAt` and so accidentally un-held p1.
+    expect(result.current.state.players[0]?.position).toBe('kether');
+    expect(isKetherHeld(result.current.state, 'p1')).toBe(true);
+    // The seat rotated to p2 — the still-climbing player gets their
+    // turn, not the held p1. Phase is back to 'move' so p2 starts
+    // their turn cleanly. Encounter envelope is cleared (no leakage
+    // from the prior turn).
+    expect(result.current.activePlayerIndex).toBe(1);
+    expect(result.current.state.activePlayerId).toBe('p2');
+    expect(result.current.phase).toBe('move');
+    expect(result.current.state.encounter).toBeUndefined();
+    // The ritual didn't trigger — only one player at Kether so far.
+    // The convergence trip-wire (`maybeTriggerKetherRitual`) requires
+    // every player at Kether before flipping `phase: 'kether'`.
+    expect(result.current.state.phase).toBe('move');
+  });
+
+  it('triggers the Kether ritual (no auto-rotate) when the LAST player arrives (#447)', () => {
+    // Boundary case for the auto-rotate fix: when the moving player's
+    // arrival completes the convergence (every player at Kether),
+    // `maybeTriggerKetherRitual` flips `phase: 'kether'` and the move
+    // handler short-circuits BEFORE the auto-rotate branch. The
+    // ritual takes over; no seat rotation, no held-state render.
+    const initialState = makeState(
+      {},
+      {
+        players: [
+          // p1 already at Kether (held — first to arrive in some
+          // earlier turn).
+          makePlayer({
+            id: 'p1',
+            name: 'Andy',
+            position: 'kether',
+            hand: [],
+            arrivedAtKetherAt: 1,
+          }),
+          // p2 is one step from Kether on the Severity pillar
+          // (Binah) and holds Beth (arcanum 1 → path 12:
+          // Kether-Binah). Their move(12) is the last arrival.
+          makePlayer({ id: 'p2', name: 'Bea', position: 'binah', hand: [1] }),
+        ],
+        // p2 is the active seat (since p1 is held and got skipped
+        // during a prior rotation).
+        activePlayerId: 'p2',
+        deck: [10, 11, 12, 13, 14, 15, 16, 17],
+      },
+    );
+    const { result } = renderHook(() =>
+      useTurn({ initialState, rng: seededRng(1) }),
+    );
+    expect(result.current.activePlayerIndex).toBe(1);
+    let outcome: ReturnType<typeof result.current.move> | undefined;
+    act(() => {
+      outcome = result.current.move(12);
+    });
+    expect(outcome?.ok).toBe(true);
+    // p2 arrived at Kether and the ritual fired: phase flipped to
+    // 'kether' and the seat did NOT rotate (p2 is still active for
+    // the witness round-robin's first slot — the ritual's own
+    // pointer logic owns advancement from here).
+    expect(result.current.state.players[1]?.position).toBe('kether');
+    expect(result.current.state.phase).toBe('kether');
     expect(result.current.state.activePlayerId).toBe('p2');
   });
 });
