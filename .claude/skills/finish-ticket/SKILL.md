@@ -397,9 +397,13 @@ skill — the wait for hosted CI is asynchronous and operator-driven.
   (`journal/<NN>-<slug>.md`) grows, never shrinks. The legacy
   `Journal.md` at the repo root is frozen — never write to it.
 - The five-step per-PR checklist runs every time. Step 5 (re-review)
-  uses the heuristic in step 8a above — `/ship-ticket` will refuse to
-  merge a PR whose per-ticket Journal file does not show the checklist
-  completing.
+  uses the heuristic in step 8a above. The merge gate is the
+  mechanical stamp file at `.claude/state/checklist-<sanitized-branch>.json`
+  written by `scripts/checklist-stamp.mjs` in step 8.5 — `/ship-ticket`
+  refuses to merge unless the stamp exists, its `head_sha` matches the
+  live PR HEAD, and `verdict` is `ship`. The per-ticket Journal file
+  (`journal/<NN>-<slug>.md`) remains the human-readable audit record
+  but is no longer the gate.
 - Tech-debt follow-up issues (step 8b) are filed automatically with
   `tech-debt` + `priority:low` labels. The `priority:low` label is
   the backlog signal — it keeps these out of the active queue without
