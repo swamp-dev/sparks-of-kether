@@ -1,29 +1,32 @@
+import { useState } from 'react';
 import type { SefirahKey } from '@/data';
 import { sefirahMarkLetter } from '@/data';
+import { avatarNames, type EncounterAvatarKey } from '@/data/avatar-names';
 import { SEFIRAH_FRAME_TOKENS } from './sefirah-frame-tokens';
 
 /**
- * Disco-Elysium-style circular avatar portrait for the EncounterScreen
- * (#315). The portrait sits top-left of the modal and shows the voice
- * speaking: in prep, the player-response line; in react, the verdict.
+ * Disco-Elysium-style avatar portrait for the EncounterScreen.
  *
- * **Out of scope for this ticket:** the illustrated portrait artwork
- * itself — Epic #125 sub-ticket 8 owns that. For now we render a
- * placeholder: the Sefirah's Hebrew letter (from
- * `data/sefirah-glyphs.ts`) on a textured circular plate at the
- * avatar's colour. When illustrations land, drop the placeholder and
- * keep the surrounding ring + caption structure.
+ * Two sizes:
+ *   - `small` (default): 64×64 circular plate. Used in the resolve /
+ *     react sub-states and in pre-#479 layouts. Renders the Sefirah's
+ *     Hebrew letter on a tinted disc.
+ *   - `stage`: ~240×360 oval crop. Used by the re-skinned prep
+ *     sub-state (#479) where the avatar is the page, not a side
+ *     icon. Renders the commissioned portrait image from
+ *     `public/portraits/<character>/large.webp` with a Sefirah-tinted
+ *     ring + breath halo.
  *
- * The metallic ring is tinted with the Sefirah's colour via the
- * tokens in `sefirah-frame-tokens.ts` (per-Sefirah avatarRing class).
- * The plate uses a low-alpha Sefirah-coloured background so the
- * letter reads against it without painting the whole ring.
+ * The portrait images are 16:9 horizontal source — the figures sit
+ * inside the canvas with varying focal positions. The oval crop uses
+ * `object-position: center 25%` as a default that frames most figures
+ * head-and-shoulders; per-Sefirah focal overrides will land in #483
+ * (idle motion polish) when each character's framing is visually
+ * tuned.
  *
- * `caption` is the avatar's currently-spoken line — the prep
- * player-response, or the post-roll verdict. When absent, the
- * portrait renders alone (the parent owns whether to surface a line
- * at all). The avatar's Greek name (e.g. "Hermes") is rendered as a
- * small label under the portrait when supplied.
+ * If the portrait asset fails to load (404 / network error), the
+ * `<Image>` `onError` flips us back to the Hebrew-letter placeholder
+ * so the screen never renders empty.
  */
 
 interface AvatarPortraitProps {
@@ -39,7 +42,20 @@ interface AvatarPortraitProps {
    * via `[data-avatar-state]`).
    */
   readonly state: 'prep' | 'pass' | 'fail';
+  /**
+   * Render scale. `small` is the original 64×64 disc used by resolve /
+   * react and by surfaces that haven't been re-skinned. `stage` is the
+   * larger oval used by the re-skinned prep where the avatar is the
+   * visual focus.
+   */
+  readonly size?: 'small' | 'stage';
   readonly className?: string;
+}
+
+/** Sefirot that have a commissioned portrait shipped under `public/portraits/<character>/`. */
+function avatarCharacterFor(sefirah: SefirahKey): string | undefined {
+  if (sefirah === 'kether' || sefirah === 'malkuth') return undefined;
+  return avatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
 }
 
 export function AvatarPortrait({
@@ -47,31 +63,65 @@ export function AvatarPortrait({
   avatarName,
   caption,
   state,
+  size = 'small',
   className,
 }: AvatarPortraitProps): JSX.Element {
   const tokens = SEFIRAH_FRAME_TOKENS[sefirah];
   const letter = sefirahMarkLetter[sefirah];
+  const character = avatarCharacterFor(sefirah);
+  const [imageFailed, setImageFailed] = useState(false);
+  const showPortraitImage =
+    size === 'stage' && character !== undefined && !imageFailed;
+
+  // Frame size: small disc vs stage oval. The stage oval is taller
+  // than wide so half-body framing reads correctly; the small variant
+  // is a perfect circle as before.
+  const frameClass =
+    size === 'stage'
+      ? `relative h-60 w-44 overflow-hidden rounded-[40%] border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`
+      : `relative flex h-16 w-16 items-center justify-center rounded-full border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`;
+
   return (
     <div
       data-avatar-portrait
       data-sefirah={sefirah}
       data-avatar-state={state}
+      data-avatar-size={size}
       className={`flex flex-col items-center gap-2 ${className ?? ''}`}
     >
-      <div
-        // The plate is the inner disc; the ring is the metallic outer
-        // border tinted with the Sefirah colour. `motion-safe:` gates
-        // the slow breath halo so reduced-motion users see a static
-        // tinted disc, not an oscillating one.
-        className={`relative flex h-16 w-16 items-center justify-center rounded-full border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`}
-      >
-        <span
-          aria-hidden
-          className="font-hebrew text-3xl text-veil"
-          data-avatar-placeholder-letter
-        >
-          {letter}
-        </span>
+      <div className={frameClass}>
+        {showPortraitImage && character !== undefined ? (
+          // Plain <img> instead of next/image: next/image is not used
+          // anywhere else in the repo, the asset is static under
+          // /public (resolved at request time without runtime resize),
+          // and avoiding next/image keeps the jsdom-based test setup
+          // simple. Reassess if/when other components adopt next/image.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/portraits/${character}/large.webp`}
+            alt={avatarName ?? character}
+            data-avatar-portrait-image
+            // 16:9 source with the figure roughly centred horizontally
+            // and slightly above the vertical centre. `center 25%`
+            // frames head + shoulders for most characters; will be
+            // tuned per-character in #483 if any look wrong in situ.
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: 'center 25%' }}
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <span
+            aria-hidden
+            className={
+              size === 'stage'
+                ? 'absolute inset-0 flex items-center justify-center font-hebrew text-7xl text-veil'
+                : 'font-hebrew text-3xl text-veil'
+            }
+            data-avatar-placeholder-letter
+          >
+            {letter}
+          </span>
+        )}
       </div>
       {avatarName !== undefined ? (
         <span

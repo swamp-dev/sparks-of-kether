@@ -1373,18 +1373,22 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
     expect(document.body.textContent).toContain(`DC ${dc}`);
   });
 
-  it('renders the avatar portrait in prep with the Sefirah Hebrew letter', () => {
+  it('renders the stage-size avatar portrait in prep (post-#479)', () => {
     renderEncounter({
       mode: 'hot-seat',
       initialState: makeChallengeState(),
     });
     const portrait = document.querySelector('[data-avatar-portrait]');
     expect(portrait).not.toBeNull();
-    // Gevurah's Hebrew letter mark is ג (per data/sefirah-glyphs.ts).
-    expect(portrait?.textContent).toMatch(/ג/);
-    // Portrait carries the Sefirah key so its ring class can be
-    // verified independently from inline styles.
+    // Post-#479: prep promotes the avatar to stage size and renders
+    // the commissioned portrait image (#476) instead of the Hebrew
+    // letter placeholder. The header's small avatar is suppressed in
+    // prep so the stage portrait is the sole `[data-avatar-portrait]`.
     expect(portrait?.getAttribute('data-sefirah')).toBe('gevurah');
+    expect(portrait?.getAttribute('data-avatar-size')).toBe('stage');
+    expect(
+      portrait?.querySelector('[data-avatar-portrait-image]'),
+    ).not.toBeNull();
   });
 
   it('renders d20 roll button (not a rectangular Roll) in prep', () => {
@@ -1563,5 +1567,112 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
       vi.useRealTimers();
       restore();
     }
+  });
+});
+
+/**
+ * Re-skinned prep stage (#479) — avatar leads, modifier UI is
+ * subordinate. These tests pin the new layout contract:
+ *
+ *   - Prep renders a `[data-encounter-prep-stage]` section that
+ *     hosts the stage-size avatar plus the trial-framing line.
+ *   - The framing line precedes the modifier panel in DOM order
+ *     so the avatar's voice is what the player reads first.
+ *   - Sefirot with a shipped per-Sefirah mechanic (#353 Hod,
+ *     #354 Yesod) get a "Twist" banner naming the rule;
+ *     Sefirot without a shipped mechanic do not.
+ *   - Resolve / react sub-states keep the small header avatar
+ *     so its breath halo doesn't reset between them.
+ */
+describe('EncounterScreen — re-skinned prep stage (#479)', () => {
+  it('renders the prep stage section with framing line above the modifier panel', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const stage = document.querySelector('[data-encounter-prep-stage]');
+    const framing = document.querySelector('[data-encounter-framing]');
+    const prepPanel = document.querySelector('[data-encounter-prep]');
+    expect(stage).not.toBeNull();
+    expect(framing).not.toBeNull();
+    expect(prepPanel).not.toBeNull();
+    if (framing === null || prepPanel === null) return;
+    // The framing line must precede the modifier panel in DOM order
+    // so the avatar's voice reads first; `compareDocumentPosition`
+    // returning DOCUMENT_POSITION_FOLLOWING (4) means `framing`
+    // comes before `prepPanel`.
+    const relation = framing.compareDocumentPosition(prepPanel);
+    expect(relation & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('framing line carries the per-Sefirah copy from data/sefirah-framing.ts', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const framing = document.querySelector('[data-encounter-framing]');
+    // Gevurah's placeholder framing line names Ares — pin the avatar
+    // name as the cheap canary that the right matrix entry rendered.
+    // Full copy assertions belong in the sefirah-framing.ts unit
+    // tests (#478).
+    expect(framing?.textContent).toMatch(/Ares/);
+  });
+
+  it('renders Twist banner for Hod (Word-Match shipped via #353)', () => {
+    const state = makeChallengeState();
+    const activeIdx = state.players.findIndex(
+      (p) => p.id === state.activePlayerId,
+    );
+    const players = state.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, position: 'hod' as const } : p,
+    );
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: { ...state, players },
+      context: { ...baseContext, sefirah: 'hod', stat: 12 },
+    });
+    const twist = document.querySelector('[data-encounter-twist]');
+    expect(twist).not.toBeNull();
+    expect(twist?.textContent).toMatch(/Hermes/);
+  });
+
+  it('renders Twist banner for Yesod (Dream-Peek shipped via #354)', () => {
+    const state = makeChallengeState();
+    const activeIdx = state.players.findIndex(
+      (p) => p.id === state.activePlayerId,
+    );
+    const players = state.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, position: 'yesod' as const } : p,
+    );
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: { ...state, players },
+      context: { ...baseContext, sefirah: 'yesod', stat: 12 },
+    });
+    const twist = document.querySelector('[data-encounter-twist]');
+    expect(twist).not.toBeNull();
+    expect(twist?.textContent).toMatch(/Selene/);
+  });
+
+  it('omits Twist banner for Sefirot without a shipped per-Sefirah mechanic', () => {
+    // Default fixture is Gevurah — burn-cost-before-attempt mechanic
+    // is documented in design/per-sefirah-mechanics.md but tracked
+    // under Epic #475 and not yet shipped, so no Twist banner here.
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    expect(document.querySelector('[data-encounter-twist]')).toBeNull();
+  });
+
+  it('suppresses the small header avatar in prep (stage avatar is the only one)', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChallengeState(),
+    });
+    const portraits = document.querySelectorAll('[data-avatar-portrait]');
+    // One portrait — the stage avatar inside the prep stage section.
+    expect(portraits.length).toBe(1);
+    expect(portraits[0]?.getAttribute('data-avatar-size')).toBe('stage');
   });
 });

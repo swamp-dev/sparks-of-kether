@@ -9,6 +9,8 @@ import {
   pickPlayerResponse,
   pickVerdict,
 } from '@/data/sefirah-verdicts';
+import { sefirahFramingPlaceholder } from '@/data/sefirah-framing';
+import { sefirahTwist } from '@/data/sefirah-twists';
 import {
   CARD_BURN_BONUS,
   SHORTCUT_DC_PENALTY,
@@ -606,6 +608,20 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       ? avatarNames[avatarKey].greek
       : undefined;
 
+  // Trial-framing copy for the re-skinned prep stage. Placeholder
+  // until #478 (B1) ships the sign-aware multi-variant matrix; for
+  // now one deterministic line per Sefirah from
+  // `data/sefirah-framing.ts`. Kether/Malkuth are already ruled out
+  // by the `challenge.kind === 'check'` guard at mount time, so the
+  // narrowed `avatarKey` lookup is total.
+  const framingLine = sefirahFramingPlaceholder[avatarKey];
+
+  // "Twist" banner — only Sefirot with shipped per-Sefirah mechanics
+  // (#353 Hod Word-Match, #354 Yesod Dream-Peek) get a banner today.
+  // The other six are tracked under Epic #475 and will register their
+  // copy in `data/sefirah-twists.ts` as those mechanics land.
+  const twistLine = sefirahTwist[avatarKey];
+
   // Player-sign zodiac entry — used for the Soul-Door payoff callout
   // (#315) when the door is open AND the player's sign was carried
   // through context. Falls back to undefined when sign is absent
@@ -631,20 +647,24 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow} ${className ?? ''}`}
     >
       {/*
-        Header row: avatar portrait (top-left) + title block (right).
-        The portrait is mounted in every sub-state so its breath
-        halo doesn't reset on prep→react. Caption swaps from
-        player-response → verdict at react time.
+        Header row: title block + small avatar. In `prep`, the avatar
+        moves down to the stage section (#479) where it leads the
+        screen at full size; the header keeps just the title. In
+        resolve / react, the small portrait stays in the header so
+        its breath halo doesn't reset between those two sub-states.
       */}
       <header className="flex items-start gap-4">
-        <AvatarPortrait
-          sefirah={context.sefirah}
-          state={avatarState}
-          {...(avatarNameLabel !== undefined
-            ? { avatarName: avatarNameLabel }
-            : {})}
-          {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
-        />
+        {uiSubPhase !== 'prep' ? (
+          <AvatarPortrait
+            sefirah={context.sefirah}
+            state={avatarState}
+            size="small"
+            {...(avatarNameLabel !== undefined
+              ? { avatarName: avatarNameLabel }
+              : {})}
+            {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
+          />
+        ) : null}
         <div className="flex-1">
           <h2
             id={`encounter-${context.sefirah}-title`}
@@ -722,25 +742,71 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       </div>
 
       {uiSubPhase === 'prep' ? (
-        <PrepPanel
-          mode={mode}
-          allies={allies}
-          stagedAssistIds={stagedAssistIds}
-          toggleAssist={toggleAssist}
-          assistTotal={assistTotal}
-          stagedCardBurns={stagedCardBurns}
-          adjustCardBurns={adjustCardBurns}
-          maxCardBurns={maxCardBurns}
-          stagedSparkBurns={stagedSparkBurns}
-          adjustSparkBurns={adjustSparkBurns}
-          maxSparkBurns={maxSparkBurns}
-          cumulativeCardBurns={cumulativeCardBurns}
-          cumulativeSparkBurns={cumulativeSparkBurns}
-          isRetry={isRetry}
-          onRoll={handleRoll}
-          onCancel={onCancel}
-          glowClass={frameTokens.buttonGlow}
-        />
+        <>
+          {/*
+            Prep stage (#479): avatar leads. The portrait sits at
+            stage centre (oval crop, ~240×360 with the commissioned
+            half-body painting visible). The trial-framing line — the
+            avatar's voice naming the trial — renders in font-display
+            italic above the modifier panel. When the Sefirah has a
+            shipped per-Sefirah mechanic (#353 Hod, #354 Yesod), the
+            "Twist" banner names it in plain language so the player
+            sees the rule before staging modifiers
+            (`design/per-sefirah-mechanics.md` § 2.2).
+          */}
+          <div
+            data-encounter-prep-stage
+            className="mt-6 flex flex-col items-center gap-4"
+          >
+            <AvatarPortrait
+              sefirah={context.sefirah}
+              state="prep"
+              size="stage"
+              {...(avatarNameLabel !== undefined
+                ? { avatarName: avatarNameLabel }
+                : {})}
+              {...(avatarCaption !== undefined
+                ? { caption: avatarCaption }
+                : {})}
+            />
+            <p
+              data-encounter-framing
+              className="max-w-2xl text-balance text-center font-display text-lg italic leading-relaxed opacity-90"
+            >
+              {framingLine}
+            </p>
+            {twistLine !== undefined ? (
+              <p
+                data-encounter-twist
+                className={`rounded border px-3 py-1 text-center text-sm ${frameTokens.frameBorder}`}
+              >
+                <span className="mr-2 uppercase tracking-widest opacity-60">
+                  Twist
+                </span>
+                {twistLine}
+              </p>
+            ) : null}
+          </div>
+          <PrepPanel
+            mode={mode}
+            allies={allies}
+            stagedAssistIds={stagedAssistIds}
+            toggleAssist={toggleAssist}
+            assistTotal={assistTotal}
+            stagedCardBurns={stagedCardBurns}
+            adjustCardBurns={adjustCardBurns}
+            maxCardBurns={maxCardBurns}
+            stagedSparkBurns={stagedSparkBurns}
+            adjustSparkBurns={adjustSparkBurns}
+            maxSparkBurns={maxSparkBurns}
+            cumulativeCardBurns={cumulativeCardBurns}
+            cumulativeSparkBurns={cumulativeSparkBurns}
+            isRetry={isRetry}
+            onRoll={handleRoll}
+            onCancel={onCancel}
+            glowClass={frameTokens.buttonGlow}
+          />
+        </>
       ) : null}
 
       {uiSubPhase === 'resolve' && resolvedOutcome !== null ? (
