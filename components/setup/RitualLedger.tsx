@@ -36,9 +36,9 @@ export function RitualLedger({
     <div
       data-ritual-ledger
       aria-label="Sefirot blessed so far"
-      className={`mx-auto mt-8 max-w-md ${className ?? ''}`}
+      className={`w-full ${className ?? ''}`}
     >
-      <h3 className="mb-3 text-center text-xs uppercase tracking-widest opacity-60">
+      <h3 className="mb-3 text-center text-xs uppercase tracking-widest opacity-60 md:text-left">
         Blessings received
       </h3>
       <ul role="list" className="space-y-1">

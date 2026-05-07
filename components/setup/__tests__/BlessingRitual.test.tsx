@@ -14,7 +14,19 @@ describe('BlessingRitual — flow', () => {
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
     expect(container.querySelector('[data-sefirah]')?.getAttribute('data-sefirah')).toBe('kether');
-    expect(container.querySelector('[data-essence]')?.textContent).toMatch(/Before separation/);
+    // Post-#413 the invocation lives inside the essence <p> as a
+    // nested <span>, so `essence.textContent` includes both pieces.
+    // Asserting on the essence parent + the invocation child
+    // separately covers both regression directions: dropping the
+    // essence makes the parent assertion fail (the invocation alone
+    // doesn't contain "Before separation"); dropping the invocation
+    // makes the child assertion fail.
+    const essence = container.querySelector('[data-essence]');
+    const invocation = container.querySelector('[data-invocation]');
+    expect(essence?.textContent).toMatch(/Before separation there is only this/);
+    expect(invocation?.textContent?.trim()).toBe(
+      'Receive your portion of Unity — the silence beneath every voice.',
+    );
   });
 
   it('advances Kether → Chokmah on roll + receive', () => {
@@ -519,5 +531,84 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote?.getAttribute('data-dignity-tier')).toBe('neutral');
+  });
+});
+
+// ──────────────── #413 — desktop two-column layout ────────────────
+//
+// At md+ the page lays out as two columns (ceremony left, ledger
+// right) so the player can see their full BLESSINGS RECEIVED ledger
+// at desktop 1280×800 without scrolling. At mobile the grid collapses
+// back to a single column. These tests assert the layout *structure*
+// at the className level — actual viewport-conditional rendering is
+// validated by the Playwright visual-regression spec on the same
+// branch. Unit tests here guard the structural contract.
+
+describe('BlessingRitual — page layout (#413)', () => {
+  it('renders ceremony and ledger inside a single grid container that flips to two columns at md+', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const section = container.querySelector('[data-blessing-ritual]');
+    expect(section).not.toBeNull();
+    // The section hosts a grid wrapper; both the orb-hero and the
+    // ledger live inside it as direct grid items. Locating by
+    // `div.grid` keeps the assertion scoped to the grid container
+    // and not the unrelated `RitualScene` sibling div.
+    const grid = section?.querySelector('div.grid');
+    expect(grid, 'grid wrapper').not.toBeNull();
+    const gridClass = grid?.getAttribute('class') ?? '';
+    expect(gridClass).toMatch(/\bgrid-cols-1\b/);
+    expect(gridClass).toMatch(/md:grid-cols-/);
+    // Both the hero (left column) and the ledger (right column) live
+    // inside the same grid wrapper.
+    expect(grid?.querySelector('[data-sefirah-hero]')).not.toBeNull();
+    expect(grid?.querySelector('[data-ritual-ledger]')).not.toBeNull();
+  });
+
+  it('drops the standalone "Stat: <name>" line and folds the stat label under the orb (#413)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    // No standalone "Stat: …" line above the Roll button.
+    expect(
+      Array.from(container.querySelectorAll('span')).some((el) =>
+        /^Stat:\s/i.test(el.textContent ?? ''),
+      ),
+    ).toBe(false);
+    // Stat label is folded into the orb chrome with the bare stat name.
+    const stat = container.querySelector('[data-sefirah-stat-label]');
+    expect(stat).not.toBeNull();
+    expect(stat?.textContent?.trim()).toBe('unity');
+  });
+
+  it('keeps the essence + invocation but renders them as a single ceremonial paragraph', () => {
+    // Vertical-text-density tightening: invocation no longer rendered
+    // as a sibling <p> below essence; instead it lives inside the
+    // essence paragraph as a styled <span> so the two read as one
+    // ceremonial block. Both data-* hooks remain queryable.
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const essence = container.querySelector('[data-essence]');
+    const invocation = container.querySelector('[data-invocation]');
+    expect(essence).not.toBeNull();
+    expect(invocation).not.toBeNull();
+    // Invocation is now nested inside the essence element rather than
+    // a separate sibling <p>.
+    expect(essence?.contains(invocation as Node)).toBe(true);
+  });
+
+  it('mobile layout (single column) is preserved — grid-cols-1 base, md+ flips to two columns', () => {
+    // Single-column-on-mobile is the default Tailwind base; the md+
+    // breakpoint adds the two-column override. Asserting both classes
+    // on the same element is the structural contract.
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const grid = container.querySelector('[data-blessing-ritual] div.grid');
+    const cls = grid?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/\bgrid-cols-1\b/);
+    expect(cls).toMatch(/md:grid-cols-\[3fr_2fr\]/);
   });
 });

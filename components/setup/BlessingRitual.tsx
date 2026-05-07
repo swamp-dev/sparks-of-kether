@@ -189,77 +189,95 @@ export function BlessingRitual({
       // conditional render and so doesn't catch state-leak regressions).
       data-blessing-state={blessing === null ? 'null' : 'set'}
       aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
-      className={`mx-auto max-w-md text-center ${className ?? ''}`}
+      className={`mx-auto max-w-3xl ${className ?? ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
-      <p className="text-xs uppercase tracking-widest opacity-60">
-        Step {stepIndex + 1} of {sefirot.length}
-      </p>
+      {/*
+        #413: two-column layout at md+. Left column is the ceremony
+        (orb / name / quote / Roll / Skip); right column is the
+        running BLESSINGS RECEIVED ledger. On mobile the grid
+        collapses to a single column and the ledger appears beneath
+        the ceremony — preserves the prior single-column rhythm.
+      */}
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-[3fr_2fr] md:items-start md:gap-10">
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-widest opacity-60">
+            Step {stepIndex + 1} of {sefirot.length}
+          </p>
 
-      <SefirahHero sefirah={currentSefirah} />
+          <SefirahHero sefirah={currentSefirah} />
 
-      <h2 className="mt-4 font-display text-3xl tracking-widest" data-sefirah-name>
-        {currentSefirah.englishName}
-      </h2>
-      <p
-        className="mt-1 font-hebrew text-2xl"
-        lang="he"
-        style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
-      >
-        {currentSefirah.hebrewName}
-      </p>
-      <p className="mt-4 italic opacity-80" data-essence>
-        “{copy.essence}”
-      </p>
-      <p className="mt-3 text-sm opacity-70" data-invocation>
-        {copy.invocation}
-      </p>
-
-      <div className="mt-6 flex flex-col items-center gap-3">
-        <span className="text-xs uppercase tracking-widest opacity-70">
-          Stat: {currentSefirah.stat}
-        </span>
-
-        {stepStatus === 'awaiting' ? (
-          <button
-            type="button"
-            onClick={handleRoll}
-            data-action="roll"
-            className="rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+          <h2 className="mt-4 font-display text-3xl tracking-widest" data-sefirah-name>
+            {currentSefirah.englishName}
+          </h2>
+          <p
+            className="mt-1 font-hebrew text-2xl"
+            lang="he"
+            style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
           >
-            Roll 3d6
-          </button>
-        ) : null}
+            {currentSefirah.hebrewName}
+          </p>
+          {/*
+            #413: essence + invocation merged into one ceremonial
+            paragraph block to tighten vertical text density. Essence
+            stays italic (the Sefirah's own voice); invocation
+            follows on a new line in a smaller register (the rite's
+            instruction). Both retain their data-* hooks for tests
+            and future styling.
+          */}
+          <p className="mt-4 italic opacity-80" data-essence>
+            “{copy.essence}”
+            <span
+              className="mt-2 block not-italic text-sm opacity-90"
+              data-invocation
+            >
+              {copy.invocation}
+            </span>
+          </p>
 
-        {stepStatus === 'rolled' && lastRoll ? (
-          <RollDisplay
-            roll={lastRoll}
-            stat={currentSefirah.stat}
-            blessing={blessing}
-            sefirahColor={currentSefirah.color}
-            onAdvance={handleAdvance}
-          />
-        ) : null}
+          <div className="mt-6 flex flex-col items-center gap-3">
+            {stepStatus === 'awaiting' ? (
+              <button
+                type="button"
+                onClick={handleRoll}
+                data-action="roll"
+                className="rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+              >
+                Roll 3d6
+              </button>
+            ) : null}
 
-        {/*
-          #133: skip-to-summary affordance. Available at any step so
-          a returning player can bypass the slow per-Sefirah cadence
-          and jump to the summary in one click. Visually de-emphasised
-          (small text-only link) so first-time players don't see it
-          as the primary path.
-        */}
-        <button
-          type="button"
-          onClick={handleSkipCeremony}
-          data-action="skip-ceremony"
-          className="mt-4 text-xs uppercase tracking-widest opacity-50 hover:opacity-80"
-        >
-          Skip — roll all remaining
-        </button>
+            {stepStatus === 'rolled' && lastRoll ? (
+              <RollDisplay
+                roll={lastRoll}
+                stat={currentSefirah.stat}
+                blessing={blessing}
+                sefirahColor={currentSefirah.color}
+                onAdvance={handleAdvance}
+              />
+            ) : null}
+
+            {/*
+              #133: skip-to-summary affordance. Available at any step
+              so a returning player can bypass the slow per-Sefirah
+              cadence and jump to the summary in one click. Visually
+              de-emphasised so first-time players don't see it as the
+              primary path.
+            */}
+            <button
+              type="button"
+              onClick={handleSkipCeremony}
+              data-action="skip-ceremony"
+              className="mt-4 text-xs uppercase tracking-widest opacity-50 hover:opacity-80"
+            >
+              Skip — roll all remaining
+            </button>
+          </div>
+        </div>
+
+        <RitualLedger stats={stats} currentIndex={stepIndex} />
       </div>
-
-      <RitualLedger stats={stats} currentIndex={stepIndex} />
     </section>
   );
 }
@@ -285,23 +303,43 @@ export function BlessingRitual({
 function SefirahHero({ sefirah }: { sefirah: Sefirah }): JSX.Element {
   const glyphColor = relativeLuminance(sefirah.color) > 0.4 ? '#1a1542' : '#f8f8ff';
   return (
-    <div
-      data-sefirah-hero
-      data-sefirah={sefirah.key}
-      aria-hidden="true"
-      className={`mx-auto mt-2 flex h-24 w-24 items-center justify-center rounded-full ${HALO_CLASS_BY_KEY[sefirah.key]} motion-safe:animate-breath`}
-      style={{ backgroundColor: sefirah.color }}
-    >
-      <span
-        className="font-hebrew text-4xl"
-        lang="he"
-        style={{
-          color: glyphColor,
-          direction: 'rtl',
-          unicodeBidi: 'isolate',
-        }}
+    <div className="mx-auto mt-2 flex flex-col items-center">
+      <div
+        data-sefirah-hero
+        data-sefirah={sefirah.key}
+        aria-hidden="true"
+        className={`flex h-24 w-24 items-center justify-center rounded-full ${HALO_CLASS_BY_KEY[sefirah.key]} motion-safe:animate-breath`}
+        style={{ backgroundColor: sefirah.color }}
       >
-        {[...sefirah.hebrewName][0] ?? ''}
+        <span
+          className="font-hebrew text-4xl"
+          lang="he"
+          style={{
+            color: glyphColor,
+            direction: 'rtl',
+            unicodeBidi: 'isolate',
+          }}
+        >
+          {[...sefirah.hebrewName][0] ?? ''}
+        </span>
+      </div>
+      {/*
+        #413: stat label folded into the orb chrome — replaces the
+        prior standalone "Stat: <name>" line that lived above the
+        Roll button. Sits flush under the orb so the stat reads as
+        a property of the Sefirah being received, not a separate
+        text element competing for vertical space.
+      */}
+      <span
+        data-sefirah-stat-label
+        // The stat name is already communicated to assistive
+        // technology via the section's aria-label and the ledger
+        // (`RitualLedger` rows). The visible orb caption is
+        // decorative — hide it from AT to avoid duplicate readout.
+        aria-hidden="true"
+        className="mt-2 text-[0.65rem] uppercase tracking-[0.25em] opacity-70"
+      >
+        {sefirah.stat}
       </span>
     </div>
   );
