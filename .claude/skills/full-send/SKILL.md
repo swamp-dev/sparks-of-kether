@@ -16,7 +16,7 @@ using the canonical workflow in [`docs/workflow.md`](../../../docs/workflow.md).
    - **Blocked** — depends on another open ticket, or needs a design decision from me.
    - **Too big** — would produce a PR over ~500 lines or touch >5 surfaces; needs splitting first.
    - **Stale** — superseded by recent merges, no longer relevant, or duplicated.
-3. Pick the next 1–3 from **Ready**, ordered by: explicit `priority:` label first, then dependency depth (unblocks the most other tickets), then smallest scope. Tell me what you picked and why before starting. If everything Ready is high-risk or ambiguous, stop and ask.
+3. Pick the next 1–3 from **Ready**, ordered by: explicit `priority:` label first, then dependency depth (unblocks the most other tickets), then smallest scope. Tell me what you picked and why before starting. High-risk and ambiguous tickets sort to the back of the Ready queue, not into Blocked — pick the safest available and proceed. Only stop and ask if Ready is empty (everything triaged into Blocked / Too-big / Stale).
 
 You manage context. Don't try to hold all open tickets in working memory at once — pull what you need, work it, then move on. If a ticket turns out bigger than triage suggested, stop and re-triage rather than ballooning the PR.
 
@@ -27,7 +27,7 @@ sub-skill's SKILL.md at invocation time** — the steps below describe
 what each skill does at a high level; the SKILL.md on `main` is the
 source of truth for the actual procedure (which evolves over time).
 
-1. **`/start-ticket <N>`** — read the ticket fully + any linked `design/` / `reference/` files. Confirm acceptance criteria back to me. The skill creates the worktree, branch, per-ticket Journal file, and `node_modules` symlink. If acceptance criteria are ambiguous, stop and ask before creating the worktree.
+1. **`/start-ticket <N>`** — read the ticket fully + any linked `design/` / `reference/` files. Confirm acceptance criteria back to me. The skill creates the worktree, branch, per-ticket Journal file, and `node_modules` symlink. If acceptance criteria are ambiguous, log the ambiguity in narration with the best-interpretation you'll proceed with — the read-back is the safety mechanism. Only stop if the ticket has a hard contradiction the agent can't resolve.
 2. **Implement.** TDD where it makes sense — engine logic, reducers, pure functions, game-rule edge cases — failing test first, separate test/impl commits. UI and docs may test-after. Journal each push.
 3. **`/finish-ticket`** — runs the local gate, invokes `code-reviewer`, fixes, re-reviews on substantial fixes, journals the final push, pushes, opens the PR. The skill handles the per-PR-checklist mechanics (including any mechanical-stamp invocation if the gate is configured). Follow whatever the current SKILL.md documents — don't assume specific step numbers from this skill's text. Stop after the PR opens.
 4. **Wait for hosted CI green.** Use `/loop` to poll `gh pr checks <P>` at a sensible cadence (don't poll faster than the prompt-cache window). Path-filtered jobs that legitimately skip count as success-equivalent.
@@ -40,7 +40,7 @@ source of truth for the actual procedure (which evolves over time).
 ## When to stop
 
 - After each `/ship-ticket`, give me a one-line summary: shipped #N, next up #M (or "queue empty / re-triaging").
-- Stop and ask if: a ticket needs design judgment, code-reviewer returns critical findings I should see, hosted CI fails for non-infrastructure reasons, or two consecutive tickets in your queue turn out to be Blocked / Too big.
+- Stop and ask if: a ticket needs design judgment, code-reviewer returns critical findings I should see, or hosted CI fails for non-infrastructure reasons. Re-triage and continue if tickets in the queue turn out to be Blocked or Too-big — surface the pattern in narration but don't block on it.
 - If hosted CI fails for what looks like infrastructure (no logs, BlobNotFound, identical-shape failures across unrelated PRs), surface that to me — admin-merge bypass is the user's call per `~/.dotfiles/.claude/rules/local-ci-and-admin-merge.md`, never auto-applied.
 - If `/ship-ticket` refuses (per-PR-checklist gate failure — missing Journal marker, missing/stale mechanical stamp, whatever the current gate is), stop and ask. **Never** hand-fabricate the gate's input to satisfy it; that's the bypass pattern that got #437 reverted.
 

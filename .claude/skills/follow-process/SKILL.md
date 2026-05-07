@@ -30,8 +30,9 @@ short-circuited.** Examples of common drift:
 If you find drift, **don't paper over it** — say what you skipped and
 back-fill the right step. If a step is impossible to back-fill (e.g.
 you can't write a Journal entry for a push that already happened
-without it), surface that explicitly and ask whether to add a
-follow-up entry on the next push.
+without it), surface that explicitly and add a follow-up entry on the
+next push by default. No question to the user; the user can interrupt
+if they want a different recovery.
 
 If you find no drift, say so plainly: "checked workflow.md against
 this session's work; no drift." Don't re-list every step you did

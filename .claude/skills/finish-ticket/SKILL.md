@@ -47,12 +47,23 @@ user they're on the wrong branch.
 ### 2. Run the local gate
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm test
+pnpm typecheck
+pnpm lint || (pnpm lint --fix && pnpm lint)
+pnpm test
 ```
 
-If any fails, stop and report to the user. Do not auto-fix lint
-errors — the human should decide. (Pre-scaffold tickets skip this step
-because `package.json` doesn't exist yet; see `CLAUDE.md` § Test commands.)
+`typecheck` and `test` failures stop immediately — surface to the
+user. Lint runs once, and on failure the agent retries with
+`--fix` before declaring it broken. Standard ESLint autofix only
+rewrites mechanically-safe transformations, so the retry is safe.
+If lint still fails after `--fix`, stop and report — what's left
+is non-autofixable rules that need a human decision (genuine style
+or correctness call).
+
+If autofix made changes, surface that in the agent's narration so
+the diff doesn't surprise the user later. (Pre-scaffold tickets
+skip this step because `package.json` doesn't exist yet; see
+`CLAUDE.md` § Test commands.)
 
 ### 3. Run CI status check (if a PR is already open for this branch)
 
@@ -62,35 +73,60 @@ gh pr checks --watch 2>/dev/null || true
 
 Skip if there's no PR yet (first time running for this ticket).
 
-### 4. Verify the per-ticket Journal file is current
+### 4. Verify the per-ticket Journal file is current (auto-backfill)
 
 This branch's Journal lives at `journal/<NN>-<slug>.md` (matching the
-branch name). Walk backwards through the branch's commit log:
+branch name). Walk through the branch's commit log:
 
 ```bash
 git log --oneline origin/main..HEAD
+git log origin/main..HEAD --format='%H%n%s%n%b%n---%n' --stat
 ```
 
-Every push that appears there should already have a corresponding entry
-in `journal/<NN>-<slug>.md`. If any push is missing an entry, **stop**
-and tell the user — append the missing entries first, then resume.
+Every push that appears there should already have a corresponding
+entry in `journal/<NN>-<slug>.md`. If any push is missing an entry,
+**auto-backfill** rather than stopping:
+
+- Identify push boundaries from the reflog where possible
+  (`git reflog show --date=iso <branch>`); fall back to "one entry
+  per commit" when the reflog has been pruned or is ambiguous.
+- For each missing push, synthesize an entry from the commit
+  subject (Pushed), the leading line of the commit body or the
+  conventional-commit type+scope (Why), `none` (Notes), and the
+  commit SHA range (Commit(s)). Use the commit's authored timestamp
+  in ISO-8601 format for the heading.
+- Append the synthesized entries in chronological order, oldest
+  first. The file is append-only so this is safe even if the agent
+  later adds entries above the live HEAD; the timestamps reflect
+  the actual commit order.
+- Surface what was backfilled in the agent's narration, with the
+  generated entries inline, so the user can interrupt if they look
+  wrong.
 
 If the file doesn't exist yet (e.g. branch was created before B2 #429
 landed), create it with the header template from
 [`journal/README.md`](../../../journal/README.md) before adding the
-entry.
+entries.
 
-This skill only adds the entry for the final (still-unpushed) push.
+This skill only adds the entry for the final (still-unpushed) push
+in step 5; backfill in this step covers everything earlier.
 
-### 5. Gather fields for this final push's Journal entry
+### 5. Derive fields for this final push's Journal entry
 
-Ask the user four questions:
+Generate the entry directly from git state — no interview. The agent
+already has all four fields between `git log`, the diff, and the
+session's own context.
 
-1. **What does this final push contain?** (short summary of commits)
-2. **Why this push?** (e.g. "final code-reviewer fixes", "last doc tweaks")
-3. **Any notes for future agents?** ("none" is fine)
-4. **Which commit(s)?** (the agent can compute this from `git log`, but
-   confirm with the user if ambiguous)
+| Field | Source |
+|---|---|
+| **Pushed** | Concatenated commit subjects from `git log <last-pushed-sha>..HEAD --format=%s`. If only one commit, use its subject; if many, semicolon-separated. |
+| **Why** | Leading line of the most recent commit body, or the conventional-commit `<type>(<scope>): ...` summary if the body is empty. (Note: this step writes the entry for the push that *precedes* code-review. Fix-pushes during the 8/8a re-review loop journal themselves separately under the per-push rule and naturally describe themselves via their own commit messages, e.g. `fix(scope): address review finding X`.) |
+| **Notes** | Default `none`. Populate only with things knowable *before* code-review fires (since this entry is written in step 6, before step 8): lint autofix used in step 2, dep change in this push, gate-relevant context from earlier in the session. Post-review events (re-review verdict, deferred-minor count) belong in the fix-push's own entry, written under the per-push rule. |
+| **Commit(s)** | `<oldest-sha-short>..<newest-sha-short>` from the same range, or a single short SHA if the range is one commit. |
+
+Print the generated entry inline to the user before appending in
+step 6, so the user can interrupt if it looks wrong. Do not block
+on a question — proceed unless the user redirects.
 
 ### 6. Append to `journal/<NN>-<slug>.md`
 
@@ -232,44 +268,51 @@ block — anything that survives a context summarization between the
 reviewer's output and step 8b. Don't rely on the reviewer's text still
 being in window.
 
-**First-run label setup** — check whether the `tech-debt` label
-exists; create if missing. Use `--json name` (the stable interface)
-not the default tabular output:
+**First-run label setup** — check whether `tech-debt` and
+`priority:low` labels exist; create if missing. Use `--json name`
+(the stable interface) not the default tabular output:
 
 ```bash
 gh label list --limit 200 --json name --jq '.[].name' | grep -qx "tech-debt" \
   || gh label create tech-debt \
     --description "Deferred minor finding from a /finish-ticket review" \
     --color "fbca04"
+
+gh label list --limit 200 --json name --jq '.[].name' | grep -qx "priority:low" \
+  || gh label create "priority:low" \
+    --description "Backlog: address when convenient, no SLA" \
+    --color "cccccc"
 ```
 
 **Enumerate deferred minors.** From the persisted list, drop anything
 actually fixed during step 8/8a (those already shipped in the diff).
 What remains are the deferred-minor candidates.
 
-**Confirm one-by-one with the user.** For each candidate:
+**Cap the auto-file at 5 issues.** A chatty reviewer can produce
+double-digit minor findings; auto-filing all of them would spam the
+backlog. The cap closes that without reintroducing the per-finding
+y/n loop:
 
-```
-Open tech-debt issue for: "<short summary>"?
-Body would link parent: #<N> (this PR's ticket).
-[y / n / skip-rest]
-```
+- If 5 or fewer candidates remain, file them all as
+  `tech-debt` + `priority:low` (next paragraph).
+- If more than 5 remain, file the first 5 in reviewer-order and
+  list the rest in the PR body's **"Deferred minors (untracked)"**
+  section (one bullet per finding, short summary). The `priority:low`
+  label keeps tracked items out of the active queue; the PR-body
+  list keeps the untracked ones discoverable.
 
-- `y` → file the issue (next step).
-- `n` → don't file this one; note it for the "Considered but not
-  tracked" PR-body section; continue to the next.
-- `skip-rest` → don't file any remaining; note all skipped for the
-  PR-body section; continue to step 9.
+**Auto-file the capped candidates.** No per-finding confirmation. The
+filed issues land as `tech-debt` + `priority:low` so they sit in a
+backlog bucket the user can sweep later. The `priority:low` label is
+the prioritization signal; the cap is the volume signal — together
+they address both axes of backlog noise.
 
-**Per-finding confirmation is required.** Bulk-file mode is rejected
-explicitly — chatty reviewers would otherwise spam the backlog with
-nice-to-haves no one asked to track.
-
-**File each confirmed issue:**
+**File each issue:**
 
 ```bash
 gh issue create \
   --label tech-debt \
+  --label "priority:low" \
   --title "<short summary derived from the finding>" \
   --body "$(cat <<'BODY'
 Deferred from #<N> review (PR #<P>).
@@ -295,6 +338,10 @@ retry / skip / abort the rest. Capture which issues were filed so
 far. A partial run that filed 2 of 5 is fine — note it in the PR
 body alongside the others.
 
+Print the filed issue numbers in the agent's narration after the
+loop (e.g. "Filed 3 tech-debt follow-ups: #441, #442, #443") so the
+user can scan the list at a glance.
+
 Capture each new issue number for step 9 to embed in the PR body.
 
 ### 9. Open the PR
@@ -319,10 +366,11 @@ The body must include:
   numbers live in the PR body, not in the Journal entry — the journal
   push that mentions this PR pre-dates the tech-debt issues being
   filed and is append-only.
-- **Considered but not tracked** (if any `n` / `skip-rest` from
-  step 8b) — list the deferred-minor summaries the user chose not to
-  file. So the record exists somewhere even if it didn't earn a
-  ticket.
+- **Deferred minors (untracked)** (only if step 8b's cap was hit and
+  some findings weren't filed) — bulleted summaries of the
+  untracked findings. They live in the PR body so they remain
+  discoverable on merge even though they didn't earn their own
+  issue.
 - **Closes #NN** — on its own line so GitHub auto-links.
 
 ### 10. Print the PR URL and hand off to /ship-ticket
@@ -352,8 +400,9 @@ skill — the wait for hosted CI is asynchronous and operator-driven.
   uses the heuristic in step 8a above — `/ship-ticket` will refuse to
   merge a PR whose per-ticket Journal file does not show the checklist
   completing.
-- Tech-debt follow-up issues (step 8b) are filed **per finding with
-  explicit user confirmation**. Bulk-file mode is forbidden — the
-  failure mode is backlog spam from chatty reviewer runs.
+- Tech-debt follow-up issues (step 8b) are filed automatically with
+  `tech-debt` + `priority:low` labels. The `priority:low` label is
+  the backlog signal — it keeps these out of the active queue without
+  losing the finding.
 - Hooks and signing are never bypassed.
 - If in doubt, ask the user.

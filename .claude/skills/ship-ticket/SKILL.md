@@ -19,8 +19,17 @@ the merge on the conditions in `docs/workflow.md` § Self-merge authority.
 Before invoking this skill:
 
 - A PR number `<P>` is supplied as an argument (e.g. `/ship-ticket 401`).
-  If missing, ask the user. If a list is supplied, **refuse** — re-run
-  the skill once per PR.
+  If missing, try resolving from the current branch first:
+
+  ```bash
+  current_branch=$(git branch --show-current)
+  matches=$(gh pr list --head "$current_branch" --state open --json number -q '.[].number')
+  ```
+
+  If exactly one open PR matches, use it. If zero or multiple match,
+  stop and ask the user (the agent must not guess between candidates).
+  If a list is supplied as an argument, **refuse** — re-run the skill
+  once per PR. (Anti-sweep guardrail; see step 1.)
 - `/finish-ticket` was run on this PR's branch in this session, and the
   per-PR checklist (review → fix → re-review on substantial fixes)
   completed.

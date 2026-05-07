@@ -40,11 +40,13 @@ Print back to the user:
 
 - Ticket title.
 - Acceptance criteria (the bullets the ticket lists, verbatim).
-- Anything in the ticket that looks ambiguous or under-specified.
+- Anything in the ticket that looks ambiguous or under-specified —
+  state the best-interpretation the agent will proceed with.
 
-Ask: "Ready to start?" If the user says no, stop. If they want to
-clarify, address the clarification before creating the worktree —
-worktrees are cheap to make but a wasted one is friction.
+Then continue straight to step 3. The read-back is the safety
+mechanism; the user can interrupt streaming output if anything
+looks wrong. No explicit "Ready?" prompt — that gate added friction
+without buying safety.
 
 ### 3. Derive `<type>` and `<slug>`
 
@@ -55,8 +57,17 @@ worktrees are cheap to make but a wasted one is friction.
 - `chore` for tooling / infra / deps.
 - `refactor`, `test`, `docs` mirror the label.
 
-If the labels are ambiguous (e.g. multiple of the above), **ask the
-user** which prefix to use. Do not guess.
+If the labels are ambiguous (multiple of the above match), pick
+deterministically using this priority order — most-specific wins:
+
+```
+fix > chore > refactor > test > docs > feat
+```
+
+E.g. a ticket labelled both `bug` and `enhancement` becomes `fix`.
+A ticket with no recognized label defaults to `feat`. State the
+chosen prefix in the agent's narration so the user can interrupt
+if it's wrong; do not block on a question.
 
 `<slug>` from the title: lowercase, hyphenated, ≤ 5 words, drop
 articles. Example: `"Add per-Sefirah avatar copy"` → `add-per-sefirah-avatar-copy`.
@@ -170,8 +181,8 @@ Then **stop**. Do not start writing code in the same skill invocation.
 
 - Never overwrite an existing worktree (`git worktree add --force` is
   forbidden).
-- Never pick a branch type without explicit confirmation when labels
-  are ambiguous.
+- Branch type is derived deterministically from labels (priority order
+  in step 3); ambiguity is resolved by the priority, not by asking.
 - Never modify the ticket body, state, or labels.
 - Never branch from anything except `origin/main`.
 - One ticket = one worktree = one branch.
