@@ -1,6 +1,6 @@
 'use client';
 import type { CSSProperties } from 'react';
-import { attributionColor, zodiacSignByKey } from '@/data';
+import { signGlowColor, zodiacSignByKey } from '@/data';
 import type { ZodiacSignKey } from '@/data';
 import { LobbyBackdrop } from '@/components/atmosphere/LobbyBackdrop';
 
@@ -85,7 +85,12 @@ export function hexToRgbTriplet(hex: string): string {
 }
 
 function signGlowShadow(key: ZodiacSignKey): string {
-  const rgb = hexToRgbTriplet(attributionColor({ kind: 'sign', value: key }));
+  // #445: route through `signGlowColor` (not `attributionColor`)
+  // so Scorpio (#5e2a4a) and Capricorn (#2a3a4a) emit a brighter
+  // halo on the indigo bg-void substrate. Card surfaces / chips
+  // continue to use `attributionColor` directly — only the
+  // glow-emit channel takes the brightened stand-in.
+  const rgb = hexToRgbTriplet(signGlowColor(key));
   return `0 0 8px rgba(${rgb}, 0.50), 0 0 18px rgba(${rgb}, 0.30), 0 0 36px rgba(${rgb}, 0.16)`;
 }
 

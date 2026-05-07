@@ -60,6 +60,36 @@ export function attributionColor(attribution: Attribution): string {
 }
 
 /**
+ * #445: per-sign hex used as the *glow* tint, distinct from the
+ * card-surface hex when the surface colour is too dark to produce
+ * a perceptible halo on the indigo `bg-void` substrate at the
+ * canonical `0.50 / 0.30 / 0.16` alpha stack.
+ *
+ * Two signs need brightening:
+ *   - Scorpio raw `#5e2a4a` (luminance ≈ 0.24) → `#a04374`
+ *   - Capricorn raw `#2a3a4a` (luminance ≈ 0.22) → `#5a7a9c`
+ *
+ * Other ten signs pass straight through to `SIGN_COLORS`. This
+ * mirrors the helper-substitution pattern the per-Sefirah glow
+ * recipes already use for Binah (`#4b0082` substitutes for the
+ * canonical near-black) and Malkuth (`#b87333` substitutes for
+ * the canonical low-chroma brown) in `tailwind.config.ts §
+ * boxShadow`.
+ *
+ * Card-surface usage continues to call `attributionColor`; only
+ * glow-emit sites (today: the Lobby ready-row halo) route through
+ * `signGlowColor`.
+ */
+const SIGN_GLOW_OVERRIDES: Readonly<Partial<Record<ZodiacSignKey, string>>> = {
+  scorpio: '#a04374',
+  capricorn: '#5a7a9c',
+};
+
+export function signGlowColor(sign: ZodiacSignKey): string {
+  return SIGN_GLOW_OVERRIDES[sign] ?? SIGN_COLORS[sign];
+}
+
+/**
  * Short human-readable label for the attribution (e.g. "Mercury",
  * "Aries", "Fire"). Used in the card footer line and aria-label.
  */

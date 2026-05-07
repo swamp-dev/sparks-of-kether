@@ -276,6 +276,34 @@ describe('Lobby — atmosphere (#403)', () => {
     expect(row2.style.boxShadow).toBe('');
   });
 
+  it('Scorpio ready row uses the brightened glow tint, not the dark card hex (#445)', () => {
+    // Card surface for Scorpio is `#5e2a4a` (dark maroon) — too low
+    // luminance to read on the indigo bg-void substrate. #445 routes
+    // the glow through `signGlowColor` which substitutes the
+    // brighter `#a04374` (160, 67, 116) only at glow-emit time.
+    const { container } = render(
+      <Lobby players={[player('p1', { ready: true, zodiacSign: 'scorpio' })]} />,
+    );
+    const row = container.querySelector('[data-lobby-row="p1"]') as HTMLElement;
+    expect(row.getAttribute('data-glow-on')).toBe('true');
+    expect(row.style.boxShadow).toMatch(/rgba\(160, 67, 116,/);
+    // Negative assertion: must NOT contain the raw card-surface hex
+    // RGB (94, 42, 74) — would mean the substitution didn't fire.
+    expect(row.style.boxShadow).not.toMatch(/rgba\(94, 42, 74,/);
+  });
+
+  it('Capricorn ready row uses the brightened glow tint, not the dark card hex (#445)', () => {
+    // Card surface for Capricorn is `#2a3a4a` (dark slate). #445
+    // brightens the glow channel to `#5a7a9c` (90, 122, 156).
+    const { container } = render(
+      <Lobby players={[player('p1', { ready: true, zodiacSign: 'capricorn' })]} />,
+    );
+    const row = container.querySelector('[data-lobby-row="p1"]') as HTMLElement;
+    expect(row.getAttribute('data-glow-on')).toBe('true');
+    expect(row.style.boxShadow).toMatch(/rgba\(90, 122, 156,/);
+    expect(row.style.boxShadow).not.toMatch(/rgba\(42, 58, 74,/);
+  });
+
   it('a ready player without a sign does not glow (sign-required)', () => {
     const { container } = render(
       <Lobby
