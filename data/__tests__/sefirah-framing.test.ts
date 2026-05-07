@@ -156,26 +156,32 @@ describe('sefirah-framing', () => {
     // calibration only.
 
     it('Hermes (Hod) lines lean on language / wordplay / wit (per § 2)', () => {
-      // "language-loving, sly, playful precision" — at least one
-      // Hermes cell should mention words/language/riddle/answer/wit.
+      // "language-loving, sly, playful precision" — at least half the
+      // Hermes cells should mention words/language/riddle/answer/wit.
+      // Threshold tightened from >25% to >50% (#498) so a real voice
+      // drift trips the canary earlier without becoming brittle.
       const allHermes = SIGN_KEYS.flatMap((s) => sefirahFraming['hod'][s]);
       const wordPattern = /\b(word|words|name|riddle|answer|tongue|language|speak|cousin|game|wit|message)\b/i;
       const hits = allHermes.filter((l) => wordPattern.test(l));
-      expect(hits.length).toBeGreaterThan(allHermes.length / 4);
+      expect(hits.length).toBeGreaterThan(allHermes.length / 2);
     });
 
     it('Demeter (Binah) lines carry weight / sorrow / earth (per § 2)', () => {
+      // Same >50% threshold as the Hermes canary (#498) — half the
+      // matrix should reflect the avatar's voice keywords.
       const allDemeter = SIGN_KEYS.flatMap((s) => sefirahFraming['binah'][s]);
       const weightPattern = /\b(earth|grief|weigh|loss|silent|silence|patience|patient|grain|seed|harvest|sorrow|memory|remember)\b/i;
       const hits = allDemeter.filter((l) => weightPattern.test(l));
-      expect(hits.length).toBeGreaterThan(allDemeter.length / 4);
+      expect(hits.length).toBeGreaterThan(allDemeter.length / 2);
     });
 
     it('Ares (Gevurah) lines are martial / curt / cost-named (per § 2)', () => {
+      // Same >50% threshold as the Hermes canary (#498) — half the
+      // matrix should reflect the avatar's voice keywords.
       const allAres = SIGN_KEYS.flatMap((s) => sefirahFraming['gevurah'][s]);
       const martialPattern = /\b(strength|cost|pay|burn|war|blade|sword|shield|wound|battle|enemy|stand|fight)\b/i;
       const hits = allAres.filter((l) => martialPattern.test(l));
-      expect(hits.length).toBeGreaterThan(allAres.length / 4);
+      expect(hits.length).toBeGreaterThan(allAres.length / 2);
     });
   });
 
