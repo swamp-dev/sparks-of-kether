@@ -371,39 +371,69 @@ export function PlayScreen({
       data-play-screen
       data-phase={turn.phase}
       data-active-player={activePlayer?.id}
-      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_400px] ${className ?? ''}`}
+      // #411: at lg+ the padding tightens (p-6 → p-4), the gap
+      // shrinks (gap-6 → gap-4), and the sidebar narrows (400px →
+      // 320px). Every reclaimed pixel of chrome lets the Tree
+      // column breathe more after the viewport-height-aware sizing.
+      // Below lg, the original gap-6 / p-6 is preserved — mobile
+      // is explicitly out of scope for this ticket; mobile-tab
+      // pattern is queued as #466.
+      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4 ${className ?? ''}`}
     >
-      <section aria-label="Tree of Life board" className="flex flex-col items-center gap-4">
-        <TreeBoard
-          state={turn.state}
-          {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
-          onPathClick={handlePathClick}
-          // #384: opens an inline popover instead of navigating to
-          // the Codex detail page (which would strand the player
-          // off-game with no return-to-game affordance).
-          onSefirahClick={(key) => setOpenSefirah(key)}
-          // #129: only highlight paths during the move phase. Once
-          // the player has moved, the board is decorative until the
-          // next turn begins; the action panel below carries the
-          // available affordances (Draw, End Turn, etc.).
-          movesEnabled={turn.phase === 'move'}
-          // #312 + #405: light the corresponding paths on the Tree
-          // when the player is considering a card. The signal source
-          // is `hoveredCard` (mouse / focus) with `selectedCard` as
-          // a sticky fallback — a clicked card stays lit even when
-          // the mouse moves to the Tree. Active across all phases
-          // except `'challenge'` (the resolution moment) so the
-          // path-light doesn't compete with movement animation.
-          // Lighting during `'draw'` is the #405 ask — it lets the
-          // player evaluate which card to keep / discard by seeing
-          // what each one opens.
-          {...((): { highlightedCard?: number } => {
-            if (turn.phase === 'challenge') return {};
-            const effective = hoveredCard ?? selectedCard;
-            return effective === undefined ? {} : { highlightedCard: effective };
-          })()}
-          className="w-full max-w-xl"
-        />
+      <section aria-label="Tree of Life board" className="flex flex-col items-center gap-4 lg:gap-3">
+        {/*
+          #411: outer height-constraining wrapper. At lg+ the Tree is
+          clamped by viewport height — the wrapper has explicit
+          `h-[calc(100vh-Xpx)]` plus `aspect-[400/620]` so its width
+          auto-derives from height while preserving the 400/620
+          viewBox proportion. X = the below-Tree stack at lg+: 16 px
+          top padding (lg:p-4) + 12 px gap (lg:gap-3) + ~52 px action
+          bar + 12 px gap (lg:gap-3) + ~280 px Hand fan + 16 px
+          bottom padding (lg:p-4) ≈ 388 px, leaving ~412 px for the
+          Tree at 1280×800. The cap (`max-h-[440px]`) keeps the Tree
+          from dominating taller viewports.
+          Below lg, the wrapper is just `w-full max-w-xl` — mobile
+          layout is explicitly preserved (out of scope; #466 owns
+          the mobile tab pattern).
+          The wrapper goes here rather than on TreeBoard's prop
+          because TreeBoard's own root has `inline-block` +
+          `style={{width:'100%'}}` shipped behaviour — height
+          constraints from outside fire correctly through it, but
+          `inline-block` would defeat the aspect-ratio sizing if
+          applied to the wrapper itself.
+        */}
+        <div className="w-full max-w-xl lg:max-w-none lg:w-auto lg:aspect-[400/620] lg:h-[calc(100vh-388px)] lg:max-h-[440px]">
+          <TreeBoard
+            state={turn.state}
+            {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
+            onPathClick={handlePathClick}
+            // #384: opens an inline popover instead of navigating to
+            // the Codex detail page (which would strand the player
+            // off-game with no return-to-game affordance).
+            onSefirahClick={(key) => setOpenSefirah(key)}
+            // #129: only highlight paths during the move phase. Once
+            // the player has moved, the board is decorative until the
+            // next turn begins; the action panel below carries the
+            // available affordances (Draw, End Turn, etc.).
+            movesEnabled={turn.phase === 'move'}
+            // #312 + #405: light the corresponding paths on the Tree
+            // when the player is considering a card. The signal source
+            // is `hoveredCard` (mouse / focus) with `selectedCard` as
+            // a sticky fallback — a clicked card stays lit even when
+            // the mouse moves to the Tree. Active across all phases
+            // except `'challenge'` (the resolution moment) so the
+            // path-light doesn't compete with movement animation.
+            // Lighting during `'draw'` is the #405 ask — it lets the
+            // player evaluate which card to keep / discard by seeing
+            // what each one opens.
+            {...((): { highlightedCard?: number } => {
+              if (turn.phase === 'challenge') return {};
+              const effective = hoveredCard ?? selectedCard;
+              return effective === undefined ? {} : { highlightedCard: effective };
+            })()}
+            className="w-full"
+          />
+        </div>
         <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
           <span
             className="text-xs uppercase tracking-widest opacity-60"
@@ -472,13 +502,21 @@ export function PlayScreen({
         ) : null}
       </section>
 
-      <aside aria-label="Game status" className="flex flex-col gap-6 text-veil">
+      {/*
+        #411: at lg+ the inter-panel gap drops to gap-3 (was gap-6)
+        and per-panel padding drops to p-3 (was p-4) — reclaims
+        ~48 px of aside height so the right column stops dominating
+        the document height at 1280×800. Mobile (gap-6 / p-4) is
+        preserved unchanged. ShellPanel collapse-to-strip remains a
+        separate ticket (#464) that can layer further compaction.
+      */}
+      <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
         {activePlayer ? (
-          <div className="rounded border border-veil/20 bg-ground/40 p-4">
+          <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
             <StatSheet player={activePlayer} />
           </div>
         ) : null}
-        <div className="rounded border border-veil/20 bg-ground/40 p-4">
+        <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
           <TeamMeters
             illumination={turn.state.illumination}
             separation={turn.state.separation}
@@ -491,7 +529,7 @@ export function PlayScreen({
             onSeparationIncrease={() => playSound('separation-up')}
           />
         </div>
-        <div className="rounded border border-veil/20 bg-ground/40 p-4">
+        <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
           <ShellPanel
             shells={turn.state.shells}
             headingLevel={3}
