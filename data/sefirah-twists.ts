@@ -19,6 +19,6 @@ import type { EncounterAvatarKey } from './avatar-names';
 export const sefirahTwist: Readonly<
   Partial<Record<EncounterAvatarKey, string>>
 > = {
-  hod: 'Hermes asks: name an arcanum. Match the deck-top, gain the edge.',
+  hod: 'Hermes asks: name an arcanum. Match the deck-top, and the road bends your way.',
   yesod: 'Selene offers: fail here, and a hidden door opens to your sight.',
 } as const;

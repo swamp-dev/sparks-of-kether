@@ -31,7 +31,7 @@ export const SHELL_COPY: Readonly<Record<SefirahKey, ShellCopy>> = {
   },
   binah: {
     title: 'Shell of Binah — Despair',
-    effect: 'Reflection actions (Spark abilities, ally assists) produce no Illumination.',
+    effect: 'Acts of reflection — Spark abilities, ally assists — give no light.',
   },
   chesed: {
     title: 'Shell of Chesed — Hoarding',
@@ -51,11 +51,11 @@ export const SHELL_COPY: Readonly<Record<SefirahKey, ShellCopy>> = {
   },
   hod: {
     title: 'Shell of Hod — Deception',
-    effect: 'The top card of the draw pile is announced as something else; only the blind drawer sees the truth.',
+    effect: 'The top of the draw pile speaks a false name; only the blind drawer hears the true one.',
   },
   yesod: {
     title: 'Shell of Yesod — Illusion',
-    effect: 'One path lies — travelers pay its cost but arrive at the wrong Sefirah.',
+    effect: 'One path shows the wrong door — travelers pay its cost but arrive elsewhere.',
   },
   malkuth: {
     title: 'Shell of Malkuth — Inertia',

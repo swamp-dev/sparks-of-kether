@@ -271,7 +271,7 @@ export function BlessingRitual({
               data-action="skip-ceremony"
               className="mt-4 text-xs uppercase tracking-widest opacity-50 hover:opacity-80"
             >
-              Skip — roll all remaining
+              Hasten the rite — roll the rest at once
             </button>
           </div>
         </div>

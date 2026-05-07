@@ -165,7 +165,10 @@ function formatCreateError(err: CreateRoomError): string {
     case 'code-generation-exhausted':
       return 'The lobby is unusually busy. Please try again in a moment.';
     case 'insert-failed':
-      return `Database error: ${err.cause}`;
+      // Player-facing message stays gentle; the cause stays in the
+      // browser console for dev triage.
+      console.error('[room] insert-failed', err.cause);
+      return 'Something went wrong opening the room. Please try again.';
   }
 }
 
@@ -184,17 +187,20 @@ function formatJoinError(err: JoinRoomError): string {
     case 'seat-rpc-failed':
       // The `join_room_next_seat` RPC (#325, migration 0006) is the
       // server-side seat picker. A failure here is a deployment /
-      // migration drift issue, not a normal user condition; surface
-      // it as a database error so the user retries and the cause
-      // reaches the dev console.
-      return `Database error: ${err.cause}`;
+      // migration drift issue, not a normal user condition; the
+      // cause is logged for dev triage and the player gets a
+      // gentle retry prompt.
+      console.error('[room] seat-rpc-failed', err.cause);
+      return 'Something went wrong joining the room. Please try again.';
     case 'self-lookup-failed':
       // Post-RPC re-join detection read failure (e.g. transient
       // PostgREST error). Surface so the user can retry rather
       // than fall through to a confusing constraint-violation
       // `insert-failed`.
-      return `Database error: ${err.cause}`;
+      console.error('[room] self-lookup-failed', err.cause);
+      return 'Something went wrong joining the room. Please try again.';
     case 'insert-failed':
-      return `Database error: ${err.cause}`;
+      console.error('[room] insert-failed', err.cause);
+      return 'Something went wrong joining the room. Please try again.';
   }
 }

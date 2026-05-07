@@ -356,7 +356,7 @@ function CommittingPanel(props: CommittingPanelProps): JSX.Element {
       {allies.length > 0 ? (
         <fieldset data-modifier="assist">
           <legend className="text-xs uppercase tracking-widest opacity-60">
-            Allies (each adds floor(stat / 2))
+            Allies (each adds half their stat, rounded down)
           </legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {allies.map((ally) => {

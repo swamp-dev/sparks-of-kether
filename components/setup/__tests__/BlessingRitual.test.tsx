@@ -192,10 +192,10 @@ describe('BlessingRitual — onComplete', () => {
     expect(onComplete).not.toHaveBeenCalled();
   });
 
-  it('Skip path also requires a Continue click before onComplete (#215)', () => {
+  it('Hasten path also requires a Continue click before onComplete (#215)', () => {
     const onComplete = vi.fn();
     render(<BlessingRitual rng={seededRng(7)} sign="aries" onComplete={onComplete} />);
-    fireEvent.click(screen.getByRole('button', { name: /Skip/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
     expect(onComplete).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(onComplete).toHaveBeenCalledTimes(1);
@@ -246,9 +246,9 @@ describe('BlessingRitual — summary', () => {
 
 describe('BlessingRitual — skip-to-summary (#133)', () => {
   // Playtest finding: the 10-step sequential ceremony is slow on
-  // repeat plays. Provide a "Skip — roll all" affordance that fills
+  // repeat plays. Provide a "Hasten the rite" affordance that fills
   // the remaining stats in one click and advances to the summary.
-  it('renders a Skip button that rolls all remaining stats at once', () => {
+  it('renders a Hasten button that rolls all remaining stats at once', () => {
     let result: StatSheet | null = null;
     const { container } = render(
       <BlessingRitual sign="aries"
@@ -258,7 +258,7 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
         }}
       />,
     );
-    const skip = screen.getByRole('button', { name: /Skip/i });
+    const skip = screen.getByRole('button', { name: /Hasten the rite/i });
     fireEvent.click(skip);
     // Should land on the summary panel.
     expect(
@@ -273,7 +273,7 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
     }
   });
 
-  it('Skip works mid-ceremony — partial stats are preserved, the rest are rolled', () => {
+  it('Hasten works mid-ceremony — partial stats are preserved, the rest are rolled', () => {
     let result: StatSheet | null = null;
     render(
       <BlessingRitual sign="aries"
@@ -288,8 +288,8 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
       fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
     }
-    // Skip from the third step onward.
-    fireEvent.click(screen.getByRole('button', { name: /Skip/i }));
+    // Hasten from the third step onward.
+    fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
     fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     // All 10 still present in the result.
     for (const stat of STAT_KEYS) {
@@ -474,13 +474,13 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     expect(sefirahBlessings.malkuth.taurus).toContain(quote?.textContent?.trim());
   });
 
-  it('Skip — roll all remaining mid-roll clears blessing state (state-machine invariant, #380)', () => {
+  it('Hasten the rite mid-roll clears blessing state (state-machine invariant, #380)', () => {
     // The skip-ceremony path advances stepIndex to sefirot.length and
     // jumps to the Summary screen. The state-machine invariant says
     // blessing is null outside the 'rolled' step state.
     //
     // The previous version of this test asserted DOM absence of the
-    // [data-blessing-quote] element after Skip — but DOM absence is
+    // [data-blessing-quote] element after Hasten — but DOM absence is
     // already guaranteed by the conditional render (Summary takes over,
     // RollDisplay unmounts), so the assertion would pass even if
     // setBlessing(null) were silently removed from handleSkipCeremony.
@@ -498,7 +498,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     expect(container.querySelector('[data-blessing-ritual]')?.getAttribute('data-blessing-state')).toBe('set');
     expect(container.querySelector('[data-blessing-quote]')).not.toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /Skip — roll all remaining/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
 
     // Verify we're on the Summary screen (data-status='complete').
     const root = container.querySelector('[data-blessing-ritual]');

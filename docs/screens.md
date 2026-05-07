@@ -52,7 +52,7 @@ surfaces from a player's perspective.
 After the ritual completes, the picker appears — twelve classical
 signs with stat dignities and Soul Door copy per sign. Headline UI
 of Epic #212 (astrological-sign classes). Captured by walking past
-the ritual via "Skip — roll all remaining" + "Continue".
+the ritual via "Hasten the rite — roll the rest at once" + "Continue".
 
 ### `/play` — live play surface (post-setup)
 

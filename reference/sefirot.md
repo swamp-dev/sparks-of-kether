@@ -75,7 +75,7 @@ waypoint on the ascent, and (in-game) a stat, a challenge, and a Shell.
 *"Nothing is solid here."*
 - **Game role:** First gate above Malkuth. Intuition / illusion challenges.
 - **Stat generated:** Intuition (perception and dream checks).
-- **Shell:** *Illusion* — one path's description is a lie until banished.
+- **Shell:** *Illusion* — until banished, one path's name shows the wrong door.
 
 ### 10. Malkuth — Kingdom
 *"Here the journey begins, or ends."*

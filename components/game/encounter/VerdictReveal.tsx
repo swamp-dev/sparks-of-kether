@@ -69,7 +69,7 @@ export function VerdictReveal({
         <RevealLine text={verdictLine} />
       </>
     ) : (
-      'The Sefirah responds.'
+      'The gate considers you.'
     );
 
   return (

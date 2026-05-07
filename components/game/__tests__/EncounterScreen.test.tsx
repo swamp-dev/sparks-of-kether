@@ -1305,7 +1305,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       view.rerender(<Wrapper />);
 
       const verdict = document.querySelector('[data-avatar-verdict]');
-      expect(verdict?.textContent).toBe('The Sefirah responds.');
+      expect(verdict?.textContent).toBe('The gate considers you.');
       expect(document.querySelector('[data-avatar-name]')).toBeNull();
     } finally {
       vi.useRealTimers();

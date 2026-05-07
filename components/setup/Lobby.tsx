@@ -139,7 +139,7 @@ export function Lobby({
               ? 'Waiting for more players'
               : allReady
                 ? 'Everyone is ready'
-                : 'Waiting for everyone to ready up'}
+                : 'Waiting for everyone to be ready'}
           </p>
           <p
             data-lobby-quote
@@ -252,7 +252,7 @@ function BeginHint({ players }: { players: readonly LobbyPlayer[] }): JSX.Elemen
   if (players.length < 2) {
     return (
       <p data-begin-hint="too-few-players" className="text-xs uppercase tracking-widest opacity-60">
-        Need at least 2 players
+        At least two seekers needed
       </p>
     );
   }
@@ -262,7 +262,7 @@ function BeginHint({ players }: { players: readonly LobbyPlayer[] }): JSX.Elemen
         data-begin-hint="too-many-players"
         className="text-xs uppercase tracking-widest opacity-60"
       >
-        Cap is 4 players
+        Up to four can ascend together
       </p>
     );
   }
@@ -273,7 +273,7 @@ function BeginHint({ players }: { players: readonly LobbyPlayer[] }): JSX.Elemen
         data-begin-hint="missing-zodiac-sign"
         className="text-center text-xs uppercase tracking-widest opacity-60"
       >
-        Waiting on {missingSign.map((p) => p.name).join(', ')} to choose a sign
+        Waiting on {missingSign.map((p) => p.name).join(', ')} to find their sign
       </p>
     );
   }
@@ -311,7 +311,7 @@ function BeginHint({ players }: { players: readonly LobbyPlayer[] }): JSX.Elemen
         data-begin-hint="not-ready"
         className="text-center text-xs uppercase tracking-widest opacity-60"
       >
-        Waiting on {notReady.map((p) => p.name).join(', ')} to ready up
+        Waiting on {notReady.map((p) => p.name).join(', ')} to be ready
       </p>
     );
   }

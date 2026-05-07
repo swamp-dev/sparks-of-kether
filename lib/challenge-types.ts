@@ -46,7 +46,7 @@ export interface ChallengeContext {
    * and pre-roll player-response lines. Optional because demo /
    * test harnesses construct contexts without a real player; when
    * absent, the encounter screen falls back to the placeholder
-   * "The Sefirah responds." line.
+   * "The gate considers you." line.
    */
   readonly playerSign?: ZodiacSignKey;
 }

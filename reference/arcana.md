@@ -74,7 +74,7 @@ bridge over the Abyss's lower arc; essential for balance-seekers.
 
 ### 9. The Hermit — Path 20 (Chesed → Tiferet)
 Inner light; the teacher within. **Game role:** right-pillar descent into
-the heart; the Hermit Sparks illuminates solo challenges.
+the heart; the Hermit illuminates solo challenges.
 
 ### 10. Wheel of Fortune — Path 21 (Chesed → Netzach)
 Change you cannot stop, only ride. **Game role:** descends the Mercy pillar.

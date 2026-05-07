@@ -63,7 +63,7 @@ const COLUMNS: readonly Column[] = [
   {
     key: 'symbolic',
     title: 'Symbolic',
-    body: "Real Kabbalah. You'll learn the ten Sefirot, the twenty-two paths, and the Major Arcana by playing.",
+    body: "You'll learn the ten Sefirot, the twenty-two paths, and the Major Arcana by playing — not as decoration, as the rules themselves.",
     glyph: (
       <svg
         viewBox="0 0 48 48"

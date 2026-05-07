@@ -593,15 +593,15 @@ export const sefirahFramingPlaceholder: Readonly<
   Record<EncounterAvatarKey, string>
 > = {
   chokmah:
-    'Athena weighs your insight. Strike clean — the spark answers only to a sure mind.',
+    "Athena's spear flashes. Strike before naming — Chokmah answers only the unhesitating eye.",
   binah:
     'Demeter remembers every loss. Show patience here, or grief will school you.',
   chesed:
     'Zeus opens his hand. Match his abundance, and the path floods with light.',
   gevurah:
-    'Ares names the cost. Pay in strength, or be sent back the way you came.',
+    'Ares draws the line. Pay it in strength, or take back what you brought.',
   tiferet:
-    'Apollo holds the balance. Speak true, and the harmony tilts your way.',
+    'Apollo holds the chord. Speak true, and the harmony falls toward you.',
   netzach:
     'Aphrodite asks the desire beneath the desire. Want well, and the gate yields.',
   hod: 'Hermes grins. Wit against wit — outflank me, and the road is yours.',

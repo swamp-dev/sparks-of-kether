@@ -164,7 +164,7 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
     statDescription:
       'Intuition — perception and dream checks; the stat of catching the signal in the noise.',
     shellRule:
-      "Illusion — one path's description is a lie until banished. Banished by clearing Yesod.",
+      "Illusion — until banished, one path's name shows the wrong door. Banished by clearing Yesod.",
     avatar: 'Selene',
   },
   malkuth: {
@@ -229,7 +229,7 @@ export const arcanumCodex: Readonly<Record<number, ArcanumCodexContent>> = {
   9: {
     meaning: 'Inner light; the teacher within.',
     gameRole:
-      'Right-pillar descent into the heart; the Hermit Sparks illuminates solo challenges.',
+      'Right-pillar descent into the heart; the Hermit illuminates solo challenges.',
   },
   10: {
     meaning: 'Change you cannot stop, only ride.',

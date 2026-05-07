@@ -950,7 +950,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
       {allies.length > 0 ? (
         <fieldset data-modifier="assist">
           <legend className="text-xs uppercase tracking-widest opacity-60">
-            Allies (each adds floor(stat / 2))
+            Allies (each adds half their stat, rounded down)
           </legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {allies.map((ally) => {
@@ -1146,7 +1146,7 @@ interface ReactPanelProps {
   /**
    * Greek avatar name (e.g. "Hermes", "Demeter"). Optional — when
    * absent (demo / tests without a player sign), the placeholder
-   * "The Sefirah responds." line is rendered instead. Roman names
+   * "The gate considers you." line is rendered instead. Roman names
    * are stored in `data/avatar-names.ts` for future pantheon-rotation
    * (#276 follow-up).
    */
