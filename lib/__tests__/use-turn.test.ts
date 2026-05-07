@@ -129,7 +129,7 @@ describe('useTurn — phase machine', () => {
     // p1 arrived at Kether AND is now in the held state — the core
     // invariant the fix protects. Without this direct assertion the
     // rotation check below could pass even if a future change cleared
-    // `position` or `arrivedAtKetherAt` and so accidentally un-held p1.
+    // `position` and so accidentally un-held p1.
     expect(result.current.state.players[0]?.position).toBe('kether');
     expect(isKetherHeld(result.current.state, 'p1')).toBe(true);
     // The seat rotated to p2 — the still-climbing player gets their
