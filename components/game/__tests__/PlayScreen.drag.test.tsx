@@ -5,6 +5,57 @@ import { makeFullGame } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 
 /**
+ * jsdom doesn't implement `document.elementFromPoint`. The drop
+ * handler in PlayScreen calls it to find the topmost element under
+ * the pointer-up coordinates. We stub it to return a chosen
+ * element, run the drag gesture (with microtask flushes so the
+ * queueMicrotask-deferred effects commit before assertions), then
+ * restore the original.
+ *
+ * Shared by both `drag-to-play` (#412) and `drag-to-discard` (#462)
+ * describes — the gesture shape is identical; only the drop target
+ * differs.
+ */
+async function performDragWithDropTarget(
+  cardBtn: HTMLElement,
+  dropTarget: Element | null,
+): Promise<void> {
+  type DocWithEFP = Document & {
+    elementFromPoint?: (x: number, y: number) => Element | null;
+  };
+  const docWithEFP = document as DocWithEFP;
+  const originalEFP = docWithEFP.elementFromPoint;
+  docWithEFP.elementFromPoint = (): Element | null => dropTarget;
+  try {
+    await act(async () => {
+      fireEvent.pointerDown(cardBtn, {
+        pointerId: 1,
+        clientX: 100,
+        clientY: 600,
+      });
+      fireEvent.pointerMove(cardBtn, {
+        pointerId: 1,
+        clientX: 220,
+        clientY: 300,
+      });
+      await Promise.resolve();
+      fireEvent.pointerUp(cardBtn, {
+        pointerId: 1,
+        clientX: 220,
+        clientY: 300,
+      });
+      // Two microtask flushes: the drop effect's queueMicrotask
+      // dispatches into the parent's onCardDragEnd, which itself
+      // queueMicrotasks the announcement.
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  } finally {
+    docWithEFP.elementFromPoint = originalEFP;
+  }
+}
+
+/**
  * #412 — drag-to-play integration. Verifies that a drag gesture on a
  * card that ends over a matching Tree-path drop zone dispatches
  * `turn.move` exactly the same way click-then-click does, and that
@@ -17,53 +68,6 @@ import { seededRng } from '@/engine/rng';
  * the `turn.move` dispatch.
  */
 describe('PlayScreen — drag-to-play (#412)', () => {
-  /**
-   * jsdom doesn't implement `document.elementFromPoint`. The drop
-   * handler in PlayScreen calls it to find the topmost element under
-   * the pointer-up coordinates. We stub it to return a chosen
-   * element, run the drag gesture (with microtask flushes so the
-   * queueMicrotask-deferred effects commit before assertions), then
-   * restore the original.
-   */
-  async function performDragWithDropTarget(
-    cardBtn: HTMLElement,
-    dropTarget: Element | null,
-  ): Promise<void> {
-    type DocWithEFP = Document & {
-      elementFromPoint?: (x: number, y: number) => Element | null;
-    };
-    const docWithEFP = document as DocWithEFP;
-    const originalEFP = docWithEFP.elementFromPoint;
-    docWithEFP.elementFromPoint = (): Element | null => dropTarget;
-    try {
-      await act(async () => {
-        fireEvent.pointerDown(cardBtn, {
-          pointerId: 1,
-          clientX: 100,
-          clientY: 600,
-        });
-        fireEvent.pointerMove(cardBtn, {
-          pointerId: 1,
-          clientX: 220,
-          clientY: 300,
-        });
-        await Promise.resolve();
-        fireEvent.pointerUp(cardBtn, {
-          pointerId: 1,
-          clientX: 220,
-          clientY: 300,
-        });
-        // Two microtask flushes: the drop effect's queueMicrotask
-        // dispatches into the parent's onCardDragEnd, which itself
-        // queueMicrotasks the announcement.
-        await Promise.resolve();
-        await Promise.resolve();
-      });
-    } finally {
-      docWithEFP.elementFromPoint = originalEFP;
-    }
-  }
-
   it('dropping a card on its matching path advances the player', async () => {
     // Set up: active player at Malkuth, hand=[21], yesod cleared so
     // path 32 (arcanum 21, Malkuth↔Yesod) lands directly in 'end'.
@@ -165,45 +169,6 @@ describe('PlayScreen — drag-to-play (#412)', () => {
 });
 
 describe('PlayScreen — drag-to-discard (#462)', () => {
-  // Same elementFromPoint stub helper as the drag-to-play describe;
-  // duplicated inline so the discard tests don't pull in a brittle
-  // module-scoped helper.
-  async function performDragWithDropTarget(
-    cardBtn: HTMLElement,
-    dropTarget: Element | null,
-  ): Promise<void> {
-    type DocWithEFP = Document & {
-      elementFromPoint?: (x: number, y: number) => Element | null;
-    };
-    const docWithEFP = document as DocWithEFP;
-    const originalEFP = docWithEFP.elementFromPoint;
-    docWithEFP.elementFromPoint = (): Element | null => dropTarget;
-    try {
-      await act(async () => {
-        fireEvent.pointerDown(cardBtn, {
-          pointerId: 1,
-          clientX: 100,
-          clientY: 600,
-        });
-        fireEvent.pointerMove(cardBtn, {
-          pointerId: 1,
-          clientX: 220,
-          clientY: 300,
-        });
-        await Promise.resolve();
-        fireEvent.pointerUp(cardBtn, {
-          pointerId: 1,
-          clientX: 220,
-          clientY: 300,
-        });
-        await Promise.resolve();
-        await Promise.resolve();
-      });
-    } finally {
-      docWithEFP.elementFromPoint = originalEFP;
-    }
-  }
-
   it('dropping a card on the discard pile during pendingDiscard discards the card', async () => {
     // Set up: active player has been over-cap-Meditate'd into a
     // pendingDiscard state. The simplest fixture: hand of 8 cards
