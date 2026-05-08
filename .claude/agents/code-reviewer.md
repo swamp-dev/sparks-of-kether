@@ -113,8 +113,12 @@ that demonstrates it.)
 - [ ] Criterion text — not implemented; see Significant #N.
 
 ## Verdict
-One line. Must contain exactly one of: ship, fix, rework, block.
+No Critical or [high] Significant findings — ship.
 ```
+
+(Sample verdict line above. Replace with your actual verdict; the
+line must contain exactly one of `ship`, `fix`, `rework`, or `block`
+— see semantics + parser notes below.)
 
 Verdict semantics:
 - **ship** — no Critical, no Significant marked `[high]`. Improvements
