@@ -192,6 +192,16 @@ describe('pickVerdict', () => {
     const cell = sefirahVerdicts.chesed.libra.fail;
     expect(verdict).toBe(cell[cell.length - 1]);
   });
+
+  it('throws if the sign key is unrecognised', () => {
+    // Loud-fail-on-drift symmetry with `pickFraming`'s sign guard
+    // (#497). The `ZodiacSignKey` narrow union prevents this at
+    // compile time; the throw guards a forced cast or data drift.
+    const rng = seededRng(1);
+    expect(() =>
+      pickVerdict('hod', 'not-a-sign' as ZodiacSignKey, 'pass', rng),
+    ).toThrow();
+  });
 });
 
 describe('pickPlayerResponse', () => {

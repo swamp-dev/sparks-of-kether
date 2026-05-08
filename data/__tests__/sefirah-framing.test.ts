@@ -146,6 +146,18 @@ describe('sefirah-framing', () => {
         pickFraming('not-a-sefirah' as EncounterAvatarKey, 'aries', rng),
       ).toThrow();
     });
+
+    it('throws if the sign key is unrecognised', () => {
+      // Sign-axis symmetry with the bad-avatar test above (#497).
+      // `pickFraming`'s explicit `variants === undefined` guard fires
+      // for an unknown sign on a valid sefirah; the `ZodiacSignKey`
+      // narrow union prevents this at compile time, and the throw
+      // guards a forced cast or data drift.
+      const rng = seededRng(1);
+      expect(() =>
+        pickFraming('hod', 'not-a-sign' as ZodiacSignKey, rng),
+      ).toThrow();
+    });
   });
 
   describe('voice consistency (sampling)', () => {
