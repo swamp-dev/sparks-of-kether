@@ -4,9 +4,9 @@ import {
   sefirahFraming,
   sefirahFramingPlaceholder,
 } from '../sefirah-framing';
-import { avatarNames, type EncounterAvatarKey } from '../avatar-names';
+import { avatarNames } from '../pantheons/greco-roman/avatar-names';
 import { seededRng } from '@/engine/rng';
-import type { ZodiacSignKey } from '../types';
+import type { EncounterAvatarKey, ZodiacSignKey } from '../types';
 
 const AVATAR_KEYS: readonly EncounterAvatarKey[] = [
   'chokmah',

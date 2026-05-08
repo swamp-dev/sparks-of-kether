@@ -1,25 +1,32 @@
 import type { SefirahKey } from '../../types';
-import { sefirahCodex } from '../../codex-content';
 
 /**
- * Per-Sefirah codex "Voice" row, derived from the existing
- * `sefirahCodex` content. Phase A1 of Epic #293 (#547): the codex
- * `avatar` field stays on `SefirahCodexContent` for now (A3 / #549
- * removes it once consumers read via the registry).
+ * Per-Sefirah codex "Voice" row for the greco-roman pantheon.
  *
- * `null` for Kether — the Final Threshold is collective and "the
- * team becomes the avatar"; no single deity. Hestia stays attached
- * to Malkuth even though she's a companion (codex still names her).
+ * Phase A3 of Epic #293 (#549) inlined these literals here when the
+ * `avatar` field was dropped from `SefirahCodexContent`. The codex
+ * page now reads this map via the active `Pantheon` from
+ * `usePantheon()`, not from a derived field on `sefirahCodex`.
+ *
+ * Anchors against `design/avatars.md § 1` ("Avatar mapping (locked)"):
+ *   - `null` for Kether — the Final Threshold is collective and "the
+ *     team becomes the avatar"; no single deity.
+ *   - Hestia stays attached to Malkuth even though she's a companion
+ *     (the codex still names her on the Sefirah page).
+ *   - The other 8 are the same names as in `avatarNames[*].greek` —
+ *     listed independently here so the codex map can diverge from the
+ *     encounter-avatar names if a future pantheon decides to (e.g. an
+ *     alternate companion for Malkuth).
  */
 export const sefirahCodexAvatar: Readonly<Record<SefirahKey, string | null>> = {
-  kether: sefirahCodex.kether.avatar,
-  chokmah: sefirahCodex.chokmah.avatar,
-  binah: sefirahCodex.binah.avatar,
-  chesed: sefirahCodex.chesed.avatar,
-  gevurah: sefirahCodex.gevurah.avatar,
-  tiferet: sefirahCodex.tiferet.avatar,
-  netzach: sefirahCodex.netzach.avatar,
-  hod: sefirahCodex.hod.avatar,
-  yesod: sefirahCodex.yesod.avatar,
-  malkuth: sefirahCodex.malkuth.avatar,
+  kether: null,
+  chokmah: 'Athena',
+  binah: 'Demeter',
+  chesed: 'Zeus',
+  gevurah: 'Ares',
+  tiferet: 'Apollo',
+  netzach: 'Aphrodite',
+  hod: 'Hermes',
+  yesod: 'Selene',
+  malkuth: 'Hestia',
 };

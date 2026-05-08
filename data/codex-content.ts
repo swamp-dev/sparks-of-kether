@@ -28,14 +28,6 @@ export interface SefirahCodexContent {
   readonly statDescription: string;
   /** Shell-rule narrative ("Fragmentation — team information splits..."). */
   readonly shellRule: string;
-  /**
-   * Mythological avatar (Greek name) associated with this Sefirah,
-   * per `design/avatars.md § 1`. Renders as the "Voice" row in the
-   * codex meta table — closes the loop between the codex and the
-   * encounter system. `null` for Kether: its Final Threshold is
-   * collective and "the team becomes the avatar" — no single deity.
-   */
-  readonly avatar: string | null;
 }
 
 export interface ArcanumCodexContent {
@@ -78,7 +70,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Unity — factors into every cooperative assist; the silence beneath every voice.',
     shellRule:
       'Fragmentation — team information splits; private hands again. Banished by reaching Kether collectively.',
-    avatar: null,
   },
   chokmah: {
     quote: 'The flash before thought.',
@@ -88,7 +79,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
     statDescription: 'Insight — first-instinct checks; the leap that knows where it lands.',
     shellRule:
       'Paralysis — no instinctive actions allowed this round. Banished by clearing Chokmah.',
-    avatar: 'Athena',
   },
   binah: {
     quote: 'Form is limitation, and limitation is sorrow.',
@@ -99,7 +89,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Understanding — lore and reflection checks; the stat of carrying weight without flinching.',
     shellRule:
       'Despair — reflection-based Sparks produce no effect. Banished by clearing Binah.',
-    avatar: 'Demeter',
   },
   chesed: {
     quote: 'What you pour out returns sevenfold.',
@@ -110,7 +99,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Lovingkindness — used when giving or assisting; the gravity that draws the team together.',
     shellRule:
       'Hoarding — no cards may be gifted for one full round. Banished by clearing Chesed.',
-    avatar: 'Zeus',
   },
   gevurah: {
     quote: 'I say no so that yes means something.',
@@ -121,7 +109,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Strength — boundary and willpower checks; the stat of holding the line.',
     shellRule:
       'Cruelty — every player loses 1 point of Strength until banished. Banished by clearing Gevurah.',
-    avatar: 'Ares',
   },
   tiferet: {
     quote: 'Know yourself, and you know the All.',
@@ -132,7 +119,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Harmony — coordination and assist bonuses; the stat that makes the whole greater than the parts.',
     shellRule:
       'Vanity — the Tiferet Soul Aspect ability is disabled. Banished by clearing Tiferet.',
-    avatar: 'Apollo',
   },
   netzach: {
     quote: 'The heart knows the way.',
@@ -143,7 +129,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Passion — instinctive and artistic checks; the stat of sustained want.',
     shellRule:
       'Obsession — cards played on desire-themed paths have no effect. Banished by clearing Netzach.',
-    avatar: 'Aphrodite',
   },
   hod: {
     quote: 'Words are spells.',
@@ -154,7 +139,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Intellect — analysis, sequencing, word puzzles; the stat of finding the seam.',
     shellRule:
       'Deception — the top card of the deck is misreported. Banished by clearing Hod.',
-    avatar: 'Hermes',
   },
   yesod: {
     quote: 'Nothing is solid here.',
@@ -165,7 +149,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Intuition — perception and dream checks; the stat of catching the signal in the noise.',
     shellRule:
       "Illusion — until banished, one path's name shows the wrong door. Banished by clearing Yesod.",
-    avatar: 'Selene',
   },
   malkuth: {
     quote: 'Here the journey begins, or ends.',
@@ -176,7 +159,6 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Body — physical grounding; resists Separation effects. The stat that anchors.',
     shellRule:
       'Inertia — movement costs an extra card this round. Banished by reclearing Malkuth (rare; usually mid-game corruption).',
-    avatar: 'Hestia',
   },
 };
 

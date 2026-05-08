@@ -1,10 +1,8 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sefirahByKey, zodiacSigns } from '@/data';
-import {
-  avatarNames,
-  type EncounterAvatarKey,
-} from '@/data/avatar-names';
+import type { EncounterAvatarKey } from '@/data/types';
+import { usePantheon } from '@/lib/settings/pantheon';
 import {
   pickPlayerResponse,
   pickVerdict,
@@ -181,6 +179,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // union ensures multiplayer callers cannot reach this with `player`
   // undefined.
   const player: PlayerState | undefined = props.player;
+  const { pantheon } = usePantheon();
   const sefirahData = useMemo(
     () => sefirahByKey(context.sefirah),
     [context.sefirah],
@@ -657,8 +656,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
         ? 'pass'
         : 'fail';
   const avatarNameLabel =
-    avatarHasCopy && avatarKey in avatarNames
-      ? avatarNames[avatarKey].greek
+    avatarHasCopy && avatarKey in pantheon.avatarNames
+      ? pantheon.avatarNames[avatarKey].greek
       : undefined;
 
   // Trial-framing line for the prep stage. Sign-aware multi-variant
@@ -885,7 +884,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           reducedMotion={reducedMotion}
           glowClass={frameTokens.buttonGlow}
           {...(avatarHasCopy
-            ? { avatarName: avatarNames[avatarKey].greek }
+            ? { avatarName: pantheon.avatarNames[avatarKey].greek }
             : {})}
           {...(verdictLine !== undefined ? { verdictLine } : {})}
         />
@@ -1166,8 +1165,9 @@ interface ReactPanelProps {
    * Greek avatar name (e.g. "Hermes", "Demeter"). Optional — when
    * absent (demo / tests without a player sign), the placeholder
    * "The gate considers you." line is rendered instead. Roman names
-   * are stored in `data/avatar-names.ts` for future pantheon-rotation
-   * (#276 follow-up).
+   * (and any future-pantheon names) live on the active `Pantheon`
+   * object via `usePantheon()` (#293 — Phase A2/#548 added the hook,
+   * Phase A3/#549 wired consumers).
    */
   readonly avatarName?: string;
   /**

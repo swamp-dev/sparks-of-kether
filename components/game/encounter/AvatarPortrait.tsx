@@ -1,7 +1,8 @@
+'use client';
 import { useState } from 'react';
-import type { SefirahKey } from '@/data';
+import type { EncounterAvatarKey, SefirahKey } from '@/data/types';
 import { sefirahMarkLetter } from '@/data';
-import { avatarNames, type EncounterAvatarKey } from '@/data/avatar-names';
+import { usePantheon } from '@/lib/settings/pantheon';
 import { SEFIRAH_FRAME_TOKENS } from './sefirah-frame-tokens';
 
 /**
@@ -52,12 +53,6 @@ interface AvatarPortraitProps {
   readonly className?: string;
 }
 
-/** Sefirot that have a commissioned portrait shipped under `public/portraits/<character>/`. */
-function avatarCharacterFor(sefirah: SefirahKey): string | undefined {
-  if (sefirah === 'kether' || sefirah === 'malkuth') return undefined;
-  return avatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
-}
-
 export function AvatarPortrait({
   sefirah,
   avatarName,
@@ -66,9 +61,18 @@ export function AvatarPortrait({
   size = 'small',
   className,
 }: AvatarPortraitProps): JSX.Element {
+  const { pantheon } = usePantheon();
   const tokens = SEFIRAH_FRAME_TOKENS[sefirah];
   const letter = sefirahMarkLetter[sefirah];
-  const character = avatarCharacterFor(sefirah);
+  // Sefirot that have a commissioned portrait shipped under
+  // `public/portraits/<character>/`. Kether (collective Final
+  // Threshold) and Malkuth (Hestia is companion-only) are excluded.
+  // The greek name is lowercased for the asset path — Phase B
+  // (#556) ships Egyptian portraits under their own asset slugs.
+  const character =
+    sefirah === 'kether' || sefirah === 'malkuth'
+      ? undefined
+      : pantheon.avatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
   const [imageFailed, setImageFailed] = useState(false);
   const showPortraitImage =
     size === 'stage' && character !== undefined && !imageFailed;

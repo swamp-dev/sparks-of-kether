@@ -7,6 +7,7 @@ import {
   type SefirahKey,
 } from '@/data';
 import { sefirahCodex } from '@/data/codex-content';
+import { pantheons } from '@/data/pantheons';
 
 /**
  * Codex detail page for one Sefirah. Sefaria-style scholarly layout
@@ -26,6 +27,13 @@ export interface SefirahDetailProps {
 export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
   const sefirah = sefirahByKey(sefirahKey);
   const codex = sefirahCodex[sefirahKey];
+  // Codex pages are statically prerendered against the greco-roman
+  // pantheon — they have no interactivity that requires the active
+  // pantheon. Reading the registry's greco-roman entry directly keeps
+  // this a server component with zero JS cost. Phase C1 (#557) re-
+  // introduces a client boundary at a higher level if and when codex
+  // pages need to track the active pantheon at runtime.
+  const codexAvatar = pantheons['greco-roman'].sefirahCodexAvatar[sefirahKey];
 
   // Adjacent paths — every path that touches this Sefirah, in
   // ascending path number for stable rendering.
@@ -114,10 +122,10 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
             */}
             <dt className="font-display tracking-widest opacity-70">Voice</dt>
             <dd data-sefirah-voice>
-              {codex.avatar === null ? (
+              {codexAvatar === null ? (
                 <em className="opacity-80">The team becomes the avatar</em>
               ) : (
-                codex.avatar
+                codexAvatar
               )}
             </dd>
           </dl>
@@ -228,8 +236,9 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
         </Link>
         <span className="mx-3 opacity-40">·</span>
         From{' '}
-        <code className="rounded bg-white/5 px-1">reference/sefirot.md</code>{' '}
-        and <code className="rounded bg-white/5 px-1">data/codex-content.ts</code>.
+        <code className="rounded bg-white/5 px-1">reference/sefirot.md</code>,{' '}
+        <code className="rounded bg-white/5 px-1">data/codex-content.ts</code>, and{' '}
+        <code className="rounded bg-white/5 px-1">data/pantheons/</code>.
       </footer>
     </article>
   );

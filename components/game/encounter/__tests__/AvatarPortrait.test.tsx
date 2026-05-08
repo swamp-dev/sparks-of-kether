@@ -25,7 +25,9 @@ describe('AvatarPortrait', () => {
         '[data-avatar-portrait-image]',
       ) as HTMLImageElement | null;
       expect(img).not.toBeNull();
-      // `avatarNames[hod].greek` → `Hermes` → `hermes` (lowercase).
+      // `pantheon.avatarNames[hod].greek` → `Hermes` → `hermes` (lowercase).
+      // The component renders without a provider, so usePantheon()'s
+      // no-provider stub returns the greco-roman default.
       expect(img?.getAttribute('src')).toBe('/portraits/hermes/large.webp');
       // The Hebrew-letter placeholder is hidden while the image renders.
       expect(

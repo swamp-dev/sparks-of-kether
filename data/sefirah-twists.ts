@@ -1,4 +1,4 @@
-import type { EncounterAvatarKey } from './avatar-names';
+import type { EncounterAvatarKey } from './types';
 
 /**
  * Per-Sefirah "Twist" banner copy — names the per-Sefirah encounter

@@ -6,8 +6,9 @@ import {
   sefirahVerdicts,
   type ChallengeOutcome,
 } from '../sefirah-verdicts';
-import { avatarNames, type EncounterAvatarKey } from '../avatar-names';
+import { avatarNames } from '../pantheons/greco-roman/avatar-names';
 import { seededRng } from '@/engine/rng';
+import type { EncounterAvatarKey } from '../types';
 import type { ZodiacSignKey } from '@/data';
 
 /**

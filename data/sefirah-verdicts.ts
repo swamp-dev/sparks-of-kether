@@ -1,6 +1,5 @@
 import type { Rng } from '@/engine/rng';
-import type { ZodiacSignKey } from './types';
-import type { EncounterAvatarKey } from './avatar-names';
+import type { EncounterAvatarKey, ZodiacSignKey } from './types';
 
 /**
  * Per-Sefirah avatar verdict matrix and pre-roll player-response

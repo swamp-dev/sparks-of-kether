@@ -27,12 +27,10 @@ export type SefirahKey =
  * `data/pantheons/types.ts` because the set of encounter-avatar
  * Sefirot is pantheon-agnostic — every pantheon's `avatarNames`
  * is keyed by this same exclusion. Co-locating with `SefirahKey`
- * also avoids a type-only import cycle: the shim
- * (`data/avatar-names.ts`) now resolves `EncounterAvatarKey` from
- * this file rather than from `data/pantheons/types.ts`. The
- * matrix files (sefirah-framing, sefirah-verdicts, sefirah-twists)
- * still import via the shim, so their import paths are unchanged;
- * the shim's redirect is what closes the loop.
+ * keeps the import graph acyclic: the matrix files
+ * (sefirah-framing, sefirah-verdicts, sefirah-twists) and the
+ * pantheon types both import this from `./types`, so neither side
+ * has to reach across the registry boundary.
  */
 export type EncounterAvatarKey = Exclude<SefirahKey, 'kether' | 'malkuth'>;
 

@@ -18,8 +18,22 @@
  * file path fails at compile time.
  */
 
-import type { SefirahKey } from '@/data/types';
-import { avatarNames, type EncounterAvatarKey } from '@/data/avatar-names';
+import type { EncounterAvatarKey, SefirahKey } from '@/data/types';
+import { pantheons } from '@/data/pantheons';
+
+// Avatar-arrives cue keys are intentionally greco-roman-coupled —
+// the cue keys (`avatar-arrives-hermes`, etc.) are baked into the
+// `SoundCue` union and `CUE_FILES` map. Re-using the same audio
+// regardless of active pantheon means a future Phase B pantheon
+// doesn't need to ship its own per-deity audio.
+//
+// **Phase B requirement** (#293): if an alternate pantheon ships
+// per-deity stings (different greek-name → audio mapping), the
+// `SoundCue` union and `CUE_FILES` map must be extended FIRST.
+// Today this function returns the greco-roman key regardless of the
+// active pantheon — silently producing a cue that doesn't exist in
+// `CUE_FILES` would fail the lookup at playback time.
+const grecoRomanAvatarNames = pantheons['greco-roman'].avatarNames;
 
 export type SoundCue =
   | 'spark-collected'
@@ -77,6 +91,6 @@ export const CUE_FILES: Readonly<Record<SoundCue, string>> = {
 export function avatarArrivesCueFor(sefirah: SefirahKey): SoundCue | null {
   if (sefirah === 'kether') return null;
   if (sefirah === 'malkuth') return 'avatar-arrives-hestia';
-  const greek = avatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
+  const greek = grecoRomanAvatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
   return `avatar-arrives-${greek}` as SoundCue;
 }
