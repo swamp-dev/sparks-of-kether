@@ -751,7 +751,15 @@ describe('applyClientAction — end-turn', () => {
       makePlayer({ id: 'p1' }),
       makePlayer({ id: 'p2' }),
     ];
-    const state = makeState({}, { players, activePlayerId: 'p1' });
+    // #522: `end-turn` requires phase === 'end' OR
+    // (phase === 'move' && meditatedThisTurn === true). The default
+    // `makeState` phase is `'move'` with no meditation, which would
+    // now be rejected — pin the legitimate seat-rotation path on
+    // phase 'end'.
+    const state = makeState(
+      {},
+      { players, activePlayerId: 'p1', phase: 'end' },
+    );
     const result = applyClientAction(
       state,
       { kind: 'end-turn', playerId: 'p1' },
@@ -761,6 +769,75 @@ describe('applyClientAction — end-turn', () => {
     if (!result.ok) return;
     expect(result.newState.activePlayerId).toBe('p2');
   });
+
+  it('allows end-turn from phase "move" when meditatedThisTurn is true (#522 / #503)', () => {
+    // #503 affordance: a player who meditated may end the turn directly
+    // even from `'move'` (Meditate is a complete turn-action). The
+    // dispatcher must mirror the reducer's allowEndTurn rule.
+    const players = [
+      makePlayer({ id: 'p1' }),
+      makePlayer({ id: 'p2' }),
+    ];
+    const state = makeState(
+      {},
+      {
+        players,
+        activePlayerId: 'p1',
+        phase: 'move',
+        meditatedThisTurn: true,
+      },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'end-turn', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.newState.activePlayerId).toBe('p2');
+  });
+
+  it('rejects end-turn from phase "move" when meditatedThisTurn is not set (#522)', () => {
+    // #522: a fresh-`'move'` player who hasn't meditated must not be
+    // able to skip their turn through the events route. `turnReducer`
+    // gates this at `lib/turn-machine.ts:1423`; the dispatcher arm
+    // mirrors the same gate ahead of the cap check, so an HTTP-level
+    // bypass (cheating client / racing tabs / future code path)
+    // surfaces a `wrong-phase` rejection instead of silently rotating
+    // the seat.
+    const players = [
+      makePlayer({ id: 'p1' }),
+      makePlayer({ id: 'p2' }),
+    ];
+    const state = makeState(
+      {},
+      { players, activePlayerId: 'p1', phase: 'move' },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'end-turn', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('end-turn');
+    if (result.error.kind !== 'end-turn') return;
+    expect(result.error.cause.kind).toBe('wrong-phase');
+    expect(result.error.cause.expected).toBe('end');
+    expect(result.error.cause.actual).toBe('move');
+    // Seat must NOT have rotated.
+    expect(state.activePlayerId).toBe('p1');
+  });
+
+  // Note: this gate is intentionally narrow — it fires ONLY for the
+  // `'move'` + no-meditate case from #522, which is the specific
+  // skip-turn bypass the ticket targets. The reducer's full
+  // `allowEndTurn` rule also rejects `'challenge'` and `'kether'`
+  // dispatcher end-turns, but those are out of scope for this
+  // ticket: a future tightening would be a separate tech-debt
+  // pass that also revisits the playthrough scenario harness's
+  // trailing-`endTurn` calls (which currently fire after the
+  // Kether ritual and are no-ops in real production gameplay).
 });
 
 describe('applyClientAction — meditate', () => {

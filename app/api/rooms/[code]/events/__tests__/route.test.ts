@@ -235,6 +235,28 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
 
   it('allows the active caller to submit a turn-locked action', async () => {
     getUserResult = { data: { user: { id: 'p1' } }, error: null };
+    // #522: end-turn now requires phase 'end' (or 'move' + meditated).
+    // Override the shared snapshot (which uses default phase 'move')
+    // to a legitimate end-of-turn shape so this test exercises the
+    // authorization+success path, not the new wrong-phase guard.
+    const endPhaseState = makeState(
+      {},
+      {
+        players: [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })],
+        activePlayerId: 'p1',
+        phase: 'end',
+      },
+    );
+    snapshotResponse = {
+      data: {
+        id: 'gs-1',
+        room_id: 'room-uuid',
+        snapshot: serializeGameState(endPhaseState),
+        last_event_id: 0,
+        updated_at: 't',
+      },
+      error: null,
+    };
     const res = await POST(
       makeRequest(
         { kind: 'end-turn', playerId: 'p1' },
@@ -254,6 +276,36 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     ).toBe(false);
   });
 
+  it('returns 422 with action-rejected when end-turn fires from move-without-meditate (#522)', async () => {
+    // Pin the HTTP boundary for the new wrong-phase guard. The
+    // shared beforeEach snapshot is phase 'move' with no
+    // meditatedThisTurn — exactly the bug case the dispatcher gate
+    // now rejects. The route surfaces apply.error as 422
+    // action-rejected with the dispatcher's `{ kind: 'end-turn',
+    // cause: { kind: 'wrong-phase', expected, actual } }` shape
+    // intact in `detail`.
+    getUserResult = { data: { user: { id: 'p1' } }, error: null };
+    const res = await POST(
+      makeRequest(
+        { kind: 'end-turn', playerId: 'p1' },
+        { authorization: 'Bearer p1-token' },
+      ),
+      { params: { code: 'ABCDEF' } },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      error: string;
+      detail: { kind: string; cause: { kind: string; expected: string; actual: string } };
+    };
+    expect(body.error).toBe('action-rejected');
+    expect(body.detail.kind).toBe('end-turn');
+    expect(body.detail.cause.kind).toBe('wrong-phase');
+    expect(body.detail.cause.expected).toBe('end');
+    expect(body.detail.cause.actual).toBe('move');
+    // Snapshot must NOT have been written through the service client.
+    expect(serviceClientCreated).toBe(false);
+  });
+
   it('returns a structured 500 when the engine throws on a corrupted snapshot', async () => {
     // Caller is `ghost` and IS the activePlayerId per snapshot, so
     // authorize passes — but `ghost` is not in `state.players`, so
@@ -266,6 +318,9 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
       {
         players: [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })],
         activePlayerId: 'ghost',
+        // #522: phase 'end' so the new wrong-phase guard doesn't
+        // intercept before the corrupt-state path is reached.
+        phase: 'end',
       },
     );
     snapshotResponse = {

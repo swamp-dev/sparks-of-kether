@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { GameState } from '@/engine/types';
 import { makeRoom, makeFullGame } from '../fixtures';
 import { scenario, ScenarioFailedError } from '../scenario';
 
@@ -91,7 +92,12 @@ describe('scenario', () => {
   it('chains valid actions and returns the final state', () => {
     // 2-player game; player 0 ends their turn → activePlayerId
     // rotates to player 1.
-    const initial = makeFullGame({ playerCount: 2, seed: 11 });
+    // #522: `applyClientAction` now refuses end-turn from a fresh-
+    // 'move' player who hasn't meditated. Override the seed phase to
+    // 'end' so this scenario reflects a legitimate end-of-turn state
+    // ready to rotate the seat.
+    const base = makeFullGame({ playerCount: 2, seed: 11 });
+    const initial: GameState = { ...base, phase: 'end' };
     const p0 = initial.players[0]!.id;
     const p1 = initial.players[1]!.id;
     const final = scenario(initial).endTurn(p0).run();
@@ -128,7 +134,12 @@ describe('scenario', () => {
     // scenario's stateAtFailure should be a CLONE of the handle we
     // already have — so mutating the clone must not change the
     // original.
-    const initial = makeFullGame({ playerCount: 2, seed: 11 });
+    // #522: end-turn requires phase 'end' (or 'move' + meditatedThisTurn).
+    // Seed phase 'end' so the end-turn step reflects a legitimate
+    // post-action state; the test's actual subject is the
+    // structuredClone invariant on stateAtFailure, not the phase.
+    const base = makeFullGame({ playerCount: 2, seed: 11 });
+    const initial: GameState = { ...base, phase: 'end' };
     const p0 = initial.players[0]!.id;
     const after = scenario(initial).endTurn(p0).run();
     // `after` is a fresh state produced by the engine reducer. If

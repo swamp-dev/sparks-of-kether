@@ -20,6 +20,7 @@ import {
   EMPTY_PENDING_MODIFIERS,
   type GameState,
   type MoveRejection,
+  type TurnPhase,
 } from '@/engine/types';
 import { initEncounterEnvelope } from './turn-machine';
 import {
@@ -200,6 +201,20 @@ export type ApplyActionRejection =
   | { readonly kind: 'prep'; readonly cause: TurnReducerError }
   | { readonly kind: 'challenge'; readonly cause: string }
   | { readonly kind: 'meditate'; readonly cause: 'unknown-player' | 'already-meditated' }
+  | {
+      // #522: mirrors `turnReducer`'s `allowEndTurn` gate at
+      // `lib/turn-machine.ts:1423`. Surfaces when an HTTP-level
+      // bypass (cheating client / racing tabs / future code path)
+      // sends end-turn from a phase that should silently skip the
+      // turn — instead we reject so the caller can render a precise
+      // message instead of pretending the seat rotated.
+      readonly kind: 'end-turn';
+      readonly cause: {
+        readonly kind: 'wrong-phase';
+        readonly expected: TurnPhase;
+        readonly actual: TurnPhase;
+      };
+    }
   | { readonly kind: 'kether'; readonly cause: KetherRejection }
   | { readonly kind: 'unknown-action' };
 
@@ -367,6 +382,34 @@ export function applyClientAction(
       return { ok: true, newState: after };
     }
     case 'end-turn': {
+      // #522: close the HTTP-level skip-turn bypass. A fresh-`'move'`
+      // player who has neither meditated nor moved must not be able
+      // to skip their turn by POSTing `end-turn` directly through the
+      // events route — the UI does not render an End Turn button in
+      // that state, so any dispatch reaching the dispatcher is a
+      // cheating client / racing tabs / future code path. Mirrors
+      // the corresponding reducer gate at `lib/turn-machine.ts:1423`
+      // for this specific case (move without meditate).
+      //
+      // Scope: this guard fires ONLY for `'move'` without
+      // `meditatedThisTurn`. Other phase asymmetries between the
+      // dispatcher and the reducer (e.g. `'challenge'` or `'kether'`
+      // end-turn) pre-date this ticket and have load-bearing
+      // exercises in integration tests; tightening those is out of
+      // scope here and would balloon the PR.
+      if (state.phase === 'move' && state.meditatedThisTurn !== true) {
+        return {
+          ok: false,
+          error: {
+            kind: 'end-turn',
+            cause: {
+              kind: 'wrong-phase',
+              expected: 'end',
+              actual: state.phase,
+            },
+          },
+        };
+      }
       // #503 (post-meditate cap check): if the active player is over
       // HAND_CAP at end-turn time, set `pendingDiscard` and return
       // *without* rotating the seat. Mirrors the engine reducer's arm

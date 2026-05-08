@@ -83,6 +83,22 @@ async function callEvent(
   return { status: res.status, body: await res.json() };
 }
 
+/**
+ * #522: flip the live in-memory snapshot's phase to `'end'`. The
+ * `/start` route lands the snapshot at `'move'` (the engine's setup
+ * default), and post-rotation `applyClientAction` resets it to
+ * `'move'` for the new active player. Tests that exercise repeated
+ * `end-turn` calls (seat-rotation plumbing, last_event_id increment)
+ * are not testing the wrong-phase gate; this helper steps around it
+ * minimally without rewriting the test in terms of meditate→end-turn.
+ */
+function forceSnapshotPhaseEnd(): void {
+  const row = db.game_states[0];
+  if (row === undefined) return;
+  // GameStateRow.snapshot is readonly; rewrite the row in place.
+  db.game_states[0] = { ...row, snapshot: { ...row.snapshot, phase: 'end' } };
+}
+
 /** Seed a 2-player lobby keyed by code. host_id = p1, other = p2. */
 function seedLobby(code: string): void {
   db.rooms.push({
@@ -134,6 +150,13 @@ describe('multiplayer flow — start → events integration', () => {
     seedLobby('ABCDEF');
     await callStart('ABCDEF');
 
+    // #522: end-turn now rejects from phase 'move' without
+    // meditatedThisTurn. The start route lands the snapshot at
+    // phase 'move'; force it to 'end' so this test exercises the
+    // events-pipeline plumbing rather than the new wrong-phase
+    // guard. (The rotation contract — last_event_id / snapshot
+    // update / seat advance — is what the test is really pinning.)
+    forceSnapshotPhaseEnd();
     // Active player (p1) ends their turn — the simplest action that
     // mutates snapshot without needing a card / move-path lookup.
     const res = await callEvent('ABCDEF', {
@@ -181,11 +204,45 @@ describe('multiplayer flow — start → events integration', () => {
     expect(db.game_states[0]?.snapshot.activePlayerId).toBe('p1');
   });
 
+  it('meditate then end-turn rotates the seat (real move-phase exit, #522)', async () => {
+    // Reviewer flagged on #522 that `forceSnapshotPhaseEnd` lets the
+    // sibling rotation tests bypass the only legitimate move-phase
+    // path to end-turn (meditate → meditatedThisTurn=true → end-turn
+    // allowed). This test pins that real path end-to-end through the
+    // events route — meditate first, then end-turn — without
+    // forcing the snapshot phase.
+    seedLobby('ABCDEF');
+    await callStart('ABCDEF');
+
+    callerId = 'p1';
+    const meditate = await callEvent('ABCDEF', {
+      kind: 'meditate',
+      playerId: 'p1',
+    });
+    expect(meditate.status).toBe(200);
+    // After meditate, snapshot stays in 'move' but meditatedThisTurn
+    // is true; the gate's #503 affordance lets end-turn through.
+    const afterMeditate = db.game_states[0]?.snapshot;
+    expect(afterMeditate?.phase).toBe('move');
+    expect(afterMeditate?.meditatedThisTurn).toBe(true);
+
+    const endTurn = await callEvent('ABCDEF', {
+      kind: 'end-turn',
+      playerId: 'p1',
+    });
+    expect(endTurn.status).toBe(200);
+    expect(db.game_states[0]?.snapshot.activePlayerId).toBe('p2');
+  });
+
   it('full turn cycle: end-turn rotates p1 → p2 → p1 across two events', async () => {
     seedLobby('ABCDEF');
     await callStart('ABCDEF');
 
     callerId = 'p1';
+    // #522: see "first event after start" — force phase to 'end'
+    // before each end-turn since the dispatcher resets it to 'move'
+    // for the new active player after each rotation.
+    forceSnapshotPhaseEnd();
     const r1 = await callEvent('ABCDEF', {
       kind: 'end-turn',
       playerId: 'p1',
@@ -194,6 +251,7 @@ describe('multiplayer flow — start → events integration', () => {
     expect(db.game_states[0]?.snapshot.activePlayerId).toBe('p2');
 
     callerId = 'p2';
+    forceSnapshotPhaseEnd();
     const r2 = await callEvent('ABCDEF', {
       kind: 'end-turn',
       playerId: 'p2',
