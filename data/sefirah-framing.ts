@@ -107,7 +107,7 @@ const hermes = {
 const demeter = {
   aries: [
     "Aries. You don't outrun grief. Sit. The seed knows when.",
-    'Charge if you must. The earth keeps the record. Patience here — or I let you fall.',
+    'Charge if you must. The earth keeps the record. Patience grows what speed cannot.',
     "Quick, hot answer. Wrong. The harvest doesn't hurry.",
   ],
   taurus: [
@@ -229,7 +229,7 @@ const athena = {
   ],
   pisces: [
     "Pisces. Knowing that won't pin down — pin it. Once. The blade is brief.",
-    'Dreams clarify under pressure. Pressure now.',
+    'Dreams clarify under pressure. Bring yours to the question; the answer surfaces.',
     'Floating wisdom. Anchor it for one breath. Then strike.',
   ],
 } as const;
@@ -481,7 +481,7 @@ const zeus = {
     "Suspicious hands — open them anyway. The lightning's friendly.",
   ],
   sagittarius: [
-    'Sagittarius. Mine. Big gift, big arc. Open.',
+    'Sagittarius. Mine. Big arc, bigger gift. Open before the lightning lands.',
     "Jovial archer. The arrow's loaded with gold. Receive it.",
     'Philosophy first, then provisions — fine. But take the provisions.',
   ],
