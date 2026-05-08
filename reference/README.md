@@ -12,6 +12,7 @@ game is built on, not the game itself. Rules live in `../design/`.
 | [`arcana.md`](arcana.md) | The 22 Major Arcana as path-keys. Each card unlocks one path. |
 | [`paths.md`](paths.md) | The network — one table mapping every path to its endpoints, letter, arcanum, and attribution. Open this first to answer "what card unlocks path X?". |
 | [`correspondences.md`](correspondences.md) | Cross-system tables: Sefirot ↔ planet/color/body, Letters ↔ astrology, Tarot ↔ letter ↔ astrology, Four Worlds ↔ suits. |
+| [`pantheons/`](pantheons/) | Per-pantheon avatar mappings + voice specs. The Greco-Roman set is canonical in [`design/avatars.md`](../design/avatars.md) § 1; alternate pantheons (Egyptian, etc.) drop their canonical mapping here. See [`pantheons/README.md`](pantheons/README.md) for the index. |
 
 ## How the data interlinks
 
