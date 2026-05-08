@@ -24,19 +24,17 @@ interface RitualLedgerProps {
   readonly stats: Partial<Record<StatKey, number>>;
   /** 0..sefirot.length — the index of the Sefirah being blessed. */
   readonly currentIndex: number;
-  readonly className?: string;
 }
 
 export function RitualLedger({
   stats,
   currentIndex,
-  className,
 }: RitualLedgerProps): JSX.Element {
   return (
     <div
       data-ritual-ledger
       aria-label="Sefirot blessed so far"
-      className={`w-full ${className ?? ''}`}
+      className="w-full"
     >
       <h3 className="mb-3 text-center text-xs uppercase tracking-widest opacity-60 md:text-left">
         Blessings received
