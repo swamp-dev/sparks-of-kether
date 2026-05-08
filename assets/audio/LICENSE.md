@@ -61,3 +61,32 @@ Requires `ffmpeg` ≥ 4 with `lavfi` enabled. The script is
 deterministic — running it twice on the same machine produces
 byte-identical output, so a developer who wants to inspect or
 modify the recipes can regenerate without Git churn.
+
+---
+
+## Music tracks
+
+Per-route ambient music (referenced by the music engine in #509) is
+also synthesized in-tree — same legal posture as the cues above. The
+synthesis programs are TypeScript files under
+[`scripts/music/tracks/`](../../scripts/music/tracks/); each file is
+the canonical source of its track. Mathematical-expression output, no
+human-authorship copyright; we waive any rights and treat every file
+under `public/audio/` as **CC0 / public domain**.
+
+| File | Track program | Synthesis recipe (summary) |
+|---|---|---|
+| `lobby.mp3` / `lobby.ogg` | [`scripts/music/tracks/lobby.ts`](../../scripts/music/tracks/lobby.ts) | Two detuned saws @ A2 + LFO-modulated lowpass + sparse FM bells in {A5, C♯6, E6, A6} + Schroeder reverb. 120 s loop with 6 s head-into-tail crossfade. |
+
+### Rebuilding tracks
+
+```bash
+pnpm music:render lobby      # render one track
+pnpm music:render            # render every track
+```
+
+Requires `ffmpeg` on PATH (libmp3lame + libvorbis). Renders are
+deterministic — same code, same audio bytes — so the script can be
+run on any machine without producing a diff. Each track also runs
+its own automated QA pass (loop-seam Pearson, peak dBFS, integrated
+LUFS via `loudnorm`, contiguous silence detection) before encode.
