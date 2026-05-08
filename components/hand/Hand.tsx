@@ -77,6 +77,16 @@ interface HandProps {
    * clear any drag-related visual state without dispatching the play.
    */
   readonly onCardDragCancel?: () => void;
+  /**
+   * #579 — layout mode for the open hand. `'floating'` (default)
+   * renders the fan as a fixed-position overlay anchored to the
+   * bottom of the viewport, with rest-tiny / swell-large magnify.
+   * `'inline'` renders the fan as inline flow (pre-#579 behaviour),
+   * for embedded contexts like the `/demo/hand` showcase where
+   * multiple hands stack vertically and a fixed overlay would have
+   * them all collide at the same viewport position.
+   */
+  readonly layout?: 'floating' | 'inline';
   readonly className?: string;
 }
 
@@ -105,25 +115,40 @@ const MAX_FAN_DEG = 12;
 const CARD_OVERLAP_REM_BASE = '-3.3rem';
 
 /**
- * Mac-dock-style magnification (#463). The active card (hovered or
- * keyboard-focused) scales up; its immediate neighbours nudge outward
- * to make space; cards two slots away nudge a smaller amount. Cards
- * further out stay put. Focus and hover share one `activeIndex` —
- * mouse wins over focus when both are present, matching the convention
- * that the cursor is the most recently-expressed intent.
+ * Free-floating hand (#579). The hand was an inline-flow fan at the
+ * bottom of the Tree column under the #411 fit-on-screen budget;
+ * it's now a `position: fixed` overlay anchored to the viewport's
+ * bottom edge. At rest the entire fan scales down to a thin band
+ * (`FAN_REST_SCALE`); when any card is hovered or keyboard-focused
+ * the fan transitions to natural size and the active card scales
+ * up dramatically (`MAGNIFY_SCALE_BIG`) and translates upward
+ * toward the vertical centre of the viewport (`MAGNIFY_LIFT_VH`).
+ * The magnified card renders at `MAGNIFY_OPACITY` so the matching
+ * Tree path's per-Sefirah glow (#312/#405) shows through.
  *
- * `prefers-reduced-motion` flattens all of it: no scale, no nudge, no
- * transition. The keyboard `:focus-visible` ring stays — that's the
- * load-bearing focus indicator regardless of motion preference, so
- * keyboard users never lose track of which card has focus.
+ * Pre-#579 the Mac-dock-style magnification (#463) used
+ * MAGNIFY_SCALE=1.3 and a 12px lift. Post-#579 those constants are
+ * retired; the new big numbers replace them. Neighbour-nudge
+ * primitives stay because the fan still uses them inside the
+ * naturally-sized expanded state.
+ *
+ * `prefers-reduced-motion` flattens scale + translate (rest fan
+ * stays at scale 1, magnified card stays in place). Opacity is
+ * preserved — the path-through-card visual is a11y-load-bearing
+ * (it's the connective signal between hand and Tree, not just
+ * decoration).
  */
-const MAGNIFY_SCALE = 1.3;
-const MAGNIFY_LIFT_PX = 12;
+const FAN_REST_SCALE = 0.35;
+const MAGNIFY_SCALE_BIG = 3.5;
+const MAGNIFY_LIFT_VH = 35;
+const MAGNIFY_OPACITY = 0.75;
 const NEIGHBOUR_NUDGE_REM = 0.8;
 const NEAR_NEIGHBOUR_NUDGE_REM = 0.25;
-const MAGNIFY_TRANSITION = 'transform 180ms ease-out, box-shadow 180ms ease-out';
+const MAGNIFY_TRANSITION =
+  'transform 240ms ease-out, opacity 200ms ease-out, box-shadow 240ms ease-out';
+const FAN_TRANSITION = 'transform 240ms ease-out';
 const MAGNIFY_BOX_SHADOW =
-  '0 14px 36px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 215, 0, 0.22)';
+  '0 18px 60px rgba(0, 0, 0, 0.55), 0 0 36px rgba(255, 215, 0, 0.28)';
 
 export function Hand({
   hand,
@@ -136,6 +161,7 @@ export function Hand({
   onCardDragStart,
   onCardDragEnd,
   onCardDragCancel,
+  layout = 'floating',
   className,
 }: HandProps): JSX.Element {
   const [focusIndex, setFocusIndex] = useState(0);
@@ -306,6 +332,52 @@ export function Hand({
     );
   }
 
+  // #579 — the open hand is a fixed-position overlay anchored to the
+  // viewport's bottom edge. The OUTER wrapper carries the role/aria
+  // semantics + `position: fixed`; the INNER fan div carries the
+  // existing flex layout, the #340 stacking context (`position:
+  // relative`), and the new free-floating scale transform.
+  //
+  // `pointer-events-none` on the outer wrapper lets clicks pass
+  // through the empty space around the fan to whatever sits below
+  // (the Tree, the action bar, etc.); `pointer-events-auto` on the
+  // inner fan re-enables interaction on the cards themselves.
+  // Without this split, the full-width overlay would intercept
+  // clicks on the Tree below.
+  const someActive = activeIndex !== undefined;
+  // The floating fan scales to a thin band at rest so the player
+  // sees they have cards but doesn't lose Tree real estate.
+  // Activating any card (mouse hover OR keyboard focus) blooms the
+  // fan to natural size; the active card then magnifies further
+  // within the now-natural fan. Reduced-motion users skip the scale
+  // entirely — the fan stays at natural size, and per-card
+  // transforms are already gated on `reduceMotion`.
+  //
+  // #579 review fix: `layout="inline"` consumers (e.g. /demo/hand)
+  // always render at scale 1 inline-flow — multiple hands stack
+  // vertically there, so a fixed overlay would have them all
+  // collide at the same viewport position.
+  const isFloating = layout === 'floating';
+  const fanTransform =
+    reduceMotion || !isFloating
+      ? undefined
+      : someActive
+        ? 'scale(1)'
+        : `scale(${FAN_REST_SCALE})`;
+  // The role/aria attrs sit on the outer wrapper. For `floating`
+  // layout that wrapper is a `position: fixed` viewport overlay;
+  // for `inline` it's the existing inline-flow div the consumer
+  // can size with `className`.
+  const outerClassName = isFloating
+    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center ${className ?? ''}`
+    : `${className ?? ''}`;
+  // Inner fan className — `pointer-events-auto` only matters when
+  // the outer wrapper carries `pointer-events-none` (floating
+  // layout); inline layout doesn't need the override but it's
+  // harmless either way.
+  const innerClassName = isFloating
+    ? 'pointer-events-auto animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none'
+    : 'animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none';
   return (
     <div
       role="group"
@@ -313,18 +385,35 @@ export function Hand({
       data-hand
       data-hand-state="open"
       data-visible={visible ? 'true' : 'false'}
-      // #38: `overflow-x-hidden` belt-and-braces — the fan fits in a
-      // 320 px viewport at the chosen card+overlap dimensions, but
-      // hiding overflow guarantees the page never gets a horizontal
-      // scrollbar even if a future change widens the fan.
-      // #340: `overflow-x-hidden` plus `position: relative` here are
-      // load-bearing for selected-card stacking — they form the
-      // stacking context the per-card `zIndex` participates in.
-      // Removing either would collapse the selected-card z-index lift
-      // into the document context.
-      className={`animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none ${className ?? ''}`}
-      style={{ display: 'flex', justifyContent: 'center', gap: 0, position: 'relative' }}
+      data-layout={layout}
+      className={outerClassName.trim()}
     >
+      <div
+        data-hand-fan
+        // #38: `overflow-x-hidden` belt-and-braces — the fan fits in a
+        // 320 px viewport at the chosen card+overlap dimensions, but
+        // hiding overflow guarantees the page never gets a horizontal
+        // scrollbar even if a future change widens the fan.
+        // #340: `overflow-x-hidden` plus `position: relative` here are
+        // load-bearing for selected-card stacking — they form the
+        // stacking context the per-card `zIndex` participates in.
+        // Removing either would collapse the selected-card z-index lift
+        // into the document context.
+        className={innerClassName}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 0,
+          position: 'relative',
+          ...(fanTransform !== undefined
+            ? {
+                transform: fanTransform,
+                transformOrigin: 'bottom center',
+                transition: FAN_TRANSITION,
+              }
+            : {}),
+        }}
+      >
       {/*
         Always render the close button so the hand can be collapsed
         even when empty — earlier the gating on `hand.length > 0` left
@@ -477,14 +566,15 @@ export function Hand({
         let magnifyTransform = '';
         if (!reduceMotion) {
           if (isMagnified) {
-            // Transform order is right-to-left: `translateY` runs in
-            // the *pre-scale* coordinate space, so the lift is a fixed
-            // 12px in screen space regardless of `MAGNIFY_SCALE`. That's
-            // intentional — the dock visually sits on a horizontal line,
-            // so a fixed-screen-pixel lift reads correctly. Reordering
-            // to scale-the-lift would amplify the rise as the card
-            // scales up and break that line.
-            magnifyTransform = ` scale(${MAGNIFY_SCALE}) translateY(-${MAGNIFY_LIFT_PX}px)`;
+            // #579: scale up dramatically and translate the card upward
+            // by `MAGNIFY_LIFT_VH` viewport-height units so the magnified
+            // card lifts toward the centre of the screen. `vh` is
+            // viewport-relative and unaffected by the scale, so the
+            // translation is consistent across card sizes. Transform
+            // order: right-to-left, so `translateY(-Yvh)` runs in the
+            // pre-scale coordinate space — the card lifts a fixed
+            // viewport fraction regardless of how big the scale grows.
+            magnifyTransform = ` scale(${MAGNIFY_SCALE_BIG}) translateY(-${MAGNIFY_LIFT_VH}vh)`;
           } else if (isImmediateNeighbour && offsetFromActive !== null) {
             const sign = offsetFromActive > 0 ? 1 : -1;
             magnifyTransform = ` translateX(${(sign * NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
@@ -554,7 +644,17 @@ export function Hand({
               position: 'relative',
               zIndex,
               transform: baseTransform + magnifyTransform,
-              transformOrigin: 'bottom center',
+              // #579: magnified cards anchor at `center` so scale + lift
+              // both move the card's centre toward viewport centre. The
+              // existing fan layout (rotate + base translateY) doesn't
+              // care which origin is used at scale 1, so flipping the
+              // origin only when magnified keeps non-magnified cards
+              // visually identical to today's #463 dock-magnify base
+              // (bottom-center origin keeps the fan's curve anchored on
+              // a horizontal line). Pre-#579 the origin was always
+              // `bottom center` and the magnify lift was a fixed 12 px;
+              // post-#579 the lift is 35 vh and the origin matters.
+              transformOrigin: isMagnified ? 'center' : 'bottom center',
               // Transition is scoped to cards participating in the magnify
               // *now or on the previous render*. The `inMagnifySet` half
               // covers entry; the `prevInMagnifySet` half covers exit
@@ -565,11 +665,29 @@ export function Hand({
               // re-renders (focus-index nav, selection change, open
               // toggle) — visually low-impact but a needless write to
               // every card's compositor layer on every state change.
+              // #579 review fix: restore the `!reduceMotion` gate on
+              // the transition. Pre-fix the gate was dropped when
+              // opacity was added to MAGNIFY_TRANSITION; the result was
+              // that reduced-motion users still saw the box-shadow
+              // flash + opacity fade on hover, which violates the
+              // spirit of `prefers-reduced-motion` even though the
+              // opacity *value* was correctly preserved. Now the
+              // transition fires only for motion-safe users; reduced-
+              // motion users get the opacity 0.75 value snapped on
+              // (instant, no fade) — the path-through-card visual
+              // still works for them, just without animation.
               transition:
                 !reduceMotion && (inMagnifySet || prevInMagnifySet)
                   ? MAGNIFY_TRANSITION
                   : undefined,
               boxShadow: isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
+              // #579: 75% opacity while magnified so the matching Tree
+              // path's per-Sefirah glow shows THROUGH the card. The
+              // opacity is preserved under `prefers-reduced-motion`
+              // because the path-through-card visual is the connective
+              // signal between hand and Tree — not just decoration —
+              // and reduced-motion users still need it.
+              opacity: isMagnified ? MAGNIFY_OPACITY : undefined,
               // #290: marginLeft is set in card-relative rem units so
               // the overlap tracks the card's intrinsic width rather
               // than the parent. The first card anchors the fan with
@@ -613,6 +731,7 @@ export function Hand({
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

@@ -475,19 +475,21 @@ export function PlayScreen({
         className="flex flex-col items-center gap-4 lg:gap-3"
       >
         {/*
-          #411: outer height-constraining wrapper. At lg+ the Tree is
-          clamped by viewport height — the wrapper has explicit
-          `h-[calc(100vh-Xpx)]` plus `aspect-[400/620]` so its width
-          auto-derives from height while preserving the 400/620
-          viewBox proportion. X = the below-Tree stack at lg+: 16 px
-          top padding (lg:p-4) + 12 px gap (lg:gap-3) + ~52 px action
-          bar + 12 px gap (lg:gap-3) + ~280 px Hand fan + 16 px
-          bottom padding (lg:p-4) ≈ 388 px, leaving ~412 px for the
-          Tree at 1280×800. The cap (`max-h-[440px]`) keeps the Tree
-          from dominating taller viewports.
-          Below lg, the wrapper is just `w-full max-w-xl` — mobile
-          layout is explicitly preserved (out of scope; #466 owns
-          the mobile tab pattern).
+          #579: free-floating Hand. Pre-#579 the Hand sat as inline-flow
+          at the bottom of this column under the #411 fit-on-screen
+          budget; the wrapper had `lg:h-[calc(100vh-388px)]` because
+          the below-Tree stack reserved ~388 px for action bar + Hand
+          fan + padding. Post-#579 the Hand is a `position: fixed`
+          overlay that floats over the Tree, so the Tree no longer
+          competes with it for vertical space. The new budget reserves
+          only ~180 px for the action bar + a small breathing margin
+          above the floating Hand's rest band. The cap rises to
+          `max-h-[640px]` so the Tree dominates as the centerpiece on
+          taller viewports.
+          Below lg the wrapper stays `w-full max-w-xl` — mobile layout
+          is explicitly preserved here (#466 owns the mobile tab
+          pattern, which will likely revisit the floating-Hand mobile
+          story alongside it).
           The wrapper goes here rather than on TreeBoard's prop
           because TreeBoard's own root has `inline-block` +
           `style={{width:'100%'}}` shipped behaviour — height
@@ -495,7 +497,7 @@ export function PlayScreen({
           `inline-block` would defeat the aspect-ratio sizing if
           applied to the wrapper itself.
         */}
-        <div className="w-full max-w-xl lg:max-w-none lg:w-auto lg:aspect-[400/620] lg:h-[calc(100vh-388px)] lg:max-h-[440px]">
+        <div className="w-full max-w-xl lg:max-w-none lg:w-auto lg:aspect-[400/620] lg:h-[calc(100vh-180px)] lg:max-h-[640px]">
           <TreeBoard
             state={turn.state}
             {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}

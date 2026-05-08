@@ -32,6 +32,7 @@ export default function HandDemoPage(): JSX.Element {
             onCardSelect={(n) => setSelected(n)}
             {...(selected !== undefined ? { selectedArcanum: selected } : {})}
             ariaLabel="Your hand, 5 cards"
+            layout="inline"
           />
           <p className="mt-4 text-xs opacity-60">
             Selected: {selected !== undefined ? `Arcanum ${selected}` : 'none'}
@@ -43,6 +44,7 @@ export default function HandDemoPage(): JSX.Element {
             hand={otherHandLower}
             visible={false}
             ariaLabel="Bea's hand, 4 face-down cards"
+            layout="inline"
           />
         </Section>
 
@@ -51,6 +53,7 @@ export default function HandDemoPage(): JSX.Element {
             hand={otherHandUpper}
             visible={true}
             ariaLabel="Carla's hand at Kether, 4 cards"
+            layout="inline"
           />
         </Section>
       </div>

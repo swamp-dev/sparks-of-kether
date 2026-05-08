@@ -572,16 +572,77 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(middleZ).toBeGreaterThan(firstZ);
   });
 
-  it('hovered card scales up via transform; transform contains scale(1.3)', () => {
+  it('hovered card scales up dramatically — #579 free-floating hand', () => {
+    // Pre-#579 the magnify scale was 1.3 (Mac-dock-style). #579's
+    // free-floating hand swells the active card so it dominates the
+    // screen and the matching path lights through it; scale is now
+    // 3.5×. The exact constant is tuned for the rest-tiny / full-
+    // size active feel; this test pins it at the bigger band so a
+    // future polish pass can't quietly slide it back to dock-magnify
+    // numbers without updating the contract.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector(
       '[data-card-slot="1"]',
     ) as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
-    // jsdom returns CSS values normalised; scale + translate render as a
-    // single transform string. Asserting on the substring keeps the test
-    // robust to the order of transform pieces.
-    expect(middle.style.transform).toMatch(/scale\(1\.3\)/);
+    expect(middle.style.transform).toMatch(/scale\(3\.5\)/);
+  });
+
+  it('hovered card runs at ~75% opacity so the matching Tree path glow shows through (#579)', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    expect(middle.style.opacity).toBe('');
+    fireEvent.mouseEnter(middle);
+    expect(middle.style.opacity).toBe('0.75');
+  });
+
+  it('open hand mounts as a position-fixed overlay anchored to the viewport bottom (#579)', () => {
+    // Pre-#579 the open hand was inline-flow at the bottom of the
+    // Tree column under the #411 fit-on-screen budget. #579 promotes
+    // it to a fixed-position overlay so the Tree gets the full
+    // column and the hand floats above it. Pin the contract: the
+    // outer `[data-hand][data-hand-state="open"]` element carries
+    // the `fixed`, `inset-x-0`, `bottom-0` Tailwind utilities, and
+    // an inner `[data-hand-fan]` carries the actual fan layout.
+    const { container } = render(
+      <Hand hand={[2, 5, 13]} visible={true} />,
+    );
+    const hand = container.querySelector('[data-hand]');
+    expect(hand?.getAttribute('data-hand-state')).toBe('open');
+    const cls = hand?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/\bfixed\b/);
+    expect(cls).toMatch(/\binset-x-0\b/);
+    expect(cls).toMatch(/\bbottom-0\b/);
+    // Pointer-events: none on outer so empty space passes clicks
+    // through to the Tree below.
+    expect(cls).toMatch(/pointer-events-none/);
+    const fan = hand?.querySelector('[data-hand-fan]');
+    expect(fan, 'fan child present').not.toBeNull();
+    // Pointer-events re-enabled on the fan itself so the cards take
+    // events.
+    const fanCls = fan?.getAttribute('class') ?? '';
+    expect(fanCls).toMatch(/pointer-events-auto/);
+  });
+
+  it('rest fan scales down to a thin band; hovering any card blooms it to natural size (#579)', () => {
+    // #579 rest contract: when no card is active, the fan applies a
+    // `scale(0.35)` transform so the rest band collapses to a
+    // sliver. On hover/focus, the fan transitions to `scale(1)` and
+    // the active card magnifies further (covered by the hover-scale
+    // test above).
+    const { container } = render(
+      <Hand hand={[2, 5, 13]} visible={true} />,
+    );
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    expect(fan).not.toBeNull();
+    expect(fan.style.transform).toMatch(/scale\(0\.35\)/);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(fan.style.transform).toMatch(/scale\(1\)/);
   });
 
   it('immediate neighbours of the magnified card translate outward', () => {
@@ -759,6 +820,49 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     ) as HTMLElement;
     // No transition string written inline → no animated motion.
     expect(first.style.transition).toBe('');
+  });
+
+  it('does NOT animate opacity / box-shadow on hover under reduced-motion (#579 review)', () => {
+    // First-pass review of #579 caught a regression: when opacity
+    // was added to MAGNIFY_TRANSITION, the `!reduceMotion` gate on
+    // the `transition` style was dropped. Reduced-motion users
+    // would still see the box-shadow flash + opacity fade on hover
+    // even though the AC says "preserve the opacity *value*", not
+    // "animate the opacity transition." The fix restores the gate.
+    // Pin the contract: hover the card under reduced-motion → no
+    // transition string set inline.
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(middle.style.transition).toBe('');
+    // Opacity value is still preserved — the path-through-card
+    // visual is a11y-load-bearing.
+    expect(middle.style.opacity).toBe('0.75');
+  });
+
+  it('layout="inline" renders the open hand without the position-fixed overlay (#579 review)', () => {
+    // The /demo/hand showcase renders three Hand instances stacked
+    // vertically. Pre-fix, all three rendered as
+    // `fixed inset-x-0 bottom-0 z-30` overlays and collided at the
+    // same viewport position. The `layout="inline"` opt-out keeps
+    // the open hand inline-flow for embedded contexts.
+    const { container } = render(
+      <Hand hand={[2, 5, 13]} visible={true} layout="inline" />,
+    );
+    const hand = container.querySelector('[data-hand]');
+    const cls = hand?.getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\bfixed\b/);
+    expect(cls).not.toMatch(/\binset-x-0\b/);
+    expect(cls).not.toMatch(/pointer-events-none/);
+    expect(hand?.getAttribute('data-layout')).toBe('inline');
+    // Inline-mode fan does NOT apply the rest-shrink scale —
+    // multiple stacked hands at scale(0.35) would still collide
+    // visually within their own flow boxes.
+    const fan = hand?.querySelector('[data-hand-fan]') as HTMLElement;
+    expect(fan.style.transform ?? '').not.toMatch(/scale\(0\.35\)/);
   });
 
   it('still renders the focus-visible ring class under reduced-motion', () => {
