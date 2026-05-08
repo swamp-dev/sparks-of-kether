@@ -813,6 +813,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             >
               <RevealLine
                 text={framingLine}
+                reducedMotionOverride={reducedMotion}
                 onComplete={() => setFramingComplete(true)}
               />
             </p>
