@@ -44,9 +44,11 @@ import { SefirahTooltip } from './SefirahTooltip';
  *      surfaces an HTML overlay card with English name, Hebrew name,
  *      one-line meaning (from `reference/sefirot.md`), and the team's
  *      current Sparks count for that Sefirah. The whole node is
- *      wrapped in an `<a href="/sefirah/{key}">` so click navigates
- *      to the Codex page (which lands in #320; until then it 404s
- *      gracefully).
+ *      wrapped in a peer element — `<button>` when `onSefirahClick`
+ *      is set (in-game inline popover), `<a href="/sefirah/{key}">`
+ *      otherwise (Codex page, lands in #320; until then it 404s
+ *      gracefully). Both branches carry the `.peer` class so the
+ *      hover/focus-driven peer selectors resolve in either mode (#384).
  *
  *   3. **Path-light-from-card** — when a card is highlighted in the
  *      hand (`highlightedCard` prop, an arcanum 0..21), every path
@@ -117,10 +119,14 @@ const GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
  * the always-on baseline halo already uses.
  *
  * The class is parked on a hover-glow span that sits AFTER the `.peer`
- * button so the peer selectors resolve correctly. At rest it carries
- * no shadow; on hover or keyboard focus of the button it lights up,
- * stacking on top of the always-lit baseline halo as an intensity
- * bump rather than a separate effect.
+ * button or anchor so the peer selectors resolve correctly. The
+ * peer is mode-aware (#384): `<button>` when `onSefirahClick` is
+ * set, `<a href="/sefirah/{key}">` otherwise. Both branches carry
+ * the `.peer` class, so peer-hover and peer-focus-visible resolve
+ * correctly in either case. At rest it carries no shadow; on hover
+ * or keyboard focus of the peer it lights up, stacking on top of
+ * the always-lit baseline halo as an intensity bump rather than a
+ * separate effect.
  */
 const HOVER_GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
   kether: 'peer-hover:shadow-glow-kether peer-focus-visible:shadow-glow-kether',
@@ -696,10 +702,12 @@ export function TreeBoard({
                 )}
                 {/*
                   #505 — hover/focus glow. A second halo span sits AFTER
-                  the `.peer` button so Tailwind's `peer-hover:` and
-                  `peer-focus-visible:` variants resolve to it. At rest
-                  it carries no shadow; on mouse hover or keyboard
-                  focus of the button it flips on a `shadow-glow-{key}`
+                  the `.peer` button or anchor so Tailwind's
+                  `peer-hover:` and `peer-focus-visible:` variants
+                  resolve to it. (Either branch above carries `.peer`,
+                  so the selectors work in both modes — see #384.) At
+                  rest it carries no shadow; on mouse hover or keyboard
+                  focus of the peer it flips on a `shadow-glow-{key}`
                   token, stacking with the always-lit baseline halo as
                   an intensity bump. `transition-shadow` smooths the
                   fade; `motion-reduce:transition-none` snaps it for
