@@ -38,10 +38,7 @@ describe('PlayScreen — fit-on-screen layout (#411)', () => {
     // — surface as an explicit failure here rather than letting
     // the empty class string pass three vacuously-failing matches.
     const wrapper = tree?.parentElement;
-    expect(
-      wrapper?.tagName.toLowerCase(),
-      'tree wrapper should be a div sibling',
-    ).toBe('div');
+    expect(wrapper?.tagName.toLowerCase(), 'tree wrapper should be a div sibling').toBe('div');
     const cls = wrapper?.getAttribute('class') ?? '';
     expect(cls).toMatch(/lg:aspect-\[400\/620\]/);
     expect(cls).toMatch(/lg:h-\[calc\(100vh-\d+px\)\]/);
@@ -61,11 +58,12 @@ describe('PlayScreen — fit-on-screen layout (#411)', () => {
     expect(cls).toMatch(/lg:gap-3/);
 
     // Each panel inside the aside drops from p-4 → p-3 at lg+.
-    // Three panels expected: StatSheet (conditional on activePlayer
-    // being non-null — `makeFullGame({ playerCount: 2 })` always
-    // satisfies that), TeamMeters, ShellPanel.
+    // Four panels expected: DiscardPile (#507; mounted at the top of
+    // the aside), StatSheet (conditional on activePlayer being non-
+    // null — `makeFullGame({ playerCount: 2 })` always satisfies
+    // that), TeamMeters, ShellPanel.
     const panels = aside?.querySelectorAll(':scope > div') ?? [];
-    expect(panels.length).toBe(3);
+    expect(panels.length).toBe(4);
     panels.forEach((panel) => {
       const panelCls = panel.getAttribute('class') ?? '';
       expect(panelCls).toMatch(/\bp-4\b/);

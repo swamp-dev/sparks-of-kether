@@ -7,14 +7,12 @@ import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
+import { DiscardPile } from '@/components/game/DiscardPile';
 import { DiscardPrompt } from '@/components/game/DiscardPrompt';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
-import type {
-  ChallengeContext,
-  ChallengeResolution,
-} from '@/lib/challenge-types';
+import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
 import { isKetherHeld } from '@/engine/kether';
 import { isHandVisible } from '@/components/hand/visibility';
@@ -119,9 +117,7 @@ export function PlayScreen({
   // link that opens in a new tab so reading the full Codex page
   // doesn't lose game state. Closed via the X button, the backdrop,
   // or Escape.
-  const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(
-    undefined,
-  );
+  const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(undefined);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -178,13 +174,7 @@ export function PlayScreen({
     }
     prevSparksRef.current = sparksCount;
     prevHandRef.current = handCount;
-  }, [
-    turnIndex,
-    sparksCount,
-    handCount,
-    turn.state.meditatedThisTurn,
-    playSound,
-  ]);
+  }, [turnIndex, sparksCount, handCount, turn.state.meditatedThisTurn, playSound]);
 
   // #131: hot-seat cadence — once the active player lands in `'end'`
   // phase, schedule an auto-advance to the next turn after a short
@@ -296,13 +286,10 @@ export function PlayScreen({
   // caused the modal to disappear mid-react with no UI to advance.
   // Now that `react-continue` exists, trust the engine: the phase
   // check alone is sufficient.
-  const showChallenge =
-    turn.phase === 'challenge' && activePlayer !== undefined;
+  const showChallenge = turn.phase === 'challenge' && activePlayer !== undefined;
 
   const challengeContext: ChallengeContext | null =
-    showChallenge && activePlayer
-      ? buildChallengeContext(turn.state, activePlayer.id)
-      : null;
+    showChallenge && activePlayer ? buildChallengeContext(turn.state, activePlayer.id) : null;
 
   const handlePathClick = (pathNumber: number): void => {
     if (!activePlayer) return;
@@ -386,7 +373,10 @@ export function PlayScreen({
       // pattern is queued as #466.
       className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4 ${className ?? ''}`}
     >
-      <section aria-label="Tree of Life board" className="flex flex-col items-center gap-4 lg:gap-3">
+      <section
+        aria-label="Tree of Life board"
+        className="flex flex-col items-center gap-4 lg:gap-3"
+      >
         {/*
           #411: outer height-constraining wrapper. At lg+ the Tree is
           clamped by viewport height — the wrapper has explicit
@@ -442,10 +432,7 @@ export function PlayScreen({
           />
         </div>
         <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-          <span
-            className="text-xs uppercase tracking-widest opacity-60"
-            data-phase-hint
-          >
+          <span className="text-xs uppercase tracking-widest opacity-60" data-phase-hint>
             {phaseHint(turn.phase)}
           </span>
           <span className="font-display tracking-widest">
@@ -473,9 +460,8 @@ export function PlayScreen({
              * which violates the engine invariant that every turn does
              * something.
              */}
-            {(turn.phase === 'end' ||
-              (turn.phase === 'move' &&
-                turn.state.meditatedThisTurn === true)) ? (
+            {turn.phase === 'end' ||
+            (turn.phase === 'move' && turn.state.meditatedThisTurn === true) ? (
               <button
                 type="button"
                 onClick={() => turn.endTurn()}
@@ -530,6 +516,17 @@ export function PlayScreen({
         separate ticket (#464) that can layer further compaction.
       */}
       <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
+        {/*
+         * #507: visible discard pile. Mounted at the top of the right-
+         * column aside so the deck/discard cluster lives on the same
+         * side as the rest of the game-state surfaces (StatSheet,
+         * meters, shells). The pile is informational and not phase-
+         * gated — it stays mounted across `move` / `challenge` / `end`
+         * and reflects engine state live.
+         */}
+        <div className="flex justify-center rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+          <DiscardPile discardPile={turn.state.discardPile} />
+        </div>
         {activePlayer ? (
           <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
             <StatSheet player={activePlayer} />
@@ -637,11 +634,7 @@ export function PlayScreen({
       {openSefirah !== undefined ? (
         <SefirahInfoPopover
           sefirahKey={openSefirah}
-          teamSparks={
-            turn.state.players.filter((p) =>
-              p.sparksHeld.has(openSefirah),
-            ).length
-          }
+          teamSparks={turn.state.players.filter((p) => p.sparksHeld.has(openSefirah)).length}
           activePlayerSign={activePlayer?.zodiacSign}
           onClose={() => setOpenSefirah(undefined)}
         />
@@ -665,19 +658,13 @@ export function PlayScreen({
  * for any shortcut-path failure. Pre-#228 review fix this field was
  * never populated; `acceptChallengeSetback` always saw `shortcut: false`.
  */
-function buildChallengeContext(
-  state: GameState,
-  playerId: string,
-): ChallengeContext | null {
+function buildChallengeContext(state: GameState, playerId: string): ChallengeContext | null {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return null;
   const sefirahData = sefirahByKey(player.position);
   if (sefirahData.challenge.kind !== 'check') return null;
   const allies = state.players
-    .filter(
-      (p) =>
-        p.id !== player.id && p.position === player.position,
-    )
+    .filter((p) => p.id !== player.id && p.position === player.position)
     .map((p) => ({
       id: p.id,
       name: p.name,
@@ -698,8 +685,7 @@ function buildChallengeContext(
   // in `lib/turn-machine.ts:prep-confirm` (#286), so UI and engine
   // can never disagree about which paths are shortcuts.
   const isShortcut =
-    player.lastArrivalPathNumber !== undefined &&
-    isPathShortcut(player.lastArrivalPathNumber);
+    player.lastArrivalPathNumber !== undefined && isPathShortcut(player.lastArrivalPathNumber);
   return {
     sefirah: sefirahData.key,
     stat: player.stats[sefirahData.stat],
@@ -737,11 +723,7 @@ function MeditateButton({
       data-action="meditate"
       disabled={disabled === true}
       aria-disabled={disabled === true}
-      title={
-        disabled === true
-          ? 'You can only Meditate once per turn'
-          : undefined
-      }
+      title={disabled === true ? 'You can only Meditate once per turn' : undefined}
       className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
     >
       Meditate
