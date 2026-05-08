@@ -351,51 +351,84 @@ export function PlayScreen({
   // play is its own commit gesture — bypassing selection state
   // means a successful drop doesn't leave a stale `selectedCard`
   // that the next click-then-click flow would have to clear.
+  // Helper for the announce-on-rejection pattern: clear then set on
+  // the next microtask so re-attempts with the same message still
+  // re-announce in the aria-live region.
+  const announceDragRejection = (message: string): void => {
+    setDragAnnouncement('');
+    queueMicrotask(() => setDragAnnouncement(message));
+  };
+
   const handleCardDrop = (
     arcanum: number,
     position: { readonly x: number; readonly y: number },
   ): void => {
     setDraggingCard(undefined);
     if (!activePlayer) return;
-    if (turn.phase !== 'move') {
-      setDragAnnouncement('');
-      // Two ticks to ensure the empty string is committed before the
-      // new value, so re-attempts re-announce even when the message
-      // is identical to the previous one.
-      queueMicrotask(() =>
-        setDragAnnouncement('You can only play a card during the move phase.'),
-      );
-      return;
-    }
     const target = document.elementFromPoint(position.x, position.y);
     const dropZone = target?.closest('[data-drop-zone]');
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
+
+    // #462: drag-to-discard-pile branch. Routes to `turn.discard`,
+    // which is the same engine action the click-the-card-name
+    // DiscardPrompt fires. The discard reducer is gated on
+    // `pendingDiscard.count > 0` (over-cap reconciliation at end of
+    // turn, #291); outside that state the engine refuses and we
+    // announce the rejection.
+    //
+    // No phase guard here on purpose. The engine's `discard` action
+    // is intentionally phase-agnostic — `turn-machine.ts` accepts a
+    // `discard` event whenever `pendingDiscard.count > 0`,
+    // regardless of `phase`. Today `pendingDiscard` only ever ticks
+    // up during `end` phase (the post-Meditate over-cap path), so a
+    // UI phase guard would be redundant. If a future ticket sets
+    // `pendingDiscard` from `challenge` or any other phase, the
+    // engine gate stays authoritative and this branch surfaces the
+    // affordance correctly without code change. The DiscardPrompt
+    // at the bottom of this component follows the same pattern (it
+    // mounts purely on `pendingDiscardCount > 0`, no phase check),
+    // so the two discard surfaces are consistent.
+    if (slug === 'discard') {
+      if (pendingDiscardCount === 0) {
+        announceDragRejection(
+          'You only need to discard when over the hand cap. Try a Tree path instead.',
+        );
+        return;
+      }
+      turn.discard(arcanum);
+      // Clear any selection that was set before the drag; same
+      // bookkeeping as drag-to-play.
+      setSelectedCard(undefined);
+      setDragAnnouncement('');
+      return;
+    }
+
+    // #412: drag-to-play branch. Path drops are gated on `move`
+    // phase — the player can only play a card to advance during
+    // their move. Outside `move`, the path drop is rejected.
+    if (turn.phase !== 'move') {
+      announceDragRejection(
+        'You can only play a card during the move phase.',
+      );
+      return;
+    }
     const pathMatch = /^path-(\d+)$/.exec(slug);
     if (!pathMatch || pathMatch[1] === undefined) {
-      setDragAnnouncement('');
-      queueMicrotask(() =>
-        setDragAnnouncement(
-          'No path under the pointer. Drag onto a Tree path to play.',
-        ),
+      announceDragRejection(
+        'No path under the pointer. Drag onto a Tree path to play.',
       );
       return;
     }
     const pathNumber = Number(pathMatch[1]);
     const path = tryPathByNumber(pathNumber);
     if (!path || path.arcanumNumber !== arcanum) {
-      setDragAnnouncement('');
-      queueMicrotask(() =>
-        setDragAnnouncement('This card cannot be played on that path.'),
-      );
+      announceDragRejection('This card cannot be played on that path.');
       return;
     }
     const result = turn.move(pathNumber);
     if (!result.ok) {
-      setDragAnnouncement('');
-      queueMicrotask(() =>
-        setDragAnnouncement(
-          'That move is not available right now. Try a different path.',
-        ),
+      announceDragRejection(
+        'That move is not available right now. Try a different path.',
       );
       return;
     }
@@ -645,7 +678,10 @@ export function PlayScreen({
          * and reflects engine state live.
          */}
         <div className="flex justify-center rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
-          <DiscardPile discardPile={turn.state.discardPile} />
+          <DiscardPile
+            discardPile={turn.state.discardPile}
+            dragActive={draggingCard !== undefined}
+          />
         </div>
         {activePlayer ? (
           <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">

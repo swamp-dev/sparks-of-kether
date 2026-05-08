@@ -163,3 +163,159 @@ describe('PlayScreen — drag-to-play (#412)', () => {
     expect(liveRegion?.textContent ?? '').toMatch(/no path|tree path/i);
   });
 });
+
+describe('PlayScreen — drag-to-discard (#462)', () => {
+  // Same elementFromPoint stub helper as the drag-to-play describe;
+  // duplicated inline so the discard tests don't pull in a brittle
+  // module-scoped helper.
+  async function performDragWithDropTarget(
+    cardBtn: HTMLElement,
+    dropTarget: Element | null,
+  ): Promise<void> {
+    type DocWithEFP = Document & {
+      elementFromPoint?: (x: number, y: number) => Element | null;
+    };
+    const docWithEFP = document as DocWithEFP;
+    const originalEFP = docWithEFP.elementFromPoint;
+    docWithEFP.elementFromPoint = (): Element | null => dropTarget;
+    try {
+      await act(async () => {
+        fireEvent.pointerDown(cardBtn, {
+          pointerId: 1,
+          clientX: 100,
+          clientY: 600,
+        });
+        fireEvent.pointerMove(cardBtn, {
+          pointerId: 1,
+          clientX: 220,
+          clientY: 300,
+        });
+        await Promise.resolve();
+        fireEvent.pointerUp(cardBtn, {
+          pointerId: 1,
+          clientX: 220,
+          clientY: 300,
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+    } finally {
+      docWithEFP.elementFromPoint = originalEFP;
+    }
+  }
+
+  it('dropping a card on the discard pile during pendingDiscard discards the card', async () => {
+    // Set up: active player has been over-cap-Meditate'd into a
+    // pendingDiscard state. The simplest fixture: hand of 8 cards
+    // with `pendingDiscard.count = 1`. Engine accepts `discard` and
+    // decrements `pendingDiscard.count`.
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex(
+      (p) => p.id === base.activePlayerId,
+    );
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? { ...p, hand: [2, 5, 13, 18, 21] }
+        : p,
+    );
+    // pendingDiscard count=1: one card needs to be shed.
+    const state = {
+      ...base,
+      players,
+      phase: 'end' as const,
+      pendingDiscard: { count: 1, requiredBy: 'end-of-turn' as const },
+    };
+    const { container } = render(
+      <PlayScreen initialState={state} rng={seededRng(2)} />,
+    );
+
+    const cardBtn = container.querySelector(
+      '[data-card-slot][data-arcanum="2"]',
+    ) as HTMLElement;
+    const pile = container.querySelector('[data-drop-zone="discard"]') as Element;
+    expect(pile, 'discard drop zone in DOM').toBeTruthy();
+
+    const initialCount = container.querySelector('[data-discard-count]')?.textContent;
+    await performDragWithDropTarget(cardBtn, pile);
+
+    // pendingDiscard cleared (count=0) → engine accepted the discard.
+    // The discard pile count went up by one.
+    const finalCount = container.querySelector('[data-discard-count]')?.textContent;
+    expect(Number(finalCount)).toBe(Number(initialCount) + 1);
+    // Card 2 is no longer in the active player's hand.
+    expect(
+      container.querySelector('[data-card-slot][data-arcanum="2"]'),
+    ).toBeNull();
+  });
+
+  it('dropping a card on the discard pile outside pendingDiscard announces rejection without dispatching', async () => {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex(
+      (p) => p.id === base.activePlayerId,
+    );
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: [2, 5, 13] } : p,
+    );
+    // No pendingDiscard — turn is in normal `move` phase.
+    const state = { ...base, players };
+    const { container } = render(
+      <PlayScreen initialState={state} rng={seededRng(2)} />,
+    );
+
+    const cardBtn = container.querySelector(
+      '[data-card-slot][data-arcanum="2"]',
+    ) as HTMLElement;
+    const pile = container.querySelector('[data-drop-zone="discard"]') as Element;
+    expect(pile).toBeTruthy();
+
+    const initialCount = container.querySelector('[data-discard-count]')?.textContent;
+    await performDragWithDropTarget(cardBtn, pile);
+
+    // Pile count unchanged.
+    const finalCount = container.querySelector('[data-discard-count]')?.textContent;
+    expect(finalCount).toBe(initialCount);
+    // Card 2 still in hand.
+    expect(
+      container.querySelector('[data-card-slot][data-arcanum="2"]'),
+    ).not.toBeNull();
+    // Aria-live announced rejection.
+    const liveRegion = container.querySelector('[data-drag-announcement]');
+    expect(liveRegion?.textContent ?? '').toMatch(/over the hand cap|don't need to discard/i);
+  });
+
+  it('discard pile lights up while a card is being dragged (data-drag-active)', async () => {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex(
+      (p) => p.id === base.activePlayerId,
+    );
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: [2, 5, 13] } : p,
+    );
+    const state = { ...base, players };
+    const { container } = render(
+      <PlayScreen initialState={state} rng={seededRng(2)} />,
+    );
+
+    const pile = container.querySelector('[data-discard-pile]') as HTMLElement;
+    // At rest, drag-active is false.
+    expect(pile.getAttribute('data-drag-active')).toBe('false');
+
+    // Start a drag (without releasing) — the pile should light up.
+    const cardBtn = container.querySelector(
+      '[data-card-slot][data-arcanum="2"]',
+    ) as HTMLElement;
+    await act(async () => {
+      fireEvent.pointerDown(cardBtn, { pointerId: 1, clientX: 100, clientY: 600 });
+      fireEvent.pointerMove(cardBtn, { pointerId: 1, clientX: 220, clientY: 300 });
+      await Promise.resolve();
+    });
+    expect(pile.getAttribute('data-drag-active')).toBe('true');
+
+    // Releasing (pointerCancel — no drop) clears it.
+    await act(async () => {
+      fireEvent.pointerCancel(cardBtn, { pointerId: 1 });
+      await Promise.resolve();
+    });
+    expect(pile.getAttribute('data-drag-active')).toBe('false');
+  });
+});
