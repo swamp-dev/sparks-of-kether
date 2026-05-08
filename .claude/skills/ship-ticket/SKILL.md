@@ -32,9 +32,10 @@ Before invoking this skill:
   once per PR. (Anti-sweep guardrail; see step 1.)
 - `/finish-ticket` was run on this PR's branch in this session, and the
   per-PR checklist (review → fix → re-review on substantial fixes)
-  completed.
-- You can see the corresponding Journal entries on the branch — the
-  re-review marker in particular.
+  completed. The mechanical gate for that completion is the stamp at
+  `.claude/state/checklist-<sanitized-branch>.json` — verified in step
+  3 below. The per-ticket Journal remains the human-readable audit
+  record but is not consulted as a precondition.
 
 If any of these is unclear, **ask the user explicitly**. Do not infer.
 

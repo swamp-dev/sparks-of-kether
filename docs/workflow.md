@@ -154,16 +154,20 @@ should create `journal/<NN>-<slug>.md` with the header template; if
 the file is missing on first journal write, the agent creates it
 inline using the template in [`../journal/README.md`](../journal/README.md).
 
-`/ship-ticket` reads the per-ticket file as an **audit record** that
-the per-PR checklist ran. The Journal is written by the agent itself,
-so the marker is a documentation artifact, not a security control —
-nothing stops an agent from writing "code-reviewer clean" without
-having actually re-run the reviewer. The skill enforces the structural
-parts of the gate (one PR per invocation, hosted CI green, mergeable
-state, branch matches); the human-judgment part (did the review
-actually happen) lives with the agent that ran it. Cutting corners on
-the Journal makes that audit record useless to future readers, but the
-load-bearing safety is the agent's own discipline.
+`/ship-ticket` does not read the per-ticket Journal — the merge gate
+is the stamp at `.claude/state/checklist-<sanitized-branch>.json`,
+written by `/finish-ticket` step 8.5 after each `code-reviewer` pass.
+The Journal remains the **human-readable audit record** of why the
+verdict was what it was, but it's no longer the gate. The skill
+enforces the structural parts (one PR per invocation, hosted CI green,
+mergeable state, branch matches, stamp matches PR HEAD with verdict
+`ship`); the human-judgment part (did the review actually happen)
+still lives with the agent — the stamp is robust against accidental
+skip / context compaction / honor-system markers, but a determined
+agent could still forge it (see `/ship-ticket` § 3 "Adversarial
+limit"). Cutting corners on the Journal makes that audit record
+useless to future readers, but the load-bearing safety is the
+mechanical stamp plus the agent's own discipline.
 
 ---
 

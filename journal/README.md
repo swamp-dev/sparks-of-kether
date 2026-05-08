@@ -68,10 +68,11 @@ will thank you.
   first push if `/start-ticket` was run before B2 landed.)
 - **`/finish-ticket`** appends the final pre-PR push's entry; reminds
   the agent to journal intermediate pushes as they happen.
-- **`/ship-ticket`** reads the file to verify the per-PR checklist
-  marker before merging — looks for `code-reviewer clean` or the
-  re-review marker in a recent entry. After merge, the file moves
-  with the PR's history (no special action needed).
+- **`/ship-ticket`** does not read this file — the merge gate is the
+  stamp at `.claude/state/checklist-<sanitized-branch>.json`, written
+  by `/finish-ticket` step 8.5. The per-ticket Journal remains the
+  human-readable audit record of the re-review. After merge, the file
+  moves with the PR's history (no special action needed).
 
 ## What about old `Journal.md`?
 

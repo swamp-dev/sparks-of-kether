@@ -15,8 +15,9 @@ short-circuited.** Examples of common drift:
 - Used the legacy `Journal.md` instead of the per-ticket file (#429).
 - Invoked `code-reviewer` and addressed findings, but didn't complete
   whatever the current `/finish-ticket` SKILL.md says about recording
-  the verdict / writing the per-PR-checklist artifact (Journal marker,
-  mechanical stamp, whatever the active gate is).
+  the verdict / writing the per-PR-checklist artifact (currently the
+  mechanical stamp at `.claude/state/checklist-<sanitized-branch>.json`,
+  whatever the active gate is).
 - Ran fixes that were substantial (per `/finish-ticket`'s re-review
   heuristic) but didn't re-fire `code-reviewer`.
 - About to `/ship-ticket` without verifying CI is green against the

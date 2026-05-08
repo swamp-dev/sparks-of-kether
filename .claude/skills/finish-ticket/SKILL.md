@@ -247,9 +247,12 @@ at the latest HEAD SHA. The script overwrites the stamp on each
 invocation; nothing extra needed beyond running it again.
 
 **Record the re-review in the Journal entry for the push that
-contained the fixes** — `/ship-ticket` reads `journal/<NN>-<slug>.md`
-to verify the per-PR checklist actually ran. A line like
-`Notes: re-reviewed after fixes; reviewer returned clean` is enough.
+contained the fixes** — the per-ticket Journal file is the
+human-readable audit record of the re-review. (The merge gate is the
+stamp at `.claude/state/checklist-<sanitized-branch>.json`, written by
+step 8.5; the Journal is no longer consulted by `/ship-ticket`.) A
+line like `Notes: re-reviewed after fixes; reviewer returned clean`
+is enough.
 
 For every push during 8/8a, follow the per-push Journal rule.
 
