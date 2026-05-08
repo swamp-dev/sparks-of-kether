@@ -30,9 +30,16 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
   // Codex pages are statically prerendered against the greco-roman
   // pantheon — they have no interactivity that requires the active
   // pantheon. Reading the registry's greco-roman entry directly keeps
-  // this a server component with zero JS cost. Phase C1 (#557) re-
-  // introduces a client boundary at a higher level if and when codex
-  // pages need to track the active pantheon at runtime.
+  // this a server component with zero JS cost.
+  //
+  // TODO(#557): when the user-facing pantheon toggle ships in Phase
+  // C1, codex pages need to surface the *active* pantheon's avatar
+  // (e.g. "Voice: Osiris" instead of "Voice: Apollo" if the user
+  // picked Egyptian). The fix is either to convert this to a client
+  // component calling `usePantheon()` (cost: hydration JS on every
+  // codex page) or to reintroduce a client boundary at a higher
+  // level. Either way, the hardcoded `pantheons['greco-roman']` read
+  // here becomes a visible bug post-C1; revisit there.
   const codexAvatar = pantheons['greco-roman'].sefirahCodexAvatar[sefirahKey];
 
   // Adjacent paths — every path that touches this Sefirah, in

@@ -52,12 +52,18 @@ describe('usePantheon', () => {
   });
 
   it('preserves an unknown stored id but falls back to greco-roman for the pantheon payload (AC #2)', () => {
-    // Egyptian doesn't exist in the registry yet (lands in B1). The hook
-    // must accept the id (so a future-Egyptian write survives reload)
+    // Use a sentinel id that will never collide with a real
+    // PantheonId — this test exercises the *unknown id* path, which
+    // shouldn't need to keep moving every time a new pantheon ships.
+    // (Earlier versions used 'egyptian' and then 'norse'; both got
+    // swept up by real registry entries in subsequent tickets.) The
+    // hook must accept any unknown id verbatim (so a future-pantheon
+    // write survives reload before the registry knows about it)
     // while still giving consumers a valid Pantheon object today.
-    localStorage.setItem(PANTHEON_STORAGE_KEY, 'egyptian');
+    const SENTINEL_UNKNOWN_ID = '__test_unknown_pantheon__';
+    localStorage.setItem(PANTHEON_STORAGE_KEY, SENTINEL_UNKNOWN_ID);
     const { result } = renderHook(() => usePantheon(), { wrapper });
-    expect(result.current.pantheonId).toBe('egyptian');
+    expect(result.current.pantheonId).toBe(SENTINEL_UNKNOWN_ID);
     expect(result.current.pantheon).toBe(pantheons['greco-roman']);
   });
 
@@ -70,12 +76,15 @@ describe('usePantheon', () => {
     expect(localStorage.getItem(PANTHEON_STORAGE_KEY)).toBe('greco-roman');
 
     // Forward-compat: the setter accepts ids the registry doesn't know
-    // about yet (B-phase content lands ids before C1 wires the toggle).
+    // about yet (a future pantheon stored before its registry entry
+    // lands). Use the same `__test_unknown_pantheon__` sentinel as the
+    // mount-path test above.
+    const SENTINEL_UNKNOWN_ID = '__test_unknown_pantheon__';
     act(() => {
-      result.current.setPantheonId('egyptian');
+      result.current.setPantheonId(SENTINEL_UNKNOWN_ID);
     });
-    expect(result.current.pantheonId).toBe('egyptian');
-    expect(localStorage.getItem(PANTHEON_STORAGE_KEY)).toBe('egyptian');
+    expect(result.current.pantheonId).toBe(SENTINEL_UNKNOWN_ID);
+    expect(localStorage.getItem(PANTHEON_STORAGE_KEY)).toBe(SENTINEL_UNKNOWN_ID);
   });
 
   it('returns a no-op stub when used outside of the provider (AC #5)', () => {

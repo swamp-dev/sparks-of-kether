@@ -13,7 +13,7 @@ import type { SefirahKey } from '../../types';
  *     team becomes the avatar"; no single deity.
  *   - Hestia stays attached to Malkuth even though she's a companion
  *     (the codex still names her on the Sefirah page).
- *   - The other 8 are the same names as in `avatarNames[*].greek` —
+ *   - The other 8 are the same names as in `avatarNames[*].primary` —
  *     listed independently here so the codex map can diverge from the
  *     encounter-avatar names if a future pantheon decides to (e.g. an
  *     alternate companion for Malkuth).

@@ -66,13 +66,14 @@ export function AvatarPortrait({
   const letter = sefirahMarkLetter[sefirah];
   // Sefirot that have a commissioned portrait shipped under
   // `public/portraits/<character>/`. Kether (collective Final
-  // Threshold) and Malkuth (Hestia is companion-only) are excluded.
-  // The greek name is lowercased for the asset path — Phase B
-  // (#556) ships Egyptian portraits under their own asset slugs.
+  // Threshold) and Malkuth (Hestia / Bastet — companion-only) are
+  // excluded. The active pantheon's `primary` name is lowercased for
+  // the asset path — Phase B (#556) ships Egyptian portraits under
+  // their own asset slugs (e.g. `/portraits/thoth/large.webp`).
   const character =
     sefirah === 'kether' || sefirah === 'malkuth'
       ? undefined
-      : pantheon.avatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
+      : pantheon.avatarNames[sefirah as EncounterAvatarKey].primary.toLowerCase();
   const [imageFailed, setImageFailed] = useState(false);
   const showPortraitImage =
     size === 'stage' && character !== undefined && !imageFailed;

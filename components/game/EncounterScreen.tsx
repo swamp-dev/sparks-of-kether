@@ -3,6 +3,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { sefirahByKey, zodiacSigns } from '@/data';
 import type { EncounterAvatarKey } from '@/data/types';
 import { usePantheon } from '@/lib/settings/pantheon';
+// Pickers are pantheon-neutral (matrix-as-parameter, post-#550) — the
+// `greco-roman/` import path is incidental, the active pantheon's
+// matrix is what determines the rendered copy. If a future ticket
+// extracts the pickers to a neutral location (e.g. `@/data/pantheons/
+// pickers`), update this import alongside the corresponding test
+// imports. B3 (#553) ships Egyptian verdicts and B5 (#555) ships
+// Egyptian framing — those tickets are the natural moment to revisit
+// where the picker functions live.
 import {
   pickPlayerResponse,
   pickVerdict,
@@ -665,7 +673,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
         : 'fail';
   const avatarNameLabel =
     avatarHasCopy && avatarKey in pantheon.avatarNames
-      ? pantheon.avatarNames[avatarKey].greek
+      ? pantheon.avatarNames[avatarKey].primary
       : undefined;
 
   // Trial-framing line for the prep stage. Sign-aware multi-variant
@@ -892,7 +900,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           reducedMotion={reducedMotion}
           glowClass={frameTokens.buttonGlow}
           {...(avatarHasCopy
-            ? { avatarName: pantheon.avatarNames[avatarKey].greek }
+            ? { avatarName: pantheon.avatarNames[avatarKey].primary }
             : {})}
           {...(verdictLine !== undefined ? { verdictLine } : {})}
         />

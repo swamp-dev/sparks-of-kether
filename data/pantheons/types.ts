@@ -25,22 +25,30 @@ import type {
  * typed `Readonly<Record<PantheonId, Pantheon>>`). `'greco-roman'`
  * is the MVP entry.
  */
-export type PantheonId = 'greco-roman';
+export type PantheonId = 'greco-roman' | 'egyptian';
 
 // Re-export `EncounterAvatarKey` from its canonical home in `data/types.ts`
 // so callers reading "pantheon types" still find it here.
 export type { EncounterAvatarKey };
 
 /**
- * Two cultural names for the same avatar. The Greek name is rendered
- * in the EncounterScreen verdict line for MVP; the Roman name is
- * preserved for future pantheon-rotation work. Other pantheons may
- * not have this primary/secondary split — if not, the same string
- * may appear in both fields, or the shape may evolve in a follow-up.
+ * The avatar's name(s). `primary` is the rendered name (verdict
+ * line, codex page, asset path); `secondary` is an optional alternate
+ * cultural / linguistic form preserved for future surfaces (e.g. the
+ * Roman gloss for Greco-Roman, the Egyptian-language form for
+ * Egyptian).
+ *
+ * Phase B2 (#552) renamed these from `greek/roman` to
+ * `primary/secondary` so the type stays pantheon-neutral. For
+ * Greco-Roman: `primary` = greek (Hermes, Apollo, …), `secondary`
+ * = roman (Mercury, Sol, …). For Egyptian: `primary` = the canonical
+ * English / Greek-form name (Thoth, Osiris, …), `secondary` = the
+ * older Egyptian-language form where one is meaningful (Djehuti,
+ * Wesir, …) and is otherwise omitted.
  */
 export interface AvatarName {
-  readonly greek: string;
-  readonly roman: string;
+  readonly primary: string;
+  readonly secondary?: string;
 }
 
 // ──────────────── Matrix types ────────────────

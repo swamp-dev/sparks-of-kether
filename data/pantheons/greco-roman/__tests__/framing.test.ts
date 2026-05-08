@@ -214,7 +214,7 @@ describe('sefirah-framing', () => {
       // is speaking.
       for (const avatar of AVATAR_KEYS) {
         const placeholder = sefirahFramingPlaceholder[avatar];
-        const expectedName = avatarNames[avatar].greek;
+        const expectedName = avatarNames[avatar].primary;
         expect(
           placeholder,
           `placeholder for ${avatar} should mention "${expectedName}"`,

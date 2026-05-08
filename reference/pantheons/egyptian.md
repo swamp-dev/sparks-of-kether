@@ -35,6 +35,31 @@ king). This matches Crowley's 777 in spirit — Crowley pairs Ra with
 Tiferet directly, but the dual-aspect of the Egyptian sun allows a
 finer split that the Greek pantheon (with only Apollo) doesn't admit.
 
+### 1.1 Older Egyptian-language forms
+
+Where a clean older Egyptian-language form exists in standard
+transliteration, the data layer (`data/pantheons/egyptian/avatar-names.ts`)
+records it as the avatar's `secondary` name — the analogue of the
+Roman name on the Greco-Roman side. Surfaces that want to display
+both forms (e.g. a future codex page footnote) read from this slot.
+
+| Sefirah | Primary | Secondary (older Egyptian form) |
+|---|---|---|
+| Chokmah | Amun | — (consonantal `Imn` only — see § 5; no clean transliteration with vowels) |
+| Binah | Isis | Aset |
+| Chesed | Ra | Re |
+| Gevurah | Horus | Heru |
+| Tiferet | Osiris | Wesir |
+| Netzach | Hathor | Het-Heru |
+| Hod | Thoth | Djehuti |
+| Yesod | Khonsu | Khons |
+
+The `secondary` field is optional in the data layer (`AvatarName.secondary`
+is `string | undefined`) — Amun's omission isn't a gap, it's an
+honest absence. Phase B6 portrait assets and any future surface that
+wants the bilingual presentation should treat undefined as "no
+distinct older form available, just use primary."
+
 ## 2. Voice specs per deity
 
 | Deity | Voice |

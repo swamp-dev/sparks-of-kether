@@ -1,12 +1,20 @@
 import type { AvatarName, EncounterAvatarKey } from '../types';
 
 /**
- * Per-Sefirah avatar names — Greek (primary) and Roman (secondary).
+ * Per-Sefirah avatar names for the Greco-Roman pantheon — Greek
+ * (primary) and Roman (secondary).
  *
- * Source: `design/avatars.md` § 1 "Avatar mapping (locked)". The Greek
- * name is rendered in the EncounterScreen verdict line for MVP; the
- * Roman name is preserved for future pantheon-rotation work (Epic
- * #293 — see `design/avatars.md` § 6).
+ * Source: `design/avatars.md` § 1 "Avatar mapping (locked)". The
+ * Greek name is rendered in the EncounterScreen verdict line and the
+ * codex Voice row; the Roman name is preserved for surfaces that
+ * want the alternate cultural form (Epic #293 — see
+ * `design/avatars.md` § 6).
+ *
+ * Phase B2 (#552) renamed `AvatarName` fields from `greek/roman` to
+ * `primary/secondary` to stay pantheon-neutral. The greco-roman
+ * binding holds — `primary === greek`, `secondary === roman` — so
+ * every consumer that read `.greek` reads the same string from
+ * `.primary` after the rename.
  *
  * Notes on omitted keys:
  *   - **Kether**: "the team becomes the avatar" — collective Final
@@ -18,12 +26,12 @@ import type { AvatarName, EncounterAvatarKey } from '../types';
  *     for the encounter-screen wire-up; tracked separately.
  */
 export const avatarNames: Readonly<Record<EncounterAvatarKey, AvatarName>> = {
-  chokmah: { greek: 'Athena', roman: 'Minerva' },
-  binah: { greek: 'Demeter', roman: 'Ceres' },
-  chesed: { greek: 'Zeus', roman: 'Jupiter' },
-  gevurah: { greek: 'Ares', roman: 'Mars' },
-  tiferet: { greek: 'Apollo', roman: 'Sol' },
-  netzach: { greek: 'Aphrodite', roman: 'Venus' },
-  hod: { greek: 'Hermes', roman: 'Mercury' },
-  yesod: { greek: 'Selene', roman: 'Luna' },
+  chokmah: { primary: 'Athena', secondary: 'Minerva' },
+  binah: { primary: 'Demeter', secondary: 'Ceres' },
+  chesed: { primary: 'Zeus', secondary: 'Jupiter' },
+  gevurah: { primary: 'Ares', secondary: 'Mars' },
+  tiferet: { primary: 'Apollo', secondary: 'Sol' },
+  netzach: { primary: 'Aphrodite', secondary: 'Venus' },
+  hod: { primary: 'Hermes', secondary: 'Mercury' },
+  yesod: { primary: 'Selene', secondary: 'Luna' },
 } as const;

@@ -91,6 +91,6 @@ export const CUE_FILES: Readonly<Record<SoundCue, string>> = {
 export function avatarArrivesCueFor(sefirah: SefirahKey): SoundCue | null {
   if (sefirah === 'kether') return null;
   if (sefirah === 'malkuth') return 'avatar-arrives-hestia';
-  const greek = grecoRomanAvatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
+  const greek = grecoRomanAvatarNames[sefirah as EncounterAvatarKey].primary.toLowerCase();
   return `avatar-arrives-${greek}` as SoundCue;
 }

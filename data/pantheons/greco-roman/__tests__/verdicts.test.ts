@@ -147,23 +147,26 @@ describe('avatarNames', () => {
     );
   });
 
-  it('each entry has a non-empty Greek name and Roman name', () => {
+  it('each entry has a non-empty primary name and (Greco-Roman) secondary name', () => {
+    // Greco-Roman pins both — every avatar has a Greek primary name
+    // and a Roman secondary name. Other pantheons (e.g. Egyptian)
+    // may omit `secondary` per the `AvatarName` type's optionality.
     for (const sefirah of ENCOUNTER_SEFIROT) {
       const name = avatarNames[sefirah];
-      expect(name.greek.length, `${sefirah} greek`).toBeGreaterThan(0);
-      expect(name.roman.length, `${sefirah} roman`).toBeGreaterThan(0);
+      expect(name.primary.length, `${sefirah} primary`).toBeGreaterThan(0);
+      expect(name.secondary?.length ?? 0, `${sefirah} secondary`).toBeGreaterThan(0);
     }
   });
 
   it('matches the locked design — `design/avatars.md` § 1', () => {
-    expect(avatarNames.hod).toEqual({ greek: 'Hermes', roman: 'Mercury' });
-    expect(avatarNames.binah).toEqual({ greek: 'Demeter', roman: 'Ceres' });
-    expect(avatarNames.chokmah).toEqual({ greek: 'Athena', roman: 'Minerva' });
-    expect(avatarNames.gevurah).toEqual({ greek: 'Ares', roman: 'Mars' });
-    expect(avatarNames.chesed).toEqual({ greek: 'Zeus', roman: 'Jupiter' });
-    expect(avatarNames.tiferet).toEqual({ greek: 'Apollo', roman: 'Sol' });
-    expect(avatarNames.netzach).toEqual({ greek: 'Aphrodite', roman: 'Venus' });
-    expect(avatarNames.yesod).toEqual({ greek: 'Selene', roman: 'Luna' });
+    expect(avatarNames.hod).toEqual({ primary: 'Hermes', secondary: 'Mercury' });
+    expect(avatarNames.binah).toEqual({ primary: 'Demeter', secondary: 'Ceres' });
+    expect(avatarNames.chokmah).toEqual({ primary: 'Athena', secondary: 'Minerva' });
+    expect(avatarNames.gevurah).toEqual({ primary: 'Ares', secondary: 'Mars' });
+    expect(avatarNames.chesed).toEqual({ primary: 'Zeus', secondary: 'Jupiter' });
+    expect(avatarNames.tiferet).toEqual({ primary: 'Apollo', secondary: 'Sol' });
+    expect(avatarNames.netzach).toEqual({ primary: 'Aphrodite', secondary: 'Venus' });
+    expect(avatarNames.yesod).toEqual({ primary: 'Selene', secondary: 'Luna' });
   });
 });
 
