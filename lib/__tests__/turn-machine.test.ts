@@ -3,6 +3,7 @@ import { seededRng } from '@/engine/rng';
 import {
   EMPTY_PENDING_MODIFIERS,
   type CheckOutcome,
+  type GameState,
   type TurnPhase,
 } from '@/engine/types';
 import { turnReducer, type TurnSnapshot } from '../turn-machine';
@@ -1863,6 +1864,65 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     // fires on end-turn instead.
     expect(result.value.next.state.pendingDiscard).toBeUndefined();
     expect(result.value.next.state.phase).toBe('move');
+  });
+
+  it('end-turn with stale pendingDiscard skips the cap-check (#523)', () => {
+    // #523 (deferred from #502/#503 review): the cap-check guard
+    // `=== 0` is what stops the reducer from re-writing
+    // `pendingDiscard` on each repeated end-turn click. Pin that
+    // contract: with `pendingDiscard.count: 1` already pending AND
+    // the active player still over `HAND_CAP`, end-turn must fall
+    // straight through to `endTurnReducer`'s no-advance branch
+    // (which returns the input state unchanged because
+    // `pendingDiscard.count > 0`). Without the guard, a stale-
+    // snapshot retry would silently reset the prompt to a fresh
+    // excess count, surprising the UI / multiplayer wire.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      // 7 cards = 1 over HAND_CAP (6).
+      hand: [1, 2, 3, 4, 5, 6, 7],
+    });
+    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [] });
+    const stateWithStaleDiscard: GameState = {
+      ...makeState({}, {
+        players: [p1, p2],
+        activePlayerId: 'p1',
+        deck: [11, 12, 13],
+        discardPile: [],
+      }),
+      phase: 'end',
+      pendingDiscard: { count: 1, requiredBy: 'end-of-turn' },
+    };
+    const result = turnReducer(
+      { state: stateWithStaleDiscard },
+      { kind: 'end-turn' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Cap-check branch was skipped — pendingDiscard.count is the
+    // pre-existing 1, not a freshly-computed excess (which would be
+    // hand.length - HAND_CAP = 1 too, but for distinguishability
+    // we'd want to assert object identity below).
+    expect(result.value.next.state.pendingDiscard).toEqual({
+      count: 1,
+      requiredBy: 'end-of-turn',
+    });
+    // Seat did NOT rotate (no-advance branch).
+    expect(result.value.next.state.activePlayerId).toBe('p1');
+    // Phase preserved (input state passed through unchanged).
+    expect(result.value.next.state.phase).toBe('end');
+    // Object identity: `endTurnReducer` returns the input state
+    // when `pendingDiscard.count > 0`; the reducer arm passes that
+    // through (`turned === state`). Pinning identity makes a future
+    // refactor that synthesizes a "structurally equal but new"
+    // state visible — that subtle change would break the
+    // `if (turned === state)` guard in BOTH `turn-machine.ts` (this
+    // path) AND `lib/room-actions.ts` (the parallel multiplayer-
+    // dispatcher path), which each call the engine primitive
+    // directly and key off referential equality.
+    expect(result.value.next.state).toBe(stateWithStaleDiscard);
   });
 
   it('end-turn after over-cap meditate sets pendingDiscard and refuses to advance (#503)', () => {
