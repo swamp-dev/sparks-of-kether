@@ -1,8 +1,40 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Hand } from '../Hand';
 import { isHandVisible } from '../visibility';
 import { makePlayer, makeState } from '@/test/fixtures';
+
+/**
+ * Stub `window.matchMedia` to report a fixed `prefers-reduced-motion`
+ * value. jsdom does not implement matchMedia by default, so the
+ * `useReduceMotion` hook short-circuits to `false`. Tests that need to
+ * exercise the reduced-motion branch swap in this stub before mounting.
+ */
+function stubMatchMedia(reduce: boolean): () => void {
+  const original = window.matchMedia as unknown;
+  const stub = vi.fn().mockImplementation((query: string) => ({
+    matches: query.includes('prefers-reduced-motion: reduce') ? reduce : false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: stub,
+  });
+  return () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: original,
+    });
+  };
+}
 
 describe('Hand — visibility (faces vs backs)', () => {
   it('renders ArcanumCard for each card when visible=true', () => {
@@ -477,5 +509,263 @@ describe('Hand — full hand at HAND_CAP (#290)', () => {
       ).toBe(false);
       expect(ml.startsWith('-')).toBe(true);
     }
+  });
+});
+
+describe('Hand — Mac-dock magnification (#463)', () => {
+  // Default suite runs without reduced-motion (jsdom has no matchMedia,
+  // so useReduceMotion returns false). These tests exercise the
+  // magnify-on path. The reduced-motion suite below stubs matchMedia.
+
+  it('hovered card carries data-magnified="true"; siblings stay false', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLButtonElement>;
+    const [first, middle, last] = slots;
+    if (!first || !middle || !last) throw new Error('expected three slots');
+    fireEvent.mouseEnter(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    expect(first.getAttribute('data-magnified')).toBe('false');
+    expect(last.getAttribute('data-magnified')).toBe('false');
+  });
+
+  it('mouseleave clears the magnification on the previously hovered card', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    fireEvent.mouseLeave(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('false');
+  });
+
+  it('keyboard focus magnifies the focused card the same as hover', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    // fireEvent.focus / blur (rather than el.focus()) so RTL's
+    // auto-act wrapper flushes the state update before the assertion.
+    fireEvent.focus(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    fireEvent.blur(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('false');
+  });
+
+  it('magnified card stacks above unselected and above selected (#340 + #463)', () => {
+    const { container } = render(
+      <Hand hand={[2, 5, 13]} visible={true} selectedArcanum={13} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const [first, middle, last] = slots;
+    if (!first || !middle || !last) throw new Error('expected three slots');
+    // Hover the middle (unselected) card. Last is the selected one.
+    fireEvent.mouseEnter(middle);
+    const middleZ = parseInt(middle.style.zIndex || '0', 10);
+    const lastZ = parseInt(last.style.zIndex || '0', 10);
+    const firstZ = parseInt(first.style.zIndex || '0', 10);
+    expect(middleZ).toBeGreaterThan(lastZ);
+    expect(middleZ).toBeGreaterThan(firstZ);
+  });
+
+  it('hovered card scales up via transform; transform contains scale(1.3)', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    // jsdom returns CSS values normalised; scale + translate render as a
+    // single transform string. Asserting on the substring keeps the test
+    // robust to the order of transform pieces.
+    expect(middle.style.transform).toMatch(/scale\(1\.3\)/);
+  });
+
+  it('immediate neighbours of the magnified card translate outward', () => {
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 18, 21]} visible={true} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const middle = slots[2]; // index 2, 5-card hand → centre card
+    const left = slots[1];
+    const right = slots[3];
+    if (!middle || !left || !right) throw new Error('expected five slots');
+    fireEvent.mouseEnter(middle);
+    // Left neighbour should translateX in the negative direction (push
+    // left); right neighbour should translateX positive (push right).
+    expect(left.style.transform).toMatch(/translateX\(-/);
+    expect(right.style.transform).toMatch(/translateX\(0?\.?\d+rem\)/);
+  });
+
+  it('magnified card gets a box-shadow lift; siblings do not', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const [first, middle] = slots;
+    if (!first || !middle) throw new Error('expected slots');
+    fireEvent.mouseEnter(middle);
+    expect(middle.style.boxShadow).not.toBe('');
+    expect(first.style.boxShadow).toBe('');
+  });
+
+  it('hover on a hidden hand does NOT magnify (face-down, no visual lift)', () => {
+    const { container } = render(<Hand hand={[2, 5]} visible={false} />);
+    const first = container.querySelector(
+      '[data-card-slot="0"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(first);
+    expect(first.getAttribute('data-magnified')).toBe('false');
+    expect(first.style.transform).not.toMatch(/scale\(/);
+  });
+
+  it('hover wins over focus when both are present', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLButtonElement>;
+    const [first, middle, last] = slots;
+    if (!first || !middle || !last) throw new Error('expected three slots');
+    // First the keyboard focuses the last card. fireEvent (not native
+    // .focus()) so RTL's auto-act flushes the state update.
+    fireEvent.focus(last);
+    expect(last.getAttribute('data-magnified')).toBe('true');
+    // Now the mouse hovers the middle card. Hover wins.
+    fireEvent.mouseEnter(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    expect(last.getAttribute('data-magnified')).toBe('false');
+    // When the mouse leaves middle, the keyboard-focused last reasserts.
+    fireEvent.mouseLeave(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('false');
+    expect(last.getAttribute('data-magnified')).toBe('true');
+    // Round-trip the focus exit: blur clears the keyboard magnify
+    // even after a hover-then-leave dance. Pins that hover state
+    // didn't leak into the focus state machine.
+    fireEvent.blur(last);
+    expect(last.getAttribute('data-magnified')).toBe('false');
+  });
+
+  it('transition is scoped to cards participating in the magnify (not unrelated cards)', () => {
+    // Without scoping, every card carries the magnify transition on
+    // every render, which animates the base fan transform whenever
+    // *any* state changes (focusIndex, selection, open toggle). Scope
+    // the transition to the active card + immediate + near neighbours
+    // so unrelated cards don't repaint their compositor layer.
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 18, 21, 0]} visible={true} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    // Hover the leftmost card (index 0). Cards 1 (immediate) and 2
+    // (near) participate in the magnify; cards 3, 4, 5 do not.
+    const first = slots[0];
+    const farLast = slots[5];
+    if (!first || !farLast) throw new Error('expected six slots');
+    fireEvent.mouseEnter(first);
+    expect(first.style.transition).not.toBe('');
+    expect(farLast.style.transition).toBe('');
+  });
+
+  it('exit transition persists for one render after mouseLeave (no snap-back)', () => {
+    // CSS transitions only fire when the `transition` property is
+    // present *before* the style change. If we drop both the transform
+    // and the transition in the same render, the exit animation is
+    // skipped — the active card snaps from scale(1.3) → scale(1.0)
+    // and neighbours snap their translateX back to zero. The fix is
+    // to track the previous render's `activeIndex` and keep the
+    // transition on cards that *were* in the magnify set even if
+    // they aren't now. This pins that the magnified card retains its
+    // transition for the render after mouseLeave so the exit eases.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(middle.style.transition).not.toBe('');
+    fireEvent.mouseLeave(middle);
+    // Critical assertion: even after the active state has cleared,
+    // the previously-active card still carries the transition so the
+    // scale(1.3) → scale(1.0) drop animates rather than snaps.
+    expect(middle.style.transition).not.toBe('');
+  });
+
+  it('focus-visible ring class is present on every slot (load-bearing under reduce-motion)', () => {
+    // The keyboard focus indicator must remain visible regardless of
+    // motion preference — it's the load-bearing way a keyboard user
+    // identifies the focused card. The CSS `:focus-visible` ring is
+    // declared via Tailwind utility classes on the button itself, so
+    // we assert the class is present (DOM-level) and trust browsers to
+    // honour `:focus-visible`.
+    const { container } = render(<Hand hand={[2, 5]} visible={true} />);
+    const slots = container.querySelectorAll('[data-card-slot]');
+    for (const slot of slots) {
+      const cls = slot.getAttribute('class') ?? '';
+      expect(cls).toMatch(/focus-visible:ring-2/);
+      expect(cls).toMatch(/focus-visible:ring-illumination/);
+    }
+  });
+});
+
+describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
+  let restoreMatchMedia: (() => void) | undefined;
+
+  afterEach(() => {
+    restoreMatchMedia?.();
+    restoreMatchMedia = undefined;
+  });
+
+  it('skips the scale transform on hover when reduced-motion is set', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    // data-magnified still flips so consumers / tests can still
+    // observe the active state, but no scale transform applies.
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    expect(middle.style.transform).not.toMatch(/scale\(/);
+  });
+
+  it('skips neighbour translateX nudge under reduced-motion', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 18, 21]} visible={true} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLElement>;
+    const middle = slots[2];
+    const left = slots[1];
+    if (!middle || !left) throw new Error('expected slots');
+    fireEvent.mouseEnter(middle);
+    // The base transform contains rotate + translateY but never
+    // translateX. Asserting absence of translateX pins the no-nudge
+    // contract under reduced-motion.
+    expect(left.style.transform).not.toMatch(/translateX\(/);
+  });
+
+  it('omits the transform/box-shadow transition under reduced-motion', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5]} visible={true} />);
+    const first = container.querySelector(
+      '[data-card-slot="0"]',
+    ) as HTMLElement;
+    // No transition string written inline → no animated motion.
+    expect(first.style.transition).toBe('');
+  });
+
+  it('still renders the focus-visible ring class under reduced-motion', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5]} visible={true} />);
+    const first = container.querySelector('[data-card-slot="0"]');
+    const cls = first?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/focus-visible:ring-2/);
   });
 });
