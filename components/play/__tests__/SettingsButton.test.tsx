@@ -46,8 +46,6 @@ const setReducedMotion = (reduce: boolean): void => {
     onchange: null,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
     dispatchEvent: () => false,
   }));
 };
