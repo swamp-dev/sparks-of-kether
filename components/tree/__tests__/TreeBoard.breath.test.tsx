@@ -201,25 +201,14 @@ describe('TreeBoard — #312 tooltip ARIA + flip contract', () => {
   });
 });
 
-describe('TreeBoard — #312 path-number legibility', () => {
-  it('each path-number badge has an opaque dark backing pill (fill not "none")', () => {
-    // The pill must be filled (not stroke-only) so the number reads
-    // on top of any path stroke that crosses underneath. A previous
-    // implementation used `fill={GROUND}` which is the right shape;
-    // the contract pinned here is that no badge collapses to
-    // fill="none" / fill="transparent".
+describe('TreeBoard — #505 path-label removal', () => {
+  it('renders no path-number badges (#136 reverted in #505)', () => {
+    // The per-path number-badge layer added visual noise in the
+    // central pillar without aiding play decisions. Each path's
+    // `aria-label` already carries the number for AT, so removing
+    // the visible badges does not degrade screen-reader access.
     const { container } = render(<TreeBoard />);
     const labels = container.querySelectorAll('[data-path-label]');
-    expect(labels.length).toBe(22);
-    for (const label of labels) {
-      const pill = label.querySelector('circle');
-      const fill = pill?.getAttribute('fill') ?? '';
-      // Either an explicit dark hex (#0e0a1f or similar) OR a CSS
-      // var that resolves to one. We don't allow "none" /
-      // "transparent" — that's the regression we're guarding against.
-      expect(fill, 'pill fill').not.toBe('none');
-      expect(fill, 'pill fill').not.toBe('transparent');
-      expect(fill.length, 'pill fill is set').toBeGreaterThan(0);
-    }
+    expect(labels.length).toBe(0);
   });
 });

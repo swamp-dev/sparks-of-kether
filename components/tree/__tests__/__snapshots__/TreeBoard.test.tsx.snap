@@ -19,7 +19,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       <radialgradient
         cx="50%"
         cy="40%"
-        id="tree-bg-:r8:"
+        id="tree-bg-:rb:"
         r="70%"
       >
         <stop
@@ -33,7 +33,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </radialgradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-11-:r8:"
+        id="card-lit-11-:rb:"
         x1="200"
         x2="320"
         y1="60"
@@ -52,7 +52,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-12-:r8:"
+        id="card-lit-12-:rb:"
         x1="200"
         x2="80"
         y1="60"
@@ -71,7 +71,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-13-:r8:"
+        id="card-lit-13-:rb:"
         x1="200"
         x2="200"
         y1="60"
@@ -90,7 +90,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-14-:r8:"
+        id="card-lit-14-:rb:"
         x1="320"
         x2="80"
         y1="150"
@@ -109,7 +109,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-15-:r8:"
+        id="card-lit-15-:rb:"
         x1="320"
         x2="200"
         y1="150"
@@ -128,7 +128,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-16-:r8:"
+        id="card-lit-16-:rb:"
         x1="320"
         x2="320"
         y1="150"
@@ -147,7 +147,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-17-:r8:"
+        id="card-lit-17-:rb:"
         x1="80"
         x2="200"
         y1="150"
@@ -166,7 +166,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-18-:r8:"
+        id="card-lit-18-:rb:"
         x1="80"
         x2="80"
         y1="150"
@@ -185,7 +185,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-19-:r8:"
+        id="card-lit-19-:rb:"
         x1="320"
         x2="80"
         y1="280"
@@ -204,7 +204,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-20-:r8:"
+        id="card-lit-20-:rb:"
         x1="320"
         x2="200"
         y1="280"
@@ -223,7 +223,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-21-:r8:"
+        id="card-lit-21-:rb:"
         x1="320"
         x2="320"
         y1="280"
@@ -242,7 +242,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-22-:r8:"
+        id="card-lit-22-:rb:"
         x1="80"
         x2="200"
         y1="280"
@@ -261,7 +261,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-23-:r8:"
+        id="card-lit-23-:rb:"
         x1="80"
         x2="80"
         y1="280"
@@ -280,7 +280,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-24-:r8:"
+        id="card-lit-24-:rb:"
         x1="200"
         x2="320"
         y1="340"
@@ -299,7 +299,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-25-:r8:"
+        id="card-lit-25-:rb:"
         x1="200"
         x2="200"
         y1="340"
@@ -318,7 +318,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-26-:r8:"
+        id="card-lit-26-:rb:"
         x1="200"
         x2="80"
         y1="340"
@@ -337,7 +337,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-27-:r8:"
+        id="card-lit-27-:rb:"
         x1="320"
         x2="80"
         y1="430"
@@ -356,7 +356,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-28-:r8:"
+        id="card-lit-28-:rb:"
         x1="320"
         x2="200"
         y1="430"
@@ -375,7 +375,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-29-:r8:"
+        id="card-lit-29-:rb:"
         x1="320"
         x2="200"
         y1="430"
@@ -394,7 +394,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-30-:r8:"
+        id="card-lit-30-:rb:"
         x1="80"
         x2="200"
         y1="430"
@@ -413,7 +413,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-31-:r8:"
+        id="card-lit-31-:rb:"
         x1="80"
         x2="200"
         y1="430"
@@ -432,7 +432,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
-        id="card-lit-32-:r8:"
+        id="card-lit-32-:rb:"
         x1="200"
         x2="200"
         y1="490"
@@ -451,7 +451,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       </lineargradient>
     </defs>
     <rect
-      fill="url(#tree-bg-:r8:)"
+      fill="url(#tree-bg-:rb:)"
       height="620"
       width="400"
     />
@@ -1249,540 +1249,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           y1="490"
           y2="560"
         />
-      </g>
-    </g>
-    <g
-      aria-hidden="true"
-      data-layer="path-labels"
-      pointer-events="none"
-    >
-      <g
-        data-card-lit="false"
-        data-path-label="11"
-        transform="translate(260, 105)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          11
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="12"
-        transform="translate(140, 105)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          12
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="13"
-        transform="translate(200, 200)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          13
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="14"
-        transform="translate(200, 150)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          14
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="15"
-        transform="translate(260, 245)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          15
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="16"
-        transform="translate(320, 215)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          16
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="17"
-        transform="translate(140, 245)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          17
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="18"
-        transform="translate(80, 215)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          18
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="19"
-        transform="translate(200, 280)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          19
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="20"
-        transform="translate(260, 310)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          20
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="21"
-        transform="translate(320, 355)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          21
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="22"
-        transform="translate(140, 310)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          22
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="23"
-        transform="translate(80, 355)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          23
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="24"
-        transform="translate(260, 385)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          24
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="25"
-        transform="translate(222, 415)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          25
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="26"
-        transform="translate(140, 385)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          26
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="27"
-        transform="translate(200, 430)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          27
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="28"
-        transform="translate(260, 460)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          28
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="29"
-        transform="translate(260, 495)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          29
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="30"
-        transform="translate(140, 460)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          30
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="31"
-        transform="translate(140, 495)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          31
-        </text>
-      </g>
-      <g
-        data-card-lit="false"
-        data-path-label="32"
-        transform="translate(222, 525)"
-      >
-        <circle
-          fill="#0e0a1f"
-          r="10"
-          stroke="#f8f8ff"
-          stroke-opacity="0.9"
-          stroke-width="0.85"
-          style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
-        />
-        <text
-          dominant-baseline="central"
-          fill="#f8f8ff"
-          font-family="var(--font-display), serif"
-          font-size="10"
-          font-weight="600"
-          text-anchor="middle"
-        >
-          32
-        </text>
       </g>
     </g>
     <g

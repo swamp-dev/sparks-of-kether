@@ -368,16 +368,15 @@ describe('TreeBoard — path hit-target widening (#130)', () => {
     expect(Number(hit13?.getAttribute('x2'))).toBeCloseTo(200, 0);
   });
 
-  it('path-labels layer is pointer-events:none so it does not steal clicks from the hit-lines', () => {
-    // Reviewer caught: several path-label discs (paths 13/14/19/25/
-    // 27/29/32) sit on or near a path's hit centerline. Without
-    // `pointer-events: none` on the labels group, those discs absorb
-    // clicks meant for the wider hit-lines. This test pins the
-    // contract.
+  it('path-labels layer is absent (#505) so no badge can intercept hit-line clicks', () => {
+    // The path-labels group itself was removed in #505 — the layer
+    // no longer exists, so the prior `pointer-events="none"` contract
+    // is moot. Pin the absence so a regression doesn't reintroduce
+    // badges that overlap path centerlines and absorb clicks meant
+    // for the hit-lines (paths 13/14/19/25/27/29/32 in particular).
     const { container } = render(<TreeBoard />);
-    const labelsLayer = container.querySelector('[data-layer="path-labels"]');
-    expect(labelsLayer).not.toBeNull();
-    expect(labelsLayer?.getAttribute('pointer-events')).toBe('none');
+    expect(container.querySelector('[data-layer="path-labels"]')).toBeNull();
+    expect(container.querySelectorAll('[data-path-label]').length).toBe(0);
   });
 });
 

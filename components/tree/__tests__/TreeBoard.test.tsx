@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react';
 import { TreeBoard } from '../TreeBoard';
+import { contrastTextColour } from '../contrast-text-colour';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
 import { makeState } from '@/test/fixtures';
 
@@ -91,41 +92,89 @@ describe('TreeBoard', () => {
     }
   });
 
-  // #136: playtest finding — path numbers were not visibly rendered
-  // on the board; players could only see them via tooltip/AT. The
-  // contract is that EVERY path's number text is in the DOM at the
-  // path's midpoint and is legible (carries a halo/stroke + sits
-  // ABOVE the line in render order).
-  it('renders a visible number label at the midpoint of every path', () => {
+  // #505: the per-path number badge layer (#136) was removed in
+  // favour of relying on each path's `aria-label` for AT and the
+  // path's stroke colour / connecting Sefirot for sighted players.
+  // The contract is now: NO `[data-path-label]` element exists in
+  // the rendered tree, at any viewport.
+  it('does not render path-number badges (#505 declutter)', () => {
     const { container } = render(<TreeBoard />);
-    for (const path of paths) {
-      const label = container.querySelector(
-        `[data-path-label="${path.number}"]`,
-      );
-      expect(label, `visible label for path ${path.number}`).not.toBeNull();
-      // The label's text must be the number itself.
-      expect(label?.textContent).toContain(String(path.number));
-    }
+    const labels = container.querySelectorAll('[data-path-label]');
+    expect(labels.length).toBe(0);
   });
 
-  it('renders path-number labels above paths but below nodes (z-order)', () => {
-    // SVG render order is document order. Labels must paint AFTER
-    // paths (so path lines don't clip them) but BEFORE nodes (so
-    // Sefirah circles cleanly cover any label that geometrically
-    // sits inside a node — e.g. the central-pillar paths between
-    // Tiferet and Malkuth). The `LABEL_OFFSETS` table nudges those
-    // labels off-pillar; this z-order is the second line of defense.
+  it('renders path lines below nodes — no path-labels layer (#505)', () => {
+    // Post-#505 SVG layer contract: [paths] → [nodes]. The
+    // `path-labels` layer is gone; the path-number information
+    // remains on each `<line>`'s `aria-label` for AT.
     const { container } = render(<TreeBoard />);
     const svg = container.querySelector('svg');
     const layerOrder = Array.from(svg?.children ?? [])
       .map((child) => child.getAttribute('data-layer'))
       .filter((l): l is string => l !== null);
     const pathsIdx = layerOrder.indexOf('paths');
-    const labelsIdx = layerOrder.indexOf('path-labels');
     const nodesIdx = layerOrder.indexOf('nodes');
     expect(pathsIdx).toBeGreaterThanOrEqual(0);
-    expect(labelsIdx).toBeGreaterThan(pathsIdx);
-    expect(nodesIdx).toBeGreaterThan(labelsIdx);
+    expect(nodesIdx).toBeGreaterThan(pathsIdx);
+    expect(layerOrder.indexOf('path-labels')).toBe(-1);
+  });
+
+  // #505: the breath halo's `backgroundColor: sefirah.color` overlay
+  // was the source of a perceptual middle-fade behind each Sefirah
+  // name. Removing the dot's fill keeps the box-shadow halo (which
+  // radiates outward through the per-Sefirah `shadow-glow-{key}`
+  // token) but stops the small coloured dot from mixing with the SVG
+  // disc fill where the text sits. Pin the contract: halo dots must
+  // carry no inline backgroundColor (or transparent) so the text
+  // stays unobscured.
+  it('breath halos do not paint a coloured dot over the Sefirah text (#505)', () => {
+    const { container } = render(<TreeBoard state={makeState()} />);
+    const halos = container.querySelectorAll<HTMLElement>('[data-breath-halo]');
+    expect(halos.length).toBeGreaterThan(0);
+    for (const halo of halos) {
+      const bg = halo.style.backgroundColor;
+      expect(bg, `halo ${halo.dataset.breathHalo} backgroundColor`).toBe('');
+    }
+  });
+
+  // #505: regression pin — each Sefirah's name `<text>` must use the
+  // helper-derived contrast colour (`#0e1320` or `#f8f8ff`) so the
+  // text is readable against the disc fill regardless of how the
+  // halo layering above evolves. Without this pin, a future change
+  // to the halo or text could quietly slide the fill toward a
+  // mid-luminance colour and degrade legibility on light/dark discs.
+  it('Sefirah name text uses the contrast helper for fill (#505)', () => {
+    const { container } = render(<TreeBoard />);
+    for (const sefirah of sefirot) {
+      const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
+      const text = node?.querySelector('text');
+      const expected = contrastTextColour(sefirah.color);
+      expect(text?.getAttribute('fill'), `text fill for ${sefirah.key}`).toBe(
+        expected,
+      );
+    }
+  });
+
+  // #505: hover/focus glow contract — every Sefirah carries a
+  // `[data-hover-glow]` span (in the state-mounted overlay) wearing
+  // the matching `peer-hover:shadow-glow-{key}` and
+  // `peer-focus-visible:shadow-glow-{key}` Tailwind utilities. The
+  // span sits AFTER the `.peer` button so the peer selectors resolve
+  // correctly. Tailwind JIT relies on the literal class names being
+  // present in source.
+  it('renders a hover/focus glow span per Sefirah with peer-hover and peer-focus-visible classes (#505)', () => {
+    const { container } = render(<TreeBoard state={makeState()} />);
+    for (const sefirah of sefirot) {
+      const glow = container.querySelector(
+        `[data-hover-glow="${sefirah.key}"]`,
+      );
+      expect(glow, `hover glow for ${sefirah.key}`).not.toBeNull();
+      const className = glow?.className ?? '';
+      expect(className).toContain(`peer-hover:shadow-glow-${sefirah.key}`);
+      expect(className).toContain(
+        `peer-focus-visible:shadow-glow-${sefirah.key}`,
+      );
+    }
   });
 
   // #289: Sefirah English-name labels were rendered BELOW each

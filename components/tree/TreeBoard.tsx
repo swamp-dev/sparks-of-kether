@@ -74,24 +74,6 @@ import { SefirahTooltip } from './SefirahTooltip';
 const NODE_RADIUS = 28;
 
 /**
- * Per-path label offset from the geometric midpoint, used by the
- * `path-labels` layer (#136). Three central-pillar paths cluster
- * inside a 75px vertical band between Tiferet and Malkuth; their
- * raw midpoints either collide with each other (paths 25 + 27) or
- * sit inside a Sefirah node / under a player token (path 32). The
- * offsets nudge those discs perpendicular to each path so every
- * label is legible regardless of game state.
- *
- * Defaults to `{ dx: 0, dy: 0 }` for paths not listed (the vast
- * majority — most paths run between distinct pillars and have
- * uncrowded midpoints).
- */
-const LABEL_OFFSETS: Readonly<Record<number, { dx: number; dy: number }>> = {
-  25: { dx: 22, dy: 0 }, // Tiferet↔Yesod — slide right to clear path 27.
-  32: { dx: 22, dy: 0 }, // Yesod↔Malkuth — slide right to clear Yesod node + tokens.
-};
-
-/**
  * Frozen empty valid-paths set, returned when `movesEnabled` is false
  * (#129). `Object.freeze` makes the immutability runtime-enforced —
  * `ReadonlySet` is a TS-only constraint and can be defeated by a cast.
@@ -126,6 +108,31 @@ const GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
   hod: 'shadow-glow-hod',
   yesod: 'shadow-glow-yesod',
   malkuth: 'shadow-glow-malkuth',
+};
+
+/**
+ * Per-Sefirah hover/focus glow utility classes (#505). Tailwind JIT
+ * requires literal class names; these strings combine `peer-hover` and
+ * `peer-focus-visible` variants on the same `shadow-glow-{key}` token
+ * the always-on baseline halo already uses.
+ *
+ * The class is parked on a hover-glow span that sits AFTER the `.peer`
+ * button so the peer selectors resolve correctly. At rest it carries
+ * no shadow; on hover or keyboard focus of the button it lights up,
+ * stacking on top of the always-lit baseline halo as an intensity
+ * bump rather than a separate effect.
+ */
+const HOVER_GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
+  kether: 'peer-hover:shadow-glow-kether peer-focus-visible:shadow-glow-kether',
+  chokmah: 'peer-hover:shadow-glow-chokmah peer-focus-visible:shadow-glow-chokmah',
+  binah: 'peer-hover:shadow-glow-binah peer-focus-visible:shadow-glow-binah',
+  chesed: 'peer-hover:shadow-glow-chesed peer-focus-visible:shadow-glow-chesed',
+  gevurah: 'peer-hover:shadow-glow-gevurah peer-focus-visible:shadow-glow-gevurah',
+  tiferet: 'peer-hover:shadow-glow-tiferet peer-focus-visible:shadow-glow-tiferet',
+  netzach: 'peer-hover:shadow-glow-netzach peer-focus-visible:shadow-glow-netzach',
+  hod: 'peer-hover:shadow-glow-hod peer-focus-visible:shadow-glow-hod',
+  yesod: 'peer-hover:shadow-glow-yesod peer-focus-visible:shadow-glow-yesod',
+  malkuth: 'peer-hover:shadow-glow-malkuth peer-focus-visible:shadow-glow-malkuth',
 };
 
 /**
@@ -460,67 +467,16 @@ export function TreeBoard({
           })}
         </g>
 
-        <g data-layer="path-labels" aria-hidden="true" pointerEvents="none">
-          {/*
-            #136: playtest finding — path numbers were not visibly
-            rendered, only available via aria-label/tooltip. Render
-            each as a small disc at the line midpoint to maximise
-            legibility against the dark background AND against any
-            path line that crosses underneath. The disc-+-text combo
-            is the same trick the Sefirah nodes use; here it's tuned
-            smaller so the path identity is visible without crowding.
-
-            aria-hidden because the path's own <line> element already
-            carries the full label; duplicating it on the text would
-            double-announce in screen readers.
-
-            #312: the badge gets a slightly larger r=10 (was r=9) and
-            a higher-opacity stroke (0.9, was 0.7) so the number
-            reads on mobile across any path that crosses underneath.
-            Card-lit paths get a brighter pill border via
-            `data-card-lit` — picked up by the per-label fragment so
-            the highlight "travels" from the path stroke to the
-            badge.
-          */}
-          {paths.map((path) => {
-            const a = treeNodeLayout[path.from];
-            const b = treeNodeLayout[path.to];
-            const offset = LABEL_OFFSETS[path.number] ?? { dx: 0, dy: 0 };
-            const mx = (a.x + b.x) / 2 + offset.dx;
-            const my = (a.y + b.y) / 2 + offset.dy;
-            const isCardLit = cardLitPaths.has(path.number);
-            return (
-              <g
-                key={path.number}
-                data-path-label={path.number}
-                data-card-lit={isCardLit ? 'true' : 'false'}
-                transform={`translate(${mx}, ${my})`}
-              >
-                <circle
-                  r={10}
-                  fill={GROUND}
-                  stroke={isCardLit ? TIFERET_GOLD : VEIL}
-                  strokeOpacity={isCardLit ? 0.95 : 0.9}
-                  strokeWidth={isCardLit ? 1.25 : 0.85}
-                  style={{
-                    transition:
-                      'stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out',
-                  }}
-                />
-                <text
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={10}
-                  fontFamily="var(--font-display), serif"
-                  fontWeight={600}
-                  fill={isCardLit ? TIFERET_GOLD : VEIL}
-                >
-                  {path.number}
-                </text>
-              </g>
-            );
-          })}
-        </g>
+        {/*
+          #505 — the per-path number badge layer (#136) was removed:
+          path-number badges added visual noise without aiding play
+          decisions, and crowded the central pillar (paths 25 / 27 /
+          32 had hardcoded offsets to dodge tokens). The path number
+          remains on each <line>'s `aria-label` so screen-reader users
+          still get full information; sighted players orient via the
+          path's stroke colour, the lit gradient when card-eligible,
+          and the Sefirot it connects.
+        */}
 
         <PlayerTokens state={state} activePlayerId={activePlayerId} />
 
@@ -677,8 +633,15 @@ export function TreeBoard({
                     aria-hidden="true"
                     className={`pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full motion-safe:animate-breath ${GLOW_CLASS_BY_KEY[sefirah.key]}`}
                     style={{
-                      backgroundColor: sefirah.color,
-                      opacity: 0.85,
+                      // #505: no backgroundColor / opacity here. Setting
+                      // the dot's fill to `sefirah.color` mixed with the
+                      // SVG disc fill behind it and produced a
+                      // perceptual middle-fade desaturating the Sefirah
+                      // name `<text>`. The shadow-glow tokens on the
+                      // class above carry the actual breath halo
+                      // outward via box-shadow; the dot itself stays
+                      // transparent so it never obscures the text.
+                      //
                       // Stagger by hash of key so halos don't pulse
                       // synchronously. A simple parity flip would
                       // group five-and-five; using the key length
@@ -721,6 +684,23 @@ export function TreeBoard({
                     className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
                   />
                 )}
+                {/*
+                  #505 — hover/focus glow. A second halo span sits AFTER
+                  the `.peer` button so Tailwind's `peer-hover:` and
+                  `peer-focus-visible:` variants resolve to it. At rest
+                  it carries no shadow; on mouse hover or keyboard
+                  focus of the button it flips on a `shadow-glow-{key}`
+                  token, stacking with the always-lit baseline halo as
+                  an intensity bump. `transition-shadow` smooths the
+                  fade; `motion-reduce:transition-none` snaps it for
+                  users who explicitly opt out of motion (the glow
+                  itself is static — no animation on the hovered state).
+                */}
+                <span
+                  data-hover-glow={sefirah.key}
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full transition-shadow duration-200 ease-out motion-reduce:transition-none ${HOVER_GLOW_CLASS_BY_KEY[sefirah.key]}`}
+                />
                 {/*
                   Tooltip surface. `peer-hover` / `peer-focus` reveals
                   it; otherwise it sits in the DOM (so AT users with
