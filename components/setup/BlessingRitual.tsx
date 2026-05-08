@@ -9,6 +9,7 @@ import {
   quoteForBlessing,
   type DignityRelationship,
 } from '@/engine/sefirah-quote';
+import { usePantheon } from '@/lib/settings/pantheon';
 import { StatIcon } from '@/components/icons/StatIcon';
 import { RITUAL_COPY } from './ritual-copy';
 import { RitualScene } from './RitualScene';
@@ -68,6 +69,7 @@ export function BlessingRitual({
   onComplete,
   className,
 }: BlessingRitualProps): JSX.Element {
+  const { pantheon } = usePantheon();
   const [stepIndex, setStepIndex] = useState(0);
   const [stats, setStats] = useState<Partial<Record<StatKey, number>>>({});
   const [stepStatus, setStepStatus] = useState<StepStatus>('awaiting');
@@ -93,7 +95,12 @@ export function BlessingRitual({
       // T3's `quoteForBlessing`. Compute the tier separately so the
       // rendered element can carry it for tone-styling.
       setBlessing({
-        quote: quoteForBlessing(currentSefirah.key, sign, rng),
+        quote: quoteForBlessing(
+          pantheon.sefirahBlessings,
+          currentSefirah.key,
+          sign,
+          rng,
+        ),
         tier: dignityRelationship(currentSefirah.key, sign),
       });
     }

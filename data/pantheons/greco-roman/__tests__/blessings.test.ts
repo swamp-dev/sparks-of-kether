@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   pickBlessing,
   sefirahBlessings,
-} from '../sefirah-blessings';
+} from '../blessings';
 import { seededRng } from '@/engine/rng';
 import type { SefirahKey, ZodiacSignKey } from '@/data';
 
@@ -162,7 +162,7 @@ describe('pickBlessing', () => {
     const variants = sefirahBlessings.hod.gemini;
     const rng = seededRng(42);
     for (let i = 0; i < 50; i++) {
-      const picked = pickBlessing('hod', 'gemini', rng);
+      const picked = pickBlessing(sefirahBlessings, 'hod', 'gemini', rng);
       expect(variants).toContain(picked);
     }
   });
@@ -170,8 +170,8 @@ describe('pickBlessing', () => {
   it('selects deterministically given a seeded Rng', () => {
     const rngA = seededRng(123);
     const rngB = seededRng(123);
-    expect(pickBlessing('tiferet', 'leo', rngA)).toBe(
-      pickBlessing('tiferet', 'leo', rngB),
+    expect(pickBlessing(sefirahBlessings, 'tiferet', 'leo', rngA)).toBe(
+      pickBlessing(sefirahBlessings, 'tiferet', 'leo', rngB),
     );
   });
 
@@ -182,6 +182,6 @@ describe('pickBlessing', () => {
     // is truly throw-free; the throw itself is documented contract,
     // not exercised behaviour.
     const rng = seededRng(0);
-    expect(() => pickBlessing('hod', 'aries', rng)).not.toThrow();
+    expect(() => pickBlessing(sefirahBlessings, 'hod', 'aries', rng)).not.toThrow();
   });
 });

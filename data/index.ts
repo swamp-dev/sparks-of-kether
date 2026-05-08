@@ -19,7 +19,7 @@ import { sefirot } from './sefirot';
 import { zodiacSigns } from './zodiac-signs';
 import { signDignities } from './dignities';
 import { soulDoorsBySign } from './soul-doors';
-import { sefirahBlessings } from './sefirah-blessings';
+import { sefirahBlessings } from './pantheons/greco-roman/blessings';
 import type {
   Arcanum,
   HebrewLetter,
@@ -41,8 +41,8 @@ export { paths } from './paths';
 export { zodiacSigns } from './zodiac-signs';
 export { signDignities } from './dignities';
 export { soulDoorsBySign } from './soul-doors';
-export { sefirahBlessings, pickBlessing } from './sefirah-blessings';
-export type { SefirahBlessingMatrix } from './sefirah-blessings';
+export { sefirahBlessings, pickBlessing } from './pantheons/greco-roman/blessings';
+export type { SefirahBlessingMatrix } from './pantheons/greco-roman/blessings';
 export { sefirahMarkLetter } from './sefirah-glyphs';
 export { TREE_VIEW_W, TREE_VIEW_H, treeNodeLayout, type NodeLayout } from './tree-layout';
 export { attributionColor, attributionLabel, signGlowColor } from './attribution-colors';
@@ -183,12 +183,19 @@ export function soulDoorsForSign(key: ZodiacSignKey): readonly SefirahKey[] {
 }
 
 /**
- * Sefirah → its blessing sub-table keyed by zodiac sign. Each value
- * is the array of 3 variants for a given (sefirah, sign) cell. Throws
- * on an unknown Sefirah key — the matrix is fixed at build time, so
- * a miss always indicates a programming error. See
- * `data/sefirah-blessings.ts` for the matrix itself, and `pickBlessing`
- * for the seedable runtime variant selector.
+ * Sefirah → its blessing sub-table keyed by zodiac sign (greco-roman
+ * default). Each value is the array of 3 variants for a given
+ * (sefirah, sign) cell. Throws on an unknown Sefirah key — the matrix
+ * is fixed at build time, so a miss always indicates a programming
+ * error.
+ *
+ * Pantheon-coupled to greco-roman: most callers should reach the
+ * blessing matrix via `usePantheon().pantheon.sefirahBlessings`
+ * instead, so future pantheons surface their own blessing voices.
+ * This helper stays as a convenience for non-React lookups that don't
+ * need pantheon switching. See
+ * `data/pantheons/greco-roman/blessings.ts` for the matrix itself,
+ * and `pickBlessing` for the seedable runtime variant selector.
  */
 export function blessingsForSefirah(
   key: SefirahKey,

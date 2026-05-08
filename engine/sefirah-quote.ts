@@ -6,6 +6,7 @@ import {
   type SefirahKey,
   type ZodiacSignKey,
 } from '@/data';
+import type { SefirahBlessingMatrix } from '@/data/pantheons/types';
 import type { Rng } from './rng';
 
 /**
@@ -103,22 +104,26 @@ export function dignityRelationship(
 }
 
 /**
- * Pick the blessing line for a given (sefirah, sign), uniformly at
- * random across the 3 authored variants via the engine's seedable Rng.
+ * Pick the blessing line for a given (sefirah, sign) from the
+ * supplied matrix, uniformly at random across the 3 authored variants
+ * via the engine's seedable Rng.
  *
- * Wraps `data/sefirah-blessings.ts:pickBlessing` for naming
- * continuity with the design doc; the variant-distribution rationale
- * (the literary-review concern that opener formulae must not become
- * audible — see `Journal.md` for #252) lives at this layer rather
- * than in the data file.
+ * Wraps `pickBlessing` for naming continuity with the design doc; the
+ * variant-distribution rationale (the literary-review concern that
+ * opener formulae must not become audible — see `Journal.md` for
+ * #252) lives at this layer rather than in the data file.
+ *
+ * Matrix-as-parameter shape lets callers route to the active
+ * pantheon's blessings via `usePantheon().pantheon.sefirahBlessings`.
  *
  * Callers that need the dignity tier for styling or copy choices
  * should compute it separately via `dignityRelationship`.
  */
 export function quoteForBlessing(
+  matrix: SefirahBlessingMatrix,
   sefirah: SefirahKey,
   sign: ZodiacSignKey,
   rng: Rng,
 ): string {
-  return pickBlessing(sefirah, sign, rng);
+  return pickBlessing(matrix, sefirah, sign, rng);
 }

@@ -5,10 +5,10 @@ import {
   sefirahPlayerResponses,
   sefirahVerdicts,
   type ChallengeOutcome,
-} from '../sefirah-verdicts';
-import { avatarNames } from '../pantheons/greco-roman/avatar-names';
+} from '../verdicts';
+import { avatarNames } from '../avatar-names';
 import { seededRng } from '@/engine/rng';
-import type { EncounterAvatarKey } from '../types';
+import type { EncounterAvatarKey } from '../../../types';
 import type { ZodiacSignKey } from '@/data';
 
 /**
@@ -170,7 +170,7 @@ describe('avatarNames', () => {
 describe('pickVerdict', () => {
   it('returns a variant from the cell for the given (sefirah, sign, outcome)', () => {
     const rng = seededRng(1);
-    const verdict = pickVerdict('hod', 'aries', 'pass', rng);
+    const verdict = pickVerdict(sefirahVerdicts, 'hod', 'aries', 'pass', rng);
     expect(sefirahVerdicts.hod.aries.pass).toContain(verdict);
   });
 
@@ -180,7 +180,7 @@ describe('pickVerdict', () => {
       int: (min: number, _max: number): number => min,
       d20: (): number => 1,
     };
-    const verdict = pickVerdict('hod', 'aries', 'pass', lowRng);
+    const verdict = pickVerdict(sefirahVerdicts, 'hod', 'aries', 'pass', lowRng);
     expect(verdict).toBe(sefirahVerdicts.hod.aries.pass[0]);
   });
 
@@ -189,7 +189,7 @@ describe('pickVerdict', () => {
       int: (_min: number, max: number): number => max,
       d20: (): number => 20,
     };
-    const verdict = pickVerdict('chesed', 'libra', 'fail', highRng);
+    const verdict = pickVerdict(sefirahVerdicts, 'chesed', 'libra', 'fail', highRng);
     const cell = sefirahVerdicts.chesed.libra.fail;
     expect(verdict).toBe(cell[cell.length - 1]);
   });
@@ -200,7 +200,7 @@ describe('pickVerdict', () => {
     // compile time; the throw guards a forced cast or data drift.
     const rng = seededRng(1);
     expect(() =>
-      pickVerdict('hod', 'not-a-sign' as ZodiacSignKey, 'pass', rng),
+      pickVerdict(sefirahVerdicts, 'hod', 'not-a-sign' as ZodiacSignKey, 'pass', rng),
     ).toThrow();
   });
 });
@@ -208,7 +208,7 @@ describe('pickVerdict', () => {
 describe('pickPlayerResponse', () => {
   it('returns a variant from the cell for the given (sefirah, sign)', () => {
     const rng = seededRng(1);
-    const line = pickPlayerResponse('netzach', 'pisces', rng);
+    const line = pickPlayerResponse(sefirahPlayerResponses, 'netzach', 'pisces', rng);
     expect(sefirahPlayerResponses.netzach.pisces).toContain(line);
   });
 
@@ -217,7 +217,7 @@ describe('pickPlayerResponse', () => {
       int: (min: number, _max: number): number => min,
       d20: (): number => 1,
     };
-    const line = pickPlayerResponse('yesod', 'cancer', lowRng);
+    const line = pickPlayerResponse(sefirahPlayerResponses, 'yesod', 'cancer', lowRng);
     expect(line).toBe(sefirahPlayerResponses.yesod.cancer[0]);
   });
 
@@ -226,7 +226,7 @@ describe('pickPlayerResponse', () => {
       int: (_min: number, max: number): number => max,
       d20: (): number => 20,
     };
-    const line = pickPlayerResponse('binah', 'capricorn', highRng);
+    const line = pickPlayerResponse(sefirahPlayerResponses, 'binah', 'capricorn', highRng);
     const cell = sefirahPlayerResponses.binah.capricorn;
     expect(line).toBe(cell[cell.length - 1]);
   });

@@ -6,11 +6,8 @@ import { usePantheon } from '@/lib/settings/pantheon';
 import {
   pickPlayerResponse,
   pickVerdict,
-} from '@/data/sefirah-verdicts';
-import {
-  pickFraming,
-  sefirahFramingPlaceholder,
-} from '@/data/sefirah-framing';
+} from '@/data/pantheons/greco-roman/verdicts';
+import { pickFraming } from '@/data/pantheons/greco-roman/framing';
 import { sefirahTwist } from '@/data/sefirah-twists';
 import {
   CARD_BURN_BONUS,
@@ -250,7 +247,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // re-pick the player line — see the useEffect below.)
   const [playerResponse] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
-    return pickPlayerResponse(avatarKey, context.playerSign, rng);
+    return pickPlayerResponse(
+      pantheon.sefirahPlayerResponses,
+      avatarKey,
+      context.playerSign,
+      rng,
+    );
   });
   // Trial-framing line for the prep stage (#478). Picked ONCE per
   // encounter via the same lazy-initializer pattern as
@@ -269,7 +271,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // rebase the seeds in that file too.
   const [pickedFraming] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
-    return pickFraming(avatarKey, context.playerSign, rng);
+    return pickFraming(
+      pantheon.sefirahFraming,
+      avatarKey,
+      context.playerSign,
+      rng,
+    );
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
   // #482 framing-complete signal. Flips to `true` when `RevealLine`
@@ -556,6 +563,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // tests without a player) — the fallback placeholder renders.
     if (avatarHasCopy && context.playerSign !== undefined) {
       const line = pickVerdict(
+        pantheon.sefirahVerdicts,
         avatarKey,
         context.playerSign,
         outcome.pass ? 'pass' : 'fail',
@@ -668,7 +676,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // `challenge.kind === 'check'` guard at mount time, so the
   // narrowed `avatarKey` lookup is total.
   const framingLine =
-    pickedFraming ?? sefirahFramingPlaceholder[avatarKey];
+    pickedFraming ?? pantheon.sefirahFramingPlaceholder[avatarKey];
 
   // "Twist" banner — only Sefirot with shipped per-Sefirah mechanics
   // (#353 Hod Word-Match, #354 Yesod Dream-Peek) get a banner today.

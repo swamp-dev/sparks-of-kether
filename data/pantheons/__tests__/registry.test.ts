@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { pantheons, type Pantheon, type PantheonId } from '@/data/pantheons';
 import { grecoRoman } from '@/data/pantheons/greco-roman';
 import { avatarNames as grecoRomanAvatarNames } from '@/data/pantheons/greco-roman/avatar-names';
-import { sefirahFraming } from '@/data/sefirah-framing';
-import { sefirahVerdicts } from '@/data/sefirah-verdicts';
-import { sefirahBlessings } from '@/data/sefirah-blessings';
+import { sefirahFraming } from '@/data/pantheons/greco-roman/framing';
+import { sefirahVerdicts } from '@/data/pantheons/greco-roman/verdicts';
+import { sefirahBlessings } from '@/data/pantheons/greco-roman/blessings';
 
 describe('pantheons registry (#547)', () => {
   it('has exactly one entry: greco-roman', () => {
@@ -50,8 +50,11 @@ describe('pantheons registry (#547)', () => {
       expect(p.sefirahCodexAvatar.yesod).toBe('Selene');
     });
 
-    it('matrix slots (framing, verdicts, blessings) reference the existing top-level exports', () => {
-      // A1 wires verdicts/blessings/framing as references; A4 (#550) moves them.
+    it('matrix slots (framing, verdicts, blessings) reference the per-pantheon exports', () => {
+      // A4 (#550) moved verdicts/blessings/framing under
+      // `data/pantheons/greco-roman/`. The registry entry imports
+      // those modules directly; this test pins identity to catch
+      // accidental divergence.
       expect(p.sefirahFraming).toBe(sefirahFraming);
       expect(p.sefirahVerdicts).toBe(sefirahVerdicts);
       expect(p.sefirahBlessings).toBe(sefirahBlessings);

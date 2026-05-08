@@ -1,10 +1,12 @@
 import type { Rng } from '@/engine/rng';
-import type { EncounterAvatarKey, ZodiacSignKey } from './types';
+import type { EncounterAvatarKey, ZodiacSignKey } from '../../types';
+import type { FramingMatrix, FramingPlaceholderMap } from '../types';
 
 /**
- * Per-Sefirah avatar trial-framing matrix and `pickFraming` picker
- * (#478). Mirrors the four-dimensional shape established for verdict
- * + player-response copy in `data/sefirah-verdicts.ts` (#277).
+ * Greco-Roman per-Sefirah avatar trial-framing matrix and
+ * `pickFraming` picker (#478). Mirrors the four-dimensional shape
+ * established for verdict + player-response copy in
+ * `pantheons/greco-roman/verdicts.ts` (#277).
  *
  * Each non-Malkuth-non-Kether Sefirah has 12 sign cells × 3 variants
  * = 288 strings total. The avatar speaks at the top of the encounter
@@ -28,9 +30,8 @@ import type { EncounterAvatarKey, ZodiacSignKey } from './types';
  * #285) are excluded by the `EncounterAvatarKey` narrow union.
  */
 
-export type FramingMatrix = Readonly<
-  Record<EncounterAvatarKey, Readonly<Record<ZodiacSignKey, readonly string[]>>>
->;
+// Re-export for callers reading this file directly. Canonical home is `pantheons/types.ts`.
+export type { FramingMatrix, FramingPlaceholderMap };
 
 // ──────────────── Hermes (Hod) ────────────────
 // Voice: quick-witted, sly, language-loving. Wordplay where natural.
@@ -588,9 +589,7 @@ export const sefirahFraming: FramingMatrix = {
  * reads as the avatar speaking. Mirrors the no-sign fallback pattern
  * from `pickPlayerResponse` (#277).
  */
-export const sefirahFramingPlaceholder: Readonly<
-  Record<EncounterAvatarKey, string>
-> = {
+export const sefirahFramingPlaceholder: FramingPlaceholderMap = {
   chokmah:
     "Athena's spear flashes. Strike before naming — Chokmah answers only the unhesitating eye.",
   binah:
@@ -618,11 +617,12 @@ export const sefirahFramingPlaceholder: Readonly<
  * that drops a variant).
  */
 export function pickFraming(
+  matrix: FramingMatrix,
   sefirah: EncounterAvatarKey,
   sign: ZodiacSignKey,
   rng: Rng,
 ): string {
-  const cell = sefirahFraming[sefirah];
+  const cell = matrix[sefirah];
   if (cell === undefined) {
     throw new Error(`pickFraming: unknown sefirah=${sefirah}`);
   }

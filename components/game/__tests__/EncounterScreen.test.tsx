@@ -1605,7 +1605,7 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
     expect(relation & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('framing line carries the per-Sefirah copy from data/sefirah-framing.ts', () => {
+  it('framing line carries the per-Sefirah copy from data/pantheons/greco-roman/framing.ts', () => {
     renderEncounter({
       mode: 'hot-seat',
       initialState: makeChallengeState(),
@@ -1613,8 +1613,7 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
     const framing = document.querySelector('[data-encounter-framing]');
     // Gevurah's placeholder framing line names Ares — pin the avatar
     // name as the cheap canary that the right matrix entry rendered.
-    // Full copy assertions belong in the sefirah-framing.ts unit
-    // tests (#478).
+    // Full copy assertions belong in the framing.ts unit tests (#478).
     expect(framing?.textContent).toMatch(/Ares/);
   });
 

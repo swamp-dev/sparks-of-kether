@@ -1,18 +1,21 @@
 import type { Rng } from '@/engine/rng';
-import type { SefirahKey, ZodiacSignKey } from './types';
+import type { SefirahKey, ZodiacSignKey } from '../../types';
+import type { SefirahBlessingMatrix } from '../types';
 
 /**
- * Per-Sefirah blessing matrix (T2 of #251 — Voices Epic). Source of
- * truth is `design/sefirah-blessings.md`; this file mirrors that doc
- * verbatim. Each (sefirah, sign) cell holds 3 variants — `pickBlessing`
- * selects one uniformly via the engine's seedable Rng.
+ * Greco-Roman per-Sefirah blessing matrix (T2 of #251 — Voices Epic).
+ * Source of truth is `design/sefirah-blessings.md`; this file mirrors
+ * that doc verbatim. Each (sefirah, sign) cell holds 3 variants — the
+ * pantheon-aware `pickBlessing` takes one of these matrices as a
+ * parameter and selects a variant via the engine's seedable Rng.
  *
  *   10 sefirot × 12 signs × 3 variants = 360 lines.
  *
  * Voice and content are locked in the design doc. If a line needs
  * revision, edit the design doc first and mirror the change here
- * (the verbatim string-pins in `data/__tests__/sefirah-blessings.test.ts`
- * will catch any drift).
+ * (the verbatim string-pins in
+ * `data/pantheons/greco-roman/__tests__/blessings.test.ts` will catch
+ * any drift).
  *
  * Kether and Malkuth use special voices — see the design doc § 2.
  * For runtime variant-selection rationale (even-distribution to keep
@@ -20,9 +23,8 @@ import type { SefirahKey, ZodiacSignKey } from './types';
  * notes in `Journal.md` for #252.
  */
 
-export type SefirahBlessingMatrix = Readonly<
-  Record<SefirahKey, Readonly<Record<ZodiacSignKey, readonly string[]>>>
->;
+// Re-export for callers reading this file directly. Canonical home is `pantheons/types.ts`.
+export type { SefirahBlessingMatrix };
 
 // ──────────────── Kether (collective) — collective Crown voice ────────────────
 
@@ -689,15 +691,22 @@ export const sefirahBlessings: SefirahBlessingMatrix = {
 
 /**
  * Pick a uniform variant of the blessing line for the given
- * (sefirah, sign). Seedable so the same game-seed produces the
- * same blessing line on re-render.
+ * (sefirah, sign) from the supplied blessing matrix. Seedable so the
+ * same game-seed produces the same blessing line on re-render.
+ *
+ * Matrix-as-parameter shape lets the caller route to the active
+ * pantheon's blessings via `usePantheon().pantheon.sefirahBlessings`.
+ * Phase A4 (#550) refactored this from the prior closure-over-
+ * `sefirahBlessings` form so Phase B (Egyptian) doesn't need a
+ * separate picker per pantheon.
  */
 export function pickBlessing(
+  matrix: SefirahBlessingMatrix,
   sefirah: SefirahKey,
   sign: ZodiacSignKey,
   rng: Rng,
 ): string {
-  const variants = sefirahBlessings[sefirah][sign];
+  const variants = matrix[sefirah][sign];
   if (variants.length === 0) {
     throw new Error(
       `pickBlessing: no variants for sefirah=${sefirah} sign=${sign}`,

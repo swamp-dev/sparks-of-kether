@@ -1,11 +1,17 @@
 import type { Rng } from '@/engine/rng';
-import type { EncounterAvatarKey, ZodiacSignKey } from './types';
+import type { EncounterAvatarKey, ZodiacSignKey } from '../../types';
+import type {
+  ChallengeOutcome,
+  PlayerResponseMatrix,
+  VerdictMatrix,
+} from '../types';
 
 /**
- * Per-Sefirah avatar verdict matrix and pre-roll player-response
- * matrix. Source: `design/avatars.md` § 7. Each cell holds 3
- * variants — `pickVerdict` / `pickPlayerResponse` select one
- * uniformly per encounter via the engine's seedable Rng.
+ * Greco-Roman per-Sefirah avatar verdict matrix and pre-roll
+ * player-response matrix. Source: `design/avatars.md` § 7. Each cell
+ * holds 3 variants — the pantheon-aware pickers
+ * (`pickVerdict` / `pickPlayerResponse`) take one of these matrices
+ * as a parameter and select a variant via the engine's seedable Rng.
  *
  * Keyed on `EncounterAvatarKey` — the 8 challenge avatars (Hermes
  * through Selene). Kether (collective Final Threshold, #285) and
@@ -17,28 +23,9 @@ import type { EncounterAvatarKey, ZodiacSignKey } from './types';
  * revision, edit the design doc first and mirror the change here.
  */
 
-export type ChallengeOutcome = 'pass' | 'fail';
-
-/**
- * Avatar verdict per (sefirah, sign, outcome). Each `pass` and
- * `fail` array holds 3 variants. See `design/avatars.md` § 7
- * matrices.
- */
-export type VerdictMatrix = Readonly<
-  Record<
-    EncounterAvatarKey,
-    Readonly<Record<ZodiacSignKey, Readonly<Record<ChallengeOutcome, readonly string[]>>>>
-  >
->;
-
-/**
- * Pre-roll player-response per (sefirah, sign). 3 variants per cell.
- * Surfaces in the EncounterScreen prep sub-state above the Roll
- * button — pure literary couplet with the avatar's verdict.
- */
-export type PlayerResponseMatrix = Readonly<
-  Record<EncounterAvatarKey, Readonly<Record<ZodiacSignKey, readonly string[]>>>
->;
+// Re-export the matrix types for callers that read this file directly
+// (tests and the engine helper) — the canonical home is `pantheons/types.ts`.
+export type { ChallengeOutcome, VerdictMatrix, PlayerResponseMatrix };
 
 // ──────────────── Hermes (Hod) ────────────────
 
@@ -1764,18 +1751,26 @@ export const sefirahPlayerResponses: PlayerResponseMatrix = {
 
 /**
  * Pick a uniform variant of the avatar's verdict for the given
- * (sefirah, sign, outcome). Calls `rng.int(0, n - 1)` once. Throws
- * if the matrix has zero variants for the cell — by construction
- * this can't happen (every cell has 3), but the throw surfaces a
- * data drift loud rather than returning an empty string.
+ * (sefirah, sign, outcome) from the supplied verdict matrix. Calls
+ * `rng.int(0, n - 1)` once. Throws if the matrix has zero variants
+ * for the cell — by construction this can't happen (every cell has
+ * 3), but the throw surfaces a data drift loud rather than returning
+ * an empty string.
+ *
+ * Matrix-as-parameter shape lets the caller route to the active
+ * pantheon's verdicts via `usePantheon().pantheon.sefirahVerdicts` —
+ * the picker is pantheon-agnostic. Phase A4 (#550) refactored this
+ * from the prior closure-over-`sefirahVerdicts` form so Phase B
+ * (Egyptian) doesn't need a separate picker per pantheon.
  */
 export function pickVerdict(
+  matrix: VerdictMatrix,
   sefirah: EncounterAvatarKey,
   sign: ZodiacSignKey,
   outcome: ChallengeOutcome,
   rng: Rng,
 ): string {
-  const variants = sefirahVerdicts[sefirah][sign][outcome];
+  const variants = matrix[sefirah][sign][outcome];
   if (variants.length === 0) {
     throw new Error(
       `pickVerdict: no variants for sefirah=${sefirah} sign=${sign} outcome=${outcome}`,
@@ -1789,14 +1784,17 @@ export function pickVerdict(
 
 /**
  * Pick a uniform variant of the player's pre-roll line for the
- * given (sefirah, sign). Same shape as `pickVerdict`.
+ * given (sefirah, sign) from the supplied response matrix. Same
+ * shape as `pickVerdict` — see that function's doc-comment for the
+ * matrix-as-parameter rationale.
  */
 export function pickPlayerResponse(
+  matrix: PlayerResponseMatrix,
   sefirah: EncounterAvatarKey,
   sign: ZodiacSignKey,
   rng: Rng,
 ): string {
-  const variants = sefirahPlayerResponses[sefirah][sign];
+  const variants = matrix[sefirah][sign];
   if (variants.length === 0) {
     throw new Error(
       `pickPlayerResponse: no variants for sefirah=${sefirah} sign=${sign}`,

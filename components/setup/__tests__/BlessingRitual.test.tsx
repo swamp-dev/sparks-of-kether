@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { BlessingRitual } from '../BlessingRitual';
 import { seededRng } from '@/engine/rng';
 import { sefirot } from '@/data';
-import { sefirahBlessings } from '@/data/sefirah-blessings';
+import { sefirahBlessings } from '@/data/pantheons/greco-roman/blessings';
 import type { StatSheet } from '@/engine/types';
 
 const STAT_KEYS = sefirot.map((s) => s.stat);
@@ -360,8 +360,8 @@ describe('BlessingRitual — scene polish (#156)', () => {
 // ──────────────── #255 / T4 — sign-aware blessing quote ────────────────
 //
 // The Voices Epic adds a per-Sefirah blessing quote rendered after each
-// roll. Quote text comes from `data/sefirah-blessings.ts` (T2) via
-// `engine/sefirah-quote.ts:quoteForBlessing` (T3). Every cell offers
+// roll. Quote text comes from `data/pantheons/greco-roman/blessings.ts`
+// (T2) via `engine/sefirah-quote.ts:quoteForBlessing` (T3). Every cell offers
 // 3 variants; the selector picks one uniformly via the seeded `Rng` so
 // the same game-seed always renders the same line.
 //

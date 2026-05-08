@@ -3,10 +3,10 @@ import {
   pickFraming,
   sefirahFraming,
   sefirahFramingPlaceholder,
-} from '../sefirah-framing';
-import { avatarNames } from '../pantheons/greco-roman/avatar-names';
+} from '../framing';
+import { avatarNames } from '../avatar-names';
 import { seededRng } from '@/engine/rng';
-import type { EncounterAvatarKey, ZodiacSignKey } from '../types';
+import type { EncounterAvatarKey, ZodiacSignKey } from '../../../types';
 
 const AVATAR_KEYS: readonly EncounterAvatarKey[] = [
   'chokmah',
@@ -113,7 +113,7 @@ describe('sefirah-framing', () => {
   describe('pickFraming', () => {
     it('returns a variant from the requested cell', () => {
       const rng = seededRng(1);
-      const line = pickFraming('hod', 'gemini', rng);
+      const line = pickFraming(sefirahFraming, 'hod', 'gemini', rng);
       expect(sefirahFraming['hod']['gemini']).toContain(line);
     });
 
@@ -121,8 +121,8 @@ describe('sefirah-framing', () => {
       const rng1 = seededRng(42);
       const rng2 = seededRng(42);
       // Same seed + same call sequence → same line.
-      const line1 = pickFraming('yesod', 'pisces', rng1);
-      const line2 = pickFraming('yesod', 'pisces', rng2);
+      const line1 = pickFraming(sefirahFraming, 'yesod', 'pisces', rng1);
+      const line2 = pickFraming(sefirahFraming, 'yesod', 'pisces', rng2);
       expect(line1).toBe(line2);
     });
 
@@ -131,7 +131,7 @@ describe('sefirah-framing', () => {
       // different cells. Property-style probe, not exhaustive.
       const seen = new Set<string>();
       for (let seed = 1; seed <= 100; seed += 1) {
-        seen.add(pickFraming('chesed', 'leo', seededRng(seed)));
+        seen.add(pickFraming(sefirahFraming, 'chesed', 'leo', seededRng(seed)));
         if (seen.size > 1) break;
       }
       expect(seen.size).toBeGreaterThan(1);
@@ -143,7 +143,7 @@ describe('sefirah-framing', () => {
       // compile time; the throw guards a forced cast or data drift.
       const rng = seededRng(1);
       expect(() =>
-        pickFraming('not-a-sefirah' as EncounterAvatarKey, 'aries', rng),
+        pickFraming(sefirahFraming, 'not-a-sefirah' as EncounterAvatarKey, 'aries', rng),
       ).toThrow();
     });
 
@@ -155,7 +155,7 @@ describe('sefirah-framing', () => {
       // guards a forced cast or data drift.
       const rng = seededRng(1);
       expect(() =>
-        pickFraming('hod', 'not-a-sign' as ZodiacSignKey, rng),
+        pickFraming(sefirahFraming, 'hod', 'not-a-sign' as ZodiacSignKey, rng),
       ).toThrow();
     });
   });

@@ -11,10 +11,11 @@
  * ("pantheon-rotation architecture").
  */
 
-import type { EncounterAvatarKey, SefirahKey } from '../types';
-import type { SefirahBlessingMatrix } from '../sefirah-blessings';
-import type { VerdictMatrix } from '../sefirah-verdicts';
-import type { FramingMatrix } from '../sefirah-framing';
+import type {
+  EncounterAvatarKey,
+  SefirahKey,
+  ZodiacSignKey,
+} from '../types';
 
 /**
  * Identifier for a single pantheon in the registry. Extensible union —
@@ -42,10 +43,65 @@ export interface AvatarName {
   readonly roman: string;
 }
 
+// ──────────────── Matrix types ────────────────
+//
+// Shape contracts every pantheon's data files must conform to.
+// Owned here, in the registry's types module — NOT inside any
+// pantheon-specific data file — so the `Pantheon` interface stays
+// independent of any individual pantheon's implementation. Phase A4
+// (#550) extracted these from `pantheons/greco-roman/{verdicts,
+// framing,blessings}.ts` after code-review (#591) flagged the prior
+// inversion: shared interface types should not depend on a specific
+// pantheon's data files.
+
+/** Outcome dimension of the verdict matrix — pre-roll vs post-roll lines split on this. */
+export type ChallengeOutcome = 'pass' | 'fail';
+
 /**
- * A single pantheon. Phase A1 wires `sefirahFraming`, `sefirahVerdicts`,
- * and `sefirahBlessings` as references to the existing top-level
- * exports — A4 (#550) moves the data into per-pantheon files.
+ * Avatar verdict per (sefirah, sign, outcome). Each `pass` and
+ * `fail` array holds 3 variants. See `design/avatars.md` § 7.
+ */
+export type VerdictMatrix = Readonly<
+  Record<
+    EncounterAvatarKey,
+    Readonly<Record<ZodiacSignKey, Readonly<Record<ChallengeOutcome, readonly string[]>>>>
+  >
+>;
+
+/**
+ * Pre-roll player-response per (sefirah, sign). 3 variants per cell.
+ * Surfaces in the EncounterScreen prep sub-state above the Roll
+ * button — pure literary couplet with the avatar's verdict.
+ */
+export type PlayerResponseMatrix = Readonly<
+  Record<EncounterAvatarKey, Readonly<Record<ZodiacSignKey, readonly string[]>>>
+>;
+
+/** Per-Sefirah avatar trial-framing matrix (sefirah, sign, 3 variants). */
+export type FramingMatrix = Readonly<
+  Record<EncounterAvatarKey, Readonly<Record<ZodiacSignKey, readonly string[]>>>
+>;
+
+/**
+ * Sign-less framing fallback: one line per avatar, used when the
+ * encounter context has no `playerSign` (demo / tests). Mirrors the
+ * `pickPlayerResponse` no-sign fallback pattern from #277.
+ */
+export type FramingPlaceholderMap = Readonly<Record<EncounterAvatarKey, string>>;
+
+/** Per-Sefirah blessing matrix (sefirah, sign, 3 variants). */
+export type SefirahBlessingMatrix = Readonly<
+  Record<SefirahKey, Readonly<Record<ZodiacSignKey, readonly string[]>>>
+>;
+
+// ──────────────── Pantheon ────────────────
+
+/**
+ * A single pantheon. All matrix slots live under
+ * `data/pantheons/<id>/{framing,verdicts,blessings}.ts`. Phase A4
+ * (#550) completed the data-layer move: the registry is fully
+ * self-contained per-pantheon, and the matrix-type contracts above
+ * are the structural shape every pantheon must satisfy.
  */
 export interface Pantheon {
   readonly id: PantheonId;
@@ -59,6 +115,8 @@ export interface Pantheon {
    */
   readonly sefirahCodexAvatar: Readonly<Record<SefirahKey, string | null>>;
   readonly sefirahFraming: FramingMatrix;
+  readonly sefirahFramingPlaceholder: FramingPlaceholderMap;
   readonly sefirahVerdicts: VerdictMatrix;
+  readonly sefirahPlayerResponses: PlayerResponseMatrix;
   readonly sefirahBlessings: SefirahBlessingMatrix;
 }

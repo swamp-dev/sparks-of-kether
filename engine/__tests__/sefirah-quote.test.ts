@@ -4,7 +4,7 @@ import {
   quoteForBlessing,
   type DignityRelationship,
 } from '../sefirah-quote';
-import { sefirahBlessings } from '@/data/sefirah-blessings';
+import { sefirahBlessings } from '@/data/pantheons/greco-roman/blessings';
 import { seededRng } from '../rng';
 import type { SefirahKey, ZodiacSignKey } from '@/data';
 
@@ -28,7 +28,7 @@ import type { SefirahKey, ZodiacSignKey } from '@/data';
  *     Locked examples: Scorpio at Kether → `ruler`, Pisces at
  *     Chokmah → `ruler`.
  *
- * `quoteForBlessing(sefirah, sign, rng)` is a wrapper over
+ * `quoteForBlessing(sefirahBlessings, sefirah, sign, rng)` is a wrapper over
  * `pickBlessing` for naming continuity with the design doc and any
  * future engine selection logic.
  */
@@ -195,7 +195,7 @@ describe('quoteForBlessing', () => {
     for (const sefirah of ALL_SEFIROT) {
       for (const sign of ALL_SIGNS) {
         const rng = seededRng(0);
-        const quote = quoteForBlessing(sefirah, sign, rng);
+        const quote = quoteForBlessing(sefirahBlessings, sefirah, sign, rng);
         expect(quote.length).toBeGreaterThan(0);
       }
     }
@@ -205,7 +205,7 @@ describe('quoteForBlessing', () => {
     const variants = sefirahBlessings.hod.gemini;
     const rng = seededRng(7);
     for (let i = 0; i < 30; i++) {
-      const picked = quoteForBlessing('hod', 'gemini', rng);
+      const picked = quoteForBlessing(sefirahBlessings, 'hod', 'gemini', rng);
       expect(variants).toContain(picked);
     }
   });
@@ -213,8 +213,8 @@ describe('quoteForBlessing', () => {
   it('is deterministic given a seeded Rng', () => {
     const rngA = seededRng(42);
     const rngB = seededRng(42);
-    expect(quoteForBlessing('netzach', 'pisces', rngA)).toBe(
-      quoteForBlessing('netzach', 'pisces', rngB),
+    expect(quoteForBlessing(sefirahBlessings, 'netzach', 'pisces', rngA)).toBe(
+      quoteForBlessing(sefirahBlessings, 'netzach', 'pisces', rngB),
     );
   });
 });
