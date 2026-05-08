@@ -136,20 +136,30 @@ gifts and draws before the cap starts to bite.
 The hand-size cap is **6**.
 
 ### Drawing
-- End-of-turn draw replenishes hand toward the starting size of 4 — but
-  never above the cap of 6 (a player who has been gifted up to 6 skips
-  the draw entirely).
-- Meditate (the alternative to a move) **always** draws 2 cards — even
-  from a hand already at the cap. If the post-draw hand exceeds the
-  6-card cap, the player must **discard down to 6** before their turn
-  ends: the player picks which cards to shed (no forced random pick),
-  and the discarded cards go face-up to the discard pile (eligible for
-  Yesod-Spark recovery and the ordinary recycle). The trim happens
-  *after* all other end-of-turn effects, which lets a player burn
-  cards mid-turn voluntarily if they would rather stay under cap.
-  Rationale: meditation must always succeed — without it a player
-  with no usable paths and a full hand softlocks (no draw, no move,
-  no end of turn).
+- **Start-of-turn draw** replenishes hand toward the starting size of 4
+  — but never above the cap of 6 (a player who has been gifted up to 6
+  skips the draw entirely). The draw fires automatically at the
+  beginning of every turn *except turn 1*: the initial deal of 4 cards
+  during setup serves as turn 1's draw, so no extra cards are added on
+  top. Drawing at the *start* of the turn (rather than the end) means
+  each player evaluates their freshly-drawn cards in the same moment
+  they decide what to play — the new card's evaluation moment and the
+  player's decision moment are no longer split across a seat rotation.
+- **Meditate** is an *additional* draw of 2 cards, available **at most
+  once per turn**. Meditate draws even from a hand already at the cap.
+  After Meditate, the player **may still Move** the same turn — the
+  newly drawn cards are usable immediately. If, **at the moment the
+  player tries to End the turn**, the hand is over the 6-card cap, the
+  player must **discard down to 6** before the turn actually ends: the
+  player picks which cards to shed (no forced random pick), and the
+  discarded cards go face-up to the discard pile (eligible for Yesod-
+  Spark recovery and the ordinary recycle). The cap check fires on
+  end-turn (not on Meditate), so a player who Meditates over cap and
+  then plays a Move card to drop back under the cap is **not prompted
+  to discard** — they only see the prompt if they try to end while
+  still over. Rationale: meditation must always succeed — without it
+  a player with no usable paths and a full hand softlocks. The once-
+  per-turn cap stops Meditate from strictly dominating Move.
 - If the draw pile is empty when a card is needed, the discard pile is
   reshuffled face-down to become the new draw pile. The game runs as
   long as cards exist anywhere in the system.
@@ -187,14 +197,21 @@ and `../reference/paths.md` for full detail. Key facts for play:
 
 On your turn, in order:
 
-1. **Move or Meditate.** Either play an Arcanum to travel its path to an
-   adjacent Sefirah, OR skip movement to draw 2 cards (*Meditate*).
-   Drawing stops at the hand-size cap of 6.
-2. **Challenge** (if you arrived at an uncleared Sefirah). See below.
-3. **Assist** (optional). Spend Sparks to help allies.
-4. **Draw** to refill toward the starting hand size of 4 — capped at 6.
-   If the draw pile is empty when you'd draw, the discard pile is
+1. **Draw.** Your hand refills toward the starting size of 4 (capped at
+   6). This happens automatically at the start of every turn *except
+   turn 1*, where the initial deal of 4 serves as your first draw. If
+   the draw pile is empty when you'd draw, the discard pile is
    reshuffled face-down to form a new draw pile first.
+2. **Move or Meditate.** Play an Arcanum to travel its path to an
+   adjacent Sefirah, OR draw 2 extra cards (*Meditate*). Meditate may
+   be taken **at most once per turn**, and after Meditate you may
+   still play a card to Move that turn — the freshly drawn cards are
+   usable immediately. Drawing stops at the hand-size cap of 6 unless
+   Meditate pushes you over (in which case you trim down to 6 before
+   end-of-turn).
+3. **Challenge** (if you arrived at an uncleared Sefirah). See below.
+4. **Assist** (optional). Spend Sparks to help allies.
+5. **End turn.**
 
 Malkuth has no challenge. Kether has the **Final Threshold** (collective,
 endgame only).

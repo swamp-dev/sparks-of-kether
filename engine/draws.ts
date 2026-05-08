@@ -1,4 +1,5 @@
 import type { Rng } from './rng';
+import { HAND_CAP, STARTING_HAND_SIZE } from './setup';
 import type { GameState } from './types';
 
 /**
@@ -84,6 +85,34 @@ export interface DrawOptions {
  * once the hand reaches `hardCap`. Callers that need to surface
  * "couldn't draw" feedback should compare hand sizes themselves.
  */
+/**
+ * Refill `playerId`'s hand toward `STARTING_HAND_SIZE` (capped at
+ * `HAND_CAP`). Pure: returns a new `GameState`; the input is
+ * unchanged. A hand already at or above `STARTING_HAND_SIZE` is left
+ * alone (the helper is a no-op).
+ *
+ * `HAND_CAP` is the *gift/burn* ceiling — applied when other players
+ * send cards or via spark abilities — NOT a draw ceiling. This helper
+ * fills only toward `STARTING_HAND_SIZE`, so a hand already at
+ * `STARTING_HAND_SIZE` (or above, via gifts) is untouched.
+ *
+ * #502: lifted from `lib/turn-machine.ts` into the engine layer so
+ * both the hot-seat reducer and the multiplayer wire dispatcher
+ * (`lib/room-actions.ts`) can share the same start-of-turn refill
+ * logic. Pre-#502 the helper was private to `lib/turn-machine.ts`;
+ * with the refill moved to `end-turn`, both call sites need it.
+ */
+export function drawToHand(
+  state: GameState,
+  playerId: string,
+  rng: Rng,
+): GameState {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return state;
+  const need = Math.max(0, STARTING_HAND_SIZE - player.hand.length);
+  return drawNCards(state, playerId, need, HAND_CAP, rng);
+}
+
 export function drawNCards(
   state: GameState,
   playerId: string,

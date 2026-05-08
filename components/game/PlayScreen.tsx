@@ -141,7 +141,6 @@ export function PlayScreen({
   const activeForSound = turn.state.players[turnIndex];
   const sparksCount = activeForSound?.sparksHeld.size ?? 0;
   const handCount = activeForSound?.hand.length ?? 0;
-  const handLastAction = turn.state.lastAction;
   // Refs seed to the current count on first render so the initial
   // mount NEVER fires a spurious cue — fresh-game start at 0 sparks /
   // 0 cards is the common case, but if a future fixture seeds players
@@ -162,23 +161,30 @@ export function PlayScreen({
       playSound('spark-collected');
     }
     if (handCount > prevHandRef.current) {
-      // Card drawn (Draw or Meditate action). Gate on `lastAction` so
-      // future hand-growing effects (e.g. a Spark ability that returns
-      // a played card) don't ALSO fire the draw chime. The two values
-      // that legitimately produce a "draw" sound are `'move-draw'` (a
-      // standard turn's automatic draw) and `'meditate'` (the
-      // skip-movement-to-draw-2 action); anything else that grows the
-      // hand is a different gameplay event and should get its own cue.
-      // Fires once per render even if multiple cards were drawn in
-      // one tick — the throttle inside `useSound` keeps a multi-card
-      // draw to one chime.
-      if (handLastAction === 'meditate' || handLastAction === 'move-draw') {
+      // Card drawn — only the active-turn Meditate is a player-initiated
+      // draw that warrants the chime. The start-of-turn refill (#502)
+      // happens at seat rotation, which the early-return above resets
+      // baselines for without firing any cue — that's intentional: the
+      // new active player didn't *do* anything to draw, the cards just
+      // appear at turn start, and chiming on every seat rotation would
+      // be noisy. Future hand-growing effects (e.g. a Spark ability
+      // that returns a played card) are *not* draws and should not fire
+      // this chime; the `meditatedThisTurn` gate excludes them.
+      // Throttle inside `useSound` keeps a multi-card Meditate to one
+      // chime.
+      if (turn.state.meditatedThisTurn === true) {
         playSound('card-drawn');
       }
     }
     prevSparksRef.current = sparksCount;
     prevHandRef.current = handCount;
-  }, [turnIndex, sparksCount, handCount, handLastAction, playSound]);
+  }, [
+    turnIndex,
+    sparksCount,
+    handCount,
+    turn.state.meditatedThisTurn,
+    playSound,
+  ]);
 
   // #131: hot-seat cadence — once the active player lands in `'end'`
   // phase, schedule an auto-advance to the next turn after a short
@@ -194,16 +200,13 @@ export function PlayScreen({
   // the count decrements. The DiscardPrompt is interactive and
   // already gates the cadence; let the player drive.
   //
-  // #292: also no auto-advance after Meditate. Meditate transitions
-  // straight to `'end'` after drawing up to two new cards; if the
-  // timer fired the seat would rotate before the meditator could
-  // see what they drew. The reducer stamps `state.lastAction =
-  // 'meditate'` for that path; gate the timer on `'move-draw'` (the
-  // Move + Draw arrival, which is what #131 was designed for).
-  // Note: an at-cap Meditate ALSO sets `pendingDiscard.count > 0`,
-  // so the #291 gate above already catches that branch — but Meditate
-  // *under* cap leaves pendingDiscard undefined while still wanting
-  // the no-auto-advance behaviour, which is what `lastAction` covers.
+  // #503: post-#503 Meditate stays in `'move'` (it no longer
+  // transitions to `'end'`), so the original "no auto-advance after
+  // Meditate" suppression is no longer reachable from this gate —
+  // landing in `'end'` always means a Move/Challenge has resolved
+  // and the auto-advance is appropriate. The `pendingDiscard` gate
+  // below still catches the at-cap-Meditate-then-clicks-End case
+  // (the player must trim down before End-turn fires).
   //
   // Stable callback ref: `turn.endTurn` is `useCallback` but its dep
   // list includes the engine snapshot, so the function reference
@@ -217,16 +220,14 @@ export function PlayScreen({
     endTurnRef.current = turn.endTurn;
   });
   const pendingDiscardCount = turn.state.pendingDiscard?.count ?? 0;
-  const lastAction = turn.state.lastAction;
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;
     if (pendingDiscardCount > 0) return undefined;
-    if (lastAction === 'meditate') return undefined;
     const handle = setTimeout(() => {
       endTurnRef.current();
     }, AUTO_ADVANCE_DELAY_MS);
     return (): void => clearTimeout(handle);
-  }, [turn.phase, pendingDiscardCount, lastAction]);
+  }, [turn.phase, pendingDiscardCount]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
@@ -338,23 +339,28 @@ export function PlayScreen({
       // #385: dispatch `react-continue` to advance phase out of
       // 'challenge.react'. The engine clears all challenge machinery
       // (sub-phase, lastOutcome, encounter, pendingModifiers) and
-      // transitions phase → 'draw'. The reward (cleared Sefirah,
-      // +1 Illumination) was already applied at prep-confirm; this
-      // dispatch is purely the phase teardown.
+      // transitions phase → 'end' (#502: pre-#502 the post-pass phase
+      // was 'draw'; with the start-of-turn refill folded into
+      // `end-turn`, the discrete `'draw'` phase no longer exists).
+      // The reward (cleared Sefirah, +1 Illumination) was already
+      // applied at prep-confirm; this dispatch is purely the phase
+      // teardown.
       //
       // Pre-#385 this branch returned without dispatching, leaving
       // the snapshot stuck at challenge/react indefinitely while the
       // showChallenge gate unmounted on the over-eager
       // `clearedSefirot.has(position)` short-circuit. The player was
       // left UI-less — phase hint read "Resolve the challenge" but
-      // no modal, and turn.move()/turn.draw()/turn.endTurn() all
-      // failed their phase guards.
+      // no modal, and turn.move()/turn.endTurn() all failed their
+      // phase guards.
       turn.reactContinue();
       return;
     }
     // 'accept': apply the engine's failure consequence — Separation
     // ticks up by 1 (or +2 on shortcut arrivals) — and advance the
-    // phase to 'draw'. ATOMICALLY via `acceptChallengeSetback`. The
+    // phase to 'end' atomically via `acceptChallengeSetback` (#502
+    // moved this from 'draw' to 'end' when the discrete draw phase
+    // was folded into `end-turn`). The
     // earlier pattern (setState(acceptSetback(...)) +
     // submitChallenge(failed-outcome)) lost the setback to a React
     // batching race: submitChallenge's internal `setState(unchanged)`
@@ -414,7 +420,7 @@ export function PlayScreen({
             // #129: only highlight paths during the move phase. Once
             // the player has moved, the board is decorative until the
             // next turn begins; the action panel below carries the
-            // available affordances (Draw, End Turn, etc.).
+            // available affordances (End Turn, etc.).
             movesEnabled={turn.phase === 'move'}
             // #312 + #405: light the corresponding paths on the Tree
             // when the player is considering a card. The signal source
@@ -422,10 +428,11 @@ export function PlayScreen({
             // a sticky fallback — a clicked card stays lit even when
             // the mouse moves to the Tree. Active across all phases
             // except `'challenge'` (the resolution moment) so the
-            // path-light doesn't compete with movement animation.
-            // Lighting during `'draw'` is the #405 ask — it lets the
-            // player evaluate which card to keep / discard by seeing
-            // what each one opens.
+            // path-light doesn't compete with movement animation. The
+            // `'move'` phase covers both the pre-move card evaluation
+            // and (post-#503) the post-Meditate review window where
+            // the player is considering whether to play a freshly
+            // drawn card.
             {...((): { highlightedCard?: number } => {
               if (turn.phase === 'challenge') return {};
               const effective = hoveredCard ?? selectedCard;
@@ -446,19 +453,29 @@ export function PlayScreen({
           </span>
           <div className="flex gap-2">
             {turn.phase === 'move' ? (
-              <MeditateButton onMeditate={turn.meditate} />
+              <MeditateButton
+                onMeditate={turn.meditate}
+                disabled={turn.state.meditatedThisTurn === true}
+              />
             ) : null}
-            {turn.phase === 'draw' ? (
-              <button
-                type="button"
-                onClick={() => turn.draw()}
-                data-action="draw"
-                className="min-h-11 rounded border border-illumination/60 px-3 py-2 text-xs"
-              >
-                Draw
-              </button>
-            ) : null}
-            {turn.phase === 'end' ? (
+            {/*
+             * #503: post-Meditate, the player remains in `'move'`
+             * phase but may not want to play one of their freshly
+             * drawn cards (e.g. they meditated for a path-key that
+             * still hasn't surfaced). The End turn affordance must
+             * be reachable from `'move'` in that case. Pre-#503 the
+             * Meditate path transitioned straight to `'end'` so this
+             * affordance was not needed.
+             *
+             * Gate: only show End turn from `'move'` when the player
+             * has already meditated this turn. Without that gate the
+             * player could end their turn cold (no Move, no Meditate),
+             * which violates the engine invariant that every turn does
+             * something.
+             */}
+            {(turn.phase === 'end' ||
+              (turn.phase === 'move' &&
+                turn.state.meditatedThisTurn === true)) ? (
               <button
                 type="button"
                 onClick={() => turn.endTurn()}
@@ -471,22 +488,24 @@ export function PlayScreen({
           </div>
         </div>
         {/*
-         * #292: post-Meditate a11y callout. The auto-advance timer
-         * is suppressed for this path so the player can read the
-         * cards they just drew; the aria-live region nudges screen-
-         * reader users that the turn is paused awaiting their input.
-         * `polite` (not `assertive`) so it queues behind any
-         * in-progress announcement (e.g. the move resolution) rather
-         * than interrupting it.
+         * #292/#503: post-Meditate a11y callout. Post-#503 Meditate
+         * stays in `'move'` phase rather than transitioning to
+         * `'end'`, so the callout fires while `meditatedThisTurn`
+         * is true and the player is still in `'move'`. The aria-live
+         * region nudges screen-reader users that the player has just
+         * drawn cards and may still play one. `polite` (not
+         * `assertive`) so it queues behind any in-progress
+         * announcement (e.g. the move resolution) rather than
+         * interrupting it.
          */}
-        {turn.phase === 'end' && lastAction === 'meditate' ? (
+        {turn.phase === 'move' && turn.state.meditatedThisTurn === true ? (
           <div
             role="status"
             aria-live="polite"
             data-meditate-callout
             className="w-full max-w-xl rounded border border-veil/20 bg-ground/40 px-4 py-2 text-xs italic opacity-80"
           >
-            Review the cards you drew, then click End turn when ready.
+            You drew 2 cards. You may still play a card, or End your turn.
           </div>
         ) : null}
         {activePlayer ? (
@@ -706,15 +725,24 @@ function buildChallengeContext(
  */
 function MeditateButton({
   onMeditate,
+  disabled,
 }: {
   onMeditate: () => void;
+  disabled?: boolean;
 }): JSX.Element {
   return (
     <button
       type="button"
       onClick={() => onMeditate()}
       data-action="meditate"
-      className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs"
+      disabled={disabled === true}
+      aria-disabled={disabled === true}
+      title={
+        disabled === true
+          ? 'You can only Meditate once per turn'
+          : undefined
+      }
+      className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
     >
       Meditate
     </button>
@@ -723,9 +751,11 @@ function MeditateButton({
 
 /**
  * Plain-English phase hint shown next to the active player's name.
- * Replaces the raw enum value (`Phase: draw`) so a first-time player
+ * Replaces the raw enum value (`Phase: end`) so a first-time player
  * can read the panel and know what they're allowed to do without
- * knowing the engine's vocabulary (#129).
+ * knowing the engine's vocabulary (#129). Post-#502 the discrete
+ * `'draw'` phase no longer exists (the refill moved to start-of-turn
+ * inside `end-turn`), so the switch is one case shorter.
  */
 function phaseHint(phase: TurnPhase): string {
   switch (phase) {
@@ -733,8 +763,6 @@ function phaseHint(phase: TurnPhase): string {
       return 'Pick a card and a path, or meditate';
     case 'challenge':
       return 'Resolve the challenge';
-    case 'draw':
-      return 'Draw to refill your hand';
     case 'end':
       return 'Move complete — end turn';
     case 'kether':

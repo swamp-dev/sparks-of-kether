@@ -39,11 +39,19 @@ export interface CheckOutcome {
  * active player could fire `react-retry` cold by sending an action
  * the dispatcher would happily fold against a fake snapshot).
  *
- *   move      — player can `move` (apply path) or `meditate`.
+ *   move      — player can `move` (apply path) or `meditate`. After
+ *               `meditate`, the player remains in `'move'` (#502/#503)
+ *               so they may still play a card; the once-per-turn cap
+ *               is enforced by `state.meditatedThisTurn`.
  *   challenge — entered after `move` lands on an uncleared `'check'`
  *               Sefirah. See `challengeSubPhase` for the inner cycle.
- *   draw      — refill toward `STARTING_HAND_SIZE`, capped at HAND_CAP.
- *   end       — advance to next player; phase resets to `move`.
+ *   end       — advance to next player; phase resets to `move`. The
+ *               start-of-turn refill (toward `STARTING_HAND_SIZE`,
+ *               capped at `HAND_CAP`) fires inside the `end-turn`
+ *               handler so the next active player begins their turn
+ *               with a fresh hand. Pre-#502 a discrete `'draw'` phase
+ *               sat between `move`/`challenge` and `end`; that phase
+ *               was removed when the refill moved to start-of-turn.
  *   kether    — Final Threshold collective ritual (#335;
  *               `design/final-threshold.md`). See `ketherRitual` for
  *               the in-ritual state and `KetherSubPhase` for the inner
@@ -52,7 +60,7 @@ export interface CheckOutcome {
  *               `EndgameStatus` returned by `checkEndgame` post-confirm
  *               carries the actual `'won'` / `'lost'` signal.
  */
-export type TurnPhase = 'move' | 'challenge' | 'draw' | 'end' | 'kether';
+export type TurnPhase = 'move' | 'challenge' | 'end' | 'kether';
 
 /**
  * Active sub-phase WITHIN the Final Threshold ritual (#335;
@@ -355,17 +363,46 @@ export interface GameState {
    */
   readonly pendingDiscard?: PendingDiscard | undefined;
   /**
+   * True iff the active player has already taken their per-turn
+   * Meditate (#503). Reset to `false` on seat rotation in
+   * `engine/turn.ts:endTurn`. The `meditate` event handler refuses
+   * with `{ kind: 'already-meditated' }` when this flag is true,
+   * which gives the UI a precise signal to disable the Meditate
+   * button (PlayScreen reads the flag directly off `GameState`).
+   *
+   * Lives on `GameState` (not `PlayerState`) for the same reason as
+   * `pendingDiscard`: only the active seat can have meditated this
+   * turn, so pinning it to the seat avoids a per-player field that
+   * would be `false` for everyone else.
+   *
+   * Optional/additive: snapshots predating this field deserialize
+   * with `meditatedThisTurn === undefined`, which the reducer treats
+   * as `false` (no Meditate has happened). The field is populated on
+   * the next `meditate` event.
+   */
+  readonly meditatedThisTurn?: boolean | undefined;
+  /**
    * Discriminator for the most recent action that landed the active
    * player in `phase: 'end'` (#292). Read by the UI's auto-advance
-   * timer (`PlayScreen.tsx`) to distinguish:
+   * timer (`PlayScreen.tsx`) to distinguish a Move/Challenge end
+   * from a state with no end-of-turn intent.
    *
-   *   - `'move-draw'` — Move + Draw arrival. The player has already
-   *     seen the move land and the draw resolve; the timer flips
-   *     the seat after `AUTO_ADVANCE_DELAY_MS`. (#131 cadence.)
-   *   - `'meditate'`  — Meditate arrival. The player just drew up to
-   *     two new cards and needs time to look at them before the seat
-   *     rotates. The timer is suppressed; End Turn must be clicked
-   *     manually.
+   *   - `'move-draw'` — the active player has finished a move
+   *     (with or without a challenge); the timer flips the seat after
+   *     `AUTO_ADVANCE_DELAY_MS`. (#131 cadence.) The literal name is
+   *     historical: pre-#502 a discrete `'draw'` phase set this
+   *     discriminant after the end-of-turn refill. With the refill
+   *     moved to start-of-turn (#502), this literal now fires from
+   *     the `move`, `react-continue`, and `accept-setback` cases when
+   *     they transition to `'end'` directly.
+   *   - `undefined` — no end-of-turn intent yet (e.g. mid-move,
+   *     mid-challenge, or just-meditated and still in `'move'`).
+   *
+   * Pre-#503 a `'meditate'` literal sat on this union; post-#503
+   * Meditate stays in `'move'` rather than transitioning to `'end'`,
+   * so the literal is unreachable. The "did the active player
+   * meditate this turn?" signal lives on
+   * `state.meditatedThisTurn` instead.
    *
    * Cleared by `endTurn` when the seat rotates so the next player
    * starts with `undefined`. `undefined` outside `'end'` phase too —
@@ -377,7 +414,7 @@ export interface GameState {
    * end-of-turn screen sees the same gating signal the active client
    * uses to decide whether to render an animated "drew N cards" hint.
    */
-  readonly lastAction?: 'move-draw' | 'meditate' | undefined;
+  readonly lastAction?: 'move-draw' | undefined;
   /**
    * Per-encounter scratch state for the per-Sefirah mechanic twists
    * (#334; `design/per-sefirah-mechanics.md` § 2.6 (b)). Defined when

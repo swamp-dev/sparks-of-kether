@@ -12,6 +12,7 @@ import {
 import { seededRng, type Rng } from '@/engine/rng';
 import {
   drawNCards,
+  drawToHand,
   MEDITATE_DRAW as ENGINE_MEDITATE_DRAW,
 } from '@/engine/draws';
 import {
@@ -47,24 +48,31 @@ export type { ChallengeSubPhase, TurnPhase };
  * without a `renderHook` harness.
  *
  * Phase contract:
- *   move      — player can `move` (apply path) or `meditate`.
+ *   move      — player can `move` (apply path) or `meditate`. After
+ *               `meditate` the player remains in `'move'` (#503) so
+ *               they may still play a card; the once-per-turn cap is
+ *               enforced by `state.meditatedThisTurn`.
  *   challenge — entered after `move` lands on an uncleared `'check'`
  *               Sefirah. Internally cycles three sub-phases:
  *                 prep    — player stages modifiers (card-burn, spark-burn,
  *                           assist-request) into `state.pendingModifiers`.
  *                 resolve — kernel call: `prep-confirm` event invokes
  *                           `engine/checks.ts:resolveChallenge`.
- *                 react   — post-roll outcome visible. On pass the next
- *                           event is whatever advances the turn (currently
- *                           an external transition to `'draw'`); on fail
- *                           the player chooses `react-retry` (loops back
- *                           to prep, preserving cumulative card-burns) or
+ *                 react   — post-roll outcome visible. On pass the
+ *                           player fires `react-continue` to land in
+ *                           `'end'`; on fail the player chooses
+ *                           `react-retry` (loops back to prep,
+ *                           preserving cumulative card-burns) or
  *                           `accept-setback` (Separation +1, phase →
- *                           `'draw'`).
+ *                           `'end'`).
  *               See `design/encounter-prep-phase.md` for the full split.
- *   draw      — refill toward `STARTING_HAND_SIZE`, capped at `HAND_CAP`,
- *               recycling the discard pile if the deck is empty.
- *   end       — advance to next player; phase resets to `move`.
+ *   end       — advance to next player; phase resets to `move`. The
+ *               start-of-turn refill toward `STARTING_HAND_SIZE`
+ *               (capped at `HAND_CAP`) fires inside the `end-turn`
+ *               handler — the next active player begins their turn
+ *               with a fresh hand. Pre-#502 a discrete `'draw'` phase
+ *               sat between `move`/`challenge` and `end`; that phase
+ *               was removed when the refill moved to start-of-turn.
  *
  * The reducer is fully deterministic: same `(snapshot, event, rng)`
  * always produces the same output. RNG is consumed only by the
@@ -210,7 +218,7 @@ export type TurnEvent =
       /**
        * #385: pass-path counterpart to `accept-setback`. From the
        * `react` sub-phase with `lastOutcome.pass === true`, advance
-       * phase → 'draw' and clear all challenge machinery
+       * phase → `'end'` and clear all challenge machinery
        * (`pendingModifiers`, `challengeSubPhase`, `lastOutcome`,
        * `encounter`). The fail path uses `accept-setback` (which
        * additionally ticks Separation and rolls back position on a
@@ -222,6 +230,10 @@ export type TurnEvent =
        * stayed at `phase='challenge', challengeSubPhase='react'`
        * indefinitely while the modal unmounted on the
        * `clearedSefirot` short-circuit. This event is the fix.
+       *
+       * Pre-#502 this transitioned to `'draw'`; with the start-of-turn
+       * refill the discrete `'draw'` phase no longer exists, so the
+       * pass-path lands in `'end'` directly.
        */
       readonly kind: 'react-continue';
     }
@@ -230,7 +242,6 @@ export type TurnEvent =
       readonly sefirah: SefirahKey;
       readonly shortcut?: boolean;
     }
-  | { readonly kind: 'draw' }
   | {
       /**
        * #291: shed one card from the active player's hand. Sent by
@@ -263,6 +274,17 @@ export type TurnReducerError =
       readonly sourcePlayerId: string;
     }
   | { readonly kind: 'react-retry-on-pass' }
+  | {
+      /**
+       * #503: a `meditate` event fired while `state.meditatedThisTurn`
+       * is already true. Meditate is capped at one per turn; the UI
+       * disables the Meditate button when the flag is set, so a
+       * dispatch reaching the reducer despite the cap is either a
+       * stale client or a wire-format bypass. The reducer rejects
+       * cleanly so callers can render a precise UI message.
+       */
+      readonly kind: 'already-meditated';
+    }
   | {
       /**
        * #385: `react-continue` was dispatched on a non-pass `lastOutcome`.
@@ -707,9 +729,11 @@ export function turnReducer(
       }
       // Decide the next phase: if the arrival is an uncleared
       // standard-check Sefirah, enter `challenge`; otherwise jump
-      // straight to `draw` (Malkuth's no-check, Kether's collective,
+      // straight to `'end'` (Malkuth's no-check, Kether's collective,
       // and already-cleared Sefirot all skip the challenge phase).
-      let nextPhase: TurnPhase = 'draw';
+      // Pre-#502 the no-challenge branch transitioned to `'draw'`; the
+      // start-of-turn refill change folded that step into `end-turn`.
+      let nextPhase: TurnPhase = 'end';
       if (movedPlayer) {
         const arrival = sefirahByKey(movedPlayer.position);
         const alreadyCleared = movedPlayer.clearedSefirot.has(
@@ -739,14 +763,19 @@ export function turnReducer(
         return { ok: true, value: { next: { state: cleanState } } };
       }
       // Non-challenge arrival (already-cleared / no-check): the
-      // encounter envelope must be cleared — a stale envelope from
-      // a prior turn cannot leak into the next move's draw phase.
+      // encounter envelope must be cleared — a stale envelope cannot
+      // leak across the seat boundary. #502: tag `lastAction` so the
+      // PlayScreen auto-advance timer fires (the canonical #131
+      // cadence). Pre-#502 the same tag was set in the now-deleted
+      // `'draw'` case; with that case gone, the move case sets it
+      // directly when it transitions to `'end'`.
       const nextState: GameState = {
         ...newState,
         phase: nextPhase,
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         encounter: undefined,
+        lastAction: nextPhase === 'end' ? 'move-draw' : undefined,
       };
       return { ok: true, value: { next: { state: nextState } } };
     }
@@ -755,38 +784,34 @@ export function turnReducer(
       if (phase !== 'move') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
       }
-      // Meditate is a complete turn-action that draws 2 cards — see
-      // `design/mechanics.md` § Drawing & gift handling. Skips the
-      // 'draw' phase entirely: with no card played, there's nothing
-      // to replenish. Surfaced by the 2026-04-27 hot-seat playtest
-      // (#128) — players hit Meditate, landed in 'draw' phase, hit
-      // Draw, and saw no change because `drawToHand` only refilled
-      // toward STARTING_HAND_SIZE which they already had.
+      // #503: Meditate is capped at one per turn. The flag is reset
+      // by `engine/turn.ts:endTurn` on seat rotation. The UI disables
+      // the Meditate button when the flag is true; this guard is the
+      // engine-side enforcement (defense in depth against stale
+      // clients and wire-format bypasses).
+      if (state.meditatedThisTurn === true) {
+        return { ok: false, reason: { kind: 'already-meditated' } };
+      }
+      // Meditate draws MEDITATE_DRAW (#291: always — no hand-full
+      // rejection). The over-cap reconciliation lives on `end-turn`
+      // (post-#503), NOT here: meditating from 5 to 7 cards and then
+      // playing a Move card (dropping back to 6) must not trigger any
+      // discard prompt. The check fires only when the player attempts
+      // to End the turn with > HAND_CAP cards still in hand.
       //
-      // #291: meditate ALWAYS draws MEDITATE_DRAW (no hand-full
-      // rejection). When the post-draw hand is over HAND_CAP, the
-      // reducer sets `pendingDiscard` to the over-cap excess; the
-      // engine's `endTurn` then refuses to advance the seat until
-      // the active player has shed those cards via `discard` events.
-      // This is the fix for the Meditate-at-cap softlock: the player
-      // who has no usable paths can now Meditate for new cards and
-      // pay the cost as an end-of-turn trim.
+      // #503: Meditate stays in `'move'` (pre-#503 it transitioned to
+      // `'end'`) so the player may still play a card the same turn.
+      // The freshly drawn cards are usable immediately — closing the
+      // "drew in desperation but cannot use" gap that motivated the
+      // change. The once-per-turn cap (`meditatedThisTurn`) stops
+      // Meditate from strictly dominating Move.
       const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng, {
         overCap: true,
       });
-      const drewPlayer = drewState.players.find((p) => p.id === player.id);
-      const overCap = Math.max(0, (drewPlayer?.hand.length ?? 0) - HAND_CAP);
       const nextState: GameState = {
         ...drewState,
-        phase: 'end',
-        pendingDiscard:
-          overCap > 0
-            ? { count: overCap, requiredBy: 'end-of-turn' }
-            : undefined,
-        // #292: stamp the end-phase entry so PlayScreen's auto-advance
-        // timer can suppress for Meditate (player needs time to read
-        // the cards they just drew) while still firing for Move + Draw.
-        lastAction: 'meditate',
+        phase: 'move',
+        meditatedThisTurn: true,
       };
       return { ok: true, value: { next: { state: nextState } } };
     }
@@ -1312,13 +1337,18 @@ export function turnReducer(
       if (state.lastOutcome === undefined || !state.lastOutcome.pass) {
         return { ok: false, reason: { kind: 'react-continue-on-fail' } };
       }
+      // #502: pass-path lands in `'end'` directly (pre-#502 this
+      // transitioned to `'draw'`; the start-of-turn refill folded
+      // the discrete draw step into `end-turn`). `lastAction` is
+      // tagged so PlayScreen's auto-advance timer fires.
       const cleared: GameState = {
         ...state,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
-        phase: 'draw',
+        phase: 'end',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         encounter: undefined,
+        lastAction: 'move-draw',
       };
       return { ok: true, value: { next: { state: cleared } } };
     }
@@ -1352,87 +1382,112 @@ export function turnReducer(
       // sub-phase / lastOutcome (now on GameState). #334 (§ 2.6 (b)):
       // also clear the encounter envelope — the encounter has ended
       // (failure absorbed) so the next encounter must start with a
-      // fresh envelope.
+      // fresh envelope. #502: lands in `'end'` directly (pre-#502 this
+      // transitioned to `'draw'`); `lastAction` is tagged so the
+      // auto-advance timer fires.
       const cleared: GameState = {
         ...next,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
-        phase: 'draw',
+        phase: 'end',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         encounter: undefined,
-      };
-      return { ok: true, value: { next: { state: cleared } } };
-    }
-
-    case 'draw': {
-      if (phase !== 'draw') {
-        return { ok: false, reason: { kind: 'wrong-phase', expected: 'draw', actual: phase } };
-      }
-      const drewState = drawToHand(state, player.id, rng);
-      const stateAfter: GameState = {
-        ...drewState,
-        phase: 'end',
-        // #292: tag the Move + Draw arrival in 'end' so PlayScreen's
-        // auto-advance timer fires (the canonical #131 cadence). The
-        // sibling Meditate case stamps `'meditate'` instead, which the
-        // UI gates the timer on.
         lastAction: 'move-draw',
       };
-      return { ok: true, value: { next: { state: stateAfter } } };
+      return { ok: true, value: { next: { state: cleared } } };
     }
 
     case 'discard': {
       // #291: shed one over-cap card. The active player must clear
       // pendingDiscard.count before endTurn will advance the seat.
       // No phase guard beyond "active player exists" — the only path
-      // that sets pendingDiscard today is meditate-at-cap which lands
-      // in `'end'`, but a future ticket could legitimately fire a
-      // discard mid-turn (e.g. a Yesod ability that prunes a card),
-      // so the reducer is permissive here. The engine's `discard`
-      // is itself defensive (no-op if the card isn't in hand).
+      // that sets pendingDiscard today is meditate-at-cap which (post-
+      // #503) lands in `'move'`, and a future ticket could legitimately
+      // fire a discard from any phase (e.g. a Yesod ability that prunes
+      // a card mid-turn), so the reducer is permissive here. The
+      // engine's `discard` is itself defensive (no-op if the card
+      // isn't in hand).
       const after = discardReducer(state, player.id, event.arcanum);
       return { ok: true, value: { next: { state: after } } };
     }
 
     case 'end-turn': {
-      if (phase !== 'end') {
+      // #503: end-turn is permitted from `'move'` when the player has
+      // already meditated this turn — Meditate is itself a complete
+      // turn-action (the player has drawn cards), so they can end the
+      // turn directly even if they choose not to play one of the
+      // freshly drawn cards. Without this branch, a player who
+      // meditates but finds no usable path is softlocked. Pre-#503
+      // Meditate transitioned straight to `'end'`, so this affordance
+      // wasn't needed.
+      const allowEndTurn =
+        phase === 'end' ||
+        (phase === 'move' && state.meditatedThisTurn === true);
+      if (!allowEndTurn) {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'end', actual: phase } };
+      }
+      // #503 (post-meditate cap check): if the active player is over
+      // HAND_CAP at end-turn time, set `pendingDiscard` and return
+      // *without* rotating the seat. The DiscardPrompt UI fires on
+      // `pendingDiscard.count > 0` and the player must shed down to
+      // the cap; once each `discard` event drops the count to 0, the
+      // next `end-turn` click reaches the seat-rotation path below.
+      //
+      // The check fires here (not on Meditate) so a Meditate-then-Move
+      // flow that drops the player back under cap (e.g. 5 → 7 via
+      // Meditate, then play a card → 6) prompts no discard at all.
+      // Pre-this-change, Meditate set pendingDiscard immediately;
+      // playing a card afterwards left a stale prompt for cards the
+      // player no longer needed to shed.
+      const activeForCap = activePlayer(state);
+      if (
+        activeForCap !== undefined &&
+        activeForCap.hand.length > HAND_CAP &&
+        (state.pendingDiscard?.count ?? 0) === 0
+      ) {
+        const excess = activeForCap.hand.length - HAND_CAP;
+        const stateWithDiscard: GameState = {
+          ...state,
+          pendingDiscard: { count: excess, requiredBy: 'end-of-turn' },
+        };
+        return { ok: true, value: { next: { state: stateWithDiscard } } };
       }
       // #291: if pendingDiscard.count > 0 the engine's endTurn refuses
       // to advance the seat (returns input state unchanged). Detect
-      // that no-op here and fold the unchanged-state into a
-      // `phase: 'end'` snapshot so the UI keeps rendering the
-      // DiscardPrompt over an `end` phase rather than slipping back
-      // to `move` for the same player.
+      // that no-op here and pass the unchanged state through so the
+      // UI keeps rendering the DiscardPrompt over the current phase
+      // (`'end'` for non-Meditate, `'move'` for the post-#503 Meditate-
+      // at-cap path) rather than slipping back to a different one for
+      // the same player.
       const turned = endTurnReducer(state);
       if (turned === state) {
         return { ok: true, value: { next: { state: turned } } };
       }
+      // #502: start-of-turn refill. The seat has rotated; refill the
+      // NEW active player's hand toward STARTING_HAND_SIZE (capped at
+      // HAND_CAP) so they begin their turn with fresh cards. Pre-#502
+      // this draw lived in a discrete `'draw'` phase that fired at
+      // end-of-turn for the *outgoing* player; moving it to start-of-
+      // turn closes the gap between the player's evaluation moment
+      // and their decision moment. `drawToHand` is a no-op when the
+      // hand is already at or above STARTING_HAND_SIZE, so a player
+      // who has been gifted up to the cap during the prior turn
+      // simply skips the refill.
+      const drewForNext = drawToHand(turned, turned.activePlayerId, rng);
       // Defensive: clear `encounter` when crossing the seat boundary.
-      // Today the only paths reaching `end` (`accept-setback`,
-      // pass-on-`prep-confirm`) already null the envelope, so this is
-      // an invariant guard rather than a bug fix — if a future code
-      // path reaches `end-turn` with a live encounter, leaking it to
-      // the next player's `move` is a state-machine violation.
-      const stateAfter: GameState = { ...turned, phase: 'move', encounter: undefined };
+      // Today the only paths reaching `end` (`move` no-challenge,
+      // `accept-setback`, `react-continue` on pass) already null the
+      // envelope, so this is an invariant guard rather than a bug fix
+      // — if a future code path reaches `end-turn` with a live
+      // encounter, leaking it to the next player's `move` is a
+      // state-machine violation.
+      const stateAfter: GameState = {
+        ...drewForNext,
+        phase: 'move',
+        encounter: undefined,
+      };
       return { ok: true, value: { next: { state: stateAfter } } };
     }
   }
 }
 
-/**
- * Pure: refill `playerId`'s hand up to `STARTING_HAND_SIZE`. Delegates
- * to the engine's shared `drawNCards`, which handles the deck →
- * discard recycle and the hard cap.
- *
- * `HAND_CAP` (6) is the *gift/burn* ceiling — applied when other
- * players send cards or in spark abilities — NOT a draw ceiling.
- * This function only fills toward `STARTING_HAND_SIZE` (4), so a
- * hand already at or above 4 is left alone.
- */
-function drawToHand(state: GameState, playerId: string, rng: Rng): GameState {
-  const player = state.players.find((p) => p.id === playerId);
-  if (!player) return state;
-  const need = Math.max(0, STARTING_HAND_SIZE - player.hand.length);
-  return drawNCards(state, playerId, need, HAND_CAP, rng);
-}

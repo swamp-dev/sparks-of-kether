@@ -25,11 +25,21 @@ import type { GameState } from './types';
  * been resolved to `count: 0` by the discard reducer just before the
  * end-turn click) so the next turn starts clean. `lastAction` (#292)
  * is also cleared so the next seat starts with no end-of-turn intent
- * carried over from the prior player.
+ * carried over from the prior player. `meditatedThisTurn` (#503) is
+ * also cleared so the next player starts their turn with their full
+ * Meditate option available.
  *
  * Used by the events route's `'end-turn'` ClientAction. Single-player
  * code (`useTurn`) calls this through `applyClientAction` too so
  * single-player and multiplayer share the same advancement rule.
+ *
+ * Note: this reducer rotates the seat but does NOT perform the
+ * start-of-turn refill (#502). The refill needs `rng` (see
+ * `engine/draws.ts:drawNCards`), which is supplied by the caller's
+ * dispatch context — `lib/turn-machine.ts` and `lib/room-actions.ts`
+ * call this reducer and then layer the refill on top via
+ * `drawToHand` / `drawNCards`. Keeping `endTurn` rng-free preserves
+ * its purity for unit tests that don't care about hand contents.
  */
 export function endTurn(state: GameState): GameState {
   const currentIdx = state.players.findIndex(
@@ -76,6 +86,7 @@ export function endTurn(state: GameState): GameState {
     activePlayerId: nextPlayer.id,
     pendingDiscard: undefined,
     lastAction: undefined,
+    meditatedThisTurn: false,
   };
 }
 

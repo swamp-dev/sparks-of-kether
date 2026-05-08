@@ -183,7 +183,7 @@ export interface UseTurnReturn {
   /**
    * #385: pass-path counterpart to `acceptChallengeSetback`. From the
    * `react` sub-phase with `lastOutcome.pass === true`, advance phase
-   * to 'draw' and clear all challenge machinery. Wraps the reducer's
+   * to `'end'` and clear all challenge machinery. Wraps the reducer's
    * `react-continue` event. Rejected (`react-continue-on-fail`) if
    * the last roll failed — the fail path must route through
    * `acceptChallengeSetback` for the Separation tick + shortcut
@@ -192,14 +192,13 @@ export interface UseTurnReturn {
   readonly reactContinue: () => Result<TurnReducerSuccess, TurnReducerError>;
   /**
    * Apply the engine's failure-acceptance cost (Separation +1, or
-   * +2 on shortcut arrivals) and advance the phase to 'draw'
+   * +2 on shortcut arrivals) and advance the phase to `'end'`
    * atomically. Wraps the reducer's `accept-setback` event.
    */
   readonly acceptChallengeSetback: (input: {
     readonly sefirah: SefirahKey;
     readonly shortcut?: boolean;
   }) => GameState;
-  readonly draw: () => GameState;
   /**
    * #291: shed one over-cap card from the active player's hand.
    * Drives the DiscardPrompt UI: each click on a hand card fires
@@ -622,13 +621,6 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, state, opts.rng],
   );
 
-  const draw = useCallback((): GameState => {
-    const result = turnReducer(snapshot, { kind: 'draw' }, opts.rng);
-    if (!result.ok) return state;
-    setSnapshot(result.value.next);
-    return result.value.next.state;
-  }, [snapshot, state, opts.rng]);
-
   const discard = useCallback(
     (arcanum: number): GameState => {
       const result = turnReducer(
@@ -850,7 +842,6 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactRetry,
       reactContinue,
       acceptChallengeSetback,
-      draw,
       discard,
       endTurn,
       setState: replaceState,
@@ -886,7 +877,6 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactRetry,
       reactContinue,
       acceptChallengeSetback,
-      draw,
       discard,
       endTurn,
       replaceState,

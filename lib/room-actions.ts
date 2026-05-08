@@ -12,7 +12,7 @@ import {
 } from '@/engine/kether';
 import { acceptSetback } from '@/engine/checks';
 import type { CheckOutcome } from '@/engine/types';
-import { drawNCards, MEDITATE_DRAW } from '@/engine/draws';
+import { drawNCards, drawToHand, MEDITATE_DRAW } from '@/engine/draws';
 import type { Rng } from '@/engine/rng';
 import { HAND_CAP } from '@/engine/setup';
 import { discard, endTurn } from '@/engine/turn';
@@ -199,7 +199,7 @@ export type ApplyActionRejection =
   | { readonly kind: 'move'; readonly cause: MoveRejection }
   | { readonly kind: 'prep'; readonly cause: TurnReducerError }
   | { readonly kind: 'challenge'; readonly cause: string }
-  | { readonly kind: 'meditate'; readonly cause: 'unknown-player' }
+  | { readonly kind: 'meditate'; readonly cause: 'unknown-player' | 'already-meditated' }
   | { readonly kind: 'kether'; readonly cause: KetherRejection }
   | { readonly kind: 'unknown-action' };
 
@@ -227,7 +227,9 @@ export function applyClientAction(
       // `MoveRejection` as-is to the caller. We then pad the result
       // with a phase transition that mirrors what `turnReducer` does
       // for a 'move' event: a check arrival enters 'challenge'/'prep'
-      // (with stale prep state cleared), anything else lands in 'draw'.
+      // (with stale prep state cleared), anything else lands in 'end'
+      // (#502: pre-#502 the no-challenge branch landed in 'draw'; the
+      // discrete 'draw' phase has been folded into 'end-turn').
       //
       // #350: when the multiplayer route attaches `serverArrivedAtKether`
       // to a Kether-landing move, we override `applyMove`'s clock so
@@ -287,21 +289,26 @@ export function applyClientAction(
         shortcut: action.shortcut ?? false,
       });
       // Mirror the reducer's `accept-setback` teardown so the post-
-      // setback snapshot has the right phase machinery. This is what
-      // closes the "react-retry on a passed challenge" exploit's
-      // alternate path: after a failed challenge an active player
-      // who calls `accept-setback` should land in 'draw' with no
+      // setback snapshot has the right phase machinery. #502: lands
+      // in `'end'` directly (pre-#502 this transitioned to `'draw'`;
+      // start-of-turn refill folded that step into `end-turn`). This
+      // is also what closes the "react-retry on a passed challenge"
+      // exploit's alternate path: after a failed challenge an active
+      // player who calls `accept-setback` lands in 'end' with no
       // sub-phase — and a subsequent `react-retry` will be rejected
       // by `turnReducer`'s sub-phase guard.
       const newState: GameState = {
         ...next,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
-        phase: 'draw',
+        phase: 'end',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         // #334: mirror the reducer — encounter envelope clears on
         // accept-setback (the encounter has ended).
         encounter: undefined,
+        // #292/#502: tag the end-phase entry so PlayScreen's auto-
+        // advance timer fires.
+        lastAction: 'move-draw',
       };
       return { ok: true, newState };
     }
@@ -310,8 +317,14 @@ export function applyClientAction(
       // and client-applied state agree.
       //
       // #291: meditate ALWAYS draws MEDITATE_DRAW (no hand-full
-      // rejection). The over-cap excess is reconciled at end-of-turn
-      // via state.pendingDiscard.
+      // rejection). Post-#503 the over-cap reconciliation lives on
+      // `end-turn`, NOT here — see the `end-turn` arm below for the
+      // cap check that fires when the player tries to advance.
+      //
+      // #503: phase stays at `'move'` so the player can still play a
+      // card the same turn. The once-per-turn cap is enforced by
+      // `state.meditatedThisTurn` — pre-cap rejection lives here so
+      // server-applied state matches the engine reducer.
       //
       // The unknown-player guard remains: production callers go
       // through `authorize` first, so this is a programming error or
@@ -324,6 +337,12 @@ export function applyClientAction(
           error: { kind: 'meditate', cause: 'unknown-player' },
         };
       }
+      if (state.meditatedThisTurn === true) {
+        return {
+          ok: false,
+          error: { kind: 'meditate', cause: 'already-meditated' },
+        };
+      }
       const drewState = drawNCards(
         state,
         action.playerId,
@@ -332,21 +351,10 @@ export function applyClientAction(
         rng,
         { overCap: true },
       );
-      const drewPlayer = drewState.players.find((p) => p.id === action.playerId);
-      const overCap = Math.max(0, (drewPlayer?.hand.length ?? 0) - HAND_CAP);
-      // Meditate is a complete turn-action: phase advances to 'end'
-      // (matches `turnReducer`'s meditate case). #292: stamp
-      // `lastAction: 'meditate'` for parity with the hot-seat reducer
-      // so server- and client-applied state agree on the discriminator
-      // PlayScreen's auto-advance timer reads.
       const newState: GameState = {
         ...drewState,
-        phase: 'end',
-        pendingDiscard:
-          overCap > 0
-            ? { count: overCap, requiredBy: 'end-of-turn' }
-            : undefined,
-        lastAction: 'meditate',
+        phase: 'move',
+        meditatedThisTurn: true,
       };
       return { ok: true, newState };
     }
@@ -359,6 +367,26 @@ export function applyClientAction(
       return { ok: true, newState: after };
     }
     case 'end-turn': {
+      // #503 (post-meditate cap check): if the active player is over
+      // HAND_CAP at end-turn time, set `pendingDiscard` and return
+      // *without* rotating the seat. Mirrors the engine reducer's arm
+      // so server- and client-applied state agree on when the discard
+      // prompt fires (only when ending the turn, not on Meditate).
+      const activeForCap = state.players.find(
+        (p) => p.id === state.activePlayerId,
+      );
+      if (
+        activeForCap !== undefined &&
+        activeForCap.hand.length > HAND_CAP &&
+        (state.pendingDiscard?.count ?? 0) === 0
+      ) {
+        const excess = activeForCap.hand.length - HAND_CAP;
+        const stateWithDiscard: GameState = {
+          ...state,
+          pendingDiscard: { count: excess, requiredBy: 'end-of-turn' },
+        };
+        return { ok: true, newState: stateWithDiscard };
+      }
       const turned = endTurn(state);
       // #291: detect the engine's no-advance signal (engine returns
       // input state when pendingDiscard.count > 0). Pass through
@@ -367,13 +395,21 @@ export function applyClientAction(
       if (turned === state) {
         return { ok: true, newState: turned };
       }
+      // #502: start-of-turn refill — refill the NEW active player's
+      // hand toward STARTING_HAND_SIZE (capped at HAND_CAP). Mirrors
+      // `lib/turn-machine.ts` `end-turn` arm so server- and client-
+      // applied state agree on the post-rotation hand contents.
+      // `drawToHand` is a no-op for a hand already at or above
+      // STARTING_HAND_SIZE — a player who has been gifted up to the
+      // cap during the prior turn simply skips the refill.
+      const drewForNext = drawToHand(turned, turned.activePlayerId, rng);
       // Mirror the reducer: end-turn rotates seat AND resets phase
       // to 'move' for the new active player. Also clear `encounter`
       // defensively — the invariant is that no live encounter envelope
       // crosses the seat boundary; this guard makes the invariant
       // explicit (matches `lib/turn-machine.ts` `end-turn` arm).
       const newState: GameState = {
-        ...turned,
+        ...drewForNext,
         phase: 'move',
         encounter: undefined,
       };
@@ -483,15 +519,21 @@ export function applyClientAction(
  * Compute the post-`move` phase machinery that mirrors the reducer's
  * `'move'` case: arrival on an uncleared standard-check Sefirah →
  * `phase: 'challenge'`, `challengeSubPhase: 'prep'`, prep stack
- * cleared. Any other arrival → `phase: 'draw'`. Stale `lastOutcome`
+ * cleared. Any other arrival → `phase: 'end'` with `lastAction:
+ * 'move-draw'` so the auto-advance timer fires. Stale `lastOutcome`
  * is always cleared on a fresh move (a new turn cannot inherit the
  * prior turn's failed-roll record).
+ *
+ * #502: pre-#502 non-challenge arrivals landed in `'draw'` (a discrete
+ * phase that fired an end-of-turn refill). With the refill moved to
+ * start-of-turn (inside `end-turn`), non-challenge arrivals now land
+ * in `'end'` directly.
  *
  * #345: when this move was the LAST player's arrival at Kether, the
  * Final Threshold ritual trips. `maybeTriggerKetherRitual` returns a
  * state with `phase: 'kether'` and a populated `ketherRitual`; we
  * surface that directly without any further phase padding (no
- * 'challenge', no 'draw' — the ritual owns the phase machinery from
+ * 'challenge', no 'end' — the ritual owns the phase machinery from
  * here until it exits to 'end' on `threshold-confirm`).
  */
 function padPhaseAfterMove(state: GameState, playerId: string): GameState {
@@ -507,12 +549,13 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
   if (!movedPlayer) {
     return {
       ...triggered,
-      phase: 'draw',
+      phase: 'end',
       challengeSubPhase: undefined,
       lastOutcome: undefined,
       // #334: keep encounter undefined on the malformed-snapshot
       // path; matches the reducer's behaviour.
       encounter: undefined,
+      lastAction: 'move-draw',
     };
   }
   const arrival = sefirahByKey(movedPlayer.position);
@@ -532,11 +575,14 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
   }
   return {
     ...triggered,
-    phase: 'draw',
+    phase: 'end',
     challengeSubPhase: undefined,
     lastOutcome: undefined,
     // #334: clear any stale envelope on a non-challenge arrival.
     encounter: undefined,
+    // #292/#502: tag end-phase arrival so PlayScreen's auto-advance
+    // timer fires (matches `lib/turn-machine.ts` `'move'` arm).
+    lastAction: 'move-draw',
   };
 }
 

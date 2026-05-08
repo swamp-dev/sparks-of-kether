@@ -43,7 +43,7 @@ describe('turnReducer — phase guards', () => {
   });
 
   it('rejects meditate when phase is not move', () => {
-    const result = turnReducer(snapshotAt('draw'), { kind: 'meditate' }, RNG);
+    const result = turnReducer(snapshotAt('end'), { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(false);
   });
 
@@ -58,38 +58,117 @@ describe('turnReducer — phase guards', () => {
 
   it('rejects accept-setback when phase is not challenge', () => {
     const result = turnReducer(
-      snapshotAt('draw'),
+      snapshotAt('end'),
       { kind: 'accept-setback', sefirah: 'gevurah' },
       RNG,
     );
     expect(result.ok).toBe(false);
   });
 
-  it('rejects draw when phase is not draw', () => {
-    const result = turnReducer(snapshotAt('move'), { kind: 'draw' }, RNG);
-    expect(result.ok).toBe(false);
-  });
-
-  it('rejects end-turn when phase is not end', () => {
+  it('rejects end-turn when phase is move and player has not meditated', () => {
+    // #503: end-turn is permitted from `'move'` only when
+    // `meditatedThisTurn === true`. A fresh-move player has
+    // `meditatedThisTurn === false`, so the gate rejects.
     const result = turnReducer(snapshotAt('move'), { kind: 'end-turn' }, RNG);
     expect(result.ok).toBe(false);
   });
 });
 
 describe('turnReducer — phase transitions', () => {
-  it('meditate from move → end (hand grows by up to MEDITATE_DRAW)', () => {
+  it('meditate from move stays in move (hand grows by up to MEDITATE_DRAW)', () => {
     // #128 fix: meditate is a complete turn-action that draws 2 cards
-    // (capped at HAND_CAP) and skips the 'draw' phase. The previous
-    // contract — `phase: 'draw'`, state unchanged — was broken: the
-    // 'draw' handler only refilled toward STARTING_HAND_SIZE so a
-    // meditating player at 4 cards saw nothing happen.
+    // (capped at HAND_CAP). The pre-#128 contract — `phase: 'draw'`,
+    // state unchanged — was broken: the 'draw' handler only refilled
+    // toward STARTING_HAND_SIZE so a meditating player at 4 cards saw
+    // nothing happen.
+    //
+    // #503: post-#503 Meditate stays in `'move'` (pre-#503 it
+    // transitioned to `'end'`) so the player may still play a card
+    // the same turn. The `meditatedThisTurn` flag enforces the
+    // once-per-turn cap.
     const before = snapshotAt('move');
     const result = turnReducer(before, { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.meditatedThisTurn).toBe(true);
     // State changed (cards drew); not identity-preserved anymore.
     expect(result.value.next.state).not.toBe(before.state);
+  });
+
+  it('second meditate the same turn is rejected with already-meditated', () => {
+    // #503: once-per-turn cap. The flag is reset in `endTurn` on seat
+    // rotation; a second `meditate` event before that lands as a
+    // distinct rejection kind so the UI / wire layer can render a
+    // precise message.
+    const before = snapshotAt('move');
+    const first = turnReducer(before, { kind: 'meditate' }, RNG);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = turnReducer(first.value.next, { kind: 'meditate' }, RNG);
+    expect(second.ok).toBe(false);
+    if (second.ok) return;
+    expect(second.reason.kind).toBe('already-meditated');
+  });
+
+  it('post-meditate the player can still play a card to move (#503)', () => {
+    // #503 acceptance: after Meditate, the freshly drawn cards are
+    // usable in the same turn — the player should be able to play
+    // one (or any other path-key in their hand) and arrive at the
+    // next Sefirah without rolling the seat.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21], // The World, Malkuth↔Yesod
+      clearedSefirot: new Set(['yesod']), // skip challenge for clarity
+    });
+    const state = makeState({}, {
+      players: [player],
+      activePlayerId: 'p1',
+      deck: [10, 11, 12],
+      discardPile: [],
+    });
+    const meditated = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'meditate' },
+      RNG,
+    );
+    expect(meditated.ok).toBe(true);
+    if (!meditated.ok) return;
+    expect(meditated.value.next.state.phase).toBe('move');
+    // Now play card 21 → move from malkuth → yesod.
+    const moved = turnReducer(
+      meditated.value.next,
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    // Sefirah arrival: player is now at yesod, phase is 'end' (already-
+    // cleared so the move skipped the challenge branch).
+    expect(moved.value.next.state.players[0]?.position).toBe('yesod');
+    expect(moved.value.next.state.phase).toBe('end');
+  });
+
+  it('end-turn from move is allowed when meditatedThisTurn is true (#503)', () => {
+    // #503: Meditate is itself a complete turn-action; if the player
+    // chooses not to play one of the freshly drawn cards, they must
+    // still be able to end the turn. The reducer permits end-turn from
+    // `'move'` when `meditatedThisTurn === true`.
+    const before = snapshotAt('move');
+    const meditated = turnReducer(before, { kind: 'meditate' }, RNG);
+    expect(meditated.ok).toBe(true);
+    if (!meditated.ok) return;
+    const ended = turnReducer(
+      meditated.value.next,
+      { kind: 'end-turn' },
+      RNG,
+    );
+    expect(ended.ok).toBe(true);
+    if (!ended.ok) return;
+    // Seat rotated; meditatedThisTurn cleared.
+    expect(ended.value.next.state.phase).toBe('move');
+    expect(ended.value.next.state.meditatedThisTurn).toBe(false);
   });
 
   it('move into uncleared check Sefirah → challenge phase + prep sub-phase', () => {
@@ -106,7 +185,11 @@ describe('turnReducer — phase transitions', () => {
     expect(result.value.next.state.players[0]?.position).toBe('yesod');
   });
 
-  it('move into already-cleared Sefirah → draw phase (no sub-phase)', () => {
+  it('move into already-cleared Sefirah → end phase (no sub-phase)', () => {
+    // #502: pre-#502 the no-challenge branch transitioned to `'draw'`.
+    // With the start-of-turn refill (and the discrete `'draw'` phase
+    // gone), the move case now lands in `'end'` directly and tags
+    // `lastAction: 'move-draw'` so the auto-advance timer fires.
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
@@ -121,11 +204,15 @@ describe('turnReducer — phase transitions', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.phase).toBe('end');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastAction).toBe('move-draw');
   });
 
-  it('accept-setback from challenge react sub-phase → draw + +1 separation + cleared sub-phase', () => {
+  it('accept-setback from challenge react sub-phase → end + +1 separation + cleared sub-phase', () => {
+    // #502: same shape as the move-into-cleared test — the discrete
+    // `'draw'` phase is gone, so accept-setback lands in `'end'`
+    // directly with `lastAction: 'move-draw'` set.
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
     const state = makeState({}, { players: [player], separation: 3 });
     const result = turnReducer(
@@ -135,9 +222,10 @@ describe('turnReducer — phase transitions', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.phase).toBe('end');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.separation).toBe(4);
+    expect(result.value.next.state.lastAction).toBe('move-draw');
   });
 
   it('end-turn from end → move phase + active player rotates', () => {
@@ -943,8 +1031,9 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     expect(setback.value.next.state.separation).toBe(2);
     // #275: position rolls back to tiferet (other endpoint of path 25).
     expect(setback.value.next.state.players[0]?.position).toBe('tiferet');
-    // Phase teardown: leaves challenge → draw, sub-phase cleared.
-    expect(setback.value.next.state.phase).toBe('draw');
+    // Phase teardown: leaves challenge → end (#502: pre-#502 this was
+    // 'draw'), sub-phase cleared.
+    expect(setback.value.next.state.phase).toBe('end');
     expect(setback.value.next.state.challengeSubPhase).toBeUndefined();
   });
 });
@@ -1448,10 +1537,11 @@ describe('turnReducer — react sub-phase: react-continue (#385)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.phase).toBe('end');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.lastOutcome).toBeUndefined();
     expect(result.value.next.state.encounter).toBeUndefined();
+    expect(result.value.next.state.lastAction).toBe('move-draw');
     expect(result.value.next.state.pendingModifiers).toEqual(
       EMPTY_PENDING_MODIFIERS,
     );
@@ -1464,7 +1554,7 @@ describe('turnReducer — react sub-phase: react-continue (#385)', () => {
       {
         state: {
           ...state,
-          phase: 'draw',
+          phase: 'end',
           lastOutcome: PASS_OUTCOME,
         },
       },
@@ -1476,7 +1566,7 @@ describe('turnReducer — react sub-phase: react-continue (#385)', () => {
     expect(result.reason.kind).toBe('wrong-phase');
     if (result.reason.kind !== 'wrong-phase') return;
     expect(result.reason.expected).toBe('challenge');
-    expect(result.reason.actual).toBe('draw');
+    expect(result.reason.actual).toBe('end');
   });
 
   it('rejects react-continue when sub-phase is not react', () => {
@@ -1673,7 +1763,6 @@ describe('turnReducer — no-active-player guard', () => {
   it.each([
     { kind: 'meditate' as const },
     { kind: 'move' as const, pathNumber: 32 },
-    { kind: 'draw' as const },
     { kind: 'end-turn' as const },
   ])('rejects $kind when state.activePlayerId is not in state.players', (event) => {
     const corruptState = makeState({}, {
@@ -1685,9 +1774,7 @@ describe('turnReducer — no-active-player guard', () => {
     const phase: TurnPhase =
       event.kind === 'move' || event.kind === 'meditate'
         ? 'move'
-        : event.kind === 'draw'
-          ? 'draw'
-          : 'end';
+        : 'end';
     const result = turnReducer(
       { state: { ...corruptState, phase } },
       event,
@@ -1699,13 +1786,19 @@ describe('turnReducer — no-active-player guard', () => {
   });
 });
 
-describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends the turn', () => {
-  // #128: design/mechanics.md § Drawing — "Meditate (the alternative
-  // to a move) draws 2 cards, but stops at 6." Pre-fix the reducer
-  // advanced to 'draw' phase without changing state; players who
-  // meditated then clicked Draw saw nothing because drawToHand only
-  // refills toward STARTING_HAND_SIZE (4) which they already had.
-  it('adds 2 cards from the deck and skips the draw phase', () => {
+describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays in move (#503)', () => {
+  // #128: design/mechanics.md § Drawing — meditate ALWAYS draws 2 cards
+  // (even past HAND_CAP, with the over-cap excess reconciled at end-of-
+  // turn via pendingDiscard). Pre-#128 the reducer advanced to 'draw'
+  // phase without changing state; players who meditated then clicked
+  // Draw saw nothing because drawToHand only refills toward
+  // STARTING_HAND_SIZE (4) which they already had.
+  //
+  // #503: post-#503 Meditate stays at `'move'` so the player may
+  // still play a card the same turn — the cards drawn by Meditate
+  // are usable immediately. The once-per-turn cap (`meditatedThisTurn`)
+  // stops Meditate from strictly dominating Move.
+  it('adds 2 cards from the deck and stays in move phase', () => {
     const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4] });
     const state = makeState({}, {
       players: [player],
@@ -1718,16 +1811,20 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
     expect(after?.hand).toEqual([1, 2, 3, 4, 11, 12]);
-    // Phase advances directly to 'end' — no separate Draw click.
-    expect(result.value.next.state.phase).toBe('end');
+    // Phase stays at 'move' so the player can still play a card.
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.meditatedThisTurn).toBe(true);
   });
 
   it('draws past HAND_CAP and sets pendingDiscard for the over-cap excess (#291)', () => {
-    // #291: pre-fix the reducer respected HAND_CAP and stopped at it.
-    // That left a softlocked at-cap player with no meditate affordance
-    // (they couldn't draw, and if no path was usable they couldn't
-    // move). New contract: meditate ALWAYS draws MEDITATE_DRAW; the
-    // over-cap excess is reconciled at end-of-turn via pendingDiscard.
+    // #291: meditate ALWAYS draws MEDITATE_DRAW (even past HAND_CAP).
+    // Pre-#291 the reducer respected HAND_CAP and stopped at it, leaving
+    // a softlocked at-cap player with no meditate affordance.
+    //
+    // #503 (post-fix): pendingDiscard is NOT set immediately on
+    // Meditate — it's only set when the player tries to End turn with
+    // hand > HAND_CAP. This lets a Meditate-then-Move flow that drops
+    // back under cap proceed without any prompt.
     const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4, 5] });
     const state = makeState({}, {
       players: [player],
@@ -1741,14 +1838,11 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
     // Hand was 5, cap is 6: meditate draws BOTH cards (not just one).
     expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11, 12]);
-    // Over-cap excess = hand - HAND_CAP = 7 - 6 = 1.
-    expect(result.value.next.state.pendingDiscard).toEqual({
-      count: 1,
-      requiredBy: 'end-of-turn',
-    });
+    // #503: pendingDiscard NOT set on Meditate; it fires on end-turn.
+    expect(result.value.next.state.pendingDiscard).toBeUndefined();
   });
 
-  it('meditate at HAND_CAP draws both cards and sets pendingDiscard.count = 2 (#291)', () => {
+  it('meditate at HAND_CAP draws both cards but defers pendingDiscard to end-turn (#503)', () => {
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
@@ -1765,14 +1859,102 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
     expect(after?.hand).toEqual([1, 2, 3, 4, 5, 6, 11, 12]);
-    expect(result.value.next.state.pendingDiscard).toEqual({
+    // #503: pendingDiscard is NOT set immediately. The cap check
+    // fires on end-turn instead.
+    expect(result.value.next.state.pendingDiscard).toBeUndefined();
+    expect(result.value.next.state.phase).toBe('move');
+  });
+
+  it('end-turn after over-cap meditate sets pendingDiscard and refuses to advance (#503)', () => {
+    // #503 acceptance: the cap check belongs on end-turn, not on
+    // Meditate. A player who meditates over cap and immediately tries
+    // to End the turn must be prompted to trim down to HAND_CAP first.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [1, 2, 3, 4, 5, 6],
+    });
+    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [] });
+    const state = makeState({}, {
+      players: [p1, p2],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    const meditated = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'meditate' },
+      RNG,
+    );
+    expect(meditated.ok).toBe(true);
+    if (!meditated.ok) return;
+    // Hand is now 8 (over cap by 2). Try to end the turn.
+    const ended = turnReducer(
+      meditated.value.next,
+      { kind: 'end-turn' },
+      RNG,
+    );
+    expect(ended.ok).toBe(true);
+    if (!ended.ok) return;
+    // Cap check fires: pendingDiscard.count = 2, seat does NOT advance.
+    expect(ended.value.next.state.pendingDiscard).toEqual({
       count: 2,
       requiredBy: 'end-of-turn',
     });
-    // Phase still advances to 'end' — discard happens DURING the end
-    // phase (the UI's DiscardPrompt unblocks the auto-advance to the
-    // next turn by way of the engine's endTurn refusal).
-    expect(result.value.next.state.phase).toBe('end');
+    expect(ended.value.next.state.activePlayerId).toBe('p1');
+    expect(ended.value.next.state.phase).toBe('move');
+  });
+
+  it('meditate-then-move that drops back to cap rotates without any prompt (#503)', () => {
+    // #503 user-facing acceptance: Meditate from 5 → 7 cards, then
+    // play a Move card (drops to 6), then End turn — no DiscardPrompt
+    // ever fires. Pre-fix, Meditate set pendingDiscard immediately
+    // even though the player was about to drop back under cap.
+    const p1 = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [1, 2, 3, 4, 21], // 5 cards including The World (path 32)
+      clearedSefirot: new Set(['yesod']), // skip challenge for clarity
+    });
+    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [] });
+    const state = makeState({}, {
+      players: [p1, p2],
+      activePlayerId: 'p1',
+      deck: [11, 12, 13],
+      discardPile: [],
+    });
+    const meditated = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'meditate' },
+      RNG,
+    );
+    expect(meditated.ok).toBe(true);
+    if (!meditated.ok) return;
+    // Hand grew to 7 (over cap), but no pendingDiscard.
+    expect(meditated.value.next.state.players[0]?.hand.length).toBe(7);
+    expect(meditated.value.next.state.pendingDiscard).toBeUndefined();
+    // Play card 21 (path 32: malkuth ↔ yesod) — already cleared so
+    // no challenge fires. Hand drops to 6 (back at cap).
+    const moved = turnReducer(
+      meditated.value.next,
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    expect(moved.value.next.state.players[0]?.hand.length).toBe(6);
+    expect(moved.value.next.state.phase).toBe('end');
+    // End turn — cap check sees hand at 6 (not over), so no prompt;
+    // seat rotates cleanly.
+    const ended = turnReducer(
+      moved.value.next,
+      { kind: 'end-turn' },
+      RNG,
+    );
+    expect(ended.ok).toBe(true);
+    if (!ended.ok) return;
+    expect(ended.value.next.state.activePlayerId).toBe('p2');
+    expect(ended.value.next.state.pendingDiscard).toBeUndefined();
   });
 
   it('meditate under cap leaves pendingDiscard undefined (#291)', () => {
@@ -1795,31 +1977,22 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and ends t
 });
 
 describe('turnReducer — lastAction discriminator on entry to end phase (#292)', () => {
-  // #292: the auto-advance timer (PlayScreen.tsx) needs to distinguish
-  // a "Move + Draw" arrival in `'end'` (which auto-advances per #131)
-  // from a "Meditate" arrival in `'end'` (which does NOT auto-advance —
-  // the player needs time to see the cards they just drew). The
-  // reducer stamps `lastAction` on the resulting state so the UI can
-  // gate the timer without re-deriving intent from the diff.
-  it('meditate sets lastAction = "meditate"', () => {
-    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2] });
-    const state = makeState({}, {
-      players: [player],
-      activePlayerId: 'p1',
-      deck: [11, 12, 13],
-      discardPile: [],
-    });
-    const result = turnReducer({ state: { ...state, phase: 'move' } }, { kind: 'meditate' }, RNG);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
-    expect(result.value.next.state.lastAction).toBe('meditate');
-  });
-
-  it('move + draw lands in end phase with lastAction = "move-draw"', () => {
-    // Move into an already-cleared Sefirah (skips challenge, lands in
-    // 'draw'); then Draw, which transitions to 'end'. The end-phase
-    // arrival via this path must be tagged so the auto-advance fires.
+  // #292: the auto-advance timer (PlayScreen.tsx) needs to know that
+  // the active player has finished a Move/Challenge so the seat can
+  // rotate. The reducer stamps `lastAction: 'move-draw'` on
+  // `'end'`-phase entry so the UI can gate the timer without re-
+  // deriving intent from the diff.
+  //
+  // Pre-#503 a `'meditate'` literal sat on the discriminator union
+  // (Meditate transitioned to `'end'` and the timer suppressed).
+  // Post-#503 Meditate stays in `'move'`, so `'meditate'` is no
+  // longer reachable in `'end'` — the discriminator collapses to
+  // `'move-draw' | undefined`.
+  it('move into already-cleared Sefirah lands in end with lastAction = "move-draw"', () => {
+    // #502: pre-#502 the same flow took two reducer steps (`move` →
+    // `'draw'` then `draw` → `'end'`). With the start-of-turn refill
+    // (and the discrete `'draw'` phase gone), `move` lands in `'end'`
+    // directly with the discriminator already set.
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
@@ -1832,7 +2005,6 @@ describe('turnReducer — lastAction discriminator on entry to end phase (#292)'
       deck: [11, 12, 13],
       discardPile: [],
     });
-    // Move from malkuth → yesod via path 32 (already cleared → draw).
     const moved = turnReducer(
       { state: { ...state, phase: 'move' } },
       { kind: 'move', pathNumber: 32 },
@@ -1840,13 +2012,8 @@ describe('turnReducer — lastAction discriminator on entry to end phase (#292)'
     );
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
-    expect(moved.value.next.state.phase).toBe('draw');
-    // Then Draw → 'end' phase, with lastAction = 'move-draw'.
-    const drewResult = turnReducer(moved.value.next, { kind: 'draw' }, RNG);
-    expect(drewResult.ok).toBe(true);
-    if (!drewResult.ok) return;
-    expect(drewResult.value.next.state.phase).toBe('end');
-    expect(drewResult.value.next.state.lastAction).toBe('move-draw');
+    expect(moved.value.next.state.phase).toBe('end');
+    expect(moved.value.next.state.lastAction).toBe('move-draw');
   });
 
   it('end-turn clears lastAction so the next seat starts clean', () => {
@@ -1858,7 +2025,7 @@ describe('turnReducer — lastAction discriminator on entry to end phase (#292)'
         state: {
           ...initial,
           phase: 'end',
-          lastAction: 'meditate',
+          lastAction: 'move-draw',
         },
       },
       { kind: 'end-turn' },
@@ -1924,57 +2091,70 @@ describe('turnReducer — discard event (#291)', () => {
   });
 });
 
-describe("turnReducer — draw event refills the active player's hand", () => {
-  // #128: playtest report — players clicked Draw and the hand did
-  // not visibly update. The reducer must (a) actually refill the
-  // hand toward STARTING_HAND_SIZE when the draw phase is hit and
-  // (b) return a NEW player object so React re-renders the Hand
-  // component (referential-equality contract).
-  it('fills hand from below STARTING_HAND_SIZE up to STARTING_HAND_SIZE', () => {
-    const partialHand = [1, 2, 3]; // 3 cards, < STARTING_HAND_SIZE (4)
-    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: partialHand });
+describe('turnReducer — start-of-turn refill on end-turn (#502)', () => {
+  // #502: pre-#502 a discrete `'draw'` phase + `'draw'` event refilled
+  // the OUTGOING player's hand at end-of-turn. The new contract folds
+  // the refill into the `end-turn` event handler — the seat rotates
+  // first, then the NEW active player's hand fills up. This closes the
+  // gap between the player's evaluation moment and their decision
+  // moment (pre-#502 the new card sat in the just-played player's
+  // hand for an entire seat rotation before they could act on it).
+  it('refills the new active player\'s hand toward STARTING_HAND_SIZE', () => {
+    const p1 = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4] });
+    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [5, 6] });
     const state = makeState({}, {
-      players: [player],
+      players: [p1, p2],
       activePlayerId: 'p1',
       deck: [11, 12, 13, 14],
       discardPile: [],
     });
-    const result = turnReducer({ state: { ...state, phase: 'draw' } }, { kind: 'draw' }, RNG);
+    const result = turnReducer(
+      { state: { ...state, phase: 'end' } },
+      { kind: 'end-turn' },
+      RNG,
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const next = result.value.next.state;
-    const refilled = next.players.find((p) => p.id === 'p1');
-    expect(refilled?.hand).toHaveLength(4);
-    expect(refilled?.hand[3]).toBe(11); // top of deck appended
+    expect(result.value.next.state.activePlayerId).toBe('p2');
+    // p2's hand was 2 → STARTING_HAND_SIZE (4). p1's hand untouched.
+    const newP2 = result.value.next.state.players.find((p) => p.id === 'p2');
+    const newP1 = result.value.next.state.players.find((p) => p.id === 'p1');
+    expect(newP2?.hand).toHaveLength(4);
+    expect(newP1?.hand).toEqual([1, 2, 3, 4]);
+    expect(result.value.next.state.phase).toBe('move');
   });
 
-  it('returns a fresh player object reference even when no card was drawn', () => {
-    // Hand is already at cap; draw is a no-op for cards. But the UI
-    // contract still needs a new player object so React notices the
-    // phase transition. Otherwise the Hand component never re-renders
-    // and the player thinks "I drew but nothing happened" (when in
-    // fact the engine correctly did nothing).
-    const fullHand = [1, 2, 3, 4];
-    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: fullHand });
+  it('a hand already at STARTING_HAND_SIZE is left untouched (no double-draw)', () => {
+    const p1 = makePlayer({ id: 'p1', position: 'malkuth', hand: [1] });
+    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [5, 6, 7, 8] });
     const state = makeState({}, {
-      players: [player],
+      players: [p1, p2],
       activePlayerId: 'p1',
-      deck: [11],
+      deck: [11, 12, 13],
       discardPile: [],
     });
-    const result = turnReducer({ state: { ...state, phase: 'draw' } }, { kind: 'draw' }, RNG);
+    const result = turnReducer(
+      { state: { ...state, phase: 'end' } },
+      { kind: 'end-turn' },
+      RNG,
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const next = result.value.next.state;
-    const after = next.players.find((p) => p.id === 'p1');
-    expect(after?.hand).toHaveLength(4);
-    // Pin the player-object identity contract: even when no card was
-    // drawn, the reducer must return a fresh player reference so a
-    // future `React.memo(Hand)` (none today) would still re-render.
-    expect(after).not.toBe(player);
-    // Phase must advance off 'draw' regardless — that's the signal
-    // that "the click was processed."
-    expect(result.value.next.state.phase).toBe('end');
+    const newP2 = result.value.next.state.players.find((p) => p.id === 'p2');
+    expect(newP2?.hand).toEqual([5, 6, 7, 8]);
+    // Deck untouched — refill was a no-op for the at-cap player.
+    expect(result.value.next.state.deck).toEqual([11, 12, 13]);
+  });
+
+  it('does not double-draw on turn 1 (the initial deal is the first draw)', () => {
+    // Turn 1 has no preceding `end-turn`, so the start-of-turn refill
+    // never fires. Player 0's hand stays at exactly the dealt
+    // STARTING_HAND_SIZE on the very first move.
+    const initial = makeFullGame({ playerCount: 2, seed: 7 });
+    const firstActive = initial.players.find(
+      (p) => p.id === initial.activePlayerId,
+    );
+    expect(firstActive?.hand).toHaveLength(4);
   });
 });
 
@@ -2013,7 +2193,9 @@ describe('turnReducer — sub-phase teardown when phase leaves challenge', () =>
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('draw');
+    // #502: post-#502 accept-setback lands in `'end'` directly (the
+    // discrete `'draw'` phase has been folded into `end-turn`).
+    expect(result.value.next.state.phase).toBe('end');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.lastOutcome).toBeUndefined();
     expect(result.value.next.state.pendingModifiers).toEqual({
@@ -2210,7 +2392,7 @@ describe('turnReducer — edge cases: full pass → accept-setback teardown is i
     );
     expect(setback.ok).toBe(true);
     if (!setback.ok) return;
-    expect(setback.value.next.state.phase).toBe('draw');
+    expect(setback.value.next.state.phase).toBe('end');
     expect(setback.value.next.state.challengeSubPhase).toBeUndefined();
     expect(setback.value.next.state.lastOutcome).toBeUndefined();
     expect(setback.value.next.state.pendingModifiers).toEqual({
@@ -2381,7 +2563,7 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.phase).toBe('end');
     expect(result.value.next.state.encounter).toBeUndefined();
   });
 
@@ -2543,7 +2725,7 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('draw');
+    expect(result.value.next.state.phase).toBe('end');
     expect(result.value.next.state.encounter).toBeUndefined();
   });
 

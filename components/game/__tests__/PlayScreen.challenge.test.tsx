@@ -17,8 +17,12 @@ import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
  *
  * Post-fix: clicking Continue dispatches `react-continue` through the
  * `turn.reactContinue()` hook method; the engine clears the challenge
- * machinery and advances to `phase: 'draw'`. The modal unmounts because
+ * machinery and advances to `phase: 'end'`. The modal unmounts because
  * the engine actually transitioned out of 'challenge'.
+ *
+ * #502: pre-#502 the post-Continue phase was `'draw'`. With the
+ * start-of-turn refill (and the discrete `'draw'` phase gone), the
+ * post-Continue snapshot lands in `'end'` directly.
  */
 
 function makePassReadyState(opts: {
@@ -56,7 +60,7 @@ function makePassReadyState(opts: {
 }
 
 describe('PlayScreen — pass + Continue advances phase out of challenge (#385)', () => {
-  it('clicking Continue on a passed challenge unmounts the modal AND advances phase to draw', () => {
+  it('clicking Continue on a passed challenge unmounts the modal AND advances phase to end', () => {
     vi.useFakeTimers();
     try {
       const initial = makePassReadyState({ destination: 'yesod' });
@@ -105,13 +109,14 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
         fireEvent.click(continueBtn as HTMLButtonElement);
       });
 
-      // After the click: modal unmounted, phase is now 'draw'.
+      // #502: after the click, modal unmounted, phase is now `'end'`
+      // (pre-#502 this was `'draw'`).
       expect(document.querySelector('[data-encounter-screen]')).toBeNull();
       expect(
         document
           .querySelector('[data-play-screen]')
           ?.getAttribute('data-phase'),
-      ).toBe('draw');
+      ).toBe('end');
     } finally {
       vi.useRealTimers();
     }

@@ -40,43 +40,34 @@ describe('useTurn — phase machine', () => {
     expect(result.current.isActive('p2')).toBe(false);
   });
 
-  it('meditate skips movement, draws 2 cards (cap 6), and ends the turn', () => {
-    // #128: meditate is now a complete turn-action that draws 2 cards
-    // and skips the 'draw' phase. Was previously: state-unchanged
-    // jump to 'draw' phase, which left players at hand-size 4 with
-    // nothing to do.
+  it('meditate draws 2 cards (cap 6) and stays in move phase (#503)', () => {
+    // #128: meditate is a complete turn-action that draws 2 cards.
+    // #503: post-#503 Meditate stays in `'move'` so the player may
+    // still play a card the same turn — the freshly drawn cards are
+    // usable immediately. The once-per-turn cap (`meditatedThisTurn`)
+    // stops it from strictly dominating Move.
     const { result } = freshHook();
     const handBefore = result.current.state.players[0]?.hand.length ?? 0;
     act(() => {
       result.current.meditate();
     });
-    expect(result.current.phase).toBe('end');
+    expect(result.current.phase).toBe('move');
+    expect(result.current.state.meditatedThisTurn).toBe(true);
     const handAfter = result.current.state.players[0]?.hand.length ?? 0;
     // Hand grew by up to 2, capped at 6.
     expect(handAfter).toBeGreaterThan(handBefore);
     expect(handAfter).toBeLessThanOrEqual(6);
   });
 
-  it('rejects move when not in move phase', () => {
-    const { result } = freshHook();
-    act(() => {
-      result.current.meditate();
-    });
-    // After meditate the phase is 'end'; move() rejects.
-    let outcome: ReturnType<typeof result.current.move> | undefined;
-    act(() => {
-      outcome = result.current.move(31);
-    });
-    expect(outcome?.ok).toBe(false);
-  });
-
   it('endTurn rotates to the next player and resets to move phase', () => {
     const { result } = freshHook();
+    // #503: Meditate stays in move; after meditating the player can
+    // end the turn directly even without playing a card.
     act(() => {
       result.current.meditate();
     });
-    // Meditate now ends the turn directly; no separate draw step.
-    expect(result.current.phase).toBe('end');
+    expect(result.current.phase).toBe('move');
+    expect(result.current.state.meditatedThisTurn).toBe(true);
     act(() => {
       result.current.endTurn();
     });
@@ -86,6 +77,8 @@ describe('useTurn — phase machine', () => {
     // The active id now lives in GameState — confirm it's not just
     // local hook state. Server snapshots can be diff'd against this.
     expect(result.current.state.activePlayerId).toBe('p2');
+    // #503: meditatedThisTurn flag resets on seat rotation.
+    expect(result.current.state.meditatedThisTurn).toBe(false);
   });
 
   it('auto-rotates when a player arrives at Kether without triggering the ritual (#447)', () => {
@@ -219,15 +212,16 @@ describe('useTurn — meditate draw mechanics', () => {
     });
     // 2 cards drawn (well within the 6-card cap).
     expect(result.current.state.players[0]?.hand.length).toBe(4);
-    expect(result.current.phase).toBe('end');
+    // #503: Meditate stays in move (pre-#503 it transitioned to 'end').
+    expect(result.current.phase).toBe('move');
   });
 
-  it('meditate at HAND_CAP draws past the cap and sets pendingDiscard (#291)', () => {
-    // #291: pre-fix this test pinned a no-op (drawNCards early-exited
-    // at hardCap). New contract: meditate ALWAYS draws MEDITATE_DRAW;
-    // the over-cap excess (here 2) lands as pendingDiscard for the
-    // active player to reconcile via the UI's DiscardPrompt before
-    // the engine will let the seat advance.
+  it('meditate at HAND_CAP draws past the cap; cap check defers to end-turn (#503)', () => {
+    // #291: meditate ALWAYS draws MEDITATE_DRAW (even past HAND_CAP).
+    // #503: pendingDiscard is NOT set on Meditate; the cap check fires
+    // when the player tries to End the turn instead. This lets a
+    // Meditate-then-Move flow that drops back under cap proceed without
+    // any prompt.
     const { result } = freshHook();
     const initial = result.current.state;
     const six = {
@@ -242,13 +236,22 @@ describe('useTurn — meditate draw mechanics', () => {
     act(() => {
       result.current.meditate();
     });
-    // Hand grew to 8 (over HAND_CAP=6 by 2 cards).
+    // Hand grew to 8 (over HAND_CAP=6 by 2 cards) — but no
+    // pendingDiscard yet; Meditate stays in 'move' so the player
+    // could still play a card.
     expect(result.current.state.players[0]?.hand.length).toBe(8);
+    expect(result.current.state.pendingDiscard).toBeUndefined();
+    expect(result.current.phase).toBe('move');
+    // Now End turn — the cap check fires here. Seat does NOT advance;
+    // pendingDiscard.count = 2 lights up the DiscardPrompt.
+    act(() => {
+      result.current.endTurn();
+    });
     expect(result.current.state.pendingDiscard).toEqual({
       count: 2,
       requiredBy: 'end-of-turn',
     });
-    expect(result.current.phase).toBe('end');
+    expect(result.current.activePlayerIndex).toBe(0);
   });
 
   it('recycles discard pile when deck empties mid-meditate', () => {
@@ -498,8 +501,8 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   // `acceptChallengeSetback`. After a successful prep-confirm the
   // snapshot sits at challenge/react/lastOutcome=pass; calling
   // reactContinue clears the challenge machinery and advances phase
-  // to 'draw'.
-  it('reactContinue after a passed prepConfirm advances phase to draw and clears challenge state', () => {
+  // to `'end'` (#502: pre-#502 this was 'draw').
+  it('reactContinue after a passed prepConfirm advances phase to end and clears challenge state', () => {
     const { result } = hookViaMoveIntoPrep();
     act(() => {
       result.current.prepConfirm('binah', {
@@ -518,7 +521,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
       outcome = result.current.reactContinue();
     });
     expect(outcome?.ok).toBe(true);
-    expect(result.current.phase).toBe('draw');
+    expect(result.current.phase).toBe('end');
     expect(result.current.challengeSubPhase).toBeUndefined();
     expect(result.current.state.lastOutcome).toBeUndefined();
   });

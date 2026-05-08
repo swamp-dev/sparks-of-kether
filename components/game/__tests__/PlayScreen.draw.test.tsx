@@ -44,12 +44,14 @@ describe('PlayScreen — meditate updates the hand', () => {
   });
 });
 
-describe('PlayScreen — Meditate at HAND_CAP renders DiscardPrompt (#291)', () => {
-  // #291: pre-fix the Meditate button was disabled at HAND_CAP, which
-  // softlocked players with no usable paths. New contract: Meditate
-  // is always enabled; clicking it draws past the cap and renders a
-  // DiscardPrompt for the over-cap excess.
-  it('enables Meditate at HAND_CAP and renders DiscardPrompt after click', () => {
+describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (#503)', () => {
+  // #291: Meditate is always enabled (pre-#291 it was disabled at the
+  // cap, softlocking players with no usable paths).
+  // #503: the DiscardPrompt does NOT fire on Meditate. It fires when
+  // the player tries to End the turn while still over cap. This lets
+  // a Meditate-then-Move flow that drops back under cap proceed
+  // without any prompt.
+  it('enables Meditate at HAND_CAP; no DiscardPrompt until End turn click', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = state.players.findIndex(
       (p) => p.id === state.activePlayerId,
@@ -69,10 +71,18 @@ describe('PlayScreen — Meditate at HAND_CAP renders DiscardPrompt (#291)', () 
       fireEvent.click(meditateBtn);
     });
 
-    // After the click the player has 8 cards (over HAND_CAP=6 by 2)
-    // and the DiscardPrompt is on screen telling them to shed 2.
-    const slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    // Post-Meditate: 8 cards, NO DiscardPrompt yet.
+    let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(8);
+    expect(document.querySelector('[data-discard-prompt]')).toBeNull();
+
+    // Click End turn — cap check fires; DiscardPrompt appears.
+    const endBtn = screen.getByRole('button', { name: /end turn/i });
+    act(() => {
+      fireEvent.click(endBtn);
+    });
+    slots = document.querySelectorAll('[data-hand] [data-card-slot]');
+    expect(slots.length).toBe(8); // hand still 8 — no rotation yet
     const prompt = document.querySelector('[data-discard-prompt]');
     expect(prompt).not.toBeNull();
     expect(prompt?.textContent ?? '').toMatch(/2/);

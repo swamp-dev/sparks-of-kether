@@ -72,7 +72,9 @@ describe('applyClientAction — move', () => {
 
   it('does NOT trip the ritual on a non-last arrival (#345)', () => {
     // First player arrives at Kether but a teammate is still climbing.
-    // Phase stays 'draw' (Kether is no-check arrival).
+    // Phase lands in 'end' (#502: pre-#502 this was 'draw'; Kether is
+    // a no-check arrival so the move case takes the no-challenge
+    // branch).
     const p1 = makePlayer({
       id: 'p1',
       position: 'tiferet',
@@ -94,7 +96,7 @@ describe('applyClientAction — move', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.newState.phase).toBe('draw');
+    expect(result.newState.phase).toBe('end');
     expect(result.newState.ketherRitual).toBeUndefined();
   });
 });
@@ -567,7 +569,11 @@ describe('applyClientAction — react-continue (#390)', () => {
   // `react-continue` arm, so the dispatcher had no path to apply
   // the engine event — pre-#385's "phase frozen at challenge.react"
   // bug would silently re-appear in multiplayer.
-  it('advances phase from challenge.react to draw on a passed challenge', () => {
+  //
+  // #502: pre-#502 the post-pass landing phase was `'draw'`. With
+  // the start-of-turn refill and the discrete `'draw'` phase gone,
+  // react-continue lands in `'end'` directly.
+  it('advances phase from challenge.react to end on a passed challenge', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
     const state = makeState(
       {},
@@ -593,14 +599,14 @@ describe('applyClientAction — react-continue (#390)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.newState.phase).toBe('draw');
+    expect(result.newState.phase).toBe('end');
     expect(result.newState.challengeSubPhase).toBeUndefined();
     expect(result.newState.lastOutcome).toBeUndefined();
   });
 
   it('surfaces the engine rejection shape when fired from a non-challenge phase', () => {
     // Defense in depth — if a buggy multiplayer client fires
-    // react-continue from `phase: 'draw'`, the engine's existing
+    // react-continue from `phase: 'end'`, the engine's existing
     // wrong-phase guard rejects it and the dispatcher surfaces the
     // rejection back through the prep error envelope.
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
@@ -608,9 +614,9 @@ describe('applyClientAction — react-continue (#390)', () => {
       {},
       { players: [player] },
     );
-    const drawState: typeof state = { ...state, phase: 'draw' };
+    const endState: typeof state = { ...state, phase: 'end' };
     const result = applyClientAction(
-      drawState,
+      endState,
       { kind: 'react-continue', playerId: 'p1' },
       seededRng(1),
     );
@@ -758,7 +764,12 @@ describe('applyClientAction — end-turn', () => {
 });
 
 describe('applyClientAction — meditate', () => {
-  it('draws MEDITATE_DRAW (2) cards from the deck and appends them to the player hand', () => {
+  it('draws MEDITATE_DRAW (2) cards, stays in move phase, sets meditatedThisTurn (#503)', () => {
+    // #503: post-#503 the multiplayer dispatcher mirrors the engine
+    // reducer's new contract — phase stays at `'move'` so the player
+    // may still play a card, and `meditatedThisTurn` is set to enforce
+    // the once-per-turn cap. Server- and client-applied state must
+    // agree on these fields or the multiplayer flow desyncs.
     const player = makePlayer({ id: 'p1', hand: [1, 2] });
     const state = makeState(
       {},
@@ -773,13 +784,46 @@ describe('applyClientAction — meditate', () => {
     if (!result.ok) return;
     expect(result.newState.players[0]?.hand).toEqual([1, 2, 10, 11]);
     expect(result.newState.deck).toEqual([12, 13]);
+    expect(result.newState.phase).toBe('move');
+    expect(result.newState.meditatedThisTurn).toBe(true);
   });
 
-  it('succeeds at HAND_CAP=6 — draws over the cap and sets pendingDiscard (#291)', () => {
-    // #291: pre-fix the dispatcher rejected with `hand-full`, which
-    // softlocked players who hit the cap with no usable paths. New
-    // contract: meditate ALWAYS draws MEDITATE_DRAW (capping is now
-    // an end-of-turn responsibility via state.pendingDiscard).
+  it('rejects a second meditate the same turn with already-meditated (#503)', () => {
+    // #503: once-per-turn cap on Meditate. The engine-side flag
+    // (`meditatedThisTurn`) is the authoritative gate; the dispatcher
+    // refuses with a precise rejection so the wire layer surfaces the
+    // reason instead of pretending the action succeeded.
+    const player = makePlayer({ id: 'p1', hand: [1, 2] });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        deck: [10, 11, 12, 13],
+        discardPile: [],
+        meditatedThisTurn: true,
+      },
+    );
+    const result = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('meditate');
+    if (result.error.kind !== 'meditate') return;
+    expect(result.error.cause).toBe('already-meditated');
+  });
+
+  it('succeeds at HAND_CAP=6 — draws over the cap; cap check defers to end-turn (#503)', () => {
+    // #291: meditate ALWAYS draws MEDITATE_DRAW (even past HAND_CAP).
+    // Pre-#291 the dispatcher rejected with `hand-full`, softlocking
+    // players who hit the cap with no usable paths.
+    //
+    // #503: pendingDiscard is NOT set immediately on Meditate. The
+    // cap check fires when the player tries to End the turn instead.
+    // This lets a Meditate-then-Move flow that drops back under cap
+    // proceed without any prompt.
     const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
     const state = makeState(
       {},
@@ -793,10 +837,44 @@ describe('applyClientAction — meditate', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 6, 10, 11]);
-    expect(result.newState.pendingDiscard).toEqual({
+    expect(result.newState.pendingDiscard).toBeUndefined();
+    // #503: at-cap meditate must also stay in `'move'` and set the
+    // once-per-turn flag (mirrors the happy-path test above). Without
+    // these assertions a regression that flipped the at-cap branch to
+    // `phase: 'end'` would silently pass.
+    expect(result.newState.phase).toBe('move');
+    expect(result.newState.meditatedThisTurn).toBe(true);
+  });
+
+  it('end-turn after over-cap meditate sets pendingDiscard and refuses to advance (#503)', () => {
+    // #503: the cap check belongs on `end-turn`, not on `meditate`.
+    // Mirrors the engine reducer arm; server- and client-applied state
+    // must agree on when the discard prompt fires.
+    const p1 = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
+    const p2 = makePlayer({ id: 'p2', hand: [] });
+    const state = makeState(
+      {},
+      { players: [p1, p2], activePlayerId: 'p1', deck: [10, 11], discardPile: [] },
+    );
+    const meditated = applyClientAction(
+      state,
+      { kind: 'meditate', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(meditated.ok).toBe(true);
+    if (!meditated.ok) return;
+    const ended = applyClientAction(
+      meditated.newState,
+      { kind: 'end-turn', playerId: 'p1' },
+      seededRng(1),
+    );
+    expect(ended.ok).toBe(true);
+    if (!ended.ok) return;
+    expect(ended.newState.pendingDiscard).toEqual({
       count: 2,
       requiredBy: 'end-of-turn',
     });
+    expect(ended.newState.activePlayerId).toBe('p1');
   });
 
   it('rejects with unknown-player when the playerId is not in state.players', () => {

@@ -207,5 +207,8 @@ export function initializeGame(input: InitializeGameInput): GameState {
     phase: 'move',
     challengeSubPhase: undefined,
     lastOutcome: undefined,
+    // #503: per-turn Meditate cap flag. Initialized false; set true
+    // by the `meditate` reducer; cleared by `endTurn` on seat rotation.
+    meditatedThisTurn: false,
   };
 }

@@ -275,13 +275,12 @@ describe('multiplayer flow — start → events integration', () => {
     expect(after - before).toBe(2);
   });
 
-  it('meditate at HAND_CAP succeeds; hand grows over the cap and pendingDiscard is set (#291)', async () => {
-    // #291: pre-fix the dispatcher rejected with hand-full at the
-    // cap, which softlocked players who had no usable paths. New
-    // contract: meditate ALWAYS draws MEDITATE_DRAW; the over-cap
-    // excess (here 2) lands as state.pendingDiscard for the active
-    // player to reconcile via discard ClientActions before end-turn
-    // will advance the seat.
+  it('meditate at HAND_CAP succeeds; cap check defers to end-turn (#503)', async () => {
+    // #291: meditate ALWAYS draws MEDITATE_DRAW (even past HAND_CAP).
+    // #503: pendingDiscard is NOT set immediately on Meditate; the
+    // cap check fires when the player tries to End the turn. End-to-
+    // end test against the events route — proves the wire layer
+    // mirrors the engine reducer's deferred-cap-check arm.
     seedLobby('ABCDEF');
     await callStart('ABCDEF');
 
@@ -296,23 +295,34 @@ describe('multiplayer flow — start → events integration', () => {
       snapshot: { ...original.snapshot, players },
     };
 
-    const res = await callEvent('ABCDEF', {
+    const meditateRes = await callEvent('ABCDEF', {
       kind: 'meditate',
       playerId: 'p1',
     });
-    expect(res.status).toBe(200);
+    expect(meditateRes.status).toBe(200);
 
-    // Hand grew by exactly MEDITATE_DRAW (2) cards; pendingDiscard
-    // pins the over-cap excess.
-    const after = db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1');
-    expect(after?.hand).toHaveLength(8);
+    // Hand grew by exactly MEDITATE_DRAW (2) cards; pendingDiscard NOT
+    // set yet (the cap check defers to end-turn).
+    const afterMeditate = db.game_states[0]?.snapshot.players.find(
+      (p) => p.id === 'p1',
+    );
+    expect(afterMeditate?.hand).toHaveLength(8);
+    expect(db.game_states[0]?.snapshot.pendingDiscard).toBeUndefined();
+    expect(db.game_events).toHaveLength(1);
+    expect(db.game_events[0]?.event_type).toBe('meditate');
+
+    // Now end-turn — the cap check fires. pendingDiscard pins the
+    // over-cap excess and the seat does NOT advance.
+    const endTurnRes = await callEvent('ABCDEF', {
+      kind: 'end-turn',
+      playerId: 'p1',
+    });
+    expect(endTurnRes.status).toBe(200);
     expect(db.game_states[0]?.snapshot.pendingDiscard).toEqual({
       count: 2,
       requiredBy: 'end-of-turn',
     });
-    // Event row written for the successful meditate.
-    expect(db.game_events).toHaveLength(1);
-    expect(db.game_events[0]?.event_type).toBe('meditate');
+    expect(db.game_states[0]?.snapshot.activePlayerId).toBe('p1');
   });
 
   it('full prep → resolve → react cycle through the events route', async () => {
@@ -607,7 +617,10 @@ describe('multiplayer flow — start → events integration', () => {
     expect(setback.status).toBe(200);
     const after = db.game_states[0]?.snapshot;
     expect(after?.separation).toBe(initialSep + 1);
-    expect(after?.phase).toBe('draw');
+    // #502: post-#502 accept-setback lands in `'end'` (the discrete
+    // `'draw'` phase has been folded into the `end-turn` start-of-turn
+    // refill).
+    expect(after?.phase).toBe('end');
     expect(after?.challengeSubPhase).toBeUndefined();
     expect(after?.lastOutcome).toBeUndefined();
   });

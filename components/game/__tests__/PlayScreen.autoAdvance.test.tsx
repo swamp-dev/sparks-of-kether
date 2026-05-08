@@ -11,13 +11,20 @@ import { seededRng } from '@/engine/rng';
  * which is friction in a single-device hot-seat session.
  *
  * The contract:
- *   1. Phase enters `'end'` (e.g. via meditate or draw).
+ *   1. Phase enters `'end'` (e.g. via Move into a no-challenge or
+ *      already-cleared Sefirah, or via react-continue / accept-setback).
  *   2. After AUTO_ADVANCE_DELAY_MS, `turn.endTurn()` fires
  *      automatically — `data-active-player` updates to the next
  *      player's id.
  *   3. The auto-advance is cancellable mid-flight (user clicks
  *      End Turn early; the explicit click and the timer don't
  *      both fire).
+ *
+ * #503: pre-#503 Meditate transitioned to `'end'` and the timer was
+ * suppressed (the meditator needed time to read the cards they just
+ * drew). Post-#503 Meditate stays in `'move'` so the suppression
+ * gate isn't reachable; landing in `'end'` always means a
+ * Move/Challenge has resolved and auto-advance is appropriate.
  *
  * We use `vi.useFakeTimers` so the delay is deterministic.
  */
@@ -30,21 +37,18 @@ describe('PlayScreen — auto-advance turn', () => {
     vi.useRealTimers();
   });
 
-  it('auto-advances to the next player after the end-phase delay (Move + Draw)', () => {
-    // Move + Draw is the canonical flow that auto-advances per #131 —
-    // the player has already seen the move land and the draw resolve,
-    // so the timer flips the seat without further input.
-    //
-    // #292: Meditate-into-end is a separate case which deliberately does
-    // NOT auto-advance (see the "does NOT auto-advance after Meditate"
-    // test below); the discriminator is `state.lastAction`.
+  it('auto-advances to the next player after the end-phase delay (Move into already-cleared Sefirah)', () => {
+    // #502: Move into an already-cleared Sefirah lands directly in
+    // `'end'` (pre-#502 it landed in `'draw'` and required a separate
+    // Draw click). The auto-advance timer flips the seat after the
+    // delay.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = base.players.findIndex(
       (p) => p.id === base.activePlayerId,
     );
     // Pre-clear yesod for the active player so move via path 32
     // (Malkuth↔Yesod, "The World"/arcanum 21) skips challenge phase
-    // and lands directly in 'draw'. Card 21 in hand to play the path.
+    // and lands directly in 'end'. Card 21 in hand to play the path.
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? {
@@ -77,15 +81,6 @@ describe('PlayScreen — auto-advance turn', () => {
     act(() => {
       fireEvent.click(path32);
     });
-    expect(main?.getAttribute('data-phase')).toBe('draw');
-
-    // Click Draw → 'end' phase.
-    const drawBtn = container.querySelector(
-      '[data-action="draw"]',
-    ) as HTMLButtonElement;
-    act(() => {
-      fireEvent.click(drawBtn);
-    });
     expect(main?.getAttribute('data-phase')).toBe('end');
 
     // Pre-timer: active player unchanged.
@@ -100,13 +95,12 @@ describe('PlayScreen — auto-advance turn', () => {
     expect(newActive).not.toBe(initialActive);
   });
 
-  it('does NOT auto-advance after Meditate; End Turn button stays visible until clicked (#292)', () => {
-    // #292: revisits the #131 auto-advance. Meditate draws cards and
-    // lands directly in `'end'` — auto-advancing flips the active
-    // player before the meditator can see the cards they just drew.
-    // The fix: the reducer stamps `lastAction = 'meditate'` and the
-    // auto-advance `useEffect` skips this case. The Move + Draw path
-    // (lastAction === 'move-draw') still auto-advances per #131.
+  it('Meditate stays in move; the player can still play a card or click End turn (#503)', () => {
+    // #503: Meditate no longer transitions to `'end'`. The player
+    // remains in `'move'` so the freshly drawn cards are usable
+    // immediately. An End turn affordance is still reachable from
+    // `'move'` when `meditatedThisTurn === true` (the player may
+    // choose not to play one of the new cards).
     const state = makeFullGame({ playerCount: 2, seed: 1 });
     const { container } = render(
       <PlayScreen initialState={state} rng={seededRng(2)} />,
@@ -120,17 +114,19 @@ describe('PlayScreen — auto-advance turn', () => {
         container.querySelector('[data-action="meditate"]') as HTMLButtonElement,
       );
     });
-    expect(main?.getAttribute('data-phase')).toBe('end');
+    // Phase stays in move post-Meditate.
+    expect(main?.getAttribute('data-phase')).toBe('move');
 
-    // Advance past the auto-advance window. Active player should NOT
-    // have rotated.
+    // Advance past where the auto-advance window would have been
+    // (pre-#503). Active player should NOT have rotated — Meditate
+    // doesn't enter `'end'`, so the timer never arms.
     act(() => {
       vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 3);
     });
     expect(main?.getAttribute('data-active-player')).toBe(initialActive);
-    expect(main?.getAttribute('data-phase')).toBe('end');
+    expect(main?.getAttribute('data-phase')).toBe('move');
 
-    // The End Turn button is still visible and clickable.
+    // Post-Meditate the End Turn button is reachable from `'move'`.
     const endBtn = container.querySelector(
       '[data-action="end-turn"]',
     ) as HTMLButtonElement;
@@ -143,9 +139,9 @@ describe('PlayScreen — auto-advance turn', () => {
   });
 
   it('clicking End Turn manually cancels the pending auto-advance (no double-fire)', () => {
-    // Use Move + Draw to reach 'end' (auto-advancing flow). #292
-    // changes Meditate so it does NOT arm the timer; this test
-    // remains about the cancellation of the timer that DOES arm.
+    // Move into an already-cleared Sefirah lands in `'end'` directly
+    // (#502) and arms the auto-advance timer. Clicking End Turn before
+    // the timer fires must rotate the seat exactly once.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = base.players.findIndex(
       (p) => p.id === base.activePlayerId,
@@ -180,12 +176,7 @@ describe('PlayScreen — auto-advance turn', () => {
     act(() => {
       fireEvent.click(path32);
     });
-    const drawBtn = container.querySelector(
-      '[data-action="draw"]',
-    ) as HTMLButtonElement;
-    act(() => {
-      fireEvent.click(drawBtn);
-    });
+    expect(main?.getAttribute('data-phase')).toBe('end');
 
     // Click End Turn before the timer fires.
     const endBtn = container.querySelector(
