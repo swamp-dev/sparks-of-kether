@@ -102,9 +102,7 @@ async function awaitSignPicker(page: Page): Promise<void> {
 async function walkToPlayScreen(page: Page): Promise<void> {
   // P1 sign → P1 ritual → P1 summary continue.
   await pickAriesAtSignPicker(page);
-  await page
-    .getByRole('button', { name: /skip.*roll all remaining/i })
-    .click();
+  await page.locator('[data-action="skip-ceremony"]').click();
   await page.getByRole('button', { name: /^continue$/i }).click();
 
   // P2 sign: Aries is taken; #370 makes the picker open on the first
@@ -118,9 +116,7 @@ async function walkToPlayScreen(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^Confirm Leo$/ }).click();
 
   // P2 ritual → P2 summary continue.
-  await page
-    .getByRole('button', { name: /skip.*roll all remaining/i })
-    .click();
+  await page.locator('[data-action="skip-ceremony"]').click();
   await page.getByRole('button', { name: /^continue$/i }).click();
 
   // Lobby: click Begin to land on the live PlayScreen.
