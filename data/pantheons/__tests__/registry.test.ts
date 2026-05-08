@@ -141,20 +141,31 @@ describe('pantheons registry (#547)', () => {
       }
     });
 
-    it('matrix slots fall back to greco-roman content until B3/B4/B5 author Egyptian copy (AC #4)', () => {
-      // Phase B2 ships ONLY names + codex avatar. Verdict / blessing /
-      // framing copy uses the greco-roman matrices as a temporary
-      // fallback so the registry shape stays valid. B3 (#553),
-      // B4 (#554), B5 (#555) replace these with Egyptian-voiced
-      // matrices. Until then a developer who flips
-      // `localStorage.sok.pantheonId = 'egyptian'` sees Egyptian
-      // names but Greek-flavoured verdict text — visible to devs,
-      // not user-facing because the toggle UI (C1) isn't wired yet.
+    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B3 PR 1)', () => {
+      // B2 (#552) shipped names + codex avatar. B3 (#553 PR 1) ships
+      // the solar quartet of the verdict matrix — `sefirahVerdicts`
+      // is now Egyptian-authored, not the greco-roman fallback. The
+      // remaining slots (`sefirahPlayerResponses`, `sefirahFraming`,
+      // `sefirahFramingPlaceholder`, `sefirahBlessings`) continue to
+      // use the greco-roman matrices until their authoring tickets
+      // land (#553 PR 2 / #553 follow-up / #554 / #555).
       expect(p.sefirahFraming).toBe(sefirahFraming);
       expect(p.sefirahFramingPlaceholder).toBe(grecoRoman.sefirahFramingPlaceholder);
-      expect(p.sefirahVerdicts).toBe(sefirahVerdicts);
       expect(p.sefirahPlayerResponses).toBe(grecoRoman.sefirahPlayerResponses);
       expect(p.sefirahBlessings).toBe(sefirahBlessings);
+    });
+
+    it('sefirahVerdicts is now the hybrid Egyptian matrix (#553 PR 1)', () => {
+      // Solar quartet — Egyptian-authored cells; the matrix object is
+      // distinct from the greco-roman one. Contemplative cluster cells
+      // still reference greco-roman until #553 PR 2.
+      expect(p.sefirahVerdicts).not.toBe(grecoRoman.sefirahVerdicts);
+      // Spot-check one Egyptian-authored cell — a Ra (chesed) verdict
+      // line should mention solar/throne imagery; a greco-roman
+      // Zeus/chesed line would not. Loose canary; full anchor checks
+      // live in `data/pantheons/egyptian/__tests__/verdicts.test.ts`.
+      const raAriesPass = p.sefirahVerdicts.chesed.aries.pass.join(' ').toLowerCase();
+      expect(raAriesPass).toMatch(/throne|sky|sun|noon|kingdom|crown|light/);
     });
   });
 });
