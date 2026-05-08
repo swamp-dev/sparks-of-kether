@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Visual regression — pixel-diff every public route at three viewport
@@ -43,6 +43,40 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
+// Walk the full setup pipeline (#255 sign-picker → ritual → lobby →
+// PlayScreen) so the `play-mid-game` baseline lands on the live play
+// surface, not the default ZodiacSignPicker (#492). Picked signs are
+// stable (Aries / Leo) and the ritual is skipped via the
+// "skip — roll all remaining" button so the walker is deterministic.
+// Mirrors `walkToPlayScreen` in `e2e/screenshots.review.spec.ts`;
+// kept inline here rather than extracted because the screenshots
+// review spec is dev-tooling-only (gated on `PLAYWRIGHT_RUN_REVIEW=1`)
+// and shouldn't be imported from a CI-gated spec.
+async function walkToPlayScreen(page: Page): Promise<void> {
+  // P1 sign → P1 ritual → P1 summary continue.
+  await page.locator('[data-zodiac-sign-picker]').waitFor();
+  await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
+  await page.locator('[data-action="skip-ceremony"]').click();
+  await page.getByRole('button', { name: /^continue$/i }).click();
+
+  // P2 sign: Aries taken; #370 opens picker on first available
+  // (taurus). Three Next clicks reach leo: taurus → gemini → cancer → leo.
+  await page.locator('[data-zodiac-sign-picker]').waitFor();
+  const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
+  for (let i = 0; i < 3; i++) {
+    await nextArrow.click();
+  }
+  await page.getByRole('button', { name: /^Confirm Leo$/ }).click();
+
+  // P2 ritual → P2 summary continue.
+  await page.locator('[data-action="skip-ceremony"]').click();
+  await page.getByRole('button', { name: /^continue$/i }).click();
+
+  // Lobby: click Begin to land on the live PlayScreen.
+  await page.getByRole('button', { name: /^begin$/i }).click();
+  await page.waitForLoadState('networkidle');
+}
+
 interface Route {
   readonly path: string;
   readonly slug: string;
@@ -54,12 +88,35 @@ interface Route {
    * page, not the framework default".
    */
   readonly expectedStatus?: number;
+  /**
+   * Optional setup driver run after `goto` and before capture. Used
+   * to walk a route past its default landing into a more meaningful
+   * state (e.g. mid-game PlayScreen for #492 — the default `/play`
+   * route lands on the ZodiacSignPicker; without a walker the
+   * baseline never sees the live play surface).
+   */
+  readonly setup?: (page: Page) => Promise<void>;
 }
 
 const ROUTES: readonly Route[] = [
   { path: '/', slug: 'home' },
   { path: '/about', slug: 'about' },
   { path: '/play', slug: 'play' },
+  // /play after the full setup pipeline → live PlayScreen (#492).
+  // The default `play` baseline above lands on the ZodiacSignPicker;
+  // this entry walks through to the live play surface so a regression
+  // that breaks the `lg+` PlayScreen layout (e.g. reverting #411's
+  // `lg:gap-3` to `gap-3`) actually trips a CI gate.
+  //
+  // `?seed=1492` pins the play-stream RNG (per `lib/play-seed.ts`)
+  // so the StatSheet stat values + Hand card draw are deterministic
+  // run-to-run. Without the query param `Date.now()` provides the
+  // seed and every CI run produces a different baseline.
+  {
+    path: '/play?seed=1492',
+    slug: 'play-mid-game',
+    setup: walkToPlayScreen,
+  },
   { path: '/tokens', slug: 'tokens' },
   { path: '/demo/cards', slug: 'demo-cards' },
   { path: '/demo/challenge', slug: 'demo-challenge' },
@@ -122,6 +179,16 @@ for (const viewport of VIEWPORTS) {
             response?.status(),
             `expected a 2xx response from ${route.path} (${viewport.name})`,
           ).toBeLessThan(400);
+        }
+
+        if (route.setup) {
+          // The outer `waitForLoadState('networkidle')` above only
+          // covers the initial `goto` landing page. Setup walkers
+          // drive React-state transitions (no second navigation), so
+          // any post-walker stabilization must happen inside the
+          // walker itself (e.g. `walkToPlayScreen` ends with its own
+          // `waitForLoadState('networkidle')`).
+          await route.setup(page);
         }
 
         await expect(page).toHaveScreenshot(
