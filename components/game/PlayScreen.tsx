@@ -103,6 +103,15 @@ export function PlayScreen({
   // still keeps the Tree lit. Across all phases except `'challenge'` —
   // the Tree should not compete with movement-resolution animation.
   const [hoveredCard, setHoveredCard] = useState<number | undefined>(undefined);
+  // #412: arcanum currently being dragged from the hand. Drives the
+  // Tree's `highlightedCard` while the gesture is live (so the
+  // matching path lights up under the finger before the drop
+  // commits). Cleared on drop or cancel.
+  const [draggingCard, setDraggingCard] = useState<number | undefined>(undefined);
+  // #412: aria-live announcement for invalid drag-to-play attempts.
+  // Sighted players see the card snap back; AT users hear it. Empty
+  // string between announcements so re-attempts re-announce.
+  const [dragAnnouncement, setDragAnnouncement] = useState('');
   // #405: clear both card-state values when the turn rotates. Without
   // this, the new player's Tree would open with a stale highlight from
   // the previous player's hovered/selected card and self-heal only on
@@ -110,6 +119,7 @@ export function PlayScreen({
   useEffect(() => {
     setSelectedCard(undefined);
     setHoveredCard(undefined);
+    setDraggingCard(undefined);
   }, [turn.activePlayerIndex]);
   // #384: in-game Sefirah info popover. The Tree's `onSefirahClick`
   // sets this; the popover renders an overlay with name / Hebrew /
@@ -330,6 +340,69 @@ export function PlayScreen({
     }
   };
 
+  // #412: drag-to-play drop handler. Hit-tests the pointer-up
+  // coordinates against the Tree's `[data-drop-zone="path-N"]`
+  // elements (set in TreeBoard.tsx on each path's wide hit-line).
+  // Valid drop fires `turn.move`; invalid drop sets an aria-live
+  // announcement so AT users hear the rejection.
+  //
+  // Design note: this dispatches via `turn.move` directly rather
+  // than going through `selectedCard` + `handlePathClick`. Drag-to-
+  // play is its own commit gesture — bypassing selection state
+  // means a successful drop doesn't leave a stale `selectedCard`
+  // that the next click-then-click flow would have to clear.
+  const handleCardDrop = (
+    arcanum: number,
+    position: { readonly x: number; readonly y: number },
+  ): void => {
+    setDraggingCard(undefined);
+    if (!activePlayer) return;
+    if (turn.phase !== 'move') {
+      setDragAnnouncement('');
+      // Two ticks to ensure the empty string is committed before the
+      // new value, so re-attempts re-announce even when the message
+      // is identical to the previous one.
+      queueMicrotask(() =>
+        setDragAnnouncement('You can only play a card during the move phase.'),
+      );
+      return;
+    }
+    const target = document.elementFromPoint(position.x, position.y);
+    const dropZone = target?.closest('[data-drop-zone]');
+    const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
+    const pathMatch = /^path-(\d+)$/.exec(slug);
+    if (!pathMatch || pathMatch[1] === undefined) {
+      setDragAnnouncement('');
+      queueMicrotask(() =>
+        setDragAnnouncement(
+          'No path under the pointer. Drag onto a Tree path to play.',
+        ),
+      );
+      return;
+    }
+    const pathNumber = Number(pathMatch[1]);
+    const path = tryPathByNumber(pathNumber);
+    if (!path || path.arcanumNumber !== arcanum) {
+      setDragAnnouncement('');
+      queueMicrotask(() =>
+        setDragAnnouncement('This card cannot be played on that path.'),
+      );
+      return;
+    }
+    const result = turn.move(pathNumber);
+    if (!result.ok) {
+      setDragAnnouncement('');
+      queueMicrotask(() =>
+        setDragAnnouncement(
+          'That move is not available right now. Try a different path.',
+        ),
+      );
+      return;
+    }
+    setSelectedCard(undefined);
+    setDragAnnouncement('');
+  };
+
   const handleChallengeResolved = (resolution: ChallengeResolution): void => {
     if (!activePlayer) return;
     const ctx = challengeContext;
@@ -449,7 +522,12 @@ export function PlayScreen({
             // drawn card.
             {...((): { highlightedCard?: number } => {
               if (turn.phase === 'challenge') return {};
-              const effective = hoveredCard ?? selectedCard;
+              // #412: drag wins over hover wins over select. While
+              // a card is mid-drag the pointer has left the card
+              // (it's hovering over the Tree), so `hoveredCard` is
+              // undefined; without this precedence the path-light
+              // would drop the moment the gesture leaves the hand.
+              const effective = draggingCard ?? hoveredCard ?? selectedCard;
               return effective === undefined ? {} : { highlightedCard: effective };
             })()}
             className="w-full"
@@ -524,11 +602,27 @@ export function PlayScreen({
             visible={isHandVisible(turn.state, activePlayer.id, activePlayer.id)}
             onCardSelect={(n) => setSelectedCard(n)}
             onCardHover={(n) => setHoveredCard(n)}
+            // #412: drag-to-play wiring. drag-start lights the path
+            // beneath the gesture; drag-end runs the drop handler;
+            // drag-cancel clears the highlight without dispatching.
+            onCardDragStart={(n) => setDraggingCard(n)}
+            onCardDragEnd={handleCardDrop}
+            onCardDragCancel={() => setDraggingCard(undefined)}
             {...(selectedCard !== undefined ? { selectedArcanum: selectedCard } : {})}
             ariaLabel={`${activePlayer.name}'s hand`}
             className="w-full max-w-xl"
           />
         ) : null}
+        {/* #412: aria-live region for invalid drag-to-play attempts. */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-drag-announcement
+          className="sr-only"
+        >
+          {dragAnnouncement}
+        </div>
       </section>
 
       {/*

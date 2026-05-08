@@ -557,6 +557,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 11 (Aleph) — Arcanum 0, between Crown and Wisdom
         </title>
         <line
+          data-drop-zone="path-11"
           data-path-hit="11"
           stroke="transparent"
           stroke-linecap="butt"
@@ -589,6 +590,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 12 (Beth) — Arcanum 1, between Crown and Understanding
         </title>
         <line
+          data-drop-zone="path-12"
           data-path-hit="12"
           stroke="transparent"
           stroke-linecap="butt"
@@ -621,6 +623,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 13 (Gimel) — Arcanum 2, between Crown and Beauty
         </title>
         <line
+          data-drop-zone="path-13"
           data-path-hit="13"
           stroke="transparent"
           stroke-linecap="butt"
@@ -653,6 +656,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 14 (Daleth) — Arcanum 3, between Wisdom and Understanding
         </title>
         <line
+          data-drop-zone="path-14"
           data-path-hit="14"
           stroke="transparent"
           stroke-linecap="butt"
@@ -685,6 +689,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 15 (He) — Arcanum 4, between Wisdom and Beauty
         </title>
         <line
+          data-drop-zone="path-15"
           data-path-hit="15"
           stroke="transparent"
           stroke-linecap="butt"
@@ -717,6 +722,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 16 (Vav) — Arcanum 5, between Wisdom and Mercy
         </title>
         <line
+          data-drop-zone="path-16"
           data-path-hit="16"
           stroke="transparent"
           stroke-linecap="butt"
@@ -749,6 +755,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 17 (Zayin) — Arcanum 6, between Understanding and Beauty
         </title>
         <line
+          data-drop-zone="path-17"
           data-path-hit="17"
           stroke="transparent"
           stroke-linecap="butt"
@@ -781,6 +788,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 18 (Cheth) — Arcanum 7, between Understanding and Severity
         </title>
         <line
+          data-drop-zone="path-18"
           data-path-hit="18"
           stroke="transparent"
           stroke-linecap="butt"
@@ -813,6 +821,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 19 (Teth) — Arcanum 8, between Mercy and Severity
         </title>
         <line
+          data-drop-zone="path-19"
           data-path-hit="19"
           stroke="transparent"
           stroke-linecap="butt"
@@ -845,6 +854,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 20 (Yod) — Arcanum 9, between Mercy and Beauty
         </title>
         <line
+          data-drop-zone="path-20"
           data-path-hit="20"
           stroke="transparent"
           stroke-linecap="butt"
@@ -877,6 +887,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 21 (Kaph) — Arcanum 10, between Mercy and Victory
         </title>
         <line
+          data-drop-zone="path-21"
           data-path-hit="21"
           stroke="transparent"
           stroke-linecap="butt"
@@ -909,6 +920,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 22 (Lamed) — Arcanum 11, between Severity and Beauty
         </title>
         <line
+          data-drop-zone="path-22"
           data-path-hit="22"
           stroke="transparent"
           stroke-linecap="butt"
@@ -941,6 +953,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 23 (Mem) — Arcanum 12, between Severity and Splendor
         </title>
         <line
+          data-drop-zone="path-23"
           data-path-hit="23"
           stroke="transparent"
           stroke-linecap="butt"
@@ -973,6 +986,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 24 (Nun) — Arcanum 13, between Beauty and Victory
         </title>
         <line
+          data-drop-zone="path-24"
           data-path-hit="24"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1005,6 +1019,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 25 (Samekh) — Arcanum 14, between Beauty and Foundation
         </title>
         <line
+          data-drop-zone="path-25"
           data-path-hit="25"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1037,6 +1052,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 26 (Ayin) — Arcanum 15, between Beauty and Splendor
         </title>
         <line
+          data-drop-zone="path-26"
           data-path-hit="26"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1069,6 +1085,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 27 (Peh) — Arcanum 16, between Victory and Splendor
         </title>
         <line
+          data-drop-zone="path-27"
           data-path-hit="27"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1101,6 +1118,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 28 (Tzaddi) — Arcanum 17, between Victory and Foundation
         </title>
         <line
+          data-drop-zone="path-28"
           data-path-hit="28"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1133,6 +1151,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 29 (Qoph) — Arcanum 18, between Victory and Kingdom
         </title>
         <line
+          data-drop-zone="path-29"
           data-path-hit="29"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1165,6 +1184,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 30 (Resh) — Arcanum 19, between Splendor and Foundation
         </title>
         <line
+          data-drop-zone="path-30"
           data-path-hit="30"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1197,6 +1217,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 31 (Shin) — Arcanum 20, between Splendor and Kingdom
         </title>
         <line
+          data-drop-zone="path-31"
           data-path-hit="31"
           stroke="transparent"
           stroke-linecap="butt"
@@ -1229,6 +1250,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
           Path 32 (Tav) — Arcanum 21, between Foundation and Kingdom
         </title>
         <line
+          data-drop-zone="path-32"
           data-path-hit="32"
           stroke="transparent"
           stroke-linecap="butt"

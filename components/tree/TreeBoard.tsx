@@ -433,6 +433,16 @@ export function TreeBoard({
                 */}
                 <line
                   data-path-hit={path.number}
+                  // #412 — drag-to-play drop zone. PlayScreen's drop
+                  // handler runs `document.elementFromPoint(x, y)` on
+                  // the pointer-up coordinates and walks up to the
+                  // nearest `[data-drop-zone]`. The wide hit-line
+                  // (PATH_HIT_WIDTH=28) is the natural fingertip
+                  // target — it already covers WCAG 2.5.5 minimum
+                  // tap-target sizing and lives strictly between the
+                  // node circles. Click-then-click play is unchanged;
+                  // both flows dispatch via PlayScreen.handlePathClick.
+                  data-drop-zone={`path-${path.number}`}
                   x1={hit.x1}
                   y1={hit.y1}
                   x2={hit.x2}

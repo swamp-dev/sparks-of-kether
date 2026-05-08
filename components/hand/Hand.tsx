@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { ArcanumCard } from '@/components/cards/ArcanumCard';
+import { useCardDrag } from '@/lib/hooks/useCardDrag';
 import { useReduceMotion } from '@/lib/hooks/useReduceMotion';
 import { CardBack } from './CardBack';
 
@@ -51,6 +52,31 @@ interface HandProps {
    * to expand. (#132)
    */
   readonly defaultOpen?: boolean;
+  /**
+   * #412 — fires when a drag gesture starts on a card. Pointer
+   * movement crossed the threshold; the consumer is expected to thread
+   * the arcanum into the Tree's `highlightedCard` so paths light up
+   * during the drag.
+   */
+  readonly onCardDragStart?: (arcanumNumber: number) => void;
+  /**
+   * #412 — fires when a drag gesture ends. `position` carries the
+   * pointer-up coordinates in client space; the consumer hit-tests
+   * via `document.elementFromPoint` to find a `data-drop-zone` target
+   * (Tree path or discard pile) and dispatches the play. If no valid
+   * target is under the pointer, the consumer should announce "this
+   * card can't be played there" via aria-live.
+   */
+  readonly onCardDragEnd?: (
+    arcanumNumber: number,
+    position: { readonly x: number; readonly y: number },
+  ) => void;
+  /**
+   * #412 — fires when a drag gesture is cancelled by the OS (system
+   * gesture, scroll capture, touch reservation). The consumer should
+   * clear any drag-related visual state without dispatching the play.
+   */
+  readonly onCardDragCancel?: () => void;
   readonly className?: string;
 }
 
@@ -107,10 +133,70 @@ export function Hand({
   selectedArcanum,
   ariaLabel,
   defaultOpen = true,
+  onCardDragStart,
+  onCardDragEnd,
+  onCardDragCancel,
   className,
 }: HandProps): JSX.Element {
   const [focusIndex, setFocusIndex] = useState(0);
   const [open, setOpen] = useState(defaultOpen);
+  // #412: arcanum currently being dragged (after threshold crossed).
+  // Drives the per-card visual lift and lets the rendered card
+  // suppress its onMouseLeave-clear of `hoveredCard` while the
+  // gesture is still live (the pointer leaves the card on the way
+  // to the Tree, but we don't want the path-light to drop until the
+  // drop fires).
+  const [draggingArcanum, setDraggingArcanum] = useState<number | undefined>(
+    undefined,
+  );
+  // #412: when a drag completes (drop or cancel), the browser still
+  // dispatches the synthesized `click` event on the originating
+  // button. Without suppression, that click would call
+  // `onCardSelect(arcanum)` immediately after the drop already
+  // committed the play — double dispatch. The ref flag is set on
+  // drop / cancel and cleared by the next React onClick handler;
+  // taps that never entered the dragging state never set the flag,
+  // so the existing click-to-select path is unchanged.
+  const suppressNextClickRef = useRef(false);
+  const cardDrag = useCardDrag({
+    onEffect: (effect) => {
+      switch (effect.kind) {
+        case 'drag-start':
+          setDraggingArcanum(effect.arcanum);
+          if (onCardDragStart) onCardDragStart(effect.arcanum);
+          break;
+        case 'drag-move':
+          // Pure positional update — no React state needed; the
+          // consumer reads pointer position on drop. (A future
+          // ticket may surface live-tracking visuals — drag-move
+          // is the hook for that.)
+          break;
+        case 'drop':
+          suppressNextClickRef.current = true;
+          setDraggingArcanum(undefined);
+          if (onCardDragEnd)
+            onCardDragEnd(effect.arcanum, { x: effect.x, y: effect.y });
+          break;
+        case 'click':
+          // No-op here. React onClick handles the click-to-select
+          // path so existing tests using `fireEvent.click` keep
+          // working and so keyboard Enter (which fires native click
+          // on a button) routes through the same handler.
+          break;
+        case 'drag-cancel':
+          // No `suppressNextClickRef.current = true` here. Browsers
+          // do NOT synthesize a click event after `pointercancel`
+          // (only after a clean `pointerup`), so there's no click
+          // to suppress. Setting the flag would silently eat the
+          // user's next legitimate tap — a real bug on mobile when
+          // iOS scroll-capture cancels a tentative press before the
+          // drag threshold.
+          setDraggingArcanum(undefined);
+          if (onCardDragCancel) onCardDragCancel();
+          break;
+      }
+    },
+  });
   // #463: hover/focus magnification state. `hoveredIndex` is mouse-driven,
   // `focusedIndex` is keyboard-driven. They're tracked separately so a
   // mouse that drifts off doesn't kill the magnify on a keyboard-focused
@@ -279,10 +365,27 @@ export function Hand({
             : 0;
         const interactive = visible && onCardSelect !== undefined;
         const isSelected = selectedArcanum !== undefined && selectedArcanum === arcanum;
+        // #412: dragging the card visually lifts it. The same magnify
+        // primitive used for hover/focus drives the lift — keeping
+        // one transform path means the dock-magnify and drag-lift
+        // never fight for the transform property.
+        const isDragging = draggingArcanum !== undefined && draggingArcanum === arcanum;
+        const isMagnified = activeIndex === i || isDragging;
         const handleClick = interactive
-          ? () => onCardSelect(arcanum)
+          ? (): void => {
+              // #412 suppression: a drop or cancel just fired; skip
+              // the synthesized click that the browser still
+              // dispatches after pointer-up. The flag is cleared on
+              // every click attempt regardless of whether it was
+              // suppressed, so a subsequent legitimate tap is
+              // unaffected.
+              if (suppressNextClickRef.current) {
+                suppressNextClickRef.current = false;
+                return;
+              }
+              onCardSelect(arcanum);
+            }
           : undefined;
-        const isMagnified = activeIndex === i;
         const offsetFromActive =
           activeIndex !== undefined ? i - activeIndex : null;
         const isImmediateNeighbour =
@@ -401,9 +504,25 @@ export function Hand({
             data-arcanum={visible ? arcanum : undefined}
             data-selected={isSelected ? 'true' : 'false'}
             data-magnified={isMagnified ? 'true' : 'false'}
+            data-dragging={isDragging ? 'true' : 'false'}
             disabled={htmlDisabled}
             aria-disabled={ariaDisabled}
+            // #412 — pointer events drive drag-to-play. The native
+            // click event still fires after pointer-up (one of the
+            // browser's mouse-event compatibility layers), and is
+            // routed through React's onClick to onCardSelect — same
+            // path the keyboard Enter / Space activation uses, so
+            // tap and keyboard share one click site. Drag completion
+            // sets `suppressNextClickRef`; the onClick handler skips
+            // the post-drop synthesized click on its first
+            // invocation, then resets.
             onClick={handleClick}
+            onPointerDown={(e) => {
+              if (interactive) cardDrag.handlers.onPointerDown(e, arcanum);
+            }}
+            onPointerMove={cardDrag.handlers.onPointerMove}
+            onPointerUp={cardDrag.handlers.onPointerUp}
+            onPointerCancel={cardDrag.handlers.onPointerCancel}
             onMouseEnter={handleHoverEnter}
             onMouseLeave={handleHoverLeave}
             onFocus={handleFocusIn}
