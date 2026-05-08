@@ -77,6 +77,7 @@ under `public/audio/` as **CC0 / public domain**.
 | File | Track program | Synthesis recipe (summary) |
 |---|---|---|
 | `lobby.mp3` / `lobby.ogg` | [`scripts/music/tracks/lobby.ts`](../../scripts/music/tracks/lobby.ts) | Two detuned saws @ A2 + LFO-modulated lowpass + sparse FM bells in {A5, C♯6, E6, A6} + Schroeder reverb. 120 s loop with 6 s head-into-tail crossfade. |
+| `encounter-yesod.mp3` / `encounter-yesod.ogg` | [`scripts/music/tracks/encounter-yesod.ts`](../../scripts/music/tracks/encounter-yesod.ts) | Detuned saws + sub-sine @ D2 + LFO-modulated lowpass + AM-pulsed sine triad on D-F-A around D5/F5/A5 + sparse Karplus-Strong drops at A5/D6 + long Schroeder reverb (6 s tail, 45 % wet). 36 s loop with 3 s head-into-tail crossfade. Vibe: violet, dreams, subconscious, intuition. |
 
 ### Rebuilding tracks
 

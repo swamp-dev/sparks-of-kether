@@ -20,8 +20,9 @@ import { encodeWavToMp3AndOgg, publicAudioDir } from './lib/encode';
 import { runQa } from './lib/qa';
 import { encodeWav } from './lib/wav';
 import { lobby, type TrackManifest } from './tracks/lobby';
+import { encounterYesod } from './tracks/encounter-yesod';
 
-const TRACKS: TrackManifest[] = [lobby];
+const TRACKS: TrackManifest[] = [lobby, encounterYesod];
 
 async function main(): Promise<void> {
   const arg = process.argv[2];
