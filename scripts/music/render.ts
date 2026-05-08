@@ -24,8 +24,30 @@ import { encounterYesod } from './tracks/encounter-yesod';
 import { play } from './tracks/play';
 import { encounter } from './tracks/encounter';
 import { blessing } from './tracks/blessing';
+import { encounterKether } from './tracks/encounter-kether';
+import { encounterChokmah } from './tracks/encounter-chokmah';
+import { encounterBinah } from './tracks/encounter-binah';
+import { encounterChesed } from './tracks/encounter-chesed';
+import { encounterGevurah } from './tracks/encounter-gevurah';
+import { encounterTiferet } from './tracks/encounter-tiferet';
+import { encounterNetzach } from './tracks/encounter-netzach';
+import { encounterHod } from './tracks/encounter-hod';
 
-const TRACKS: TrackManifest[] = [lobby, encounterYesod, play, encounter, blessing];
+const TRACKS: TrackManifest[] = [
+  lobby,
+  encounterYesod,
+  play,
+  encounter,
+  blessing,
+  encounterKether,
+  encounterChokmah,
+  encounterBinah,
+  encounterChesed,
+  encounterGevurah,
+  encounterTiferet,
+  encounterNetzach,
+  encounterHod,
+];
 
 async function main(): Promise<void> {
   const arg = process.argv[2];

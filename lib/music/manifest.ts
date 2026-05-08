@@ -20,7 +20,16 @@
 import type { SefirahKey } from '@/data/types';
 
 export const ENCOUNTER_TRACKS: Partial<Record<SefirahKey, string>> = {
+  kether: '/audio/encounter-kether.mp3',
+  chokmah: '/audio/encounter-chokmah.mp3',
+  binah: '/audio/encounter-binah.mp3',
+  chesed: '/audio/encounter-chesed.mp3',
+  gevurah: '/audio/encounter-gevurah.mp3',
+  tiferet: '/audio/encounter-tiferet.mp3',
+  netzach: '/audio/encounter-netzach.mp3',
+  hod: '/audio/encounter-hod.mp3',
   yesod: '/audio/encounter-yesod.mp3',
+  // Malkuth has no encounter (setup-only per design/mechanics.md).
 };
 
 export function encounterTrackFor(sefirah: SefirahKey): string {
