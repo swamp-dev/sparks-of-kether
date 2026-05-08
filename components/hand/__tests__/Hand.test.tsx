@@ -16,10 +16,13 @@ function stubMatchMedia(reduce: boolean): () => void {
     matches: query.includes('prefers-reduced-motion: reduce') ? reduce : false,
     media: query,
     onchange: null,
+    // `useReduceMotion` only consumes the modern listener pair
+    // (`addEventListener` / `removeEventListener`). The legacy
+    // `addListener` / `removeListener` MediaQueryList shape was
+    // dropped in #559 — keeping mocks for unused names hid the
+    // contract.
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
     dispatchEvent: vi.fn(),
   }));
   Object.defineProperty(window, 'matchMedia', {
