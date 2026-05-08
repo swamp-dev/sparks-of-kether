@@ -4,6 +4,7 @@ import { Fraunces, Frank_Ruhl_Libre, Inter } from 'next/font/google';
 import { Starfield } from '@/components/atmosphere/Starfield';
 import { Substrate } from '@/components/atmosphere/Substrate';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
+import { PantheonSettingsProvider } from '@/lib/settings/pantheon';
 import './globals.css';
 
 // See `docs/typography.md`. Fraunces carries display copy with optical
@@ -42,7 +43,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             descendant can call `useSound()` / `useSoundEnabled()`.
             The provider holds a single boolean; all real audio work
             (lazy load, throttle) lives in `useSound`. */}
-        <SoundSettingsProvider>{children}</SoundSettingsProvider>
+        <SoundSettingsProvider>
+          {/* #548 / Epic #293 Phase A2: pantheon selection context.
+              Mounted alongside SoundSettings so any descendant can call
+              `usePantheon()` to read the active pantheon. The provider
+              persists the chosen id to localStorage. */}
+          <PantheonSettingsProvider>{children}</PantheonSettingsProvider>
+        </SoundSettingsProvider>
       </body>
     </html>
   );
