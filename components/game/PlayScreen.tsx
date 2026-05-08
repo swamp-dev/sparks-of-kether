@@ -228,16 +228,40 @@ export function PlayScreen({
   // the round-robin witness ritual. Per § 4.1 Kether is a Shell-free
   // zone — no shell-panel render in this branch (the early-return is
   // the gate).
-  if (turn.phase === 'kether' && activePlayer !== undefined) {
-    return (
-      <FinalThresholdScreen
-        state={turn.state}
-        player={activePlayer}
-        turn={turn}
-        mode={roomCode !== undefined ? 'multiplayer' : 'hot-seat'}
-        {...(className !== undefined ? { className } : {})}
-      />
-    );
+  //
+  // Seat derivation (#562): during the witness sub-phase, the rendered
+  // seat must follow `currentWitnessPlayerId` — the engine reducers
+  // rotate `witnessTurnIndex` independently of `activePlayerIndex`,
+  // so pinning to `activePlayer` would freeze the chorus on the first
+  // witness handoff. The close sub-phase exposes a null witness pointer
+  // (`currentWitnessPlayerId` returns null once every queue is empty);
+  // fall back to `activePlayer` then so the closure-window UI still
+  // mounts. Multiplayer's per-client seat derivation (each client
+  // renders for its own selfPlayerId) is deferred to the
+  // `/rooms/[code]/play` route landing per #325.
+  if (turn.phase === 'kether') {
+    const witnessId = turn.currentWitnessPlayerId;
+    const seatPlayer =
+      witnessId !== null
+        ? turn.state.players.find((p) => p.id === witnessId)
+        : // TODO(#325): close sub-phase needs per-player rotation in
+          // hot-seat (each player stages their own Sparks). Falling
+          // back to activePlayer here means only one seat surfaces
+          // their Sparks; multiplayer will solve this via per-client
+          // selfPlayerId rendering when the /rooms/[code]/play route
+          // lands.
+          activePlayer;
+    if (seatPlayer !== undefined) {
+      return (
+        <FinalThresholdScreen
+          state={turn.state}
+          player={seatPlayer}
+          turn={turn}
+          mode={roomCode !== undefined ? 'multiplayer' : 'hot-seat'}
+          {...(className !== undefined ? { className } : {})}
+        />
+      );
+    }
   }
 
   // Pre-ritual hold view: a player has arrived at Kether but the rest
