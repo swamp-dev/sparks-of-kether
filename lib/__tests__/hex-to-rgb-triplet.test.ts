@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hexToRgbTriplet } from '../Lobby';
+import { hexToRgbTriplet } from '../hex-to-rgb-triplet';
 
 describe('hexToRgbTriplet', () => {
   describe('with valid #rrggbb input', () => {
