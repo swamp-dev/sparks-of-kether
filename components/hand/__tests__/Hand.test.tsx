@@ -812,7 +812,7 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     expect(left.style.transform).not.toMatch(/translateX\(/);
   });
 
-  it('omits the transform/box-shadow transition under reduced-motion', () => {
+  it('omits the transform/opacity/box-shadow transition under reduced-motion', () => {
     restoreMatchMedia = stubMatchMedia(true);
     const { container } = render(<Hand hand={[2, 5]} visible={true} />);
     const first = container.querySelector(
