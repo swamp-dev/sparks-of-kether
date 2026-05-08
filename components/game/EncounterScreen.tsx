@@ -32,6 +32,7 @@ import type {
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
+import { avatarArrivesCueFor } from '@/lib/sound/cues';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { D20Button } from './encounter/D20Button';
 import { RevealLine } from './encounter/RevealLine';
@@ -353,6 +354,23 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     firedForOutcomeRef.current = resolvedOutcome;
     playSound(resolvedOutcome.pass ? 'encounter-pass' : 'encounter-fail');
   }, [uiSubPhase, resolvedOutcome, playSound]);
+
+  // #484: avatar-arrival sting. Fire once on first prep mount per
+  // encounter — the moment the avatar's portrait first appears. Does
+  // NOT re-fire on a `react → prep` retry; the avatar is already
+  // present on retry and another sting would feel like a re-greet.
+  // The ref starts `false`, latches `true` after the first fire, and
+  // never resets within this component's lifetime (a fresh encounter
+  // unmounts + remounts EncounterScreen, getting a fresh ref).
+  const avatarStingFiredRef = useRef(false);
+  useEffect(() => {
+    if (avatarStingFiredRef.current) return;
+    if (uiSubPhase !== 'prep') return;
+    const cue = avatarArrivesCueFor(context.sefirah);
+    if (cue === null) return;
+    avatarStingFiredRef.current = true;
+    playSound(cue);
+  }, [uiSubPhase, context.sefirah, playSound]);
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;

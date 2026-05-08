@@ -18,6 +18,9 @@
  * file path fails at compile time.
  */
 
+import type { SefirahKey } from '@/data/types';
+import { avatarNames, type EncounterAvatarKey } from '@/data/avatar-names';
+
 export type SoundCue =
   | 'spark-collected'
   | 'illumination-up'
@@ -26,7 +29,16 @@ export type SoundCue =
   | 'shell-banished'
   | 'card-drawn'
   | 'encounter-pass'
-  | 'encounter-fail';
+  | 'encounter-fail'
+  | 'avatar-arrives-athena'
+  | 'avatar-arrives-demeter'
+  | 'avatar-arrives-zeus'
+  | 'avatar-arrives-ares'
+  | 'avatar-arrives-apollo'
+  | 'avatar-arrives-aphrodite'
+  | 'avatar-arrives-hermes'
+  | 'avatar-arrives-selene'
+  | 'avatar-arrives-hestia';
 
 export const CUE_FILES: Readonly<Record<SoundCue, string>> = {
   'spark-collected': '/audio/chime.spark-collected.mp3',
@@ -37,4 +49,34 @@ export const CUE_FILES: Readonly<Record<SoundCue, string>> = {
   'card-drawn': '/audio/flip.card-drawn.mp3',
   'encounter-pass': '/audio/chime.encounter-pass.mp3',
   'encounter-fail': '/audio/tone.encounter-fail.mp3',
+  'avatar-arrives-athena': '/audio/avatar-arrives-athena.mp3',
+  'avatar-arrives-demeter': '/audio/avatar-arrives-demeter.mp3',
+  'avatar-arrives-zeus': '/audio/avatar-arrives-zeus.mp3',
+  'avatar-arrives-ares': '/audio/avatar-arrives-ares.mp3',
+  'avatar-arrives-apollo': '/audio/avatar-arrives-apollo.mp3',
+  'avatar-arrives-aphrodite': '/audio/avatar-arrives-aphrodite.mp3',
+  'avatar-arrives-hermes': '/audio/avatar-arrives-hermes.mp3',
+  'avatar-arrives-selene': '/audio/avatar-arrives-selene.mp3',
+  'avatar-arrives-hestia': '/audio/avatar-arrives-hestia.mp3',
 };
+
+/**
+ * Map a Sefirah key to its avatar's arrival sting cue (#484).
+ *
+ * Each avatar (Athena/Demeter/Zeus/Ares/Apollo/Aphrodite/Hermes/Selene)
+ * has a unique sting that fires when the avatar emerges in the
+ * EncounterScreen prep sub-state. The mapping uses Greek-name-based
+ * cue keys so adding a future avatar pantheon (#293) doesn't require
+ * renaming every per-Sefirah cue.
+ *
+ * Returns `null` for Sefirot without an encounter avatar (Kether is
+ * collective; Malkuth has Hestia as a companion, not an encounter
+ * avatar — though the Hestia sting is wired and available for future
+ * Hestia moments per `design/avatars.md`).
+ */
+export function avatarArrivesCueFor(sefirah: SefirahKey): SoundCue | null {
+  if (sefirah === 'kether') return null;
+  if (sefirah === 'malkuth') return 'avatar-arrives-hestia';
+  const greek = avatarNames[sefirah as EncounterAvatarKey].greek.toLowerCase();
+  return `avatar-arrives-${greek}` as SoundCue;
+}

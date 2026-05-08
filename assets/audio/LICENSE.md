@@ -31,8 +31,20 @@ may use, modify, redistribute, or rebuild them.
 | `flip.card-drawn.mp3` | `card-drawn` | broadband noise pulse, 15 dB/s decay, 0.3 s |
 | `chime.encounter-pass.mp3` | `encounter-pass` | C5 + E5 + G5 chord, slow decay, 0.9 s |
 | `tone.encounter-fail.mp3` | `encounter-fail` | B4 + C5 minor-second cluster, 0.7 s |
+| `avatar-arrives-athena.mp3` | `avatar-arrives-athena` | FM bell A6 + harmonic ping E7, sharp insight, 1.4 s |
+| `avatar-arrives-demeter.mp3` | `avatar-arrives-demeter` | B♭ minor triad saw swell + lowpass + warm reverb, 1.5 s |
+| `avatar-arrives-zeus.mp3` | `avatar-arrives-zeus` | C major detuned-saw burst, regal generous reverb, 1.4 s |
+| `avatar-arrives-ares.mp3` | `avatar-arrives-ares` | F♯3 + C3 tritone FM hits, dry, 1.0 s |
+| `avatar-arrives-apollo.mp3` | `avatar-arrives-apollo` | E major KS harp arp over sustained sine, 1.5 s |
+| `avatar-arrives-aphrodite.mp3` | `avatar-arrives-aphrodite` | G major KS pluck cascade up-and-down, 1.5 s |
+| `avatar-arrives-hermes.mp3` | `avatar-arrives-hermes` | quick FM strike + descending D-minor arpeggio, 1.0 s |
+| `avatar-arrives-selene.mp3` | `avatar-arrives-selene` | dreamy KS pluck D5/A5 + long reverb, 1.5 s |
+| `avatar-arrives-hestia.mp3` | `avatar-arrives-hestia` | C major sine triad swell, warm hearth, 1.5 s |
 
-All files are mono, 22050 Hz, encoded at 32 kbps. Total weight ≤ 40 KB.
+The 8 short SFX cues are mono, 22050 Hz, ~32 kbps (≤ 40 KB combined).
+The 9 avatar stings are stereo synth-ambient, 44100 Hz, libmp3lame
+-q 4 (~96-128 kbps VBR; ≤ 23 KB each, ≤ 140 KB combined). Total
+audio-cue weight stays under 200 KB across both groups.
 
 ## Replacement policy
 
@@ -54,13 +66,16 @@ When a replacement lands, update this file with:
 ## Rebuilding the in-tree cues
 
 ```bash
-bash scripts/generate-audio-cues.sh
+bash scripts/generate-audio-cues.sh   # the original 8 SFX cues
+pnpm sfx:render-stings                # the 9 avatar-arrival stings (#484)
 ```
 
-Requires `ffmpeg` ≥ 4 with `lavfi` enabled. The script is
-deterministic — running it twice on the same machine produces
-byte-identical output, so a developer who wants to inspect or
-modify the recipes can regenerate without Git churn.
+Both pipelines are deterministic — running either one twice on the
+same machine produces byte-identical output, so a developer who
+wants to inspect or modify the recipes can regenerate without Git
+churn. The shell script requires `ffmpeg` ≥ 4 with `lavfi` enabled;
+the stings pipeline shells out to libmp3lame + libvorbis via the
+music-engine encode path.
 
 ---
 
