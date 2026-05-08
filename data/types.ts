@@ -20,6 +20,22 @@ export type SefirahKey =
   | 'yesod'
   | 'malkuth';
 
+/**
+ * The 8 challenge-avatar Sefirot. Excludes Kether (collective Final
+ * Threshold — `design/avatars.md` § 1) and Malkuth (Hestia is a
+ * companion, not an encounter avatar). Lives here rather than in
+ * `data/pantheons/types.ts` because the set of encounter-avatar
+ * Sefirot is pantheon-agnostic — every pantheon's `avatarNames`
+ * is keyed by this same exclusion. Co-locating with `SefirahKey`
+ * also avoids a type-only import cycle: the shim
+ * (`data/avatar-names.ts`) now resolves `EncounterAvatarKey` from
+ * this file rather than from `data/pantheons/types.ts`. The
+ * matrix files (sefirah-framing, sefirah-verdicts, sefirah-twists)
+ * still import via the shim, so their import paths are unchanged;
+ * the shim's redirect is what closes the loop.
+ */
+export type EncounterAvatarKey = Exclude<SefirahKey, 'kether' | 'malkuth'>;
+
 export type StatKey =
   | 'unity'
   | 'insight'
