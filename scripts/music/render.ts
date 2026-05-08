@@ -21,8 +21,11 @@ import { runQa } from './lib/qa';
 import { encodeWav } from './lib/wav';
 import { lobby, type TrackManifest } from './tracks/lobby';
 import { encounterYesod } from './tracks/encounter-yesod';
+import { play } from './tracks/play';
+import { encounter } from './tracks/encounter';
+import { blessing } from './tracks/blessing';
 
-const TRACKS: TrackManifest[] = [lobby, encounterYesod];
+const TRACKS: TrackManifest[] = [lobby, encounterYesod, play, encounter, blessing];
 
 async function main(): Promise<void> {
   const arg = process.argv[2];
