@@ -29,8 +29,8 @@ const setReducedMotion = (reduce: boolean): void => {
     matches: query.includes('prefers-reduced-motion: reduce') ? reduce : false,
     media: query,
     onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     dispatchEvent: () => false,
   }));
 };

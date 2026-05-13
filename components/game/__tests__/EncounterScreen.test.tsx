@@ -911,8 +911,8 @@ describe('EncounterScreen — prefers-reduced-motion respect', () => {
         matches,
         media: query,
         onchange: null,
-        addEventListener: (): void => undefined,
-        removeEventListener: (): void => undefined,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
         dispatchEvent: (): boolean => false,
       } as unknown as MediaQueryList;
     }) as typeof window.matchMedia;
@@ -1514,8 +1514,8 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
           matches,
           media: query,
           onchange: null,
-          addEventListener: (): void => undefined,
-          removeEventListener: (): void => undefined,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
           dispatchEvent: (): boolean => false,
         } as unknown as MediaQueryList;
       }) as typeof window.matchMedia;
