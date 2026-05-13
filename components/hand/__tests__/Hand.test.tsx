@@ -759,6 +759,47 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(middle.style.transition).not.toBe('');
   });
 
+  it('exit transition is cleared one render after mouseLeave when another card becomes active (#558)', () => {
+    // Pair to the persists-for-one-render test above: that test pins
+    // the entry half of the prev-active invariant (transition stays on
+    // the cleanup render so the exit eases). This one pins the exit
+    // half — the transition must NOT linger forever. Once a render
+    // happens where the originally-magnified card is in neither
+    // `inMagnifySet` (no longer active) nor `prevInMagnifySet` (the
+    // previous render's active set has moved on), the inline
+    // transition style should be back to empty so unrelated state
+    // changes don't trigger a phantom animation on stale cards. In
+    // production this is self-correcting, but a regression — e.g. the
+    // post-commit effect tracking prev-active dropping the
+    // `activeIndex === undefined` case — would silently keep stale
+    // transitions around. This test catches that.
+    //
+    // Six-card hand so the originally-magnified card and the newly-
+    // active card are far enough apart that their ±2 magnify
+    // neighbour sets are disjoint. Hovering slot 0 magnifies {0,1,2};
+    // after mouseLeave + mouseEnter on slot 5, the magnify set
+    // becomes {3,4,5} with an empty prev-set (the post-leave render
+    // had no active card). Slot 0 then belongs to neither set, so
+    // its inline transition should be back to empty.
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 18, 21, 0]} visible={true} />,
+    );
+    const slots = container.querySelectorAll(
+      '[data-card-slot]',
+    ) as NodeListOf<HTMLButtonElement>;
+    const first = slots[0];
+    const farLast = slots[5];
+    if (!first || !farLast) throw new Error('expected six slots');
+    fireEvent.mouseEnter(first);
+    expect(first.style.transition).not.toBe('');
+    fireEvent.mouseLeave(first);
+    // Persists-for-one-render contract still holds at this point —
+    // covered by the test above. Now force a fresh render with a
+    // different active card whose magnify set excludes slot 0.
+    fireEvent.mouseEnter(farLast);
+    expect(first.style.transition).toBe('');
+  });
+
   it('focus-visible ring class is present on every slot (load-bearing under reduce-motion)', () => {
     // The keyboard focus indicator must remain visible regardless of
     // motion preference — it's the load-bearing way a keyboard user
