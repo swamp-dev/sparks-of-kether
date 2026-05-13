@@ -4,6 +4,14 @@ import { PlayScreen } from '../PlayScreen';
 import { makeFullGame } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 
+// `Document.elementFromPoint` is declared non-optional in lib.dom.d.ts,
+// so a plain `Document & { elementFromPoint?: ... }` intersection keeps
+// it required — and `delete` rejects required properties under strict
+// mode. Omit first, then re-add as optional.
+type DocWithEFP = Omit<Document, 'elementFromPoint'> & {
+  elementFromPoint?: (x: number, y: number) => Element | null;
+};
+
 /**
  * jsdom doesn't implement `document.elementFromPoint`. The drop
  * handler in PlayScreen calls it to find the topmost element under
@@ -20,9 +28,6 @@ async function performDragWithDropTarget(
   cardBtn: HTMLElement,
   dropTarget: Element | null,
 ): Promise<void> {
-  type DocWithEFP = Document & {
-    elementFromPoint?: (x: number, y: number) => Element | null;
-  };
   const docWithEFP = document as DocWithEFP;
   const originalEFP = docWithEFP.elementFromPoint;
   docWithEFP.elementFromPoint = (): Element | null => dropTarget;
@@ -51,7 +56,14 @@ async function performDragWithDropTarget(
       await Promise.resolve();
     });
   } finally {
-    docWithEFP.elementFromPoint = originalEFP;
+    // jsdom default: property was never set, so delete the own stub
+    // rather than assigning `undefined` back and leaving a phantom
+    // own-property.
+    if (originalEFP === undefined) {
+      delete docWithEFP.elementFromPoint;
+    } else {
+      docWithEFP.elementFromPoint = originalEFP;
+    }
   }
 }
 
