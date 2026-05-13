@@ -375,9 +375,19 @@ export function Hand({
   // the outer wrapper carries `pointer-events-none` (floating
   // layout); inline layout doesn't need the override but it's
   // harmless either way.
+  //
+  // `overflow-x-clip` (not `-hidden`): visually clips the same way
+  // `hidden` would, but does NOT establish a scroll container and
+  // does NOT trigger the CSS-spec implicit `overflow-y: auto`
+  // coercion. The earlier `overflow-x-hidden` turned the fan into a
+  // vertical scroll container as soon as the magnified card's
+  // transform overflowed it (the spec mandates that a non-`visible`
+  // value on one overflow axis silently coerces the other axis from
+  // `visible` to `auto`). That coercion is what made the fan box
+  // appear to grow and showed a scrollbar on hover.
   const innerClassName = isFloating
-    ? 'pointer-events-auto animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none'
-    : 'animate-hand-fade-in overflow-x-hidden motion-reduce:animate-none';
+    ? 'pointer-events-auto animate-hand-fade-in overflow-x-clip motion-reduce:animate-none'
+    : 'animate-hand-fade-in overflow-x-clip motion-reduce:animate-none';
   return (
     <div
       role="group"
@@ -390,15 +400,24 @@ export function Hand({
     >
       <div
         data-hand-fan
-        // #38: `overflow-x-hidden` belt-and-braces — the fan fits in a
+        // #38: `overflow-x-clip` belt-and-braces — the fan fits in a
         // 320 px viewport at the chosen card+overlap dimensions, but
-        // hiding overflow guarantees the page never gets a horizontal
-        // scrollbar even if a future change widens the fan.
-        // #340: `overflow-x-hidden` plus `position: relative` here are
-        // load-bearing for selected-card stacking — they form the
-        // stacking context the per-card `zIndex` participates in.
-        // Removing either would collapse the selected-card z-index lift
-        // into the document context.
+        // clipping overflow guarantees the page never gets a horizontal
+        // scrollbar even if a future change widens the fan. `clip`
+        // (not `hidden`) is load-bearing for #579's magnify lift:
+        // `overflow-x: hidden` would coerce overflow-y from `visible`
+        // to `auto` per CSS spec (the coercion only applies when the
+        // other axis was `visible`) and turn the fan into a vertical
+        // scroll container as soon as the magnified card overflowed it.
+        // #340: `position: relative` here is the positioned-ancestor
+        // anchor for the per-card `zIndex` to take effect. In floating
+        // layout the stacking context the cards' z-indices participate
+        // in is provided by the outer `position: fixed` wrapper at
+        // line 372 (and, when the fan transform is active, by that
+        // transform too). In inline layout neither applies — the cards
+        // z-order against each other within the nearest ancestor
+        // stacking context. `position: relative` alone, without a
+        // z-index of its own, does not create a stacking context.
         className={innerClassName}
         style={{
           display: 'flex',
@@ -568,13 +587,19 @@ export function Hand({
           if (isMagnified) {
             // #579: scale up dramatically and translate the card upward
             // by `MAGNIFY_LIFT_VH` viewport-height units so the magnified
-            // card lifts toward the centre of the screen. `vh` is
-            // viewport-relative and unaffected by the scale, so the
-            // translation is consistent across card sizes. Transform
-            // order: right-to-left, so `translateY(-Yvh)` runs in the
-            // pre-scale coordinate space — the card lifts a fixed
-            // viewport fraction regardless of how big the scale grows.
-            magnifyTransform = ` scale(${MAGNIFY_SCALE_BIG}) translateY(-${MAGNIFY_LIFT_VH}vh)`;
+            // card lifts toward the centre of the screen.
+            //
+            // Order matters: CSS applies transform functions right-to-
+            // left in the string. A function written to the *right* of
+            // `scale()` runs first in pre-scale local coords, and its
+            // translation amount then gets multiplied by the scale.
+            // Pre-fix this was `scale(3.5) translateY(-35vh)`, which
+            // lifted the card by 3.5 × 35vh = 122.5vh — far above the
+            // viewport. Writing `translateY(-Yvh)` to the *left* of
+            // `scale()` makes the translation the last operation, so
+            // it runs in post-scale (viewport) coordinates and the
+            // card lifts the intended 35vh.
+            magnifyTransform = ` translateY(-${MAGNIFY_LIFT_VH}vh) scale(${MAGNIFY_SCALE_BIG})`;
           } else if (isImmediateNeighbour && offsetFromActive !== null) {
             const sign = offsetFromActive > 0 ? 1 : -1;
             magnifyTransform = ` translateX(${(sign * NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;

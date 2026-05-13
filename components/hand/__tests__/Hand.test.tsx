@@ -591,6 +591,39 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(middle.style.transform).toMatch(/scale\(3\.5\)/);
   });
 
+  it('magnify lift is translateY *before* scale so the translation runs in viewport coords', () => {
+    // Regression: pre-fix the transform was built as
+    // `scale(3.5) translateY(-35vh)`. CSS applies transform functions
+    // right-to-left in the string, so the inner translateY ran in
+    // unscaled local coords and was multiplied by the outer scale —
+    // effective lift 3.5 × 35vh = 122.5vh, sending the card far above
+    // the viewport. The fix puts the translateY *before* the scale
+    // (translate applied last, in post-scale viewport coords) so the
+    // lift is the intended 35vh.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    const transform = middle.style.transform;
+    const translateIdx = transform.indexOf('translateY(-35vh)');
+    const scaleIdx = transform.indexOf('scale(3.5)');
+    expect(translateIdx, 'transform contains translateY(-35vh)').toBeGreaterThan(-1);
+    expect(scaleIdx, 'transform contains scale(3.5)').toBeGreaterThan(-1);
+    expect(
+      translateIdx,
+      'translateY(-35vh) must appear before scale(3.5) in the transform string',
+    ).toBeLessThan(scaleIdx);
+    // Also pin the full concatenation contract: base fan transform
+    // (rotate + per-slot translateY) precedes the magnify pieces.
+    // Without this, someone could reverse `baseTransform + magnifyTransform`
+    // at the concat site and the order-within-magnify check above
+    // would still pass.
+    expect(transform).toMatch(
+      /rotate\([^)]+\) translateY\([^)]+\) translateY\(-35vh\) scale\(3\.5\)/,
+    );
+  });
+
   it('hovered card runs at ~75% opacity so the matching Tree path glow shows through (#579)', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector(
@@ -627,6 +660,23 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     // events.
     const fanCls = fan?.getAttribute('class') ?? '';
     expect(fanCls).toMatch(/pointer-events-auto/);
+  });
+
+  it('inner fan clips horizontally without becoming a scroll container', () => {
+    // Regression: the inner fan used `overflow-x-hidden`, but per the
+    // CSS overflow spec setting overflow-x to a non-visible value
+    // implicitly coerces overflow-y from visible → auto. The magnified
+    // card's transform then created vertical overflow that turned the
+    // fan into a scrollable region (with a visible scrollbar), and the
+    // `absolute right-0 top-0` close-× button rode up to the top of the
+    // expanded scrollable area. The fix swaps to `overflow-x-clip` which
+    // clips visually exactly like hidden but does NOT trigger the
+    // implicit overflow-y: auto coercion.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]');
+    const fanCls = fan?.getAttribute('class') ?? '';
+    expect(fanCls).toMatch(/\boverflow-x-clip\b/);
+    expect(fanCls).not.toMatch(/\boverflow-x-hidden\b/);
   });
 
   it('rest fan scales down to a thin band; hovering any card blooms it to natural size (#579)', () => {

@@ -75,6 +75,16 @@ async function walkToPlayScreen(page: Page): Promise<void> {
   // Lobby: click Begin to land on the live PlayScreen.
   await page.getByRole('button', { name: /^begin$/i }).click();
   await page.waitForLoadState('networkidle');
+
+  // Park the cursor at viewport corner. After `click()` Playwright
+  // leaves the pointer over the Begin button's coordinates; on the
+  // mobile viewport (375×667) those coordinates fall on top of a
+  // hand card after the PlayScreen mounts, which fires the card's
+  // `mouseenter` and triggers the #579 magnify lift. The screenshot
+  // then captures a magnified card instead of the rest-band layout
+  // we want to baseline. Moving the pointer to (0, 0) clears any
+  // active card hover and makes the capture position-independent.
+  await page.mouse.move(0, 0);
 }
 
 interface Route {
