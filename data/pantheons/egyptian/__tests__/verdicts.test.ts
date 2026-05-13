@@ -6,20 +6,22 @@ import type { ChallengeOutcome } from '../../types';
 import type { EncounterAvatarKey, ZodiacSignKey } from '../../../types';
 
 /**
- * Egyptian verdict-matrix smoke test (#553 PR 1, solar quartet).
+ * Egyptian verdict-matrix smoke test (#553).
  *
- * Pins:
+ * After PR 2 lands, all 8 encounter avatars are Egyptian-authored —
+ * no greco-roman fallback cells remain in `sefirahVerdicts`. The
+ * tests below pin:
+ *
  *   - Structural completeness: every (avatar, sign, outcome) cell
- *     has exactly 3 variants on the four Egyptian-authored deities.
- *   - Word-count: every variant ≤ 25 words on Egyptian-authored
- *     deities (the greco-roman fallback cells are exempt — they
- *     belong to a different pantheon's voice and pre-existed).
+ *     has exactly 3 variants on every avatar.
+ *   - Word-count: every variant ≤ 25 words.
  *   - No-duplicates within a cell.
  *   - Voice anchors per deity (loose contains-at-least-one-token
  *     check — confirms the voice register without over-constraining
  *     the authoring).
- *   - Fallback identity: the four contemplative-cluster keys
- *     reference the greco-roman matrix verbatim until PR 2 ships.
+ *   - No-fallback-identity: every avatar's matrix is distinct from
+ *     the greco-roman counterpart (since the Egyptian voice is
+ *     authored, the references should not match).
  */
 
 const ENCOUNTER_AVATARS: readonly EncounterAvatarKey[] = [
@@ -50,32 +52,18 @@ const ZODIAC_SIGNS: readonly ZodiacSignKey[] = [
 
 const OUTCOMES: readonly ChallengeOutcome[] = ['pass', 'fail'];
 
-const EGYPTIAN_AUTHORED: ReadonlyArray<EncounterAvatarKey> = [
-  'chesed', // Ra
-  'gevurah', // Horus
-  'tiferet', // Osiris
-  'netzach', // Hathor
-];
-
-const FALLBACK_KEYS: ReadonlyArray<EncounterAvatarKey> = [
-  'chokmah', // → greco-roman Athena until PR 2
-  'binah', // → greco-roman Demeter until PR 2
-  'hod', // → greco-roman Hermes until PR 2
-  'yesod', // → greco-roman Selene until PR 2
-];
-
 const wordCount = (s: string): number =>
   s.trim().split(/\s+/).filter((w) => w.length > 0).length;
 
-describe('Egyptian verdict matrix — solar quartet (#553 PR 1)', () => {
+describe('Egyptian verdict matrix — fully Egyptian-authored (#553)', () => {
   it('covers every encounter avatar', () => {
     expect(Object.keys(sefirahVerdicts).sort()).toEqual(
       [...ENCOUNTER_AVATARS].sort(),
     );
   });
 
-  describe('structural completeness — Egyptian-authored cells', () => {
-    for (const avatar of EGYPTIAN_AUTHORED) {
+  describe('structural completeness — every cell has 3 variants', () => {
+    for (const avatar of ENCOUNTER_AVATARS) {
       describe(avatar, () => {
         for (const sign of ZODIAC_SIGNS) {
           for (const outcome of OUTCOMES) {
@@ -92,8 +80,8 @@ describe('Egyptian verdict matrix — solar quartet (#553 PR 1)', () => {
     }
   });
 
-  describe('word count ≤ 25 — Egyptian-authored cells', () => {
-    for (const avatar of EGYPTIAN_AUTHORED) {
+  describe('word count ≤ 25 — every line', () => {
+    for (const avatar of ENCOUNTER_AVATARS) {
       it(`${avatar} — every line is at most 25 words`, () => {
         for (const sign of ZODIAC_SIGNS) {
           for (const outcome of OUTCOMES) {
@@ -110,8 +98,8 @@ describe('Egyptian verdict matrix — solar quartet (#553 PR 1)', () => {
     }
   });
 
-  describe('no duplicate variants within a cell — Egyptian-authored', () => {
-    for (const avatar of EGYPTIAN_AUTHORED) {
+  describe('no duplicate variants within a cell', () => {
+    for (const avatar of ENCOUNTER_AVATARS) {
       it(`${avatar} — variants within each (sign, outcome) cell are distinct`, () => {
         for (const sign of ZODIAC_SIGNS) {
           for (const outcome of OUTCOMES) {
@@ -170,12 +158,37 @@ describe('Egyptian verdict matrix — solar quartet (#553 PR 1)', () => {
       const all = collectAllLines('netzach').join(' ');
       expect(all).toMatch(/cup|cow|milk|music|drink|thirst|body|want/);
     });
+
+    it('Amun (chokmah) — hidden/breath/pylon imagery present', () => {
+      const all = collectAllLines('chokmah').join(' ');
+      expect(all).toMatch(/hidden|breath|wind|pylon|mask|silence|silent/);
+    });
+
+    it('Isis (binah) — threshold/knot/carry imagery present', () => {
+      const all = collectAllLines('binah').join(' ');
+      expect(all).toMatch(
+        /threshold|knot|carry|river|cosmic mother|loss|sorrow|bear/,
+      );
+    });
+
+    it('Thoth (hod) — ink/reed/page imagery present', () => {
+      const all = collectAllLines('hod').join(' ');
+      expect(all).toMatch(/ink|reed|page|tablet|line|scribe|wedjat|verdict/);
+    });
+
+    it('Khonsu (yesod) — moon/dream/crossing imagery present', () => {
+      const all = collectAllLines('yesod').join(' ');
+      expect(all).toMatch(/moon|dream|tide|crossing|night|traveller|path/);
+    });
   });
 
-  describe('greco-roman fallback for the contemplative cluster (PR 2 boundary)', () => {
-    for (const k of FALLBACK_KEYS) {
-      it(`${k} — references the greco-roman matrix verbatim until PR 2 ships`, () => {
-        expect(sefirahVerdicts[k]).toBe(grecoRomanVerdicts[k]);
+  describe('Egyptian matrix is distinct from greco-roman across all keys (#553 PR 2)', () => {
+    // After PR 2 lands, every avatar has its own Egyptian-authored
+    // cells — `sefirahVerdicts[k]` should not be the same object
+    // reference as `grecoRomanVerdicts[k]` for any avatar.
+    for (const k of ENCOUNTER_AVATARS) {
+      it(`${k} — Egyptian and greco-roman entries are distinct objects`, () => {
+        expect(sefirahVerdicts[k]).not.toBe(grecoRomanVerdicts[k]);
       });
     }
   });

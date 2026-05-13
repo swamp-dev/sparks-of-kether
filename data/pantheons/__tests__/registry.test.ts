@@ -141,31 +141,31 @@ describe('pantheons registry (#547)', () => {
       }
     });
 
-    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B3 PR 1)', () => {
-      // B2 (#552) shipped names + codex avatar. B3 (#553 PR 1) ships
-      // the solar quartet of the verdict matrix — `sefirahVerdicts`
-      // is now Egyptian-authored, not the greco-roman fallback. The
-      // remaining slots (`sefirahPlayerResponses`, `sefirahFraming`,
+    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B3)', () => {
+      // B2 (#552) shipped names + codex avatar. B3 (#553) ships the
+      // verdict matrix in two PRs — both halves are now landed and
+      // `sefirahVerdicts` is fully Egyptian-authored. The remaining
+      // slots (`sefirahPlayerResponses`, `sefirahFraming`,
       // `sefirahFramingPlaceholder`, `sefirahBlessings`) continue to
       // use the greco-roman matrices until their authoring tickets
-      // land (#553 PR 2 / #553 follow-up / #554 / #555).
+      // land (B3 follow-up for player responses, #554, #555).
       expect(p.sefirahFraming).toBe(sefirahFraming);
       expect(p.sefirahFramingPlaceholder).toBe(grecoRoman.sefirahFramingPlaceholder);
       expect(p.sefirahPlayerResponses).toBe(grecoRoman.sefirahPlayerResponses);
       expect(p.sefirahBlessings).toBe(sefirahBlessings);
     });
 
-    it('sefirahVerdicts is now the hybrid Egyptian matrix (#553 PR 1)', () => {
-      // Solar quartet — Egyptian-authored cells; the matrix object is
-      // distinct from the greco-roman one. Contemplative cluster cells
-      // still reference greco-roman until #553 PR 2.
+    it('sefirahVerdicts is the fully-Egyptian matrix (#553 complete)', () => {
+      // After PR 2 lands, every encounter avatar has Egyptian-authored
+      // verdict cells. Spot-check one cell from each half (PR 1's solar
+      // quartet via Ra; PR 2's contemplative cluster via Amun) to anchor
+      // the imagery; full anchor checks live in
+      // `data/pantheons/egyptian/__tests__/verdicts.test.ts`.
       expect(p.sefirahVerdicts).not.toBe(grecoRoman.sefirahVerdicts);
-      // Spot-check one Egyptian-authored cell — a Ra (chesed) verdict
-      // line should mention solar/throne imagery; a greco-roman
-      // Zeus/chesed line would not. Loose canary; full anchor checks
-      // live in `data/pantheons/egyptian/__tests__/verdicts.test.ts`.
       const raAriesPass = p.sefirahVerdicts.chesed.aries.pass.join(' ').toLowerCase();
       expect(raAriesPass).toMatch(/throne|sky|sun|noon|kingdom|crown|light/);
+      const amunAriesPass = p.sefirahVerdicts.chokmah.aries.pass.join(' ').toLowerCase();
+      expect(amunAriesPass).toMatch(/hidden|breath|wind|pylon|mask/);
     });
   });
 });

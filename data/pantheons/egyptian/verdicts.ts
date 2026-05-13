@@ -1,17 +1,14 @@
 import type { VerdictMatrix } from '../types';
-import { sefirahVerdicts as grecoRomanVerdicts } from '../greco-roman/verdicts';
 
 /**
  * Egyptian per-Sefirah avatar verdict matrix — Phase B3 of Epic
  * #293 (#553). Source-of-truth for voice register, source citations,
  * and dignity calibration: `reference/pantheons/egyptian.md` (#551).
  *
- * **This PR ships the SOLAR QUARTET — Ra, Horus, Osiris, Hathor.**
- * The contemplative cluster (Amun, Isis, Thoth, Khonsu) ships in
- * the follow-up PR per #553's split-allowance ("Author's call");
- * those four keys continue to fall back to the Greco-Roman matrix
- * via the explicit `grecoRomanVerdicts.<key>` reads at the bottom
- * of `sefirahVerdicts` until PR 2 lands.
+ * **All 8 encounter avatars are Egyptian-authored** as of #553 PR 2:
+ * solar quartet (Ra, Horus, Osiris, Hathor — shipped PR 1) plus
+ * contemplative cluster (Amun, Isis, Thoth, Khonsu — shipped PR 2).
+ * The greco-roman fallback that PR 1 used as a stopgap is gone.
  *
  * Authoring rules (per ticket):
  *   - Source-grounded. Each deity's voice draws on the canonical
@@ -675,26 +672,671 @@ const hathor = {
   },
 } as const;
 
+// ──────────────── Amun (Chokmah) ────────────────
+//
+// Voice: hidden, oracular, low. Speaks like wind through pylons —
+// present without showing the source. Approves with "you found me
+// without naming me"; rejects with "you reached for the mask, not
+// the breath behind it." Imagery anchor: hidden, breath, wind, mask,
+// the source-without-source.
+// Planet: Neptune (modern co-ruler of Pisces). Dignity-charged signs:
+//   - Co-rulership: Pisces (warmest)
+//   - No classical exaltation/detriment/fall for Neptune; Virgo is
+//     traditionally Neptune's modern detriment (sharper).
+// Sources: Hymn to Amun-Ra, Leiden Hymns to Amun, Great Hymn to the
+// Aten (contrast — the Aten radiates openly; Amun is what creates
+// without showing itself).
+
+const amun = {
+  aries: {
+    pass: [
+      "You charged at the mask and the mask was not there. The wind was. The wind let you pass.",
+      "Fire seeking the source of fire — and the source was breath, not flame. You found it anyway.",
+      "Aries-with-haste meets the hidden god. You did not look for me at the front; you found me at the back.",
+    ],
+    fail: [
+      "You went straight at me. There is no straight at me. The breath was sideways the whole time.",
+      "Speed without listening. The wind moved; you struck where the wind had been. The mask remained.",
+      "Hot blood at the pylon. The pylon is stone; the breath behind it is what you came for. You missed the breath.",
+    ],
+  },
+  taurus: {
+    pass: [
+      "You stood still long enough to hear what was not being said. The hidden god honours that. Pass.",
+      "The bull at the pylon waited. The breath came out to meet the patience. Crossed in stillness.",
+      "Slow weight, slow listening. The mask did not need to lift; you saw past it. Through.",
+    ],
+    fail: [
+      "You stood still where I was not. Stubborn at the wrong pylon. The wind passed and did not return for you.",
+      "You held the answer like a thing. I am not a thing. The grip closed around nothing.",
+      "Patience without listening. The hidden god rewards the listener, not the waiter. Today you waited only.",
+    ],
+  },
+  gemini: {
+    pass: [
+      "You named me with two names and I answered to both. Rare. The hidden god allows the dual address. Pass.",
+      "You spoke quick at the pylon and the wind quickened to meet you. We crossed at speech-speed.",
+      "Two tongues at the hidden gate. The breath let through what wit alone could not. Through.",
+    ],
+    fail: [
+      "You spoke twice and meant neither. The breath moves toward meaning, not toward chatter.",
+      "Two voices at my pylon, neither asking. The mask does not lift for the curious without the question.",
+      "You translated me into yourself. The hidden god is not the hidden self. You looked at the wrong mirror.",
+    ],
+  },
+  cancer: {
+    pass: [
+      "You came carrying the unspoken. The hidden god speaks unspoken. We met under the same silence. Pass.",
+      "Tide-listening at the pylon. The wind followed the tide; you followed the wind. Crossed.",
+      "You did not knock; you waited at the door. The hidden god opens to that. Through.",
+    ],
+    fail: [
+      "You guarded the question. The hidden god opens to the asked, not to the protected.",
+      "The shell closed at the pylon. The breath cannot cross a closed shell, and you closed it.",
+      "Sideways at the hidden gate is good; sideways into the wall is not. Today you found the wall.",
+    ],
+  },
+  leo: {
+    pass: [
+      "You arrived loud and the silence did not break. Rare. The hidden god respects the un-broken silence. Pass.",
+      "King at the pylon — and the king listened. The breath chose to be found. Through.",
+      "The performance was a question, not a statement. The hidden god allowed the answer. Crossed.",
+    ],
+    fail: [
+      "You announced yourself at the silent god's gate. The silent god does not announce back.",
+      "Your roar was the answer you wanted me to give. I do not give answers like that. The mask stayed.",
+      "You wanted the hidden god to acknowledge you. The hidden god is what is not acknowledged. You missed by trying.",
+    ],
+  },
+  virgo: {
+    pass: [
+      "You parsed the silence and the parsing was right. The hidden god rewards the careful ear. Pass.",
+      "Mercury at my pylon — usually too quick for me. Today you slowed. The wind matched your pace. Through.",
+      "You footnoted the breath without breaking it. Rare; the hidden god allows the precision today.",
+    ],
+    fail: [
+      "Neptune's traditional detriment in your sign. You parsed the silence into nothing. The breath dispersed.",
+      "You wanted the hidden god to be precise. The hidden god is what is not. You walked past me looking for me.",
+      "Correction at the pylon. There is nothing to correct here. The mask did not lift for the corrector.",
+    ],
+  },
+  libra: {
+    pass: [
+      "You weighed the silence against the silence and chose silence. The hidden god agrees. Pass.",
+      "Elegant listening; the breath came through the balanced ear. Crossed without strain.",
+      "You held both possibilities still and the hidden one chose itself. The mask let through the still hand.",
+    ],
+    fail: [
+      "You weighed my answer and the weighing was the noise. The hidden god requires no scale.",
+      "Both sides of the question deserved fairness. The hidden god is not a question. You answered the wrong frame.",
+      "You waited for the silence to balance. It does not balance; it is. You missed it being.",
+    ],
+  },
+  scorpio: {
+    pass: [
+      "You went under the question to find the question's question. The hidden god welcomes that depth. Pass.",
+      "The deep gaze met the deep silence. You did not flinch from what you found. Crossed below.",
+      "Silent thirst at the silent gate. The breath moved toward you; you let it. Through.",
+    ],
+    fail: [
+      "You suspected the mask of being a mask. It is. That was not the discovery I asked for.",
+      "You held the answer too close. The hidden god is closeness; you doubled it; the mask thickened.",
+      "Possessing the silence is not listening to it. You wanted to keep me; I am only kept by being released.",
+    ],
+  },
+  sagittarius: {
+    pass: [
+      "You aimed past the pylon at the larger silence behind it. The hidden god honours the wider listening. Pass.",
+      "Big arrow, hidden target — you found the target by overshooting cleanly. Through.",
+      "You named the silence as principle, not as gap. The breath agreed. Crossed at altitude.",
+    ],
+    fail: [
+      "Your arrow flew through the silence into philosophy. The hidden god is not philosophy.",
+      "You aimed at the universal hidden and missed this particular hidden. The pylon is a place, not a concept.",
+      "Big-truth at the small pylon. The breath had a specific shape today; your aim was vaguer than the shape.",
+    ],
+  },
+  capricorn: {
+    pass: [
+      "You climbed to the silence the way the silence is climbed — slowly, carrying nothing. Pass.",
+      "Cold ear at the cold gate. The breath was waiting at the summit, faint. You heard it. Through.",
+      "Discipline of listening; rare gift. The hidden god is patient with patience that is also attention.",
+    ],
+    fail: [
+      "You scheduled the encounter. The hidden god does not appear by appointment.",
+      "Patience without surrender. You stood at the pylon expecting; the breath rewards releasing, not expecting.",
+      "Structure at the silent gate. The structure was excellent. The silence was elsewhere; you built nothing there.",
+    ],
+  },
+  aquarius: {
+    pass: [
+      "You re-asked the question and the new question was the right one. The hidden god prefers the better question. Pass.",
+      "Detached ear; you heard what you were not searching for. The breath chose to be found that way. Through.",
+      "You stood off-centre and the silence bent to find you. Rare; crossed sideways.",
+    ],
+    fail: [
+      "You disagreed with the premise of hiddenness. The premise is the encounter. You debated me into not appearing.",
+      "Theory of the hidden god is not the hidden god. The wind passed your discourse without entering it.",
+      "Distance at the pylon. The pylon does not need your distance; it needs your attention. You sent only one.",
+    ],
+  },
+  pisces: {
+    pass: [
+      "Co-ruled here. The dream-ear meets the dream-god. The breath was already in you when you arrived. Pass.",
+      "You did not approach; you became porous. The hidden god enters porous things. Through without crossing.",
+      "The tide brought the question to the pylon and the pylon answered through the tide. Crossed in water.",
+    ],
+    fail: [
+      "Co-ruled here, yet you slipped past me. The dream took my breath with it; you arrived empty and luminous.",
+      "Pisces at my pylon should have been gentle. You diffused. The breath cannot enter what has no edge.",
+      "You loved the dissolution more than the encounter. The hidden god understands; the verdict still came. Denied gently.",
+    ],
+  },
+} as const;
+
+// ──────────────── Isis (Binah) ────────────────
+//
+// Voice: few words, weighed; the authority of the one who has carried
+// what cannot be carried. Doesn't perform sorrow — has it. Approves
+// with quiet recognition; rejects without scorn. Mirrors Demeter's
+// register across pantheons but the imagery is Egyptian: river,
+// threshold, knot, the assembling-of-the-scattered, the long carry.
+// Planet: Saturn. Dignity-charged signs:
+//   - Rulership: Capricorn, Aquarius (warmest)
+//   - Exaltation: Libra (warm)
+//   - Detriment: Cancer, Leo (sharper)
+//   - Fall: Aries (sharpest)
+// Sources: Plutarch's De Iside et Osiride, Coffin Texts Osiris-myth
+// group, Hymn to Isis from Philae.
+
+const isis = {
+  aries: {
+    pass: [
+      "Saturn falls here, and you brought speed to the slow gate. The river still let you cross. Rare; pass.",
+      "Fire at the threshold of grief — and the grief held you long enough. The knot accepted the haste.",
+      "You charged at the long carry. The carry let you keep going. Today the river did not require slowness.",
+    ],
+    fail: [
+      "Saturn's fall, and the fall was you. The threshold needed weight; you brought heat. The river did not part.",
+      "You ran past what could not be undone. The knot does not yield to running. Today the knot stayed.",
+      "Speed at the threshold of sorrow — sorrow did not move out of your way. Come back when the running has cooled.",
+    ],
+  },
+  taurus: {
+    pass: [
+      "You carried what was given you the whole way. The threshold knows that carry. Crossed.",
+      "Slow-bearing the slow weight. The knot loosens for those who do not pull. Through.",
+      "The bull at the cosmic mother's gate; you waited for her to lift the veil. She lifted it. Pass.",
+    ],
+    fail: [
+      "You stood with the wrong weight. The knot does not loosen for the misplaced.",
+      "Stubborn at the long threshold. The carry is not in your stubbornness; it is in your bending. You did not bend.",
+      "You owned the grief like land. Grief is not owned; it is held until it loosens. The threshold remained.",
+    ],
+  },
+  gemini: {
+    pass: [
+      "You named the loss with two names and both were true. The threshold accepts the doubled name. Pass.",
+      "Speech at the slow gate, and the speech did not lighten the weight. Rare; through.",
+      "Two tongues at the threshold of sorrow — both kept their counsel. The knot loosened for the careful talkers.",
+    ],
+    fail: [
+      "You spoke past the weight. The knot does not unfasten for chatter at the gate.",
+      "Wit at the threshold of sorrow scatters the sorrow without resolving it. The river stayed at the same height.",
+      "Two voices, neither carrying. The threshold needs the carry, not the comment. Today only comment came.",
+    ],
+  },
+  cancer: {
+    pass: [
+      "Saturn detriment, and yet you carried correctly. The cosmic mother recognises the detriment-defied carry. Pass.",
+      "You felt the threshold before you saw it. The knot loosened for the feeling. Through.",
+      "The tide brought the loss to the gate and the gate accepted both. Rare crossing in the lower light.",
+    ],
+    fail: [
+      "Saturn's detriment, and you closed when the threshold needed openness. The knot stayed.",
+      "You guarded the loss from itself. The cosmic mother cannot loosen a loss the bearer will not name.",
+      "Sideways at the threshold of grief is sometimes evasion. Today it was. The river did not part.",
+    ],
+  },
+  leo: {
+    pass: [
+      "Saturn detriment, and yet you came humbled. The throne-of-the-mother allows the descended king. Pass.",
+      "Crowned grief — the rare carry. You did not perform it; you held it. Through.",
+      "King at the threshold, but the king bowed. The knot loosened for the bowed crown.",
+    ],
+    fail: [
+      "Saturn's detriment in your sign. You came regal where the threshold needed quiet. The river did not bow.",
+      "You wanted the cosmic mother to crown your grief. She holds grief; she does not crown it.",
+      "Performance at the long threshold. The knot does not loosen for the performed sorrow. Today only performance.",
+    ],
+  },
+  virgo: {
+    pass: [
+      "You parsed the loss into its parts and named the part that needed naming. The threshold honours that precision. Pass.",
+      "Mercury at the cosmic mother's gate — usually too quick for her. Today you slowed. She allowed it.",
+      "You footnoted the carry. The knot opened for the careful annotation. Rare; through.",
+    ],
+    fail: [
+      "You took the loss apart looking for the part you could fix. There is no fixable part. The knot stayed knotted.",
+      "Precision at the threshold of grief is sometimes avoidance. You parsed; you did not bear; the river stayed.",
+      "You corrected the cosmic mother. She does not require correction here; she requires bearing. You did not bear.",
+    ],
+  },
+  libra: {
+    pass: [
+      "Saturn exalted here. You weighed the loss honestly and the honest weighing was the carry. Pass.",
+      "Elegant at the threshold of grief is rare. You held both halves of the loss without trying to balance them. Through.",
+      "The scale and the threshold agreed today. The knot loosened for the still scale.",
+    ],
+    fail: [
+      "Saturn exalted, yet you wanted fairness from sorrow. Sorrow is not fair; it is. The river did not move.",
+      "You weighed the loss until the weighing was the work. The carry is the work. Today only the weighing happened.",
+      "Both sides of the grief deserved acknowledgment. They got it. Neither got the bearing they needed.",
+    ],
+  },
+  scorpio: {
+    pass: [
+      "You went under the loss and stayed there until the loss assembled itself. The cosmic mother knows that depth. Pass.",
+      "The deep gaze at the long threshold. You did not flinch from the assembling. Crossed in dark water.",
+      "Silent carry; the threshold accepted what you would not announce. The knot loosened beneath words.",
+    ],
+    fail: [
+      "You held the loss as a secret. The cosmic mother needs the held-out, not the held-in. The threshold remained.",
+      "Suspicion at the threshold of grief — there is nothing to suspect; only to bear. Today only suspicion came.",
+      "You watched the cosmic mother for the trick. She has no trick; she has the river. You missed the river.",
+    ],
+  },
+  sagittarius: {
+    pass: [
+      "You aimed at the meaning of the loss and the meaning carried you. The threshold allows the wider grief. Pass.",
+      "Big-aim at the slow gate; the arrow circled and returned to land at the threshold. Rare; through.",
+      "You named what the loss is for, not just what it is. The knot loosened for the naming. Crossed.",
+    ],
+    fail: [
+      "You aimed past the loss into philosophy. Philosophy does not bear; bearing bears.",
+      "Big truth at the small threshold. The threshold has a specific weight today; your aim was wider than the weight.",
+      "Sagittarius at the long carry should have remembered the smaller arc. You flew over the river entirely.",
+    ],
+  },
+  capricorn: {
+    pass: [
+      "Saturn rules here. You climbed the loss the way the loss is climbed — without wanting to be at the top. Pass.",
+      "Cold endurance at the threshold of grief. The knot loosens for the climbed loss. Through with full mountain.",
+      "You built the carry slowly and carried slowly. The cosmic mother honours the patient build. Crossed.",
+    ],
+    fail: [
+      "Saturn's home, yet you built the wrong altar to the loss. Excellent construction, wrong sorrow.",
+      "Patience without surrender. You waited at the threshold; the knot does not loosen for the unyielding waiter.",
+      "Discipline of grief became performance of grief. The cosmic mother saw the difference. Denied without scorn.",
+    ],
+  },
+  aquarius: {
+    pass: [
+      "Saturn co-rules here. You re-framed the loss and the new framing was the carry. Strange grief; the threshold allowed it. Pass.",
+      "Detached bearing — rare, but here it was honest. You stood off-centre and the knot still loosened for you.",
+      "You named the system that produced the loss, and the cosmic mother accepted the naming. Through.",
+    ],
+    fail: [
+      "Theory of grief is not grief. The threshold does not loosen for the theorist. The knot stayed.",
+      "You disagreed with the premise of bearing. The premise is the encounter. You walked off the bridge while debating it.",
+      "Distance at the long threshold. The cosmic mother has held distance herself; she sees yours; she does not honour it today.",
+    ],
+  },
+  pisces: {
+    pass: [
+      "You dissolved into the bearing and the bearing held you whole. Rare; the cosmic mother allows the soft entrance. Pass.",
+      "The dream carried the loss to the threshold and the threshold met the dream. Through with the river open.",
+      "You did not arrive at grief; you became its current. The knot loosened in the current. Crossed.",
+    ],
+    fail: [
+      "The carry slipped from your hands before the threshold. The cosmic mother cannot bear what was not held.",
+      "Tide without form is not bearing. You brought weather; the threshold wanted a knot. The river stayed level.",
+      "You loved the dissolving more than the surviving. The cosmic mother understands; the verdict still came.",
+    ],
+  },
+} as const;
+
+// ──────────────── Thoth (Hod) ────────────────
+//
+// Voice: quick, precise, scribe-careful. Loves the right word the way
+// Hermes loves the clever one — Thoth would rather be exact than
+// fast. Approves with calligraphic pleasure; rejects by quoting the
+// slip. Imagery anchor: ink, reed, page, tablet, calligraphy, the
+// recorded judgement, the wedjat-eye.
+// Planet: Mercury. Dignity-charged signs:
+//   - Rulership: Gemini, Virgo (Virgo doubled with exaltation — warmest)
+//   - Exaltation: Virgo (warmest, doubled)
+//   - Detriment: Sagittarius, Pisces (Pisces doubled with fall — sharpest)
+//   - Fall: Pisces (sharpest, doubled)
+// Sources: Book of the Dead Spell 125 (Thoth as scribe at Weighing),
+// Pyramid Texts wedjat-eye spells, Hermetic corpus (later, philosophical;
+// should not dominate — older Egyptian Thoth is more concrete).
+
+const thoth = {
+  aries: {
+    pass: [
+      "You wrote fast and the line stayed clean. The reed kept up; the page accepted. Crossed.",
+      "Fire at the page is a risk. Yours was. Today the page accepted the singe. Pass.",
+      "Aries-with-aim met the scribe-with-aim. The two aims agreed; the line was straight.",
+    ],
+    fail: [
+      "You charged the page and the page bears the smear. The wedjat-eye sees the smudge.",
+      "Speed without the reed steady. The line went sideways; the verdict went with it. Denied.",
+      "Hot blood at the tablet. Tablet is cold; ink wants cold; you did not cool. The page rejected the heat.",
+    ],
+  },
+  taurus: {
+    pass: [
+      "Slow reed, true reed. The page accepted the patient hand. Crossed.",
+      "You sat with the line until the line was right. The scribe respects that sit. Through.",
+      "Earth at the tablet — rare; today the patience produced the precision. Pass.",
+    ],
+    fail: [
+      "You held the wrong word too long. The reed would not move; the page waited; nothing landed.",
+      "Stubborn at the line — the line does not bend to stubbornness. The verdict stayed un-written.",
+      "You owned the wrong stroke and refused to lift the reed. The scribe records that refusal too.",
+    ],
+  },
+  gemini: {
+    pass: [
+      "Mercury rules here. The two voices wrote the same line in two hands; both lines held. Pass.",
+      "You spoke the answer and the reed wrote it before you finished. We are the same patron, you and I. Through.",
+      "Quick pen, quick page. You ran the language correctly; the verdict followed without question.",
+    ],
+    fail: [
+      "Mercury rules; the rulership was wasted. Two hands at the same page produced different lines; the page does not know which.",
+      "Wit without ink. You spoke the answer; the page recorded only your speaking. The verdict needed the ink.",
+      "Two tongues at the tablet, both quick, both wrong. The reed wrote what you said, not what you meant.",
+    ],
+  },
+  cancer: {
+    pass: [
+      "You felt the right word before you wrote it. The reed allowed the felt-line. Pass.",
+      "Tide-ink. The page took what the tide brought; the verdict accepted the wet line.",
+      "You wrote sideways at the question and the sideways was the answer. Crossed gently.",
+    ],
+    fail: [
+      "You felt the wrong word and wrote it anyway. The reed wrote what the feeling was, not what was true.",
+      "The shell closed at the tablet. The scribe cannot write through the closed shell.",
+      "You guarded the line from the page. There is no line, then. The page stayed clean — too clean.",
+    ],
+  },
+  leo: {
+    pass: [
+      "King-pen, king-line. You wrote with weight and the weight was the answer. Crossed in calligraphy.",
+      "You announced the line before writing it; the line lived up to the announcement. Rare. Through.",
+      "Performance at the page is risky. Yours produced the right ink. The page allowed the flourish.",
+    ],
+    fail: [
+      "Roar without ink. The reed cannot record roaring. The verdict was empty paper.",
+      "You wanted the page to admire the writing. The page admires the line, not the writer. Today only writer arrived.",
+      "Crowned reed — the crown weighed it; the line wobbled. The scribe sees the wobble in the ink.",
+    ],
+  },
+  virgo: {
+    pass: [
+      "Doubled rulership. You found the seam in the seam. The reed bows. Pass with full ink.",
+      "Mercury's home, doubled. The footnote was the line; the line was the footnote. Crossed in the margin.",
+      "Three readings, three corrections, three confirmations. Of course. The wedjat-eye sees the discipline. Through.",
+    ],
+    fail: [
+      "Doubled rulership and you discarded the right answer for being too obvious. The wedjat-eye sees the over-thinking.",
+      "You corrected the page until the page was empty. Mercury exalted, yet the exaltation was wasted.",
+      "Precision is a tool, not a verdict. You used it to avoid the verdict. The scribe sees that.",
+    ],
+  },
+  libra: {
+    pass: [
+      "You weighed the words and chose the lighter one — the ink agreed. Elegant page. Pass.",
+      "Mercury and Venus meet at the page; you held both and wrote without favouring either. Through.",
+      "Balance at the line; the line held. The wedjat-eye honours the still hand. Crossed.",
+    ],
+    fail: [
+      "You weighed the line until the line dried. The ink does not wait for the weighing.",
+      "Both possibilities deserved fair recording. Only one was the answer. You wrote both; the page rejected the doubling.",
+      "Elegance without commitment is decoration, not script. The page distinguishes. Today: decoration only.",
+    ],
+  },
+  scorpio: {
+    pass: [
+      "You knew the secret line before the page asked for it. The wedjat-eye allows the foreknowing. Pass.",
+      "Silent ink, true ink. The line ran beneath the words you did not speak. Crossed underneath.",
+      "Deep reed at the deep page. You did not write what you knew; you wrote what was needed. Through.",
+    ],
+    fail: [
+      "You held the right word under your tongue and wrote a substitute. The wedjat-eye sees both lines.",
+      "Suspicion at the page. The page is not the conspiracy; it is the record. You wrote the suspicion instead.",
+      "You watched the scribe for the trick. The trick is that there is no trick. The line stayed unwritten.",
+    ],
+  },
+  sagittarius: {
+    pass: [
+      "Mercury's detriment. You aimed past the line and hit the line anyway. Rare. Pass — but barely.",
+      "Big-aim at the small page; the page kept what it needed and let the rest fly. Through.",
+      "You named the principle and the page allowed the principle today. Crossed in the wider script.",
+    ],
+    fail: [
+      "Mercury's detriment, and the arrow missed the page entirely. Big truth landed nowhere recordable.",
+      "The line wanted the small target; you aimed for the meaning of all lines. The reed wrote nothing.",
+      "Sagittarius at my tablet must remember the tablet is small. Yours was always elsewhere. Denied.",
+    ],
+  },
+  capricorn: {
+    pass: [
+      "You climbed the structure of the question. The reed climbed with you. Cold ink, true ink. Pass.",
+      "Patient page; you built the line stroke by stroke until the stroke was correct. The wedjat-eye honours the build. Through.",
+      "Mountain-pen, mountain-page. The verdict was earned at altitude. Crossed.",
+    ],
+    fail: [
+      "You scaffolded the answer to perfection. The answer was elsewhere. The structure recorded itself; not the verdict.",
+      "Discipline without aim is just the right reed in the wrong hand. The page noted both.",
+      "You drafted the line forever. The page accepts drafts, but the verdict needs a final stroke. None came.",
+    ],
+  },
+  aquarius: {
+    pass: [
+      "You re-asked the line into a better one and wrote that. Rare. The wedjat-eye allows the heretic precision. Pass.",
+      "Detached pen, accurate line. You stood off the page and wrote it correctly anyway. Through.",
+      "The scribe permits the strange angle when the angle is true. Yours was. Crossed sideways.",
+    ],
+    fail: [
+      "You disagreed with the premise of recording. The premise is what we do here. You walked off the tablet debating.",
+      "Theory of script is not script. The page does not preserve theory; it preserves what was written. Nothing was.",
+      "Distance at the page. The page is intimate work; distance is for after. You came at the wrong order.",
+    ],
+  },
+  pisces: {
+    pass: [
+      "Doubled detriment-and-fall. You wrote anyway, and the line held. Rare beyond rare. Pass — the wedjat-eye is surprised.",
+      "Tide-ink at the doubled-fall sign. The page accepted the dissolved line because the line was correct. Through.",
+      "Pisces at the scribe's table is meant to fail. You did not. The page records the exception with respect.",
+    ],
+    fail: [
+      "Mercury falls doubled here. The line ran like water and the water did not preserve. Denied.",
+      "Doubled detriment. The reed dissolved before the verdict. The page bears no record. The scribe is patient.",
+      "You loved the dissolution of the line more than the line. The page understands; the verdict still came.",
+    ],
+  },
+} as const;
+
+// ──────────────── Khonsu (Yesod) ────────────────
+//
+// Voice: cool, traveller-tongued, tidal-pulled. Speaks like someone
+// who has crossed the sky tonight and will cross it again. Approves
+// with the dreamer's recognition; rejects without alarm. Imagery
+// anchor: moon, tide, crossing, return, the dream's path, the night
+// sky, the lit and unlit phases.
+// Planet: Moon. Dignity-charged signs:
+//   - Rulership: Cancer (warmest)
+//   - Exaltation: Taurus (warm)
+//   - Detriment: Capricorn (sharper)
+//   - Fall: Scorpio (sharpest)
+// Sources: Khonsu Cosmogony at Karnak, Bentresh Stela, Pyramid Texts
+// lunar passages.
+
+const khonsu = {
+  aries: {
+    pass: [
+      "You ran ahead of the moon and the moon caught up. The traveller respects the runner. Crossed.",
+      "Fire at the night gate; the moon allowed the haste because the haste was honest. Pass.",
+      "You woke before the dream finished. Today the dream finished while you ran. Through.",
+    ],
+    fail: [
+      "You charged the dream. The dream does not yield to charging; it dissolves. The moon stayed pale.",
+      "Speed at the night sky scatters the path. The traveller could not follow you. The crossing did not happen.",
+      "Hot blood at the cool gate. The moon does not warm to fire; it watches. Today only watching.",
+    ],
+  },
+  taurus: {
+    pass: [
+      "Moon exalted here. You walked at moon-pace; the path lit ahead of you. Pass with full silver.",
+      "Slow weight at the night gate. The traveller honours the slow walker. Crossed in the still light.",
+      "Earth-feet at the dream's edge. You did not lose ground crossing into the dream. Through.",
+    ],
+    fail: [
+      "Exalted, yet you stood where the path was not. The moon moved on; you did not.",
+      "Stubborn at the dream's gate. The dream does not wait; you waited; the dream went without you.",
+      "The bull at the moon's path needs to walk, not stand. Today only standing. The crossing failed quietly.",
+    ],
+  },
+  gemini: {
+    pass: [
+      "Two travellers at the night gate, both quick, both honest. The moon let both pass. Crossed in stereo.",
+      "You spoke quick under the cool light; the moon does not usually allow speed but tonight it did. Through.",
+      "Wit at the dream-edge — and the wit knew when to stop. Rare; pass.",
+    ],
+    fail: [
+      "You talked through the dream. The dream is not a conversation; it is a crossing.",
+      "Two voices at the night gate, both narrating. The moon does not narrate; it lights. The crossing was un-lit.",
+      "Wit without crossing. You stood at the gate and described the gate. The traveller passed without you.",
+    ],
+  },
+  cancer: {
+    pass: [
+      "Moon rules here. You came in with the tide and the tide was the path. Full pass; the crossing welcomed you.",
+      "Tidal ear, tidal foot. The traveller and you walked the same shore. Through with full silver.",
+      "You felt the dream before you entered it. The dream entered you instead. Rare; crossed.",
+    ],
+    fail: [
+      "Moon rules; the rulership was wasted. You guarded the dream from yourself. The path stayed shut.",
+      "The shell closed at the night gate. Even the moon could not lift it tonight. The crossing waited.",
+      "You wanted the dream to be safe. The dream is the safety; you misread it. Denied gently.",
+    ],
+  },
+  leo: {
+    pass: [
+      "King at the night gate, walking quietly. The moon allows the crowned-but-quiet. Crossed.",
+      "You did not announce your dream; you carried it. The traveller respects that carry. Pass.",
+      "Solar weight at the lunar gate is heavy; tonight the gate accepted the weight. Rare; through.",
+    ],
+    fail: [
+      "Solar roar at the lunar gate. The moon does not amplify; it reflects. There was nothing to reflect.",
+      "You wanted the dream to crown you. The dream is not the crown; it is the un-crowning. Denied warmly.",
+      "Performance at the night sky. The stars do not applaud; they witness. They witnessed the performance only.",
+    ],
+  },
+  virgo: {
+    pass: [
+      "You parsed the dream into its parts and the parts still cohered. The traveller respects that. Pass.",
+      "Mercury at the night gate, slow tonight; the moon allowed the precision because it was patient. Through.",
+      "You footnoted the path and the path did not break under the footnotes. Rare; crossed.",
+    ],
+    fail: [
+      "You parsed the dream into nothing. The moon does not preserve dissected dreams.",
+      "Precision at the dream's edge — sometimes useful, today wrong. You corrected the path off the path.",
+      "Mercury at the night gate wants to record. The traveller wants to cross. You recorded; you did not cross.",
+    ],
+  },
+  libra: {
+    pass: [
+      "Elegant at the night gate. You weighed the dream against the not-dream and chose the lighter. Pass.",
+      "Both halves of the night were honoured; the crossing happened in the seam. Through with the scale still.",
+      "The moon and the scale and the page agreed tonight. The traveller smiled once. Crossed.",
+    ],
+    fail: [
+      "You weighed the dream until the dream was a weighing. Dreams are not scales; they are crossings.",
+      "Both possibilities held still. The moon does not wait for stillness; it moves. You stayed at the scale.",
+      "Fairness at the dream's gate. The dream is not fair; it is true. You wanted the wrong thing.",
+    ],
+  },
+  scorpio: {
+    pass: [
+      "Moon falls here. Yet you went under the dream and came back with it intact. Rare. Pass against the fall.",
+      "The deep gaze met the cool light. You did not flinch from the un-lit phase. Crossed underground.",
+      "Silent dreamer; the moon allows the silent crossing. The traveller honours what is not said.",
+    ],
+    fail: [
+      "Moon's fall, and the fall took you. You held the dream as a secret; the traveller cannot share what you would not name.",
+      "Suspicion at the night gate. The moon is not suspicious; it is just the moon. You looked for tricks where none lived.",
+      "You watched the dream for the betrayal. There is no betrayal in dreams; only un-lit phases. You missed both.",
+    ],
+  },
+  sagittarius: {
+    pass: [
+      "You aimed your dream at the larger sky and the larger sky received it. The traveller honours the wide-arc dream. Pass.",
+      "Big arrow, lunar target — you lit the arc you flew along. Through with the moon following.",
+      "You named what the dream is for, not just what it is. The traveller accepted the naming. Crossed.",
+    ],
+    fail: [
+      "You aimed past the dream into philosophy. The moon cannot light philosophy; it lights paths.",
+      "Big truth at the small night. The night was specific; your aim was vague. The crossing missed.",
+      "Sagittarius at the lunar gate flew over the gate. The traveller waited at the missed crossing. Denied.",
+    ],
+  },
+  capricorn: {
+    pass: [
+      "Moon detriment here. You climbed to the dream the slow way and the slow way held. Rare; pass.",
+      "Cold mountain, cold moon. You did not ask for warmth; you walked. The traveller respects the climbed dream.",
+      "Discipline of dreaming — rare gift. The moon allows the patient phase tonight. Through.",
+    ],
+    fail: [
+      "Moon's detriment. You scheduled the dream; the dream does not arrive on schedule.",
+      "Structure at the night gate. The structure was correct; the dream was elsewhere; you stood in your own scaffold.",
+      "Patience without surrender at the moon's path. The traveller passed; you stayed at the trailhead, building.",
+    ],
+  },
+  aquarius: {
+    pass: [
+      "You re-framed the dream and the new framing was the dream. Strange path, true crossing. Pass.",
+      "Detached dreamer; you walked the moon's path while standing off it. The traveller allowed the heresy. Through.",
+      "You named the system that holds the dreams and the naming carried you. Crossed sideways.",
+    ],
+    fail: [
+      "Theory of dreaming is not dreaming. The moon does not light theory; it lights what is being walked.",
+      "You disagreed with the premise of crossing. The premise is the encounter. You walked away from the gate, debating.",
+      "Distance at the dream's edge. The dream is intimate work; distance is for after-light. You came at the wrong phase.",
+    ],
+  },
+  pisces: {
+    pass: [
+      "Dream meeting dream. You did not walk; you appeared at the other side. The traveller accepts that mode. Pass.",
+      "The tide carried the dream-walker. You did not need to step; you were stepped through. Crossed in water-light.",
+      "Pisces at the lunar gate is the deepest welcome. The path opened wide; you crossed without crossing.",
+    ],
+    fail: [
+      "You dissolved at the gate. The moon cannot light what has no edge to light.",
+      "Tide without form is not crossing. You brought weather; the gate wanted a walker. The traveller waited.",
+      "You loved the dream-state more than the dream-path. The moon understands; the verdict still came. Denied gently.",
+    ],
+  },
+} as const;
+
 // ──────────────── Matrix assembly ────────────────
 //
-// PR 1 of #553 ships the four solar-quartet keys (chesed, gevurah,
-// tiferet, netzach) with Egyptian-authored verdicts. The four
-// contemplative-cluster keys (chokmah, binah, hod, yesod) continue
-// to fall back to the Greco-Roman matrix until PR 2 of #553 lands
-// the second half. The fallback reads are explicit so a `git grep`
-// finds them when PR 2 starts.
+// All 8 encounter avatars are now Egyptian-authored. The greco-roman
+// fallback that PR 1 used as a stopgap is gone.
 
 export const sefirahVerdicts: VerdictMatrix = {
-  // Egyptian-authored (PR 1 of #553):
+  // Solar quartet (PR 1 of #553):
   chesed: ra,
   gevurah: horus,
   tiferet: osiris,
   netzach: hathor,
-  // TODO(#553 PR 2): replace with Egyptian Amun, Isis, Thoth, Khonsu.
-  chokmah: grecoRomanVerdicts.chokmah,
-  binah: grecoRomanVerdicts.binah,
-  hod: grecoRomanVerdicts.hod,
-  yesod: grecoRomanVerdicts.yesod,
+  // Contemplative cluster (PR 2 of #553):
+  chokmah: amun,
+  binah: isis,
+  hod: thoth,
+  yesod: khonsu,
 };
 
 // Re-export the matrix type so consumers reading this file directly
