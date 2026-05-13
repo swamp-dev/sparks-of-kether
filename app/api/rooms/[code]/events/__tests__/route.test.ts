@@ -304,6 +304,18 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     expect(body.detail.cause.actual).toBe('move');
     // Snapshot must NOT have been written through the service client.
     expect(serviceClientCreated).toBe(false);
+    // Pin the route's audit behaviour on the 422 path: unlike the
+    // 403 authorization gate (which writes a `rejected:<kind>` row
+    // before returning), the dispatcher-rejected path returns
+    // `apply.error` directly with no audit insert. If a future change
+    // adds an audit on apply.error, this assertion fails loudly so
+    // the contract change gets reviewed rather than silently shipped
+    // (#592).
+    expect(
+      auditInserts.some((i) =>
+        (i.row as { event_type?: string }).event_type?.startsWith('rejected:'),
+      ),
+    ).toBe(false);
   });
 
   it('returns a structured 500 when the engine throws on a corrupted snapshot', async () => {
