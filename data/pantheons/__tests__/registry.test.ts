@@ -141,18 +141,18 @@ describe('pantheons registry (#547)', () => {
       }
     });
 
-    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B3)', () => {
-      // B2 (#552) shipped names + codex avatar. B3 (#553) ships the
-      // verdict matrix in two PRs — both halves are now landed and
-      // `sefirahVerdicts` is fully Egyptian-authored. The remaining
-      // slots (`sefirahPlayerResponses`, `sefirahFraming`,
-      // `sefirahFramingPlaceholder`, `sefirahBlessings`) continue to
-      // use the greco-roman matrices until their authoring tickets
-      // land (B3 follow-up for player responses, #554, #555).
+    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B4)', () => {
+      // B2 (#552) shipped names + codex avatar. B3 (#553) shipped the
+      // verdict matrix (PR 1 — solar quartet; PR 2 — contemplative
+      // cluster); `sefirahVerdicts` is now fully Egyptian-authored.
+      // B4 (#554) ships the Egyptian blessing matrix below. The
+      // remaining slots (`sefirahPlayerResponses`, `sefirahFraming`,
+      // `sefirahFramingPlaceholder`) continue to use the greco-roman
+      // matrices until their authoring tickets land (#553 follow-up,
+      // #555).
       expect(p.sefirahFraming).toBe(sefirahFraming);
       expect(p.sefirahFramingPlaceholder).toBe(grecoRoman.sefirahFramingPlaceholder);
       expect(p.sefirahPlayerResponses).toBe(grecoRoman.sefirahPlayerResponses);
-      expect(p.sefirahBlessings).toBe(sefirahBlessings);
     });
 
     it('sefirahVerdicts is the fully-Egyptian matrix (#553 complete)', () => {
@@ -166,6 +166,22 @@ describe('pantheons registry (#547)', () => {
       expect(raAriesPass).toMatch(/throne|sky|sun|noon|kingdom|crown|light/);
       const amunAriesPass = p.sefirahVerdicts.chokmah.aries.pass.join(' ').toLowerCase();
       expect(amunAriesPass).toMatch(/hidden|breath|wind|pylon|mask/);
+    });
+
+    it('sefirahBlessings is now the Egyptian matrix (#554)', () => {
+      // B4 (#554) authors the full Egyptian blessing matrix (360
+      // cells across all 10 sefirot). The matrix object is distinct
+      // from the greco-roman one. Spot-check a Ra (chesed) Aries
+      // blessing for solar-throne imagery; full anchor checks live in
+      // `data/pantheons/egyptian/__tests__/blessings.test.ts`.
+      expect(p.sefirahBlessings).not.toBe(grecoRoman.sefirahBlessings);
+      const raAries = p.sefirahBlessings.chesed.aries.join(' ').toLowerCase();
+      expect(raAries).toMatch(/sun|sky|throne|kingdom|noon|crown|light/);
+      // Bastet (malkuth) is the Egyptian Hestia-equivalent; a Malkuth
+      // blessing should mention hearth/threshold/lamp imagery — not
+      // the greco-roman Hestia register.
+      const bastetAries = p.sefirahBlessings.malkuth.aries.join(' ').toLowerCase();
+      expect(bastetAries).toMatch(/hearth|threshold|lamp|home|cat|bastet/);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { sefirahBlessings } from '../greco-roman/blessings';
+import { sefirahBlessings } from './blessings';
 import {
   sefirahFraming,
   sefirahFramingPlaceholder,
@@ -11,20 +11,17 @@ import { sefirahVerdicts } from './verdicts';
 
 /**
  * Egyptian pantheon — Phase B2 (#552) shipped avatar names + codex
- * avatar; B3 (#553) is shipping the verdict matrix in two PRs (this
- * branch is PR 1, the solar quartet — Ra, Horus, Osiris, Hathor; PR
- * 2 follows with Amun, Isis, Thoth, Khonsu). The hybrid matrix —
- * 4 Egyptian-authored cells, 4 still-Greco-Roman fallback cells —
- * lives inside `data/pantheons/egyptian/verdicts.ts`.
+ * avatar; B3 (#553) shipped the verdict matrix (PR 1 — solar quartet,
+ * #606; PR 2 — contemplative cluster, #613). B4 (#554) ships the
+ * blessing matrix below — `sefirahBlessings` is now Egyptian-authored
+ * across all 10 sefirot.
  *
- * `sefirahPlayerResponses`, `sefirahFraming`, `sefirahFramingPlaceholder`,
- * and `sefirahBlessings` continue to fall back to the Greco-Roman
- * content until their authoring tickets land:
+ * `sefirahPlayerResponses`, `sefirahFraming`, and
+ * `sefirahFramingPlaceholder` continue to fall back to the
+ * Greco-Roman content until their authoring tickets land:
  *
- *   - B3 (#553 PR 2) — Egyptian Amun/Isis/Thoth/Khonsu verdict cells.
  *   - B3 follow-up — Egyptian player responses (out of scope for
  *     #553's verdict matrix; tracked separately).
- *   - B4 (#554) — Egyptian blessing matrix → replaces `sefirahBlessings`.
  *   - B5 (#555) — Egyptian framing copy → replaces `sefirahFraming`
  *     and `sefirahFramingPlaceholder`.
  *
@@ -39,11 +36,8 @@ export const egyptian: Pantheon = {
   sefirahFraming,
   // TODO(#555) replace with Egyptian framing placeholders.
   sefirahFramingPlaceholder,
-  // PR 1 of #553 ships the solar quartet; PR 2 ships the rest. The
-  // hybrid (4 Egyptian, 4 greco-roman fallback) is inside this matrix.
   sefirahVerdicts,
   // TODO(#553 follow-up) replace with Egyptian player responses.
   sefirahPlayerResponses,
-  // TODO(#554) replace with Egyptian blessing matrix.
   sefirahBlessings,
 };
