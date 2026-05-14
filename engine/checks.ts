@@ -713,6 +713,21 @@ export function resolveChallenge(
     };
   }
 
+  // #491 / `design/per-sefirah-mechanics.md` § 3.7 — Binah Sit With
+  // Loss. At Binah, each staged card-burn grants an extra
+  // `binahBurnTierBonus(arcanum)` on top of the standard +3 already
+  // counted by `cardBurns` in rollCheck. Higher-rank cards thus
+  // matter more — "concrete losses count." The extra folds into
+  // flatBonus.
+  const binahExtra =
+    sefirah === 'binah' ? evaluateBinahBurnBonus(state) : 0;
+  if (binahExtra > 0) {
+    resolvedModifiers = {
+      ...resolvedModifiers,
+      flatBonus: (resolvedModifiers.flatBonus ?? 0) + binahExtra,
+    };
+  }
+
   // #486 / `design/per-sefirah-mechanics.md` § 3.3 — Chesed Overflow
   // gift-card DC reduction. Each staged gift reduces effective DC by
   // 2 for the first and 1 per additional, capped at -4. Fold the
@@ -1429,4 +1444,57 @@ function evaluateGevurahDearestBonus(
     (a) => a === dearest,
   ).length;
   return matches * GEVURAH_DEAREST_BONUS;
+}
+
+// ──────────────── Binah Sit With Loss helpers (#491) ────────────────
+
+/**
+ * Binah Sit With Loss **tier bonus** per card-burn arcanum (#491;
+ * `design/per-sefirah-mechanics.md` § 3.7). Returns ONLY the
+ * arcanum-scaled extra that stacks on top of the standard
+ * `CARD_BURN_BONUS` (+3) — not the full per-burn contribution. Higher-
+ * rank cards make concrete losses count more; the closed-form is
+ * `Math.floor(arc / 4)` for valid arcana 0–21:
+ *
+ *   arc 0–3   → +0 extra (+3 total per burn)
+ *   arc 4–7   → +1 extra (+4 total per burn)
+ *   arc 8–11  → +2 extra (+5 total per burn)
+ *   arc 12–15 → +3 extra (+6 total per burn)
+ *   arc 16–19 → +4 extra (+7 total per burn)
+ *   arc 20–21 → +5 extra (+8 total per burn)
+ *
+ * (The design prose says "+ ceil(arcanum / 4)" but the design's tier
+ * table is the authoritative rule — closed-form `floor` matches the
+ * table exactly.)
+ *
+ * **UI rendering note.** The per-card subscript the design's prep
+ * panel describes ("+5 at Binah" on a card with arcanum 10) is the
+ * TOTAL per-burn contribution, NOT this function's return value. Use:
+ *
+ *   const subscript = CARD_BURN_BONUS + binahBurnTierBonus(arcanum);
+ *
+ * Calling `binahBurnTierBonus(10)` directly returns 2, not 5.
+ *
+ * Pure: same arcanum always returns the same bonus. Defensive on
+ * negative arcana (returns 0); caller invariants (deck values 0–21)
+ * make that branch unreachable in practice.
+ */
+export function binahBurnTierBonus(arcanum: number): number {
+  if (arcanum < 0) return 0;
+  return Math.floor(arcanum / 4);
+}
+
+/**
+ * Sum the Binah burn-tier bonuses across the active player's staged
+ * cardBurns. Called by `resolveChallenge` when the encounter is at
+ * Binah. The return value folds into `flatBonus` on top of the
+ * standard `cardBurns * CARD_BURN_BONUS` already counted by
+ * `rollCheck`. Returns 0 when no cardBurns are staged.
+ */
+function evaluateBinahBurnBonus(state: GameState): number {
+  let total = 0;
+  for (const arcanum of state.pendingModifiers.cardBurns) {
+    total += binahBurnTierBonus(arcanum);
+  }
+  return total;
 }

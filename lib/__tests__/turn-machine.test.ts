@@ -4104,3 +4104,93 @@ describe('turnReducer — Chesed Overflow (#486)', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe('turnReducer — Binah Sit With Loss (#491)', () => {
+  // Design § 3.7: at Binah, ally assists are blocked at
+  // prep-add-modifier. "Demeter sits alone. So do you." Spark-burns
+  // and card-burns remain allowed (the prohibition is on ally
+  // assists specifically, not on the active player's own resources).
+
+  function binahStats() {
+    return {
+      unity: 10, insight: 10, understanding: 12,
+      lovingkindness: 10, strength: 10, harmony: 10,
+      passion: 10, intellect: 10, intuition: 10, body: 10,
+    };
+  }
+
+  it('rejects prep-add-modifier assist-request when encounter is at Binah', () => {
+    const active = makePlayer({ id: 'p1', position: 'binah', stats: binahStats() });
+    const ally = makePlayer({ id: 'p2', position: 'binah' });
+    const state = makeState(
+      {},
+      {
+        players: [active, ally],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'assist-request', allyId: 'p2' },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('binah-no-assists');
+  });
+
+  it('allows prep-add-modifier assist-request at non-Binah Sefirot (Hod control)', () => {
+    const active = makePlayer({ id: 'p1', position: 'hod', stats: binahStats() });
+    const ally = makePlayer({ id: 'p2', position: 'hod' });
+    const state = makeState(
+      {},
+      {
+        players: [active, ally],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'assist-request', allyId: 'p2' },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('allows prep-add-modifier card-burn at Binah (only assists blocked, not own resources)', () => {
+    // Design § 3.7 edge case: "Spark-burns *are* allowed (the
+    // prohibition is on *ally* assists, not on the active player's
+    // own resources)." Same applies to card-burns.
+    const active = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [5, 7, 11],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [active],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'card-burn', arcanum: 5 },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});

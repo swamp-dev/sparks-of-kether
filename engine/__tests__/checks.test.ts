@@ -16,6 +16,7 @@ import {
   GEVURAH_DEAREST_BONUS,
   CHESED_OVERFLOW_BONUS,
   CHESED_DC_REDUCTION_CAP,
+  binahBurnTierBonus,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -2815,6 +2816,199 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     if (!result.ok) return;
     expect(result.value.outcome.effectiveDC).toBe(12); // Hod base, no Chesed tilt
     expect(result.value.chesedOverflowBonus).toBeUndefined();
+  });
+});
+
+// ──────────────── resolveChallenge — Binah Sit With Loss (#491) ────────────────
+
+describe('resolveChallenge — Binah Sit With Loss (#491)', () => {
+  // Binah base DC = 16 (sefirot.ts), stat = understanding.
+  //
+  // Design § 3.7: At Binah, each staged card-burn grants
+  // CARD_BURN_BONUS (+3, standard) PLUS ceil(arcanum / 4) (the
+  // Binah-specific extra). The extra folds into flatBonus.
+  //
+  // Tiers:
+  //   arcanum 0–3 → +3 standard + 0 extra (ceil(0/4)=0; ceil(3/4)=1
+  //                actually... ceil(0/4)=0, ceil(1/4)=1, ceil(2/4)=1,
+  //                ceil(3/4)=1.) Wait — the design says "Card with
+  //                arcanum 0–3: standard +3" which means EXTRA=0 for
+  //                arc 0–3. So the formula is "ceil(arc/4)" applied to
+  //                arc 4–7 gives 1, 8–11 gives 2, etc. — i.e. it's
+  //                actually `floor((arc - 1) / 4)` or `max(0, ceil((arc -
+  //                3) / 4))` or simply the truncated tier number.
+  //                The spec table is: 0-3→0, 4-7→1, 8-11→2, 12-15→3,
+  //                16-19→4, 20-21→5. That's `Math.max(0, Math.floor((arc
+  //                + 0) / 4))` for arc 0–21 modulo edge cases... let me
+  //                walk: arc=0 → 0/4 = 0 ✓. arc=3 → 3/4 = 0.75 → 0 ✓.
+  //                arc=4 → 4/4 = 1 ✓. arc=7 → 7/4 = 1.75 → 1 ✓.
+  //                arc=8 → 8/4 = 2 ✓. arc=15 → 15/4 = 3.75 → 3 ✓.
+  //                arc=16 → 16/4 = 4 ✓. arc=19 → 19/4 = 4.75 → 4 ✓.
+  //                arc=20 → 20/4 = 5 ✓. arc=21 → 21/4 = 5.25 → 5 ✓.
+  //                So the formula is `Math.floor(arc / 4)`, NOT
+  //                `Math.ceil(arc / 4)` despite the design's "ceil"
+  //                phrasing. The design's prose says "+ ceil(arcanum / 4)"
+  //                but the table tells the actual rule. The table is
+  //                authoritative.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+    soulDoorDelta: 0,
+  };
+
+  function binahState(
+    cardBurns: readonly number[],
+    stats: Partial<Record<string, number>> = { understanding: 10 },
+  ): GameState {
+    return makeState(
+      { position: 'binah', stats: statSheet(stats) },
+      { pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns } },
+    );
+  }
+
+  it.each([
+    [0, 0],
+    [1, 0],
+    [3, 0],
+    [4, 1],
+    [7, 1],
+    [8, 2],
+    [11, 2],
+    [12, 3],
+    [15, 3],
+    [16, 4],
+    [19, 4],
+    [20, 5],
+    [21, 5],
+  ])(
+    'binahBurnTierBonus(%i) === %i (design § 3.7 tier table)',
+    (arcanum, expected) => {
+      expect(binahBurnTierBonus(arcanum)).toBe(expected);
+    },
+  );
+
+  it('Binah burn of low-arcanum card (arc 3): standard +3, no extra flatBonus', () => {
+    // Tier 0-3 = +0 extra. Card grants only the standard cardBurn.
+    const state = binahState([3]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'binah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(3);
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('Binah burn of mid-arcanum card (arc 10): +5 total bonus (+3 base + +2 extra)', () => {
+    // Tier 8-11 = +2 extra. Total bonus from this burn = +5.
+    const state = binahState([10]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'binah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(3);
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+  });
+
+  it('Binah burn of high-arcanum card (arc 21 The World): +8 total bonus (+3 base + +5 extra)', () => {
+    // Tier 20-21 = +5 extra. Highest concrete loss; the design's
+    // intention is to reward burning the rank-heaviest cards.
+    const state = binahState([21]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'binah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(3);
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+  });
+
+  it('Binah multiple burns: bonus sums across all staged arcana', () => {
+    // Burn arc 4 (+1) + arc 12 (+3) + arc 20 (+5) → extra = 9.
+    // Total cardBurn = 3 burns * 3 = 9. flatBonus = 9.
+    const state = binahState([4, 12, 20]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'binah',
+      modifiers: { ...blankMods, cardBurns: 3 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(9);
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(9);
+  });
+
+  it('caller-supplied flatBonus stacks with the Binah burn-tier bonus', () => {
+    // A future twist or Spark might bring its own flatBonus. The
+    // Binah extra must STACK, not replace.
+    const state = binahState([10]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'binah',
+      modifiers: { ...blankMods, cardBurns: 1, flatBonus: 3 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // 3 caller + 2 Binah extra = 5.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+  });
+
+  it('non-Binah Sefirah: staged cardBurns get only the standard +3 (Tiferet control)', () => {
+    // Regression guard: the arcanum-scaled extra is gated on
+    // `sefirah === 'binah'`. A Tiferet resolve with arc-21 in
+    // cardBurns must NOT see the +5 extra (only standard +3).
+    const state = makeState(
+      { position: 'tiferet', stats: statSheet({ harmony: 10 }) },
+      { pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [21] } },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(3);
+    // The +5 Binah extra is NOT in flatBonus. Tiferet may have its
+    // own tilt from the burn's pillarsCrossed but no Binah extra.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('Binah with 0 burns: no extra flatBonus (empty pendingModifiers)', () => {
+    // Defensive: the helper handles the empty-burns case as 0 extra.
+    const state = binahState([]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'binah',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
   });
 });
 

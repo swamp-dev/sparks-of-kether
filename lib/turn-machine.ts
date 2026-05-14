@@ -303,6 +303,17 @@ export type TurnReducerError =
        */
       readonly kind: 'chesed-shell-blocks-gift';
     }
+  | {
+      /**
+       * #491 — design § 3.7: at Binah, ally assists are blocked at
+       * `prep-add-modifier`. "Demeter sits alone. So do you." The
+       * gate fires when `state.encounter?.sefirah === 'binah'` AND
+       * the modifier is an `assist-request`. Spark-burns and card-
+       * burns remain allowed at Binah — the prohibition is narrow
+       * to ally assists specifically.
+       */
+      readonly kind: 'binah-no-assists';
+    }
   | { readonly kind: 'card-not-in-hand'; readonly arcanum: number }
   | {
       readonly kind: 'spark-not-held';
@@ -984,6 +995,18 @@ export function turnReducer(
           break;
         }
         case 'assist-request':
+          // #491 — design § 3.7: at Binah, ally assists are blocked.
+          // "Demeter sits alone." Fires BEFORE the cap check so the
+          // rejection surfaces the actual reason. The prohibition is
+          // narrow to ally assists; card-burns and spark-burns
+          // remain allowed at Binah (own-resource consumption is
+          // distinct from delegating effort to allies).
+          if (state.encounter?.sefirah === 'binah') {
+            return {
+              ok: false,
+              reason: { kind: 'binah-no-assists' },
+            };
+          }
           if (pending.assistRequests.length >= MAX_ASSIST_REQUESTS) {
             return {
               ok: false,
