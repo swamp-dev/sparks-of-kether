@@ -1,6 +1,6 @@
 import {
+  useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -116,38 +116,39 @@ const MAX_FAN_DEG = 12;
 const CARD_OVERLAP_REM_BASE = '-3.3rem';
 
 /**
- * Free-floating hand (#579). The hand was an inline-flow fan at the
- * bottom of the Tree column under the #411 fit-on-screen budget;
- * it's now a `position: fixed` overlay anchored to the viewport's
- * bottom edge. At rest the entire fan scales down to a thin band
- * (`FAN_REST_SCALE`); when any card is hovered or keyboard-focused
- * the fan transitions to natural size and the active card scales
- * up dramatically (`MAGNIFY_SCALE_BIG`) and translates upward
- * toward the vertical centre of the viewport (`MAGNIFY_LIFT_VH`).
- * The magnified card renders at `MAGNIFY_OPACITY` so the matching
- * Tree path's per-Sefirah glow (#312/#405) shows through.
+ * Free-floating hand (#579, reworked). The hand is a `position: fixed`
+ * overlay anchored to the viewport's bottom edge. At rest the fan
+ * peeks `PEEK_HEIGHT_PX` pixels above the viewport bottom — enough to
+ * see card art tops — via a `translateY(calc(100% - PEEK_HEIGHT_PX))`
+ * on the inner fan div. Hovering or touching the peek strip slides the
+ * full fan up into view. Mouse / pointer leaving the hand starts a
+ * short grace-period timer before hiding.
  *
- * Pre-#579 the Mac-dock-style magnification (#463) used
- * MAGNIFY_SCALE=1.3 and a 12px lift. Post-#579 those constants are
- * retired; the new big numbers replace them. Neighbour-nudge
- * primitives stay because the fan still uses them inside the
- * naturally-sized expanded state.
+ * The fan is always at scale(1). The old `FAN_REST_SCALE = 0.35 →
+ * scale(1)` bloom was the root cause of the "never settles" jank: the
+ * scale-up repositioned every card, which could push the hovered card
+ * away from the cursor and trigger an infinite enter/leave loop.
+ * Replacing the scale with a translateY eliminates the feedback loop.
  *
- * `prefers-reduced-motion` flattens scale + translate (rest fan
- * stays at scale 1, magnified card stays in place). Opacity is
- * preserved — the path-through-card visual is a11y-load-bearing
- * (it's the connective signal between hand and Tree, not just
- * decoration).
+ * Active card magnification is in-place: `translateY(-MAGNIFY_LIFT_PX)
+ * scale(MAGNIFY_SCALE)`. No centering teleport — the fan is always
+ * centred at the viewport bottom so no card can fly off screen.
+ *
+ * `prefers-reduced-motion` forces `handExpanded = true` on mount so
+ * the hand is always fully visible. Opacity is preserved — the
+ * path-through-card visual is a11y-load-bearing.
  */
-const FAN_REST_SCALE = 0.35;
-const MAGNIFY_SCALE_BIG = 1.5;
-const MAGNIFY_LIFT_VH = 20;
+const PEEK_HEIGHT_PX = 72;
+const HAND_REVEAL_MS = 280;
+const HAND_HIDE_MS = 380;
+const HAND_HIDE_DELAY_MS = 120;
+const MAGNIFY_SCALE = 1.12;
+const MAGNIFY_LIFT_PX = 18;
 const MAGNIFY_OPACITY = 0.75;
 const NEIGHBOUR_NUDGE_REM = 0.8;
 const NEAR_NEIGHBOUR_NUDGE_REM = 0.25;
 const MAGNIFY_TRANSITION =
   'transform 240ms ease-out, opacity 200ms ease-out, box-shadow 240ms ease-out';
-const FAN_TRANSITION = 'transform 240ms ease-out';
 const MAGNIFY_BOX_SHADOW =
   '0 18px 60px rgba(0, 0, 0, 0.55), 0 0 36px rgba(255, 215, 0, 0.28)';
 
@@ -167,6 +168,11 @@ export function Hand({
 }: HandProps): JSX.Element {
   const [focusIndex, setFocusIndex] = useState(0);
   const [open, setOpen] = useState(defaultOpen);
+  // Peek-shelf expand/hide state. False = peeking (only PEEK_HEIGHT_PX
+  // of cards visible); true = fully revealed. Controlled by
+  // mouseenter/leave on the fan, keyboard focus, and drag state.
+  const [handExpanded, setHandExpanded] = useState(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // #412: arcanum currently being dragged (after threshold crossed).
   // Drives the per-card visual lift and lets the rendered card
   // suppress its onMouseLeave-clear of `hoveredCard` while the
@@ -232,16 +238,8 @@ export function Hand({
   // most-recent expression of intent.
   const [hoveredIndex, setHoveredIndex] = useState<number | undefined>(undefined);
   const [focusedIndex, setFocusedIndex] = useState<number | undefined>(undefined);
-  // Horizontal offset (px) added to the magnify transform so the active card
-  // centres on the viewport rather than lifting in-place at its fan position.
-  const [magnifyOffsetX, setMagnifyOffsetX] = useState<number>(0);
-  // Horizontal pan offset (px) for the fan container — lets the user drag the
-  // hand left/right to reveal cards hidden behind the overlap.
-  const [fanPanOffset, setFanPanOffset] = useState<number>(0);
-  const panStartRef = useRef<{ x: number; startOffset: number } | null>(null);
   const reduceMotion = useReduceMotion();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const fanRef = useRef<HTMLDivElement | null>(null);
 
   // Clamp focus index when the hand shrinks (cards played). Use a
   // functional updater so this effect only re-runs when `hand.length`
@@ -251,8 +249,6 @@ export function Hand({
     setFocusIndex((prev) =>
       prev >= hand.length && hand.length > 0 ? hand.length - 1 : prev,
     );
-    // Re-centre the pan whenever the hand changes (card played or drawn).
-    setFanPanOffset(0);
   }, [hand.length]);
 
   const handleKey = (
@@ -314,51 +310,41 @@ export function Hand({
       ? prevActiveIndexRef.current
       : undefined;
 
-  // Centering: after each render where `activeIndex` becomes defined,
-  // measure the newly-active card's bounding rect and compute the
-  // translateX needed to push its centre to the viewport centre.
-  // `useLayoutEffect` fires after the DOM commits (so fanTransform
-  // already reads `scale(1)` and getBoundingClientRect returns the
-  // target layout position) but before the browser paints — the
-  // correction lands in the same frame and the user never sees the
-  // uncorrected position.
-  //
-  // We do NOT reset to 0 on deactivation: `magnifyOffsetX` is only
-  // consumed inside the `isMagnified` branch, so a stale value from
-  // the previous active card is visually inert. Resetting causes an
-  // extra render after mouseLeave that, in the test environment, lets
-  // the `prevActiveIndexRef` useEffect run between renders and clear
-  // the ref before the exit-transition render reads it — breaking the
-  // one-render transition persistence tested in the magnify suite.
-  useLayoutEffect(() => {
-    if (activeIndex === undefined || reduceMotion) return;
-    const card = cardRefs.current[activeIndex];
-    const fanEl = fanRef.current;
-    if (!card || !fanEl) return;
-    // Use `offsetLeft` + `offsetWidth` (layout geometry, unaffected by
-    // CSS transforms) rather than `getBoundingClientRect()` on the card.
-    // When the user slides directly from card A to card B, the stale
-    // `magnifyOffsetX` from A is still applied as translateX on card B's
-    // style; getBoundingClientRect would include that stale shift and
-    // produce a compounding centering error. offsetLeft reflects the
-    // flex-layout position before any transform, so the measurement is
-    // always clean.
-    //
-    // Subtract `fanPanOffset` from the fan's getBoundingClientRect.left:
-    // `getBoundingClientRect` includes the fan's current `translateX(fanPanOffset)`
-    // transform, so `fanRect.left` is already shifted by the pan amount. Without
-    // this correction, hovering a card while the fan is panned produces a centering
-    // error of 2 × fanPanOffset (measurement is off by panOffset, correction is
-    // off in the opposite direction by panOffset).
-    const fanRect = fanEl.getBoundingClientRect();
-    const cardNaturalCenterX = fanRect.left - fanPanOffset + card.offsetLeft + card.offsetWidth / 2;
-    setMagnifyOffsetX(window.innerWidth / 2 - cardNaturalCenterX);
-    // fanPanOffset is intentionally excluded from deps: re-measuring on
-    // every pan event while a card is magnified would thrash layout. The
-    // correction above bakes the pan-at-hover-time into the offset; panning
-    // after hover is a separate UX interaction that doesn't re-centre.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex, reduceMotion]);
+  // Peek-shelf expand/hide helpers. `expandHand` clears any pending hide
+  // timer and opens the fan. `scheduleHide` starts a short grace-period
+  // timer so the hand doesn't snap closed the instant the mouse drifts
+  // off a card (the player needs a moment to move toward the board for
+  // drag-to-play without the hand collapsing on them).
+  const expandHand = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    setHandExpanded(true);
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      if (draggingArcanum === undefined) setHandExpanded(false);
+    }, HAND_HIDE_DELAY_MS);
+  }, [draggingArcanum]);
+
+  // Cancel any pending hide timer on unmount to avoid a setState call
+  // on an already-unmounted component (React 18 no-ops it, but it still
+  // produces a dev-mode warning and is a resource leak).
+  useEffect(() => {
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, []);
+
+  // Keep the hand open for the full duration of a drag so the player
+  // can pick up a card and move to the board without the fan collapsing.
+  useEffect(() => {
+    if (draggingArcanum !== undefined) expandHand();
+  }, [draggingArcanum, expandHand]);
+
+  // Reduced-motion: skip the peek animation entirely — always show the
+  // full hand so no card information is hidden behind a motion barrier.
+  useEffect(() => {
+    if (reduceMotion) setHandExpanded(true);
+  }, [reduceMotion]);
 
   // #132: collapsed state — render a small badge with the card count
   // instead of the full fan. A tap on the badge reopens the hand.
@@ -378,7 +364,7 @@ export function Hand({
       >
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => { setOpen(true); expandHand(); }}
           data-action="open-hand"
           className="rounded border border-veil/30 px-4 py-2 text-sm"
           aria-expanded="false"
@@ -389,52 +375,12 @@ export function Hand({
     );
   }
 
-  // #579 — the open hand is a fixed-position overlay anchored to the
-  // viewport's bottom edge. The OUTER wrapper carries the role/aria
-  // semantics + `position: fixed`; the INNER fan div carries the
-  // existing flex layout, the #340 stacking context (`position:
-  // relative`), and the new free-floating scale transform.
-  //
-  // `pointer-events-none` on the outer wrapper lets clicks pass
-  // through the empty space around the fan to whatever sits below
-  // (the Tree, the action bar, etc.); `pointer-events-auto` on the
-  // inner fan re-enables interaction on the cards themselves.
-  // Without this split, the full-width overlay would intercept
-  // clicks on the Tree below.
-  const someActive = activeIndex !== undefined;
-  // The floating fan scales to a thin band at rest so the player
-  // sees they have cards but doesn't lose Tree real estate.
-  // Activating any card (mouse hover OR keyboard focus) blooms the
-  // fan to natural size; the active card then magnifies further
-  // within the now-natural fan. Reduced-motion users skip the scale
-  // entirely — the fan stays at natural size, and per-card
-  // transforms are already gated on `reduceMotion`.
-  //
-  // #579 review fix: `layout="inline"` consumers (e.g. /demo/hand)
-  // always render at scale 1 inline-flow — multiple hands stack
-  // vertically there, so a fixed overlay would have them all
-  // collide at the same viewport position.
+  // #579 — open hand: fixed-position overlay anchored to viewport bottom.
+  // `pointer-events-none` outer + `pointer-events-auto` inner lets clicks
+  // pass through empty space to the Tree while cards remain interactive.
   const isFloating = layout === 'floating';
-  const fanTransform =
-    reduceMotion || !isFloating
-      ? undefined
-      : someActive
-        ? 'scale(1)'
-        : `scale(${FAN_REST_SCALE})`;
-  // The role/aria attrs sit on the outer wrapper. For `floating`
-  // layout that wrapper is a `position: fixed` viewport overlay;
-  // for `inline` it's the existing inline-flow div the consumer
-  // can size with `className`.
-  // `overflow-x-clip` on the outer wrapper (floating only) clips the
-  // fan at the viewport edges so horizontal pan never triggers a page
-  // scrollbar. `clip` (not `hidden`) avoids the CSS-spec coercion
-  // that would force `overflow-y` to `auto` and make the wrapper a
-  // vertical scroll container as soon as a magnified card overflows
-  // it. The inner fan div no longer needs its own `overflow-x-clip`
-  // in floating mode — the outer wrapper provides the clip boundary.
-  // In inline mode (no outer wrapper), the inner div keeps its own.
   const outerClassName = isFloating
-    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center overflow-x-clip ${className ?? ''}`
+    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center ${className ?? ''}`
     : `${className ?? ''}`;
   const innerClassName = isFloating
     ? 'pointer-events-auto animate-hand-fade-in motion-reduce:animate-none'
@@ -450,59 +396,28 @@ export function Hand({
       className={outerClassName.trim()}
     >
       <div
-        ref={fanRef}
         data-hand-fan
-        // #340: `position: relative` here is the positioned-ancestor
-        // anchor for the per-card `zIndex` to take effect. In floating
-        // layout the stacking context the cards' z-indices participate
-        // in is provided by the outer `position: fixed` wrapper (and,
-        // when the fan transform is active, by that transform too).
-        // In inline layout neither applies — the cards z-order against
-        // each other within the nearest ancestor stacking context.
-        // `position: relative` alone, without a z-index of its own,
-        // does not create a stacking context.
-        //
-        // Fan pan: pointer handlers below start a horizontal pan only
-        // when the pointer goes down directly on the fan container
-        // background (`e.target === e.currentTarget`). Card buttons
-        // sit as children; their pointer events bubble up but the
-        // target check prevents them from triggering a pan — they
-        // already have their own drag-to-play pointer handling.
         className={innerClassName}
-        onPointerDown={isFloating ? (e) => {
-          if (e.target !== e.currentTarget) return;
-          // setPointerCapture keeps move/up events routed to this element
-          // even when the pointer drifts outside it. Optional-chained
-          // because jsdom test environments don't always implement it.
-          e.currentTarget.setPointerCapture?.(e.pointerId);
-          panStartRef.current = { x: e.clientX, startOffset: fanPanOffset };
-        } : undefined}
-        onPointerMove={isFloating ? (e) => {
-          if (!panStartRef.current) return;
-          const dx = e.clientX - panStartRef.current.x;
-          setFanPanOffset(panStartRef.current.startOffset + dx);
-        } : undefined}
-        onPointerUp={isFloating ? () => { panStartRef.current = null; } : undefined}
-        onPointerCancel={isFloating ? () => {
-          panStartRef.current = null;
-          setFanPanOffset(0);
-        } : undefined}
+        onMouseEnter={isFloating ? expandHand : undefined}
+        onMouseLeave={isFloating ? scheduleHide : undefined}
         style={{
           display: 'flex',
           justifyContent: 'center',
           gap: 0,
           position: 'relative',
-          ...(fanTransform !== undefined
+          ...(isFloating
             ? {
-                transform: fanPanOffset !== 0
-                  ? `${fanTransform} translateX(${fanPanOffset}px)`
-                  : fanTransform,
+                transform: handExpanded
+                  ? 'translateY(0)'
+                  : `translateY(calc(100% - ${PEEK_HEIGHT_PX}px))`,
                 transformOrigin: 'bottom center',
-                transition: FAN_TRANSITION,
+                transition: reduceMotion
+                  ? 'none'
+                  : handExpanded
+                    ? `transform ${HAND_REVEAL_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
+                    : `transform ${HAND_HIDE_MS}ms cubic-bezier(0.4, 0, 1, 1)`,
               }
-            : isFloating && fanPanOffset !== 0 ? {
-                transform: `translateX(${fanPanOffset}px)`,
-              } : {}),
+            : {}),
         }}
       >
       {/*
@@ -515,7 +430,7 @@ export function Hand({
       */}
       <button
         type="button"
-        onClick={() => setOpen(false)}
+        onClick={() => { setOpen(false); setHandExpanded(false); }}
         data-action="close-hand"
         aria-expanded="true"
         aria-label="Collapse hand"
@@ -610,12 +525,14 @@ export function Hand({
           : undefined;
         const handleFocusIn = visible
           ? (): void => {
+              expandHand();
               setFocusedIndex(i);
               if (onCardHover) onCardHover(arcanum);
             }
           : undefined;
         const handleFocusOut = visible
           ? (): void => {
+              scheduleHide();
               setFocusedIndex((prev) => (prev === i ? undefined : prev));
               if (onCardHover) onCardHover(undefined);
             }
@@ -657,18 +574,7 @@ export function Hand({
         let magnifyTransform = '';
         if (!reduceMotion) {
           if (isMagnified) {
-            // Transform order (CSS applies right-to-left):
-            //   scale(1.5) → translateY(-20vh) → translateX(offsetX)
-            //
-            // scale: card grows 1.5× around its own centre.
-            // translateY: lifts the card 20vh in viewport (post-scale)
-            //   coords — writing it left of scale() makes it the outer
-            //   operation, so it is not multiplied by the scale factor.
-            // translateX: centres the card horizontally on the viewport.
-            //   `magnifyOffsetX` is the distance from the card's fan
-            //   position to the viewport centre, computed in
-            //   useLayoutEffect after each activeIndex change.
-            magnifyTransform = ` translateX(${magnifyOffsetX.toFixed(1)}px) translateY(-${MAGNIFY_LIFT_VH}vh) scale(${MAGNIFY_SCALE_BIG})`;
+            magnifyTransform = ` translateY(-${MAGNIFY_LIFT_PX}px) scale(${MAGNIFY_SCALE})`;
           } else if (isImmediateNeighbour && offsetFromActive !== null) {
             const sign = offsetFromActive > 0 ? 1 : -1;
             magnifyTransform = ` translateX(${(sign * NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
@@ -738,16 +644,9 @@ export function Hand({
               position: 'relative',
               zIndex,
               transform: baseTransform + magnifyTransform,
-              // #579: magnified cards anchor at `center` so scale + lift
-              // both move the card's centre toward viewport centre. The
-              // existing fan layout (rotate + base translateY) doesn't
-              // care which origin is used at scale 1, so flipping the
-              // origin only when magnified keeps non-magnified cards
-              // visually identical to today's #463 dock-magnify base
-              // (bottom-center origin keeps the fan's curve anchored on
-              // a horizontal line). Pre-#579 the origin was always
-              // `bottom center` and the magnify lift was a fixed 12 px;
-              // post-#579 the lift is 35 vh and the origin matters.
+              // Magnified cards scale from center so the lift is symmetric;
+              // non-magnified cards anchor at bottom-center to keep the
+              // fan's curve on a horizontal baseline.
               transformOrigin: isMagnified ? 'center' : 'bottom center',
               // Transition is scoped to cards participating in the magnify
               // *now or on the previous render*. The `inMagnifySet` half

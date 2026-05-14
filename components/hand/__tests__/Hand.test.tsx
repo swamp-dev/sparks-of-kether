@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Hand } from '../Hand';
 import { isHandVisible } from '../visibility';
 import { makePlayer, makeState } from '@/test/fixtures';
@@ -575,157 +575,15 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(middleZ).toBeGreaterThan(firstZ);
   });
 
-  it('hovered card scales up — #579 free-floating hand', () => {
-    // Pre-#579 the magnify scale was 1.3 (Mac-dock-style). #579 increased
-    // it to 3.5× so the card dominated the screen; a later pass reduced it
-    // to 1.5× so the card lifts to a readable "normal" size without
-    // filling the viewport. This test pins the constant so a polish pass
-    // can't silently revert to dock-magnify numbers without updating the
-    // contract.
+  it('hovered card scales to MAGNIFY_SCALE (1.12) in-place with 18 px lift; no centering translateX', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector(
       '[data-card-slot="1"]',
     ) as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
-    expect(middle.style.transform).toMatch(/scale\(1\.5\)/);
-  });
-
-  it('magnify transform order: translateX → translateY → scale (all run in post-scale viewport coords)', () => {
-    // Transform order (CSS applies right-to-left in the string):
-    //   scale(1.5) runs first (rightmost) — grows card in place.
-    //   translateY(-20vh) runs second — lifts card 20vh in viewport coords.
-    //   translateX(?px) runs last — centres card on viewport width.
-    //
-    // The base fan transform (rotate + per-slot translateY) must precede
-    // all magnify pieces so the concat order at the call-site is correct.
-    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
-    const middle = container.querySelector(
-      '[data-card-slot="1"]',
-    ) as HTMLButtonElement;
-    fireEvent.mouseEnter(middle);
-    const transform = middle.style.transform;
-    const translateXIdx = transform.indexOf('translateX(');
-    const translateYIdx = transform.indexOf('translateY(-20vh)');
-    const scaleIdx = transform.indexOf('scale(1.5)');
-    expect(translateXIdx, 'transform contains translateX(…px)').toBeGreaterThan(-1);
-    expect(translateYIdx, 'transform contains translateY(-20vh)').toBeGreaterThan(-1);
-    expect(scaleIdx, 'transform contains scale(1.5)').toBeGreaterThan(-1);
-    expect(
-      translateXIdx,
-      'translateX must appear before translateY in the transform string',
-    ).toBeLessThan(translateYIdx);
-    expect(
-      translateYIdx,
-      'translateY(-20vh) must appear before scale(1.5) in the transform string',
-    ).toBeLessThan(scaleIdx);
-    // Pin the full concatenation contract: base fan transform precedes magnify.
-    expect(transform).toMatch(
-      /rotate\([^)]+\) translateY\([^)]+\) translateX\([^)]+px\) translateY\(-20vh\) scale\(1\.5\)/,
-    );
-  });
-
-  it('magnified card transform includes translateX so the card centres on the viewport', () => {
-    // When a card is hovered, useLayoutEffect computes the horizontal
-    // distance from the card's natural fan position to the viewport
-    // centre and injects it as translateX. In jsdom getBoundingClientRect
-    // returns all-zeros, so the offset equals window.innerWidth / 2.
-    // The important contract is that translateX(…px) appears in the
-    // transform at all — that it comes before translateY and scale is
-    // already pinned by the transform-order test above.
-    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
-    const middle = container.querySelector(
-      '[data-card-slot="1"]',
-    ) as HTMLButtonElement;
-    fireEvent.mouseEnter(middle);
-    expect(middle.style.transform).toMatch(/translateX\([^)]+px\)/);
-  });
-
-  it('fan pan: pointerdown on the fan background + pointermove shifts the fan', () => {
-    // Dragging the fan background (not a card button) pans the fan
-    // so players can scroll to reveal cards hidden behind the overlap.
-    // The `e.target === e.currentTarget` guard ensures card buttons'
-    // drag-to-play path is not disrupted.
-    const { container } = render(
-      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
-    );
-    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
-
-    // Simulate a drag on the fan background: pointerdown then pointermove
-    // with the fan element itself as both dispatched target and currentTarget.
-    fireEvent.pointerDown(fan, { clientX: 200 });
-    fireEvent.pointerMove(fan, { clientX: 100 });
-    // The fan div's transform should now include translateX(-100px) from
-    // the 100-px leftward drag.
-    expect(fan.style.transform).toMatch(/translateX\(-100px\)/);
-  });
-
-  it('fan pan: pointercancel resets pan to zero', () => {
-    const { container } = render(
-      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
-    );
-    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
-    fireEvent.pointerDown(fan, { clientX: 200 });
-    fireEvent.pointerMove(fan, { clientX: 100 });
-    expect(fan.style.transform).toMatch(/translateX\(-100px\)/);
-    fireEvent.pointerCancel(fan);
-    // After cancel the pan offset is reset so the fan re-centres.
-    expect(fan.style.transform).not.toMatch(/translateX\(-100px\)/);
-  });
-
-  it('fan pan: pointerdown on a card child does NOT start a pan (e.target !== e.currentTarget guard)', () => {
-    // The `e.target === e.currentTarget` check on the fan div's handler
-    // ensures that a pointerdown starting on a card button bubbles up
-    // without triggering the pan. This keeps the card drag-to-play path
-    // independent of the fan-pan path.
-    const { container } = render(
-      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
-    );
-    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
-    const card = container.querySelector('[data-card-slot="0"]') as HTMLElement;
-
-    // Dispatch pointerDown on the card (it bubbles to the fan).
-    // In RTL, e.target === card, e.currentTarget === fan → guard fires.
-    fireEvent.pointerDown(card, { clientX: 200 });
-    fireEvent.pointerMove(fan, { clientX: 50 });
-    // The fan should have no pan translateX — the guard prevented it.
-    expect(fan.style.transform).not.toMatch(/translateX\(-150px\)/);
-  });
-
-  it('centering is independent of fan pan: hover while panned subtracts fanPanOffset from measurement', () => {
-    // When the fan is panned before a card is hovered, the fan div's
-    // getBoundingClientRect().left is already shifted by fanPanOffset.
-    // Without the fix, the centering math would use that shifted value,
-    // producing an error of 2 × fanPanOffset. With the fix, fanPanOffset
-    // is subtracted from fanRect.left so the measurement is pan-independent.
-    //
-    // In jsdom: getBoundingClientRect() returns 0 for all props,
-    // card.offsetLeft = 0, card.offsetWidth = 0. So:
-    //   Without fix: magnifyOffsetX = window.innerWidth/2 (no pan adjustment)
-    //   With fix:    magnifyOffsetX = window.innerWidth/2 - (0 - fanPanOffset)
-    //                               = window.innerWidth/2 + fanPanOffset
-    //                               = window.innerWidth/2 + (-100) for a 100px left drag
-    const { container } = render(
-      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
-    );
-    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
-    const middle = container.querySelector(
-      '[data-card-slot="2"]',
-    ) as HTMLButtonElement;
-
-    // Pan 100px left (fanPanOffset = -100).
-    fireEvent.pointerDown(fan, { clientX: 200 });
-    fireEvent.pointerMove(fan, { clientX: 100 });
-
-    // Hover a card while panned.
-    fireEvent.mouseEnter(middle);
-
-    const match = middle.style.transform.match(/translateX\(([^)]+)px\)/);
-    expect(match, 'translateX should appear in the card transform').not.toBeNull();
-    const [, rawValue] = match ?? [];
-    const translateXValue = parseFloat(rawValue ?? '0');
-    // Expected: window.innerWidth/2 - (fanRect.left[=0] - fanPanOffset[-100] + offsetLeft[=0] + offsetWidth/2[=0])
-    //         = window.innerWidth/2 - (0 - (-100)) = window.innerWidth/2 - 100
-    expect(translateXValue).toBeCloseTo(window.innerWidth / 2 - 100, 0);
+    expect(middle.style.transform).toMatch(/scale\(1\.12\)/);
+    expect(middle.style.transform).toMatch(/translateY\(-18px\)/);
+    expect(middle.style.transform).not.toMatch(/translateX\([^)]+px\)/);
   });
 
   it('hovered card runs at ~75% opacity so the matching Tree path glow shows through (#579)', () => {
@@ -766,44 +624,83 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(fanCls).toMatch(/pointer-events-auto/);
   });
 
-  it('outer wrapper clips horizontally without becoming a scroll container', () => {
-    // The clip boundary moved to the outer `position: fixed` wrapper so
-    // the inner fan div can be panned (translateX) without the clip
-    // window moving with it. `overflow-x-clip` (not `-hidden`) is still
-    // required: hidden would coerce overflow-y to `auto` on the full-
-    // width fixed wrapper, turning the whole viewport into a vertical
-    // scroll container whenever a magnified card overflows it vertically.
-    // In floating mode the inner fan no longer needs its own clip —
-    // the outer wrapper handles it. In inline mode the inner div still
-    // carries its own `overflow-x-clip`.
+  it('floating outer wrapper has no overflow clip — viewport is the natural boundary', () => {
+    // The peek-shelf design keeps the fan at full size, so the viewport
+    // edge is the natural clip. No overflow-x-clip on the outer wrapper.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const hand = container.querySelector('[data-hand]');
     const handCls = hand?.getAttribute('class') ?? '';
-    expect(handCls).toMatch(/\boverflow-x-clip\b/);
+    expect(handCls).not.toMatch(/\boverflow-x-clip\b/);
     expect(handCls).not.toMatch(/\boverflow-x-hidden\b/);
-    const fan = container.querySelector('[data-hand-fan]');
-    const fanCls = fan?.getAttribute('class') ?? '';
-    expect(fanCls).not.toMatch(/\boverflow-x-clip\b/);
-    expect(fanCls).not.toMatch(/\boverflow-x-hidden\b/);
   });
 
-  it('rest fan scales down to a thin band; hovering any card blooms it to natural size (#579)', () => {
-    // #579 rest contract: when no card is active, the fan applies a
-    // `scale(0.35)` transform so the rest band collapses to a
-    // sliver. On hover/focus, the fan transitions to `scale(1)` and
-    // the active card magnifies further (covered by the hover-scale
-    // test above).
+  it('peek-shelf: fan translateY at rest peeks 72 px above viewport bottom', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+  });
+
+  it('peek-shelf: mouseenter on the fan reveals it with translateY(0)', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    expect(fan.style.transform).toBe('translateY(0)');
+  });
+
+  it('peek-shelf: mouseleave does NOT immediately hide — grace-period timer not yet fired', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    fireEvent.mouseLeave(fan);
+    // Synchronously after mouseleave the hand is still expanded — the
+    // 120 ms grace-period timer has not fired yet.
+    expect(fan.style.transform).toBe('translateY(0)');
+  });
+
+  it('peek-shelf: drag keeps hand expanded even after mouseleave', async () => {
     const { container } = render(
-      <Hand hand={[2, 5, 13]} visible={true} />,
+      <Hand hand={[2, 5, 13]} visible={true} onCardSelect={vi.fn()} />,
     );
     const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
-    expect(fan).not.toBeNull();
-    expect(fan.style.transform).toMatch(/scale\(0\.35\)/);
-    const middle = container.querySelector(
-      '[data-card-slot="1"]',
-    ) as HTMLButtonElement;
-    fireEvent.mouseEnter(middle);
-    expect(fan.style.transform).toMatch(/scale\(1\)/);
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+
+    // Expand the hand, then trigger a drag (move > 5 px DRAG_THRESHOLD_PX).
+    // The drag-start effect is dispatched via queueMicrotask, so wrap in
+    // act(async) to flush the microtask before asserting.
+    fireEvent.mouseEnter(fan);
+    await act(async () => {
+      fireEvent.pointerDown(card, { clientX: 0, clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(card, { clientX: 10, clientY: 0, pointerId: 1 });
+    });
+    expect(card.getAttribute('data-dragging')).toBe('true');
+
+    // Mouse leaves the fan during the drag — hand must stay expanded.
+    fireEvent.mouseLeave(fan);
+    expect(fan.style.transform).toBe('translateY(0)');
+  });
+
+  it('peek-shelf: keyboard focus on a card expands the fan (AC: Tab → hand expands)', () => {
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} onCardSelect={vi.fn()} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+    expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+    fireEvent.focus(card);
+    expect(fan.style.transform).toBe('translateY(0)');
+  });
+
+  it('peek-shelf: grace-period timer hides the fan after 120 ms', () => {
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    expect(fan.style.transform).toBe('translateY(0)');
+    fireEvent.mouseLeave(fan);
+    // Before timer fires — still expanded.
+    expect(fan.style.transform).toBe('translateY(0)');
+    act(() => { vi.advanceTimersByTime(120); });
+    // After grace period — fan slides back down.
+    expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+    vi.useRealTimers();
   });
 
   it('immediate neighbours of the magnified card translate outward', () => {
@@ -1060,11 +957,10 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     expect(cls).not.toMatch(/\binset-x-0\b/);
     expect(cls).not.toMatch(/pointer-events-none/);
     expect(hand?.getAttribute('data-layout')).toBe('inline');
-    // Inline-mode fan does NOT apply the rest-shrink scale —
-    // multiple stacked hands at scale(0.35) would still collide
-    // visually within their own flow boxes.
+    // Inline-mode fan has no peek-shelf translateY — the fan is always
+    // fully visible in inline layout (no fixed overlay, no slide animation).
     const fan = hand?.querySelector('[data-hand-fan]') as HTMLElement;
-    expect(fan.style.transform ?? '').not.toMatch(/scale\(0\.35\)/);
+    expect(fan.style.transform ?? '').toBe('');
   });
 
   it('still renders the focus-visible ring class under reduced-motion', () => {
@@ -1073,5 +969,13 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     const first = container.querySelector('[data-card-slot="0"]');
     const cls = first?.getAttribute('class') ?? '';
     expect(cls).toMatch(/focus-visible:ring-2/);
+  });
+
+  it('peek-shelf: fan is fully revealed at rest under reduced-motion (AC: always fully visible)', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const hand = container.querySelector('[data-hand]') as HTMLElement;
+    const fan = hand?.querySelector('[data-hand-fan]') as HTMLElement;
+    expect(fan.style.transform).toBe('translateY(0)');
   });
 });
