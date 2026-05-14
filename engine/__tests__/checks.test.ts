@@ -17,6 +17,8 @@ import {
   CHESED_OVERFLOW_BONUS,
   CHESED_DC_REDUCTION_CAP,
   binahBurnTierBonus,
+  chokmahTilt,
+  CHOKMAH_FLASH_BONUS,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -3008,6 +3010,305 @@ describe('resolveChallenge — Binah Sit With Loss (#491)', () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+});
+
+// ──────────────── resolveChallenge — Chokmah Act Before Thought (#490) ────────────────
+
+describe('resolveChallenge — Chokmah Act Before Thought (#490)', () => {
+  // Chokmah base DC = 16 (sefirot.ts), stat = insight.
+  //
+  // Design § 3.8 tilt table for `chokmahTilt(n)`:
+  //   n = 0 → -3 (unhesitated flash; Athena rewards instinct)
+  //   n = 1 → 0  (standard)
+  //   n = 2 → +5 (overthinking)
+  //   n ≥ 3 → +9 (scheming; clamped)
+  // where n = modifierCountAtConfirm + chokmahPriorAttempts.
+  //
+  // Modifier count = cardBurns.length + sparkBurns.length +
+  // assistRequests.length (per design's explicit list).
+  //
+  // Fire signs (Aries, Leo, Sagittarius) get +2 flatBonus on a
+  // 0-modifier flash (modifierCountAtConfirm === 0). Other 9 signs
+  // can take the flash but get no element bonus.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+    soulDoorDelta: 0,
+  };
+
+  function chokmahState(
+    pendingMods: Partial<GameState['pendingModifiers']> = {},
+    encounterMods: Partial<NonNullable<GameState['encounter']>> = {},
+    overrides: Partial<PlayerState> = {},
+  ): GameState {
+    return makeState(
+      {
+        position: 'chokmah',
+        stats: statSheet({ insight: 10 }),
+        zodiacSign: 'aries',
+        ...overrides,
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, ...pendingMods },
+        encounter: { sefirah: 'chokmah', seed: 1, retryCount: 0, ...encounterMods },
+      },
+    );
+  }
+
+  it('exposes CHOKMAH_FLASH_BONUS as a locked design constant', () => {
+    expect(CHOKMAH_FLASH_BONUS).toBe(2);
+  });
+
+  it.each([
+    [0, -3],
+    [1, 0],
+    [2, 5],
+    [3, 9],
+    [4, 9],
+    [10, 9],
+  ])('chokmahTilt(%i) === %i (table + clamp)', (n, expected) => {
+    expect(chokmahTilt(n)).toBe(expected);
+  });
+
+  it('0 modifiers staged: DC 16 → 13 (unhesitated flash)', () => {
+    const state = chokmahState();
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(13);
+  });
+
+  it('1 modifier staged: DC 16 standard (no tilt)', () => {
+    const state = chokmahState({ cardBurns: [5] });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(16);
+  });
+
+  it('2 modifiers staged: DC 16 → 21 (overthinking)', () => {
+    const state = chokmahState({ cardBurns: [5, 7] });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(21);
+  });
+
+  it('3+ modifiers staged: DC 16 → 25 (scheming; clamped at +9)', () => {
+    const state = chokmahState({ cardBurns: [5, 7, 11] });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 3 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(25);
+  });
+
+  it('4 modifiers staged: DC 16 → 25 (cap holds at +9)', () => {
+    const state = chokmahState({ cardBurns: [5, 7, 11, 13] });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 4 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(25);
+  });
+
+  it('modifier count sums across all three pendingModifiers arrays', () => {
+    // Design § 3.8: "Modifier counted: any item across all three
+    // PendingModifiers arrays (card-burns, spark-burns, assist-
+    // requests)." 1 cardBurn + 1 sparkBurn + 1 assistRequest = 3 →
+    // DC + 9 = 25.
+    const state = chokmahState({
+      cardBurns: [5],
+      sparkBurns: [{ sefirah: 'hod', sourcePlayerId: 'p1' }],
+      assistRequests: ['p2'],
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 1, sparkBurns: 1, assistStats: [10] },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(25);
+  });
+
+  it('chokmahPriorAttempts shifts the tilt upward (carryover from prior retries)', () => {
+    // Prior attempts = 2; this attempt stages 0 modifiers. Effective
+    // n = 0 + 2 = 2 → tilt = +5. DC = 16 + 5 = 21.
+    const state = chokmahState({}, { chokmahPriorAttempts: 2 });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(21);
+  });
+
+  it('chokmahPriorAttempts + current modifiers compose (clamps at n=3+)', () => {
+    // priorAttempts=2 + this attempt's 2 cardBurns = n=4 → +9 → DC 25.
+    const state = chokmahState({ cardBurns: [5, 7] }, { chokmahPriorAttempts: 2 });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(25);
+  });
+
+  // ── Fire-sign +2 flatBonus on 0-modifier flash
+
+  it.each(['aries', 'leo', 'sagittarius'] as const)(
+    'fire sign (%s) on 0-modifier flash: +2 flatBonus',
+    (zodiacSign) => {
+      const state = chokmahState({}, {}, { zodiacSign });
+      const result = resolveChallenge({
+        state,
+        playerId: 'p1',
+        sefirah: 'chokmah',
+        modifiers: blankMods,
+        rng: { d20: () => 5, int: () => 5 },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+    },
+  );
+
+  it.each(['taurus', 'gemini', 'cancer', 'virgo', 'libra', 'scorpio', 'capricorn', 'aquarius', 'pisces'] as const)(
+    'non-fire sign (%s) on 0-modifier flash: no flatBonus',
+    (zodiacSign) => {
+      const state = chokmahState({}, {}, { zodiacSign });
+      const result = resolveChallenge({
+        state,
+        playerId: 'p1',
+        sefirah: 'chokmah',
+        modifiers: blankMods,
+        rng: { d20: () => 5, int: () => 5 },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    },
+  );
+
+  it('fire sign with 1 modifier staged: NO flatBonus (flash requires 0 modifiers)', () => {
+    // The fire-sign bonus is conditional on the current attempt
+    // staging 0 modifiers, NOT on the total n. A fire sign who burns
+    // even one card doesn't get the +2.
+    const state = chokmahState({ cardBurns: [5] }, {}, { zodiacSign: 'aries' });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('fire sign on 0-modifier flash even with priorAttempts > 0: +2 still fires', () => {
+    // Design framing: the bonus rewards "this attempt's instinct,"
+    // not "total instinct across the encounter." A fire sign who
+    // failed once and then strikes-with-no-modifiers gets the +2 on
+    // the retry too, but the DC tilt still escalates per priorAttempts.
+    const state = chokmahState({}, { chokmahPriorAttempts: 1 }, { zodiacSign: 'leo' });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // DC = 16 + chokmahTilt(0 + 1) = 16 + 0 = 16.
+    expect(result.value.outcome.effectiveDC).toBe(16);
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+  });
+
+  it('caller-supplied flatBonus stacks with the Chokmah fire-flash bonus', () => {
+    const state = chokmahState({}, {}, { zodiacSign: 'aries' });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: { ...blankMods, flatBonus: 3 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // 3 caller + 2 Chokmah flash = 5.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+  });
+
+  it('non-Chokmah Sefirah: stale chokmahPriorAttempts is ignored (Hod control)', () => {
+    // Regression guard: the tilt is gated on `sefirah === 'chokmah'`.
+    // A Hod resolve with a stale chokmahPriorAttempts envelope field
+    // must NOT apply any DC tilt.
+    const state = makeState(
+      { position: 'hod', stats: statSheet({ intellect: 10 }), zodiacSign: 'aries' },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0, chokmahPriorAttempts: 5 },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Hod base DC = 12, no Chokmah tilt.
+    expect(result.value.outcome.effectiveDC).toBe(12);
+    // Fire sign at Hod with 0 mods does NOT get the Chokmah flash bonus.
     expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
   });
 });

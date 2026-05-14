@@ -482,6 +482,7 @@ function deriveDreamPillar(seed: number, retryCount: number): Pillar {
  */
 function withRetryBumpedEnvelope(
   envelope: NonNullable<GameState['encounter']>,
+  modifierCountAtConfirm = 0,
 ): NonNullable<GameState['encounter']> {
   const nextRetryCount = envelope.retryCount + 1;
   if (envelope.sefirah === 'yesod') {
@@ -489,6 +490,20 @@ function withRetryBumpedEnvelope(
       ...envelope,
       retryCount: nextRetryCount,
       dreamPillar: deriveDreamPillar(envelope.seed, nextRetryCount),
+    };
+  }
+  // #490 / design § 3.8 — Chokmah Act Before Thought: bump
+  // chokmahPriorAttempts by max(1, modifierCountAtConfirm). The
+  // floor ensures every retry advances the counter (even a 0-
+  // modifier flash failure counts as one prior strike); the
+  // modifierCount carryover encodes "you stacked 3 and failed —
+  // the next attempt sees that 3-count in the tilt."
+  if (envelope.sefirah === 'chokmah') {
+    return {
+      ...envelope,
+      retryCount: nextRetryCount,
+      chokmahPriorAttempts:
+        (envelope.chokmahPriorAttempts ?? 0) + Math.max(1, modifierCountAtConfirm),
     };
   }
   return { ...envelope, retryCount: nextRetryCount };
@@ -1512,6 +1527,17 @@ export function turnReducer(
       // new resolve will be rejected by the sub-phase guard above
       // (challengeSubPhase is now 'prep') AND, defensively, by the
       // lastOutcome === undefined branch of the gate.
+      // #490 — for the Chokmah counter bump, compute the failed
+      // attempt's modifier count from the persisted pendingModifiers.
+      // Chassis preserves cardBurns + sparkBurns + assistRequests
+      // across react-retry; the four per-Sefirah variants
+      // (name/gift/declare/dream) were already cleared at the failed
+      // prep-confirm per § 2.7. The Chokmah count counts only the
+      // three standard arrays per design § 3.8 explicit list.
+      const modifierCountAtConfirm =
+        state.pendingModifiers.cardBurns.length +
+        state.pendingModifiers.sparkBurns.length +
+        state.pendingModifiers.assistRequests.length;
       const stateAfter: GameState = {
         ...state,
         phase: 'challenge',
@@ -1519,7 +1545,7 @@ export function turnReducer(
         lastOutcome: undefined,
         encounter:
           state.encounter !== undefined
-            ? withRetryBumpedEnvelope(state.encounter)
+            ? withRetryBumpedEnvelope(state.encounter, modifierCountAtConfirm)
             : undefined,
       };
       return { ok: true, value: { next: { state: stateAfter } } };

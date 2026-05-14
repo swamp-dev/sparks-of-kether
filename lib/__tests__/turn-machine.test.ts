@@ -4194,3 +4194,139 @@ describe('turnReducer — Binah Sit With Loss (#491)', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
+  // Design § 3.8: on react-retry at Chokmah, the envelope's
+  // chokmahPriorAttempts counter increments by max(1,
+  // modifierCountAtConfirm) where modifierCount = cardBurns +
+  // sparkBurns + assistRequests at the failed prep-confirm. The
+  // pendingModifiers persist across react-retry (chassis default),
+  // so the count is readable from state.pendingModifiers at the
+  // react-retry moment.
+
+  const chokmahFailOutcome: CheckOutcome = {
+    rolled: 2,
+    statContribution: 5,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 7,
+    effectiveDC: 16,
+    pass: false,
+  };
+
+  function chokmahReducerStats() {
+    return {
+      unity: 10, insight: 10, understanding: 10,
+      lovingkindness: 10, strength: 10, harmony: 10,
+      passion: 10, intellect: 10, intuition: 10, body: 10,
+    };
+  }
+
+  it('react-retry at Chokmah after a 0-modifier-failed attempt: chokmahPriorAttempts += 1 (max-1 floor)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chokmah',
+      stats: chokmahReducerStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'chokmah', seed: 1, retryCount: 0, chokmahPriorAttempts: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+        lastOutcome: chokmahFailOutcome,
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.encounter?.chokmahPriorAttempts).toBe(1);
+  });
+
+  it('react-retry at Chokmah after a 3-modifier-failed attempt: chokmahPriorAttempts += 3', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chokmah',
+      stats: chokmahReducerStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'chokmah', seed: 1, retryCount: 0, chokmahPriorAttempts: 0 },
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          cardBurns: [5, 7],
+          sparkBurns: [{ sefirah: 'hod', sourcePlayerId: 'p1' }],
+        },
+        lastOutcome: chokmahFailOutcome,
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.encounter?.chokmahPriorAttempts).toBe(3);
+  });
+
+  it('react-retry at Chokmah accumulates across multiple retries', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chokmah',
+      stats: chokmahReducerStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'chokmah', seed: 1, retryCount: 1, chokmahPriorAttempts: 2 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5] },
+        lastOutcome: chokmahFailOutcome,
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.encounter?.chokmahPriorAttempts).toBe(3);
+  });
+
+  it('react-retry at non-Chokmah Sefirah does NOT touch chokmahPriorAttempts (Hod control)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'hod',
+      stats: chokmahReducerStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0, chokmahPriorAttempts: 5 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5] },
+        lastOutcome: chokmahFailOutcome,
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Stale field passes through unchanged — Hod retry doesn't touch it.
+    expect(result.value.next.state.encounter?.chokmahPriorAttempts).toBe(5);
+  });
+});

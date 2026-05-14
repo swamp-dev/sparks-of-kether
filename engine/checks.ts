@@ -131,6 +131,45 @@ export const CHESED_OVERFLOW_BONUS = 1;
  */
 export const CHESED_DC_REDUCTION_CAP = 4;
 
+/**
+ * Chokmah Act Before Thought (#490; `design/per-sefirah-mechanics.md`
+ * § 3.8) fire-sign flash bonus. Locked at +2. Applied as a roll-side
+ * `flatBonus` at `resolveChallenge` when the encounter is at Chokmah
+ * AND the active player's `zodiacSign` is fire (Aries, Leo, or
+ * Sagittarius) AND the current attempt staged 0 modifiers.
+ *
+ * The bonus rewards instinct THIS attempt, not total instinct across
+ * the encounter — a fire sign who fails a flash and retries flash-
+ * again still gets the +2 (though the DC tilt escalates per
+ * `chokmahPriorAttempts`).
+ */
+export const CHOKMAH_FLASH_BONUS = 2;
+
+/**
+ * Chokmah Act Before Thought DC tilt by total modifier count. The
+ * design § 3.8 table is `[-3, 0, +5, +9]` for n in `[0, 1, 2, ≥3]`,
+ * clamped at +9 for n ≥ 3.
+ *
+ *   n = 0 → -3 (unhesitated flash; Athena rewards instinct)
+ *   n = 1 → 0  (standard DC)
+ *   n = 2 → +5 (overthinking)
+ *   n ≥ 3 → +9 (scheming; clamp)
+ *
+ * `n` is `modifierCountAtConfirm + (encounter.chokmahPriorAttempts ??
+ * 0)`. The clamp at n=3 prevents 4+ modifiers from spiraling beyond
+ * +9 — design intent is "Athena withdraws"; once you're past
+ * scheming, additional preparation doesn't make Athena more hostile,
+ * just confirms the strike was never coming. Exported so future UI
+ * tickets can render the live tilt indicator without duplicating the
+ * table.
+ */
+export function chokmahTilt(n: number): number {
+  if (n <= 0) return -3;
+  if (n === 1) return 0;
+  if (n === 2) return 5;
+  return 9;
+}
+
 // ──────────────── Public types ────────────────
 
 export interface CheckModifiers {
@@ -222,6 +261,19 @@ export interface CheckModifiers {
    * `ResolveChallengeInput.outcome`.
    */
   readonly chesedGiftDcReduction?: number;
+  /**
+   * Chokmah Act Before Thought DC tilt (#490;
+   * `design/per-sefirah-mechanics.md` § 3.8). Applied DC-side,
+   * additive with `shortcutPenalty`, `soulDoorDelta`, `tiferetTilt`,
+   * `netzachRetryTilt`, and `chesedGiftDcReduction` per S6.
+   *
+   * **Auto-fold gating.** `resolveChallenge` only auto-folds this
+   * field on the engine path (`input.outcome === undefined`).
+   * Mirrors the #486 contract. UI callers that pre-roll outcome
+   * must compute and supply this themselves (or omit, in which case
+   * the engine treats `outcome.effectiveDC` as the no-tilt baseline).
+   */
+  readonly chokmahTilt?: number;
 }
 
 export type ChallengeRejection =
@@ -478,13 +530,18 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   // NEGATIVE delta — lowers the bar by 2 to 4 depending on gift count.
   // Composes additively with the other tilts per S6.
   const chesedAdjustment = modifiers.chesedGiftDcReduction ?? 0;
+  // #490: Chokmah Act Before Thought tilt (design § 3.8). Composes
+  // additively per S6, after the chassis deltas (last in the formula
+  // matches the design's "chassis deltas first, Chokmah tilt last").
+  const chokmahAdjustment = modifiers.chokmahTilt ?? 0;
   const effectiveDC =
     dc +
     shortcutAdjustment +
     soulDoorAdjustment +
     tiferetAdjustment +
     netzachAdjustment +
-    chesedAdjustment;
+    chesedAdjustment +
+    chokmahAdjustment;
 
   return {
     rolled,
@@ -753,6 +810,50 @@ export function resolveChallenge(
       chesedGiftDcReduction:
         (resolvedModifiers.chesedGiftDcReduction ?? 0) + reduction,
     };
+  }
+
+  // #490 / `design/per-sefirah-mechanics.md` § 3.8 — Chokmah Act
+  // Before Thought. DC tilt by total modifier count (current
+  // attempt's pendingModifiers + envelope's chokmahPriorAttempts).
+  // Fire signs (Aries/Leo/Sagittarius) on a 0-modifier flash get a
+  // +2 flatBonus. Both auto-folds are gated on engine path; UI
+  // callers handle the math themselves per the same contract as
+  // chesedGiftDcReduction.
+  let chokmahModCount = 0;
+  if (sefirah === 'chokmah') {
+    chokmahModCount =
+      state.pendingModifiers.cardBurns.length +
+      state.pendingModifiers.sparkBurns.length +
+      state.pendingModifiers.assistRequests.length;
+    if (input.outcome === undefined) {
+      const totalN = chokmahModCount + (state.encounter?.chokmahPriorAttempts ?? 0);
+      const tilt = chokmahTilt(totalN);
+      if (tilt !== 0) {
+        resolvedModifiers = {
+          ...resolvedModifiers,
+          chokmahTilt: (resolvedModifiers.chokmahTilt ?? 0) + tilt,
+        };
+      }
+    }
+    // Fire-sign flash bonus — engine path only. Mirrors the
+    // auto-fold gating on chokmahTilt above (and the #486 / #489
+    // contract pattern). UI callers that pre-roll outcome are
+    // responsible for the flash bonus themselves; they have the
+    // player's `zodiacSign` available on PlayerState and the
+    // `modifierCount === 0` check is trivial. Without this gate, a
+    // future UI caller that pre-applies the +2 in their
+    // `outcome.total` would get a phantom +2 in the engine-side
+    // breakdown that doesn't actually shift the outcome.
+    if (
+      chokmahModCount === 0 &&
+      isFireSign(player.zodiacSign) &&
+      input.outcome === undefined
+    ) {
+      resolvedModifiers = {
+        ...resolvedModifiers,
+        flatBonus: (resolvedModifiers.flatBonus ?? 0) + CHOKMAH_FLASH_BONUS,
+      };
+    }
   }
 
   // #489 — pendingStatBuff consumption. The Netzach buff is set on the
@@ -1497,4 +1598,17 @@ function evaluateBinahBurnBonus(state: GameState): number {
     total += binahBurnTierBonus(arcanum);
   }
   return total;
+}
+
+// ──────────────── Chokmah Act Before Thought helpers (#490) ────────────────
+
+/**
+ * `true` iff the zodiac sign is fire (Aries / Leo / Sagittarius).
+ * Used by `resolveChallenge` to award the Chokmah flash bonus on
+ * 0-modifier strikes at Chokmah. Reads from `data/zodiac-signs.ts`'s
+ * canonical `element` field so a future change to a sign's element
+ * flows through automatically.
+ */
+function isFireSign(sign: PlayerState['zodiacSign']): boolean {
+  return zodiacSignByKey(sign).element === 'fire';
 }
