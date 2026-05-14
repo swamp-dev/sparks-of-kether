@@ -291,6 +291,18 @@ export type TurnReducerError =
        */
       readonly kind: 'gevurah-requires-burn';
     }
+  | {
+      /**
+       * #486 — design § 3.3 edge case: when the Shell of Chesed
+       * (Hoarding) is `active`, gift-card modifiers are blocked at
+       * `prep-add-modifier` for the duration of the Shell's one-round
+       * window. The Shell's job is to deny the Chesed gesture; the
+       * gate fires regardless of which Sefirah the encounter is at,
+       * because the Shell's effect applies to "no card gifts, in any
+       * direction" globally.
+       */
+      readonly kind: 'chesed-shell-blocks-gift';
+    }
   | { readonly kind: 'card-not-in-hand'; readonly arcanum: number }
   | {
       readonly kind: 'spark-not-held';
@@ -659,6 +671,70 @@ function consumeBurns(
 }
 
 /**
+ * #486 — Apply Chesed gift transfers at `prep-confirm`. For each
+ * staged `gift-card` modifier, move the named arcanum from the active
+ * player's hand to the recipient's hand. If the recipient is at
+ * `HAND_CAP`, discard their lowest-arcanum card first to make room
+ * (the v1 known-griefing-surface from design § 3.3 — a proper
+ * recipient-confirm wire action is a follow-up).
+ *
+ * Pure. No-op (same reference) when `gifts` is empty.
+ *
+ * Failure mode: if the active player doesn't hold the named arcanum
+ * (caller misuse), that specific gift is silently dropped from the
+ * transfer pass — defense-in-depth, since `translatePendingModifiers`
+ * already validates and the reducer's stage-time path requires the
+ * card to be in hand. If the recipient doesn't exist (race / state
+ * desync), the same drop semantics — the active player keeps the
+ * card.
+ */
+function applyChesedGiftTransfers(
+  state: GameState,
+  activeId: string,
+  gifts: readonly { readonly arcanum: number; readonly recipientId: string }[],
+): GameState {
+  if (gifts.length === 0) return state;
+  let players = state.players;
+  let discardPile = state.discardPile;
+  for (const gift of gifts) {
+    const active = players.find((p) => p.id === activeId);
+    const recipient = players.find((p) => p.id === gift.recipientId);
+    if (!active || !recipient) continue;
+    const idx = active.hand.indexOf(gift.arcanum);
+    if (idx < 0) continue;
+    const activeHand = [...active.hand];
+    activeHand.splice(idx, 1);
+    let recipientHand = [...recipient.hand];
+    if (recipientHand.length >= HAND_CAP) {
+      // Auto-discard the lowest-arcanum card to make room (v1 corner).
+      let lowestIdx = 0;
+      for (let i = 1; i < recipientHand.length; i++) {
+        const candidate = recipientHand[i];
+        const current = recipientHand[lowestIdx];
+        if (candidate !== undefined && current !== undefined && candidate < current) {
+          lowestIdx = i;
+        }
+      }
+      const discarded = recipientHand[lowestIdx];
+      if (discarded !== undefined) {
+        recipientHand = [
+          ...recipientHand.slice(0, lowestIdx),
+          ...recipientHand.slice(lowestIdx + 1),
+        ];
+        discardPile = [...discardPile, discarded];
+      }
+    }
+    recipientHand = [...recipientHand, gift.arcanum];
+    players = players.map((p) => {
+      if (p.id === activeId) return { ...p, hand: activeHand };
+      if (p.id === gift.recipientId) return { ...p, hand: recipientHand };
+      return p;
+    });
+  }
+  return { ...state, players, discardPile };
+}
+
+/**
  * Compute the `next` `TurnSnapshot` for an event applied to the
  * current `snapshot`, OR a structured rejection. The hook commits
  * `next` to React state on success.
@@ -946,6 +1022,17 @@ export function turnReducer(
           };
           break;
         case 'gift-card':
+          // #486 — design § 3.3: Shell of Chesed (Hoarding) blocks
+          // gift-card staging for the duration of the Shell's one-
+          // round window. "no card gifts, in any direction." The
+          // Shell's effect is global (any Sefirah, any gift); the
+          // gate checks `state.shells.chesed === 'active'` directly.
+          if (state.shells.chesed === 'active') {
+            return {
+              ok: false,
+              reason: { kind: 'chesed-shell-blocks-gift' },
+            };
+          }
           nextPending = {
             ...pending,
             giftCards: [
@@ -1303,6 +1390,29 @@ export function turnReducer(
             ),
           }
         : consumedClearedNew;
+      // #486 — Chesed Overflow gift transfers. For each staged
+      // `gift-card`, move the arcanum from active to recipient with
+      // hand-cap auto-discard (design § 3.3 v1 corner). Reads from
+      // `state.pendingModifiers.giftCards` — the pre-consume snapshot,
+      // before `consumedClearedNew` cleared the list.
+      //
+      // Gated on `encounter.sefirah === 'chesed'` even though
+      // `giftCards` is structurally usable elsewhere: the helper is
+      // named `applyChesedGiftTransfers` and its semantics (auto-
+      // discard for hand-capped recipient, no consent affordance) are
+      // Chesed-specific per design § 3.3. A future variant that wants
+      // gift-card-at-other-Sefirot would need its own consent / cap
+      // rules; gating here prevents this helper from silently firing
+      // for that future variant. Fires on both pass and fail (gifts
+      // transfer at confirm regardless of d20 outcome per § 3.3).
+      const consumedWithGifts: GameState =
+        state.encounter?.sefirah === 'chesed'
+          ? applyChesedGiftTransfers(
+              consumedWithDesire,
+              player.id,
+              state.pendingModifiers.giftCards,
+            )
+          : consumedWithDesire;
       // On pass: clear ALL pendingModifiers (the encounter resolved
       // successfully — nothing to retry — so the cumulative card /
       // spark / assist stacks fall away too) and clear the encounter
@@ -1312,11 +1422,11 @@ export function turnReducer(
       // dream-pillar re-seed, etc.) without re-init.
       const baseState: GameState = passed
         ? {
-            ...consumedWithDesire,
+            ...consumedWithGifts,
             pendingModifiers: EMPTY_PENDING_MODIFIERS,
             encounter: undefined,
           }
-        : consumedWithDesire;
+        : consumedWithGifts;
       const stateAfter: GameState = {
         ...baseState,
         phase: 'challenge',

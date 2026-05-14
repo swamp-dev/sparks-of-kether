@@ -109,6 +109,28 @@ export const NETZACH_RETRY_DC_TILT = 1;
  */
 export const GEVURAH_DEAREST_BONUS = 2;
 
+/**
+ * Chesed Overflow (#486; `design/per-sefirah-mechanics.md` § 3.3)
+ * abundance-beyond-ask Illumination bonus. Locked at +1. Emitted by
+ * `resolveChallenge` when the encounter is at Chesed AND at least
+ * one `gift-card` modifier was staged AND the d20 outcome passed
+ * against the *unmodified* DC (the player would have cleared the
+ * check without the gift's DC reduction — the gift was abundance,
+ * not load-bearing). Adds +1 Illumination on top of the standard
+ * `spark-earned` Illumination grant, so a Chesed pass-with-overflow
+ * is +2 net.
+ */
+export const CHESED_OVERFLOW_BONUS = 1;
+
+/**
+ * Chesed Overflow (#486) DC reduction cap. Locked at -4. The gift
+ * reduction is `-min(gifts.length + 1, CHESED_DC_REDUCTION_CAP)` — 1
+ * gift → -2, 2 → -3, 3 → -4, ≥3 → -4 (cap holds). Computed inside
+ * `resolveChallenge` at Chesed. Per design § 3.3 "every additional
+ * gift past the first reduces DC by another 1, capped at -4."
+ */
+export const CHESED_DC_REDUCTION_CAP = 4;
+
 // ──────────────── Public types ────────────────
 
 export interface CheckModifiers {
@@ -181,6 +203,25 @@ export interface CheckModifiers {
    * `#488 contract` on Tiferet — see `ResolveChallengeInput.outcome`).
    */
   readonly netzachRetryTilt?: number;
+  /**
+   * Chesed Overflow gift-card DC reduction (#486;
+   * `design/per-sefirah-mechanics.md` § 3.3). Applied DC-side as a
+   * NEGATIVE delta (a -2 to -4 lowering of the bar). Composes
+   * additively with `shortcutPenalty`, `soulDoorDelta`, `tiferetTilt`,
+   * and `netzachRetryTilt` per S6.
+   *
+   * **Auto-fold gating.** `resolveChallenge` only auto-folds this
+   * field on the engine path (`input.outcome === undefined`). UI
+   * callers that pre-roll the outcome and pass it via `input.outcome`
+   * are responsible for either (a) supplying this field and pre-
+   * applying the reduction to `outcome.effectiveDC` themselves, or
+   * (b) leaving it as 0/undefined, in which case the engine treats
+   * `outcome.effectiveDC` as the unmodified DC. Without this gate the
+   * engine would double-apply when both the UI and the engine fold
+   * the reduction. Mirrors the `#488` and `#489` contracts on
+   * `ResolveChallengeInput.outcome`.
+   */
+  readonly chesedGiftDcReduction?: number;
 }
 
 export type ChallengeRejection =
@@ -302,6 +343,22 @@ export type NetzachDeclaredDesireEvent =
     };
 
 /**
+ * Chesed Overflow resolve-time event (#486;
+ * `design/per-sefirah-mechanics.md` § 3.3). Emitted by `resolveChallenge`
+ * when the encounter is at Chesed AND at least one `gift-card` was
+ * staged AND the d20 outcome passed against the *unmodified* DC. Per
+ * design: "If the roll also met the (un-modified) DC, the player
+ * earns an additional +1 Illumination on top (so +2 total) — abundance
+ * beyond ask." Carries `amount: 1` and the chassis layer wires it
+ * through `applyEvent` so the +1 Illumination bump goes through the
+ * single-source-of-truth counter pipeline.
+ */
+export interface ChesedOverflowBonusEvent {
+  readonly kind: 'chesed-overflow-bonus';
+  readonly amount: 1;
+}
+
+/**
  * What a successful `resolveChallenge` invocation returns.
  *
  * **IMPORTANT:** `ok: true` means "the challenge was resolved" (the
@@ -364,6 +421,15 @@ export interface ChallengeSuccess {
    * `outcome.modifierBreakdown.flatBonus`.
    */
   readonly netzachDeclaredDesire?: NetzachDeclaredDesireEvent;
+  /**
+   * Present only on a Chesed resolve with at least one staged
+   * `gift-card` AND the d20 outcome passes against the *unmodified*
+   * DC (the gift was abundance beyond ask, not load-bearing). The
+   * +1 Illumination bump is applied to `newState` via `applyEvent`
+   * (`spark-earned` + `chesed-overflow-bonus`), so by the time the
+   * caller inspects `newState.illumination` the total reflects +2.
+   */
+  readonly chesedOverflowBonus?: ChesedOverflowBonusEvent;
 }
 
 // ──────────────── rollCheck (pure math) ────────────────
@@ -408,12 +474,17 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   // #489: Netzach Declared Desire retry-DC tilt (design § 3.5 C6).
   // Additive with shortcut + Soul Door + Tiferet per S6.
   const netzachAdjustment = modifiers.netzachRetryTilt ?? 0;
+  // #486: Chesed Overflow gift-card DC reduction (design § 3.3). A
+  // NEGATIVE delta — lowers the bar by 2 to 4 depending on gift count.
+  // Composes additively with the other tilts per S6.
+  const chesedAdjustment = modifiers.chesedGiftDcReduction ?? 0;
   const effectiveDC =
     dc +
     shortcutAdjustment +
     soulDoorAdjustment +
     tiferetAdjustment +
-    netzachAdjustment;
+    netzachAdjustment +
+    chesedAdjustment;
 
   return {
     rolled,
@@ -642,6 +713,33 @@ export function resolveChallenge(
     };
   }
 
+  // #486 / `design/per-sefirah-mechanics.md` § 3.3 — Chesed Overflow
+  // gift-card DC reduction. Each staged gift reduces effective DC by
+  // 2 for the first and 1 per additional, capped at -4. Fold the
+  // negative delta into chesedGiftDcReduction so rollCheck produces
+  // a consistent effectiveDC. The "always pass on unfolding" override
+  // and the overflow-bonus event fire below, AFTER rollCheck —
+  // tracked via `chesedUnfolding` here.
+  //
+  // Auto-fold is gated on `input.outcome === undefined` (engine path
+  // only) — mirrors the soulDoorDelta / tiferetTilt / netzachRetryTilt
+  // pattern. UI callers that pre-roll outcome are responsible for
+  // supplying `chesedGiftDcReduction` themselves (or omitting it, in
+  // which case `outcome.effectiveDC` is treated as the unmodified DC).
+  // Without this gate a caller following the JSDoc would double-apply
+  // the reduction.
+  const chesedGiftCount =
+    sefirah === 'chesed' ? state.pendingModifiers.giftCards.length : 0;
+  const chesedUnfolding = chesedGiftCount > 0;
+  if (chesedUnfolding && input.outcome === undefined) {
+    const reduction = -Math.min(chesedGiftCount + 1, CHESED_DC_REDUCTION_CAP);
+    resolvedModifiers = {
+      ...resolvedModifiers,
+      chesedGiftDcReduction:
+        (resolvedModifiers.chesedGiftDcReduction ?? 0) + reduction,
+    };
+  }
+
   // #489 — pendingStatBuff consumption. The Netzach buff is set on the
   // active player when they pass Netzach with a declaration; it applies
   // to the next stat-check this turn whose sefirah matches the buff's
@@ -662,6 +760,49 @@ export function resolveChallenge(
       modifiers: resolvedModifiers,
       rng,
     });
+
+  // #486 — Chesed Overflow always-pass override + overflow-bonus
+  // signal. When unfolding (gifts ≥ 1), the encounter ALWAYS passes
+  // per design § 3.3 — "On any roll outcome, the encounter passes."
+  // The overflow bonus (+1 Illumination on top of standard
+  // `spark-earned`) fires when the d20 outcome would have passed
+  // against the *unmodified* DC (no gift-reduction baked in).
+  //
+  // Unmodified-DC math: read `resolvedModifiers.chesedGiftDcReduction`
+  // (which is the value the engine auto-folded on the engine path, OR
+  // what the UI caller supplied on the input.outcome path, OR 0 when
+  // a UI caller didn't supply). Subtracting it from
+  // `outcome.effectiveDC` recovers the DC the roll faced without
+  // Chesed's reduction:
+  //   - Engine path: outcome.effectiveDC includes reduction; subtract
+  //     it back. unmodifiedDC = base + other tilts.
+  //   - UI caller supplied: outcome.effectiveDC includes reduction;
+  //     subtract it back. Same math.
+  //   - UI caller didn't supply: outcome.effectiveDC = base + other
+  //     tilts; resolvedModifiers.chesedGiftDcReduction = 0; subtracting
+  //     0 yields unmodifiedDC = outcome.effectiveDC. Correct.
+  let chesedOverflowBonusEvent: ChesedOverflowBonusEvent | undefined;
+  let effectiveOutcome = outcome;
+  if (chesedUnfolding) {
+    const giftReduction = resolvedModifiers.chesedGiftDcReduction ?? 0;
+    const unmodifiedDC = outcome.effectiveDC - giftReduction;
+    const passedUnmodified = outcome.total >= unmodifiedDC;
+    if (passedUnmodified) {
+      chesedOverflowBonusEvent = {
+        kind: 'chesed-overflow-bonus',
+        amount: 1,
+      };
+    }
+    // Force pass=true on unfolding — Chesed "can never fail; only
+    // unfold." Override produces an outcome whose `pass` may not
+    // match `total >= effectiveDC` (the only place in resolveChallenge
+    // that breaks that invariant). Documented contract; downstream
+    // chassis treats `chesedOverflowBonus`-bearing successes as the
+    // signal that the +1 is in `newState.illumination`.
+    if (!outcome.pass) {
+      effectiveOutcome = { ...outcome, pass: true };
+    }
+  }
 
   // #353 — consume the Hod name-card REGARDLESS of pass/fail (design
   // § 3.1 C4 rule 2 / § 2.7 "Consumption note"). The consume fires on
@@ -698,21 +839,24 @@ export function resolveChallenge(
   // #489 — increment `netzachPriorFails` on a failed Netzach resolve
   // (design § 3.5 C6 fix). Only fires when the encounter envelope is
   // present and at Netzach; defensive against a Netzach resolve called
-  // without an envelope (test fixtures, future bots).
+  // without an envelope (test fixtures, future bots). Reads
+  // `effectiveOutcome.pass` so a Chesed unfolding-override doesn't
+  // accidentally bump Netzach's counter (different Sefirah anyway,
+  // but the gate is explicit).
   const shouldBumpNetzachPriorFails =
-    !outcome.pass &&
+    !effectiveOutcome.pass &&
     sefirah === 'netzach' &&
     state.encounter?.sefirah === 'netzach';
   const stateAfterNetzachFailBump = shouldBumpNetzachPriorFails
     ? bumpNetzachPriorFails(stateAfterBuffConsume)
     : stateAfterBuffConsume;
 
-  if (!outcome.pass) {
+  if (!effectiveOutcome.pass) {
     return {
       ok: true,
       value: {
         newState: stateAfterNetzachFailBump,
-        outcome,
+        outcome: effectiveOutcome,
         ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
         ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
         ...(tiferet !== undefined ? { tiferetBalance: tiferet.event } : {}),
@@ -771,15 +915,30 @@ export function resolveChallenge(
     });
   }
 
+  // #486 — Chesed Overflow bonus. When unfolding AND the d20 would
+  // have passed the *unmodified* DC, apply the +1 Illumination via
+  // `applyEvent` so the counter bump goes through the single-source-
+  // of-truth pipeline. The event also flows out on `ChallengeSuccess`
+  // so chassis/UI can render the "Abundance" tick.
+  if (chesedOverflowBonusEvent !== undefined) {
+    newState = applyEvent(newState, {
+      kind: 'chesed-overflow-bonus',
+      playerId,
+    });
+  }
+
   return {
     ok: true,
     value: {
       newState,
-      outcome,
+      outcome: effectiveOutcome,
       ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
       ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
       ...(tiferet !== undefined ? { tiferetBalance: tiferet.event } : {}),
       ...(netzach !== undefined ? { netzachDeclaredDesire: netzach.event } : {}),
+      ...(chesedOverflowBonusEvent !== undefined
+        ? { chesedOverflowBonus: chesedOverflowBonusEvent }
+        : {}),
     },
   };
 }

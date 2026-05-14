@@ -14,6 +14,8 @@ import {
   NETZACH_DECLARED_DESIRE_BONUS,
   NETZACH_RETRY_DC_TILT,
   GEVURAH_DEAREST_BONUS,
+  CHESED_OVERFLOW_BONUS,
+  CHESED_DC_REDUCTION_CAP,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -2514,4 +2516,306 @@ describe('resolveChallenge — Gevurah Sacred Sacrifice (#487)', () => {
   });
 
 });
+
+// ──────────────── resolveChallenge — Chesed Overflow (#486) ────────────────
+
+describe('resolveChallenge — Chesed Overflow (#486)', () => {
+  // Chesed base DC = 13 (sefirot.ts), stat = lovingkindness.
+  //
+  // Design § 3.3: "unfolding" = ≥1 gift staged. DC reduces by 2 for
+  // first gift, -1 per additional, capped at -4. Encounter ALWAYS
+  // grants Spark + Illumination regardless of d20 outcome ("the gift
+  // gesture re-shapes the outcome"). If the d20 would have passed
+  // against the UNMODIFIED DC, +1 extra Illumination ("abundance
+  // beyond ask"). "Hoarding" (0 gifts) follows standard chassis in
+  // this PR — design's +2-Sep / no-retry override is a follow-up.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+    soulDoorDelta: 0,
+  };
+
+  function chesedState(
+    gifts: readonly { readonly arcanum: number; readonly recipientId: string }[],
+    stats: Partial<Record<string, number>> = { lovingkindness: 10 },
+  ): GameState {
+    return makeState(
+      { position: 'chesed', stats: statSheet(stats) },
+      { pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, giftCards: gifts } },
+    );
+  }
+
+  it('exposes CHESED_OVERFLOW_BONUS and CHESED_DC_REDUCTION_CAP as design constants', () => {
+    expect(CHESED_OVERFLOW_BONUS).toBe(1);
+    expect(CHESED_DC_REDUCTION_CAP).toBe(4);
+  });
+
+  it('unfolding (1 gift): DC reduced by 2 (13 → 11)', () => {
+    // Design § 3.3: "reduces the effective DC by 2; every additional
+    // gift past the first reduces DC by another 1, capped at −4."
+    const state = chesedState([{ arcanum: 5, recipientId: 'p2' }]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(11);
+  });
+
+  it('unfolding (2 gifts): DC reduced by 3 (13 → 10)', () => {
+    const state = chesedState([
+      { arcanum: 5, recipientId: 'p2' },
+      { arcanum: 7, recipientId: 'p3' },
+    ]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(10);
+  });
+
+  it('unfolding cap (4 gifts): DC -4 only (not -5)', () => {
+    const state = chesedState([
+      { arcanum: 5, recipientId: 'p2' },
+      { arcanum: 7, recipientId: 'p3' },
+      { arcanum: 11, recipientId: 'p2' },
+      { arcanum: 13, recipientId: 'p3' },
+    ]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // gifts=4 → reduction = min(4+1, 4) = 4 → DC 13 - 4 = 9.
+    expect(result.value.outcome.effectiveDC).toBe(9);
+  });
+
+  it('unfolding cap (5 gifts): DC still -4 (cap holds)', () => {
+    const state = chesedState([
+      { arcanum: 5, recipientId: 'p2' },
+      { arcanum: 7, recipientId: 'p3' },
+      { arcanum: 11, recipientId: 'p2' },
+      { arcanum: 13, recipientId: 'p3' },
+      { arcanum: 17, recipientId: 'p2' },
+    ]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(9);
+  });
+
+  it('unfolding always-passes the encounter even when d20 fails the modified DC', () => {
+    // Design § 3.3: "On any roll outcome, the encounter passes — the
+    // Spark is granted, Illumination +1." Stat 0 + roll 1 = 1 < DC 11
+    // (modified). The d20 outcome.pass is false, but the encounter
+    // semantic is "passed" — Spark earned, Sefirah cleared.
+    const state = chesedState(
+      [{ arcanum: 5, recipientId: 'p2' }],
+      { lovingkindness: 0 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const player = result.value.newState.players[0];
+    // Encounter "passes" — Sefirah cleared, Spark earned, +1 Illumination.
+    expect(player?.clearedSefirot).toEqual(new Set(['chesed']));
+    expect(player?.sparksHeld).toEqual(new Set(['chesed']));
+    expect(result.value.newState.illumination).toBe(1);
+    // Separation untouched — unfolding never adds Separation.
+    expect(result.value.newState.separation).toBe(0);
+  });
+
+  it('unfolding overflow (gift + d20 passes UNMODIFIED DC): +1 extra Illumination (+2 total)', () => {
+    // Stat 10 + roll 5 = 15 ≥ base DC 13 → d20 would pass unmodified.
+    // With 1 gift, modified DC 11; passes that too. The overflow
+    // grants +1 Illumination on top of the standard spark-earned +1,
+    // so total Illumination delta = 2.
+    const state = chesedState(
+      [{ arcanum: 5, recipientId: 'p2' }],
+      { lovingkindness: 10 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.newState.illumination).toBe(2);
+    // Event emitted so the chassis can render the "Abundance" banner.
+    expect(result.value.chesedOverflowBonus).toEqual({
+      kind: 'chesed-overflow-bonus',
+      amount: 1,
+    });
+  });
+
+  it('unfolding no-overflow (gift + d20 fails UNMODIFIED DC, passes modified): no bonus', () => {
+    // Stat 10 + roll 2 = 12 < base DC 13 → d20 fails unmodified.
+    // With 1 gift, modified DC 11; 12 ≥ 11 → passes modified. The
+    // encounter passes (Spark + Illumination +1) but NO overflow
+    // bonus — the gift was load-bearing, not abundance beyond ask.
+    const state = chesedState(
+      [{ arcanum: 5, recipientId: 'p2' }],
+      { lovingkindness: 10 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 2, int: () => 2 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.newState.illumination).toBe(1);
+    expect(result.value.chesedOverflowBonus).toBeUndefined();
+  });
+
+  it('hoarding (0 gifts) — standard chassis: pass/fail per d20', () => {
+    // No gift staged. Standard chassis applies. Stat 10 + roll 5 = 15
+    // ≥ DC 13 → pass. Spark earned, Illumination +1. No overflow.
+    const state = chesedState([], { lovingkindness: 10 });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(13);
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.newState.illumination).toBe(1);
+    expect(result.value.chesedOverflowBonus).toBeUndefined();
+  });
+
+  it('hoarding (0 gifts) — d20 fail: standard fail path (no Spark, no Illumination)', () => {
+    // Design § 3.3 specifies a 'hoarding' react-branch with +2 Sep,
+    // but the special-cased Separation magnitude and react-retry
+    // guard ship in a follow-up. This PR's behaviour on hoarding-fail
+    // is standard-chassis: outcome.pass=false, newState===state, the
+    // chassis routes through accept-setback (+1 Sep) or react-retry.
+    const state = chesedState([], { lovingkindness: 0 });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState).toBe(state);
+  });
+
+  it('UI-path: pre-supplied outcome WITHOUT chesedGiftDcReduction — engine does NOT auto-fold (no double-application)', () => {
+    // Regression guard against the latent double-application bug.
+    //
+    // Setup: 1 gift staged, baseDC 13. UI pre-rolls with
+    // `effectiveDC = 13` (no chesed reduction applied — the UI
+    // doesn't know about giftCards yet). The discriminating value is
+    // `total`:
+    //   - With the gate in place (correct behavior): the engine does
+    //     NOT auto-fold. chesedGiftDcReduction stays 0.
+    //     unmodifiedDC = 13 - 0 = 13. total (13) >= 13 → overflow
+    //     fires.
+    //   - With a regression that removes the gate:
+    //     chesedGiftDcReduction = -2 from auto-fold.
+    //     unmodifiedDC = 13 - (-2) = 15. total (13) < 15 → overflow
+    //     does NOT fire.
+    // The discriminator is precisely `total = 13` (the single-
+    // reduction unmodifiedDC) which is below the double-reduction
+    // unmodifiedDC of 15.
+    const state = chesedState(
+      [{ arcanum: 5, recipientId: 'p2' }],
+      { lovingkindness: 10 },
+    );
+    const preRolled = {
+      rolled: 3,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 13,
+      effectiveDC: 13,
+      pass: true,
+    };
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 3, int: () => 3 },
+      outcome: preRolled,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // effectiveDC passes through unchanged — no engine-side fold.
+    expect(result.value.outcome.effectiveDC).toBe(13);
+    // Overflow MUST fire — total (13) meets the true unmodifiedDC of
+    // 13. A regression that reintroduced the auto-fold would compute
+    // unmodifiedDC = 15 and the bonus would NOT fire.
+    expect(result.value.chesedOverflowBonus).toEqual({
+      kind: 'chesed-overflow-bonus',
+      amount: 1,
+    });
+  });
+
+  it('non-Chesed Sefirah: giftCards staged is ignored (Hod control)', () => {
+    // Regression guard: the gift-DC-reduction is gated on
+    // `sefirah === 'chesed'`. A Hod resolve with stale giftCards must
+    // NOT apply the reduction.
+    const state = makeState(
+      { position: 'hod', stats: statSheet({ intellect: 10 }) },
+      {
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          giftCards: [{ arcanum: 5, recipientId: 'p2' }],
+        },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12); // Hod base, no Chesed tilt
+    expect(result.value.chesedOverflowBonus).toBeUndefined();
+  });
+});
+
 

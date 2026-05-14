@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { seededRng } from '@/engine/rng';
 import {
   EMPTY_PENDING_MODIFIERS,
+  EMPTY_SHELL_STATE,
   type CheckOutcome,
   type GameState,
   type TurnPhase,
@@ -3880,6 +3881,224 @@ describe('turnReducer — Gevurah Sacred Sacrifice (#487)', () => {
     const result = turnReducer(
       { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
       { kind: 'prep-confirm', sefirah: 'hod', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe('turnReducer — Chesed Overflow (#486)', () => {
+  // Design § 3.3: at prep-confirm in Chesed, each staged `gift-card`
+  // transfers the named arcanum from the active player's hand to the
+  // recipient's hand. The recipient auto-discards the oldest-by-
+  // arcanum-number card if at HAND_CAP (v1 known griefing surface).
+  // Shell of Chesed (Hoarding) blocks `gift-card` at prep-add-modifier
+  // for the duration of the Shell's one-round window.
+
+  const chesedPassOutcome: CheckOutcome = {
+    rolled: 18,
+    statContribution: 12,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 30,
+    effectiveDC: 11,
+    pass: true,
+  };
+
+  function chesedStats() {
+    return {
+      unity: 10, insight: 10, understanding: 10,
+      lovingkindness: 12, strength: 10, harmony: 10,
+      passion: 10, intellect: 10, intuition: 10, body: 10,
+    };
+  }
+
+  it('prep-confirm at Chesed transfers a gifted arcanum from active.hand to recipient.hand', () => {
+    const active = makePlayer({
+      id: 'p1',
+      position: 'chesed',
+      hand: [5, 7, 11],
+      stats: chesedStats(),
+    });
+    const recipient = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [3, 9],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [active, recipient],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          giftCards: [{ arcanum: 5, recipientId: 'p2' }],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'chesed', outcome: chesedPassOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const nextActive = result.value.next.state.players.find((p) => p.id === 'p1');
+    const nextRecipient = result.value.next.state.players.find((p) => p.id === 'p2');
+    expect(nextActive?.hand).toEqual([7, 11]);
+    expect(nextRecipient?.hand).toContain(5);
+    expect(nextRecipient?.hand.length).toBe(3);
+    // Staged giftCards cleared at consume time per § 2.7.
+    expect(result.value.next.state.pendingModifiers.giftCards).toEqual([]);
+  });
+
+  it('prep-confirm at Chesed: hand-cap recipient auto-discards oldest-by-arcanum to receive the gift (v1 corner)', () => {
+    // Design § 3.3 v1 corner: "recipient auto-discards the oldest-by-
+    // arcanum-number card to make room." Lowest arcanum is "oldest".
+    const active = makePlayer({
+      id: 'p1',
+      position: 'chesed',
+      hand: [17, 19, 21],
+      stats: chesedStats(),
+    });
+    const recipient = makePlayer({
+      id: 'p2',
+      position: 'hod',
+      // Six cards = HAND_CAP. Lowest is 2.
+      hand: [2, 5, 8, 11, 14, 18],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [active, recipient],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          giftCards: [{ arcanum: 17, recipientId: 'p2' }],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'chesed', outcome: chesedPassOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const nextRecipient = result.value.next.state.players.find((p) => p.id === 'p2');
+    // Recipient discarded arcanum 2 (lowest), received 17.
+    expect(nextRecipient?.hand).not.toContain(2);
+    expect(nextRecipient?.hand).toContain(17);
+    expect(nextRecipient?.hand.length).toBe(6); // still at HAND_CAP
+    expect(result.value.next.state.discardPile).toContain(2);
+  });
+
+  it('prep-confirm at non-Chesed Sefirah does NOT trigger gift transfer (stale giftCards ignored)', () => {
+    // Regression guard for the Sefirah gate on applyChesedGiftTransfers.
+    // If state.encounter is at any non-Chesed Sefirah AND giftCards
+    // are somehow staged (test fixture, fuzz, future variant), the
+    // transfer helper must NOT fire — its hand-cap-auto-discard
+    // semantic is Chesed-specific per design § 3.3.
+    const active = makePlayer({
+      id: 'p1',
+      position: 'hod',
+      hand: [5, 7, 11],
+      stats: chesedStats(),
+    });
+    const recipient = makePlayer({
+      id: 'p2',
+      position: 'tiferet',
+      hand: [3, 9],
+    });
+    const state = makeState(
+      {},
+      {
+        players: [active, recipient],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          giftCards: [{ arcanum: 5, recipientId: 'p2' }],
+        },
+      },
+    );
+    const hodPassOutcome: CheckOutcome = {
+      rolled: 18,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 28,
+      effectiveDC: 12,
+      pass: true,
+    };
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: hodPassOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Active retains arcanum 5 — no transfer fired.
+    const nextActive = result.value.next.state.players.find((p) => p.id === 'p1');
+    const nextRecipient = result.value.next.state.players.find((p) => p.id === 'p2');
+    expect(nextActive?.hand).toContain(5);
+    expect(nextRecipient?.hand).not.toContain(5);
+  });
+
+  it('prep-add-modifier rejects gift-card when Shell of Chesed is active', () => {
+    // Design § 3.3 edge case: Shell of Chesed (Hoarding) blocks
+    // `gift-card` at prep-add-modifier for the duration of the
+    // Shell's one-round window.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chesed',
+      hand: [5, 7, 11],
+      stats: chesedStats(),
+    });
+    const recipient = makePlayer({ id: 'p2', position: 'tiferet' });
+    const state = makeState(
+      {},
+      {
+        players: [player, recipient],
+        activePlayerId: 'p1',
+        shells: { ...EMPTY_SHELL_STATE, chesed: 'active' },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'gift-card', arcanum: 5, recipientId: 'p2' },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('chesed-shell-blocks-gift');
+  });
+
+  it('prep-add-modifier accepts gift-card when Shell of Chesed is dormant (control)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chesed',
+      hand: [5, 7, 11],
+      stats: chesedStats(),
+    });
+    const recipient = makePlayer({ id: 'p2', position: 'tiferet' });
+    const state = makeState(
+      {},
+      {
+        players: [player, recipient],
+        activePlayerId: 'p1',
+        // shells.chesed defaults to 'dormant' via EMPTY_SHELL_STATE.
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'gift-card', arcanum: 5, recipientId: 'p2' },
+      },
       RNG,
     );
     expect(result.ok).toBe(true);

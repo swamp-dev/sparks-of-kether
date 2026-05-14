@@ -51,7 +51,20 @@ export type GameEvent =
   | { readonly kind: 'pillar-streak-imbalance'; readonly pillar: 'mercy' | 'severity' }
   | { readonly kind: 'pillar-streak-equilibrium' }
   | { readonly kind: 'shell-activated'; readonly sefirah: SefirahKey }
-  | { readonly kind: 'gift-refused'; readonly playerId: string };
+  | { readonly kind: 'gift-refused'; readonly playerId: string }
+  | {
+      /**
+       * #486 — Chesed Overflow "abundance beyond ask." Emitted by
+       * `resolveChallenge` on top of `spark-earned` when the active
+       * player has staged ≥1 `gift-card` at Chesed AND the d20
+       * outcome would have passed the *unmodified* DC (the gift was
+       * abundance, not load-bearing). Adds +1 Illumination —
+       * distinct from `spark-earned`'s standard +1 so a counter-log
+       * audit shows the abundance bump separately.
+       */
+      readonly kind: 'chesed-overflow-bonus';
+      readonly playerId: string;
+    };
 
 /** Pure counter delta. Engine reducers shouldn't read this directly — go through `applyEvent`. */
 export interface CounterDelta {
@@ -72,6 +85,7 @@ export function deltaFor(event: GameEvent): CounterDelta {
     case 'assist-contributed':
     case 'move-downward':
     case 'pillar-streak-equilibrium':
+    case 'chesed-overflow-bonus':
       return { illumination: 1, separation: 0 };
     case 'check-failed-accepted':
       // Shortcut failures cost +2 Separation; regular accepted failures +1.
