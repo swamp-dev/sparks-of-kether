@@ -575,53 +575,157 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(middleZ).toBeGreaterThan(firstZ);
   });
 
-  it('hovered card scales up dramatically — #579 free-floating hand', () => {
-    // Pre-#579 the magnify scale was 1.3 (Mac-dock-style). #579's
-    // free-floating hand swells the active card so it dominates the
-    // screen and the matching path lights through it; scale is now
-    // 3.5×. The exact constant is tuned for the rest-tiny / full-
-    // size active feel; this test pins it at the bigger band so a
-    // future polish pass can't quietly slide it back to dock-magnify
-    // numbers without updating the contract.
+  it('hovered card scales up — #579 free-floating hand', () => {
+    // Pre-#579 the magnify scale was 1.3 (Mac-dock-style). #579 increased
+    // it to 3.5× so the card dominated the screen; a later pass reduced it
+    // to 1.5× so the card lifts to a readable "normal" size without
+    // filling the viewport. This test pins the constant so a polish pass
+    // can't silently revert to dock-magnify numbers without updating the
+    // contract.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector(
       '[data-card-slot="1"]',
     ) as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
-    expect(middle.style.transform).toMatch(/scale\(3\.5\)/);
+    expect(middle.style.transform).toMatch(/scale\(1\.5\)/);
   });
 
-  it('magnify lift is translateY *before* scale so the translation runs in viewport coords', () => {
-    // Regression: pre-fix the transform was built as
-    // `scale(3.5) translateY(-35vh)`. CSS applies transform functions
-    // right-to-left in the string, so the inner translateY ran in
-    // unscaled local coords and was multiplied by the outer scale —
-    // effective lift 3.5 × 35vh = 122.5vh, sending the card far above
-    // the viewport. The fix puts the translateY *before* the scale
-    // (translate applied last, in post-scale viewport coords) so the
-    // lift is the intended 35vh.
+  it('magnify transform order: translateX → translateY → scale (all run in post-scale viewport coords)', () => {
+    // Transform order (CSS applies right-to-left in the string):
+    //   scale(1.5) runs first (rightmost) — grows card in place.
+    //   translateY(-20vh) runs second — lifts card 20vh in viewport coords.
+    //   translateX(?px) runs last — centres card on viewport width.
+    //
+    // The base fan transform (rotate + per-slot translateY) must precede
+    // all magnify pieces so the concat order at the call-site is correct.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector(
       '[data-card-slot="1"]',
     ) as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
     const transform = middle.style.transform;
-    const translateIdx = transform.indexOf('translateY(-35vh)');
-    const scaleIdx = transform.indexOf('scale(3.5)');
-    expect(translateIdx, 'transform contains translateY(-35vh)').toBeGreaterThan(-1);
-    expect(scaleIdx, 'transform contains scale(3.5)').toBeGreaterThan(-1);
+    const translateXIdx = transform.indexOf('translateX(');
+    const translateYIdx = transform.indexOf('translateY(-20vh)');
+    const scaleIdx = transform.indexOf('scale(1.5)');
+    expect(translateXIdx, 'transform contains translateX(…px)').toBeGreaterThan(-1);
+    expect(translateYIdx, 'transform contains translateY(-20vh)').toBeGreaterThan(-1);
+    expect(scaleIdx, 'transform contains scale(1.5)').toBeGreaterThan(-1);
     expect(
-      translateIdx,
-      'translateY(-35vh) must appear before scale(3.5) in the transform string',
+      translateXIdx,
+      'translateX must appear before translateY in the transform string',
+    ).toBeLessThan(translateYIdx);
+    expect(
+      translateYIdx,
+      'translateY(-20vh) must appear before scale(1.5) in the transform string',
     ).toBeLessThan(scaleIdx);
-    // Also pin the full concatenation contract: base fan transform
-    // (rotate + per-slot translateY) precedes the magnify pieces.
-    // Without this, someone could reverse `baseTransform + magnifyTransform`
-    // at the concat site and the order-within-magnify check above
-    // would still pass.
+    // Pin the full concatenation contract: base fan transform precedes magnify.
     expect(transform).toMatch(
-      /rotate\([^)]+\) translateY\([^)]+\) translateY\(-35vh\) scale\(3\.5\)/,
+      /rotate\([^)]+\) translateY\([^)]+\) translateX\([^)]+px\) translateY\(-20vh\) scale\(1\.5\)/,
     );
+  });
+
+  it('magnified card transform includes translateX so the card centres on the viewport', () => {
+    // When a card is hovered, useLayoutEffect computes the horizontal
+    // distance from the card's natural fan position to the viewport
+    // centre and injects it as translateX. In jsdom getBoundingClientRect
+    // returns all-zeros, so the offset equals window.innerWidth / 2.
+    // The important contract is that translateX(…px) appears in the
+    // transform at all — that it comes before translateY and scale is
+    // already pinned by the transform-order test above.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector(
+      '[data-card-slot="1"]',
+    ) as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(middle.style.transform).toMatch(/translateX\([^)]+px\)/);
+  });
+
+  it('fan pan: pointerdown on the fan background + pointermove shifts the fan', () => {
+    // Dragging the fan background (not a card button) pans the fan
+    // so players can scroll to reveal cards hidden behind the overlap.
+    // The `e.target === e.currentTarget` guard ensures card buttons'
+    // drag-to-play path is not disrupted.
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
+    );
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+
+    // Simulate a drag on the fan background: pointerdown then pointermove
+    // with the fan element itself as both dispatched target and currentTarget.
+    fireEvent.pointerDown(fan, { clientX: 200 });
+    fireEvent.pointerMove(fan, { clientX: 100 });
+    // The fan div's transform should now include translateX(-100px) from
+    // the 100-px leftward drag.
+    expect(fan.style.transform).toMatch(/translateX\(-100px\)/);
+  });
+
+  it('fan pan: pointercancel resets pan to zero', () => {
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
+    );
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.pointerDown(fan, { clientX: 200 });
+    fireEvent.pointerMove(fan, { clientX: 100 });
+    expect(fan.style.transform).toMatch(/translateX\(-100px\)/);
+    fireEvent.pointerCancel(fan);
+    // After cancel the pan offset is reset so the fan re-centres.
+    expect(fan.style.transform).not.toMatch(/translateX\(-100px\)/);
+  });
+
+  it('fan pan: pointerdown on a card child does NOT start a pan (e.target !== e.currentTarget guard)', () => {
+    // The `e.target === e.currentTarget` check on the fan div's handler
+    // ensures that a pointerdown starting on a card button bubbles up
+    // without triggering the pan. This keeps the card drag-to-play path
+    // independent of the fan-pan path.
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
+    );
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLElement;
+
+    // Dispatch pointerDown on the card (it bubbles to the fan).
+    // In RTL, e.target === card, e.currentTarget === fan → guard fires.
+    fireEvent.pointerDown(card, { clientX: 200 });
+    fireEvent.pointerMove(fan, { clientX: 50 });
+    // The fan should have no pan translateX — the guard prevented it.
+    expect(fan.style.transform).not.toMatch(/translateX\(-150px\)/);
+  });
+
+  it('centering is independent of fan pan: hover while panned subtracts fanPanOffset from measurement', () => {
+    // When the fan is panned before a card is hovered, the fan div's
+    // getBoundingClientRect().left is already shifted by fanPanOffset.
+    // Without the fix, the centering math would use that shifted value,
+    // producing an error of 2 × fanPanOffset. With the fix, fanPanOffset
+    // is subtracted from fanRect.left so the measurement is pan-independent.
+    //
+    // In jsdom: getBoundingClientRect() returns 0 for all props,
+    // card.offsetLeft = 0, card.offsetWidth = 0. So:
+    //   Without fix: magnifyOffsetX = window.innerWidth/2 (no pan adjustment)
+    //   With fix:    magnifyOffsetX = window.innerWidth/2 - (0 - fanPanOffset)
+    //                               = window.innerWidth/2 + fanPanOffset
+    //                               = window.innerWidth/2 + (-100) for a 100px left drag
+    const { container } = render(
+      <Hand hand={[2, 5, 13, 7, 14, 21]} visible={true} />,
+    );
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const middle = container.querySelector(
+      '[data-card-slot="2"]',
+    ) as HTMLButtonElement;
+
+    // Pan 100px left (fanPanOffset = -100).
+    fireEvent.pointerDown(fan, { clientX: 200 });
+    fireEvent.pointerMove(fan, { clientX: 100 });
+
+    // Hover a card while panned.
+    fireEvent.mouseEnter(middle);
+
+    const match = middle.style.transform.match(/translateX\(([^)]+)px\)/);
+    expect(match, 'translateX should appear in the card transform').not.toBeNull();
+    const [, rawValue] = match ?? [];
+    const translateXValue = parseFloat(rawValue ?? '0');
+    // Expected: window.innerWidth/2 - (fanRect.left[=0] - fanPanOffset[-100] + offsetLeft[=0] + offsetWidth/2[=0])
+    //         = window.innerWidth/2 - (0 - (-100)) = window.innerWidth/2 - 100
+    expect(translateXValue).toBeCloseTo(window.innerWidth / 2 - 100, 0);
   });
 
   it('hovered card runs at ~75% opacity so the matching Tree path glow shows through (#579)', () => {
@@ -662,20 +766,24 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(fanCls).toMatch(/pointer-events-auto/);
   });
 
-  it('inner fan clips horizontally without becoming a scroll container', () => {
-    // Regression: the inner fan used `overflow-x-hidden`, but per the
-    // CSS overflow spec setting overflow-x to a non-visible value
-    // implicitly coerces overflow-y from visible → auto. The magnified
-    // card's transform then created vertical overflow that turned the
-    // fan into a scrollable region (with a visible scrollbar), and the
-    // `absolute right-0 top-0` close-× button rode up to the top of the
-    // expanded scrollable area. The fix swaps to `overflow-x-clip` which
-    // clips visually exactly like hidden but does NOT trigger the
-    // implicit overflow-y: auto coercion.
+  it('outer wrapper clips horizontally without becoming a scroll container', () => {
+    // The clip boundary moved to the outer `position: fixed` wrapper so
+    // the inner fan div can be panned (translateX) without the clip
+    // window moving with it. `overflow-x-clip` (not `-hidden`) is still
+    // required: hidden would coerce overflow-y to `auto` on the full-
+    // width fixed wrapper, turning the whole viewport into a vertical
+    // scroll container whenever a magnified card overflows it vertically.
+    // In floating mode the inner fan no longer needs its own clip —
+    // the outer wrapper handles it. In inline mode the inner div still
+    // carries its own `overflow-x-clip`.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const hand = container.querySelector('[data-hand]');
+    const handCls = hand?.getAttribute('class') ?? '';
+    expect(handCls).toMatch(/\boverflow-x-clip\b/);
+    expect(handCls).not.toMatch(/\boverflow-x-hidden\b/);
     const fan = container.querySelector('[data-hand-fan]');
     const fanCls = fan?.getAttribute('class') ?? '';
-    expect(fanCls).toMatch(/\boverflow-x-clip\b/);
+    expect(fanCls).not.toMatch(/\boverflow-x-clip\b/);
     expect(fanCls).not.toMatch(/\boverflow-x-hidden\b/);
   });
 

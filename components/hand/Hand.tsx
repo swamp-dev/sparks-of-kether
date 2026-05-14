@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -139,8 +140,8 @@ const CARD_OVERLAP_REM_BASE = '-3.3rem';
  * decoration).
  */
 const FAN_REST_SCALE = 0.35;
-const MAGNIFY_SCALE_BIG = 3.5;
-const MAGNIFY_LIFT_VH = 35;
+const MAGNIFY_SCALE_BIG = 1.5;
+const MAGNIFY_LIFT_VH = 20;
 const MAGNIFY_OPACITY = 0.75;
 const NEIGHBOUR_NUDGE_REM = 0.8;
 const NEAR_NEIGHBOUR_NUDGE_REM = 0.25;
@@ -231,8 +232,16 @@ export function Hand({
   // most-recent expression of intent.
   const [hoveredIndex, setHoveredIndex] = useState<number | undefined>(undefined);
   const [focusedIndex, setFocusedIndex] = useState<number | undefined>(undefined);
+  // Horizontal offset (px) added to the magnify transform so the active card
+  // centres on the viewport rather than lifting in-place at its fan position.
+  const [magnifyOffsetX, setMagnifyOffsetX] = useState<number>(0);
+  // Horizontal pan offset (px) for the fan container — lets the user drag the
+  // hand left/right to reveal cards hidden behind the overlap.
+  const [fanPanOffset, setFanPanOffset] = useState<number>(0);
+  const panStartRef = useRef<{ x: number; startOffset: number } | null>(null);
   const reduceMotion = useReduceMotion();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const fanRef = useRef<HTMLDivElement | null>(null);
 
   // Clamp focus index when the hand shrinks (cards played). Use a
   // functional updater so this effect only re-runs when `hand.length`
@@ -242,6 +251,8 @@ export function Hand({
     setFocusIndex((prev) =>
       prev >= hand.length && hand.length > 0 ? hand.length - 1 : prev,
     );
+    // Re-centre the pan whenever the hand changes (card played or drawn).
+    setFanPanOffset(0);
   }, [hand.length]);
 
   const handleKey = (
@@ -302,6 +313,52 @@ export function Hand({
     prevActiveIndexRef.current < hand.length
       ? prevActiveIndexRef.current
       : undefined;
+
+  // Centering: after each render where `activeIndex` becomes defined,
+  // measure the newly-active card's bounding rect and compute the
+  // translateX needed to push its centre to the viewport centre.
+  // `useLayoutEffect` fires after the DOM commits (so fanTransform
+  // already reads `scale(1)` and getBoundingClientRect returns the
+  // target layout position) but before the browser paints — the
+  // correction lands in the same frame and the user never sees the
+  // uncorrected position.
+  //
+  // We do NOT reset to 0 on deactivation: `magnifyOffsetX` is only
+  // consumed inside the `isMagnified` branch, so a stale value from
+  // the previous active card is visually inert. Resetting causes an
+  // extra render after mouseLeave that, in the test environment, lets
+  // the `prevActiveIndexRef` useEffect run between renders and clear
+  // the ref before the exit-transition render reads it — breaking the
+  // one-render transition persistence tested in the magnify suite.
+  useLayoutEffect(() => {
+    if (activeIndex === undefined || reduceMotion) return;
+    const card = cardRefs.current[activeIndex];
+    const fanEl = fanRef.current;
+    if (!card || !fanEl) return;
+    // Use `offsetLeft` + `offsetWidth` (layout geometry, unaffected by
+    // CSS transforms) rather than `getBoundingClientRect()` on the card.
+    // When the user slides directly from card A to card B, the stale
+    // `magnifyOffsetX` from A is still applied as translateX on card B's
+    // style; getBoundingClientRect would include that stale shift and
+    // produce a compounding centering error. offsetLeft reflects the
+    // flex-layout position before any transform, so the measurement is
+    // always clean.
+    //
+    // Subtract `fanPanOffset` from the fan's getBoundingClientRect.left:
+    // `getBoundingClientRect` includes the fan's current `translateX(fanPanOffset)`
+    // transform, so `fanRect.left` is already shifted by the pan amount. Without
+    // this correction, hovering a card while the fan is panned produces a centering
+    // error of 2 × fanPanOffset (measurement is off by panOffset, correction is
+    // off in the opposite direction by panOffset).
+    const fanRect = fanEl.getBoundingClientRect();
+    const cardNaturalCenterX = fanRect.left - fanPanOffset + card.offsetLeft + card.offsetWidth / 2;
+    setMagnifyOffsetX(window.innerWidth / 2 - cardNaturalCenterX);
+    // fanPanOffset is intentionally excluded from deps: re-measuring on
+    // every pan event while a card is magnified would thrash layout. The
+    // correction above bakes the pan-at-hover-time into the offset; panning
+    // after hover is a separate UX interaction that doesn't re-centre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, reduceMotion]);
 
   // #132: collapsed state — render a small badge with the card count
   // instead of the full fan. A tap on the badge reopens the hand.
@@ -368,25 +425,19 @@ export function Hand({
   // layout that wrapper is a `position: fixed` viewport overlay;
   // for `inline` it's the existing inline-flow div the consumer
   // can size with `className`.
+  // `overflow-x-clip` on the outer wrapper (floating only) clips the
+  // fan at the viewport edges so horizontal pan never triggers a page
+  // scrollbar. `clip` (not `hidden`) avoids the CSS-spec coercion
+  // that would force `overflow-y` to `auto` and make the wrapper a
+  // vertical scroll container as soon as a magnified card overflows
+  // it. The inner fan div no longer needs its own `overflow-x-clip`
+  // in floating mode — the outer wrapper provides the clip boundary.
+  // In inline mode (no outer wrapper), the inner div keeps its own.
   const outerClassName = isFloating
-    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center ${className ?? ''}`
+    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center overflow-x-clip ${className ?? ''}`
     : `${className ?? ''}`;
-  // Inner fan className — `pointer-events-auto` only matters when
-  // the outer wrapper carries `pointer-events-none` (floating
-  // layout); inline layout doesn't need the override but it's
-  // harmless either way.
-  //
-  // `overflow-x-clip` (not `-hidden`): visually clips the same way
-  // `hidden` would, but does NOT establish a scroll container and
-  // does NOT trigger the CSS-spec implicit `overflow-y: auto`
-  // coercion. The earlier `overflow-x-hidden` turned the fan into a
-  // vertical scroll container as soon as the magnified card's
-  // transform overflowed it (the spec mandates that a non-`visible`
-  // value on one overflow axis silently coerces the other axis from
-  // `visible` to `auto`). That coercion is what made the fan box
-  // appear to grow and showed a scrollbar on hover.
   const innerClassName = isFloating
-    ? 'pointer-events-auto animate-hand-fade-in overflow-x-clip motion-reduce:animate-none'
+    ? 'pointer-events-auto animate-hand-fade-in motion-reduce:animate-none'
     : 'animate-hand-fade-in overflow-x-clip motion-reduce:animate-none';
   return (
     <div
@@ -399,26 +450,43 @@ export function Hand({
       className={outerClassName.trim()}
     >
       <div
+        ref={fanRef}
         data-hand-fan
-        // #38: `overflow-x-clip` belt-and-braces — the fan fits in a
-        // 320 px viewport at the chosen card+overlap dimensions, but
-        // clipping overflow guarantees the page never gets a horizontal
-        // scrollbar even if a future change widens the fan. `clip`
-        // (not `hidden`) is load-bearing for #579's magnify lift:
-        // `overflow-x: hidden` would coerce overflow-y from `visible`
-        // to `auto` per CSS spec (the coercion only applies when the
-        // other axis was `visible`) and turn the fan into a vertical
-        // scroll container as soon as the magnified card overflowed it.
         // #340: `position: relative` here is the positioned-ancestor
         // anchor for the per-card `zIndex` to take effect. In floating
         // layout the stacking context the cards' z-indices participate
-        // in is provided by the outer `position: fixed` wrapper at
-        // line 372 (and, when the fan transform is active, by that
-        // transform too). In inline layout neither applies — the cards
-        // z-order against each other within the nearest ancestor
-        // stacking context. `position: relative` alone, without a
-        // z-index of its own, does not create a stacking context.
+        // in is provided by the outer `position: fixed` wrapper (and,
+        // when the fan transform is active, by that transform too).
+        // In inline layout neither applies — the cards z-order against
+        // each other within the nearest ancestor stacking context.
+        // `position: relative` alone, without a z-index of its own,
+        // does not create a stacking context.
+        //
+        // Fan pan: pointer handlers below start a horizontal pan only
+        // when the pointer goes down directly on the fan container
+        // background (`e.target === e.currentTarget`). Card buttons
+        // sit as children; their pointer events bubble up but the
+        // target check prevents them from triggering a pan — they
+        // already have their own drag-to-play pointer handling.
         className={innerClassName}
+        onPointerDown={isFloating ? (e) => {
+          if (e.target !== e.currentTarget) return;
+          // setPointerCapture keeps move/up events routed to this element
+          // even when the pointer drifts outside it. Optional-chained
+          // because jsdom test environments don't always implement it.
+          e.currentTarget.setPointerCapture?.(e.pointerId);
+          panStartRef.current = { x: e.clientX, startOffset: fanPanOffset };
+        } : undefined}
+        onPointerMove={isFloating ? (e) => {
+          if (!panStartRef.current) return;
+          const dx = e.clientX - panStartRef.current.x;
+          setFanPanOffset(panStartRef.current.startOffset + dx);
+        } : undefined}
+        onPointerUp={isFloating ? () => { panStartRef.current = null; } : undefined}
+        onPointerCancel={isFloating ? () => {
+          panStartRef.current = null;
+          setFanPanOffset(0);
+        } : undefined}
         style={{
           display: 'flex',
           justifyContent: 'center',
@@ -426,11 +494,15 @@ export function Hand({
           position: 'relative',
           ...(fanTransform !== undefined
             ? {
-                transform: fanTransform,
+                transform: fanPanOffset !== 0
+                  ? `${fanTransform} translateX(${fanPanOffset}px)`
+                  : fanTransform,
                 transformOrigin: 'bottom center',
                 transition: FAN_TRANSITION,
               }
-            : {}),
+            : isFloating && fanPanOffset !== 0 ? {
+                transform: `translateX(${fanPanOffset}px)`,
+              } : {}),
         }}
       >
       {/*
@@ -585,21 +657,18 @@ export function Hand({
         let magnifyTransform = '';
         if (!reduceMotion) {
           if (isMagnified) {
-            // #579: scale up dramatically and translate the card upward
-            // by `MAGNIFY_LIFT_VH` viewport-height units so the magnified
-            // card lifts toward the centre of the screen.
+            // Transform order (CSS applies right-to-left):
+            //   scale(1.5) → translateY(-20vh) → translateX(offsetX)
             //
-            // Order matters: CSS applies transform functions right-to-
-            // left in the string. A function written to the *right* of
-            // `scale()` runs first in pre-scale local coords, and its
-            // translation amount then gets multiplied by the scale.
-            // Pre-fix this was `scale(3.5) translateY(-35vh)`, which
-            // lifted the card by 3.5 × 35vh = 122.5vh — far above the
-            // viewport. Writing `translateY(-Yvh)` to the *left* of
-            // `scale()` makes the translation the last operation, so
-            // it runs in post-scale (viewport) coordinates and the
-            // card lifts the intended 35vh.
-            magnifyTransform = ` translateY(-${MAGNIFY_LIFT_VH}vh) scale(${MAGNIFY_SCALE_BIG})`;
+            // scale: card grows 1.5× around its own centre.
+            // translateY: lifts the card 20vh in viewport (post-scale)
+            //   coords — writing it left of scale() makes it the outer
+            //   operation, so it is not multiplied by the scale factor.
+            // translateX: centres the card horizontally on the viewport.
+            //   `magnifyOffsetX` is the distance from the card's fan
+            //   position to the viewport centre, computed in
+            //   useLayoutEffect after each activeIndex change.
+            magnifyTransform = ` translateX(${magnifyOffsetX.toFixed(1)}px) translateY(-${MAGNIFY_LIFT_VH}vh) scale(${MAGNIFY_SCALE_BIG})`;
           } else if (isImmediateNeighbour && offsetFromActive !== null) {
             const sign = offsetFromActive > 0 ? 1 : -1;
             magnifyTransform = ` translateX(${(sign * NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
