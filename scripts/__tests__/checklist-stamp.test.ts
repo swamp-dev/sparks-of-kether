@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import {
   parseVerdict,
   sanitizeBranch,
+  findReviewedBranchAmong,
   findTargetWorktreeAmong,
   verifyTranscript,
 } from '../checklist-stamp.mjs';
@@ -83,6 +84,41 @@ describe('sanitizeBranch', () => {
 
   it('replaces any other character', () => {
     expect(sanitizeBranch('feat/spaces are bad')).toBe('feat_spaces_are_bad');
+  });
+});
+
+describe('findReviewedBranchAmong', () => {
+  it('returns null for an empty branch list', () => {
+    expect(findReviewedBranchAmong([], 'feat/526-music-engine appears here')).toBeNull();
+  });
+
+  it('returns null when no branch appears in the haystack', () => {
+    const branches = ['feat/526-music-engine', 'fix/600-crash'];
+    expect(findReviewedBranchAmong(branches, 'completely unrelated text')).toBeNull();
+  });
+
+  it('matches a branch name that appears in the haystack', () => {
+    const branches = ['feat/526-music-engine', 'fix/600-crash'];
+    const haystack = 'Reviewing changes on feat/526-music-engine for this PR.';
+    expect(findReviewedBranchAmong(branches, haystack)).toBe('feat/526-music-engine');
+  });
+
+  it('prefers the longest match when multiple branches appear', () => {
+    // feat/526-music-engine and feat/526 both appear; the longer one wins
+    // so we don't get a prefix false-positive.
+    const branches = ['feat/526', 'feat/526-music-engine', 'fix/600-crash'];
+    const haystack = 'branch feat/526-music-engine is being reviewed';
+    expect(findReviewedBranchAmong(branches, haystack)).toBe('feat/526-music-engine');
+  });
+
+  it('does not match main or master (caller must filter them out)', () => {
+    // The pure function itself does no filtering — the caller (findReviewedBranch)
+    // strips main/master before calling. This test verifies that when the
+    // caller-supplied list already excludes them, the function behaves correctly.
+    const branches = ['feat/526-music-engine'];
+    const haystack = 'no branch references here, mentions main and master in prose';
+    // main/master not in branches list → no match for them even if haystack mentions them
+    expect(findReviewedBranchAmong(branches, haystack)).toBeNull();
   });
 });
 

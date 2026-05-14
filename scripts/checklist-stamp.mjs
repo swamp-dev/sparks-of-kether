@@ -201,6 +201,42 @@ export function verifyTranscript(payload) {
 }
 
 /**
+ * Pure-function match: given a list of local branch names and a haystack
+ * string (typically prompt + reviewer output), returns the branch name
+ * that appears in the haystack, preferring longer names to avoid prefix
+ * false-positives (so `feat/526-music-engine` wins over `feat/526`).
+ *
+ * Exported for testing.
+ * Returns null if no match.
+ */
+export function findReviewedBranchAmong(branches, haystack) {
+  if (!branches || branches.length === 0) return null;
+  const matches = branches.filter((b) => haystack.includes(b));
+  if (matches.length === 0) return null;
+  matches.sort((a, b) => b.length - a.length);
+  return matches[0];
+}
+
+/**
+ * Find the branch being reviewed by scanning the haystack (prompt +
+ * reviewer output) for any local branch name (excluding main/master).
+ * Returns `{ branch, headSha }` or `null`.
+ */
+function findReviewedBranch(sessionCwd, haystack) {
+  const out = gitOutput(['-C', sessionCwd, 'branch', '--format=%(refname:short)']);
+  if (!out) return null;
+  const branches = out
+    .split('\n')
+    .map((b) => b.trim())
+    .filter((b) => b && b !== 'main' && b !== 'master');
+  const branch = findReviewedBranchAmong(branches, haystack);
+  if (!branch) return null;
+  const headSha = gitOutput(['-C', sessionCwd, 'rev-parse', branch]);
+  if (!headSha) return null;
+  return { branch, headSha };
+}
+
+/**
  * Pure-function match: given a list of worktree records and a
  * haystack string (typically prompt + reviewer output), return the
  * worktree whose path or branch appears in the haystack, preferring
@@ -238,9 +274,18 @@ function findTargetWorktree(sessionCwd, prompt, reviewerText) {
   return findTargetWorktreeAmong(worktrees, haystack);
 }
 
-function writeStamp({ cwd, reviewerText, modeLabel }) {
-  const branch = gitOutput(['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD']);
-  const headSha = gitOutput(['-C', cwd, 'rev-parse', 'HEAD']);
+function writeStamp({ cwd, reviewerText, modeLabel, reviewedBranch }) {
+  let branch, headSha;
+  if (reviewedBranch) {
+    // Caller identified the reviewed branch via haystack scan — use it
+    // directly instead of reading HEAD of cwd (which may be a different
+    // branch when the main repo is checked out on an unrelated branch).
+    branch = reviewedBranch.branch;
+    headSha = reviewedBranch.headSha;
+  } else {
+    branch = gitOutput(['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD']);
+    headSha = gitOutput(['-C', cwd, 'rev-parse', 'HEAD']);
+  }
   if (!branch || !headSha) {
     return { ok: false, reason: `not in a git repo or no HEAD at ${cwd}` };
   }
@@ -321,6 +366,10 @@ async function hookMode() {
   }
 
   const sessionCwd = payload.cwd || process.cwd();
+  // Build haystack from prompt + reviewer output for both worktree
+  // routing and reviewed-branch detection.
+  const haystack = `${toolInput.prompt || ''}\n${reviewerText}`;
+
   // Route to the worktree the reviewer was operating on. The session
   // cwd is usually the main repo on `main`, but reviewer prompts/
   // output reference the worktree by absolute path or branch name.
@@ -328,10 +377,24 @@ async function hookMode() {
   const target = findTargetWorktree(sessionCwd, toolInput.prompt, reviewerText);
   const targetCwd = target ? target.path : sessionCwd;
 
-  const result = writeStamp({ cwd: targetCwd, reviewerText, modeLabel: 'hook' });
+  // Scan local branches to find which one the reviewer was actually
+  // reviewing. Even when a target worktree IS found by path, its current
+  // HEAD may be on a different branch (e.g. the main repo is on feat/636
+  // while feat/526 is being reviewed — the main repo path matches file
+  // references in the output, but its HEAD is the wrong branch). The
+  // haystack scan is the authoritative signal; writeStamp falls back to
+  // the cwd HEAD only when it finds nothing.
+  const reviewedBranch = findReviewedBranch(sessionCwd, haystack);
+
+  const result = writeStamp({ cwd: targetCwd, reviewerText, modeLabel: 'hook', reviewedBranch });
   if (target) {
     console.error(
       `checklist-stamp[hook]: routed to worktree ${target.path} (branch ${target.branch})`,
+    );
+  }
+  if (reviewedBranch) {
+    console.error(
+      `checklist-stamp[hook]: detected reviewed branch ${reviewedBranch.branch} via haystack scan`,
     );
   }
   logResult('hook', result);

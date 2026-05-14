@@ -12,6 +12,17 @@ export function parseVerdict(reviewerOutput: string): Verdict;
 
 export function sanitizeBranch(branch: string): string;
 
+/**
+ * Pure-function match: given a list of local branch names and a haystack
+ * string (typically prompt + reviewer output), returns the branch name
+ * that appears in the haystack, preferring longer names to avoid prefix
+ * false-positives. Returns null if no match.
+ */
+export function findReviewedBranchAmong(
+  branches: readonly string[],
+  haystack: string,
+): string | null;
+
 export interface WorktreeRecord {
   readonly path: string;
   readonly branch: string;
