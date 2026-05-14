@@ -134,31 +134,36 @@ what it was — but it's not the gate. The stamp file is.
 - the agent paraphrasing reviewer output and feeding it back via
   an explicit-mode helper (removed 2026-05-14; the script has no
   CLI fallback any more)
-- the agent piping a fabricated hook payload via Bash
-  (`cat <<EOF | node scripts/checklist-stamp.mjs`) — the script
-  cross-validates `payload.tool_use_id` against the harness-written
-  session transcript at `payload.transcript_path`; payloads with
-  synthetic tool_use_ids fail this check
+- payloads pointing at a stale/fake/foreign transcript file (the
+  script stat-checks `payload.transcript_path` — must exist, be
+  owned by the current user, and have been written-to within the
+  last 5 minutes)
 - worktree-cwd routing failures (the hook scans the reviewer
   prompt + output for worktree paths and routes the stamp to the
   matching worktree's `.claude/state/`, not to the session cwd
   which is usually the main repo on `main`)
 
 **Known limitations** that the gate does NOT close on its own:
-- **Replay**: an agent could in principle replay a real `tool_use_id`
-  from an earlier reviewer call in the same session with fabricated
-  reviewer text. The transcript-text cross-check is impractical: the
-  harness writes the tool_result entry concurrently with / after
-  firing the hook, so the reviewer text isn't reliably present at
-  hook-read time. The `head_sha` check at merge moment partially
-  mitigates this — a replayed stamp is for an earlier commit and
-  won't satisfy the current PR's head_sha — but a same-commit replay
-  is theoretically possible.
-- **Bash-pipe fabrication beyond the classifier**: constructing the
-  payload at all requires running Bash, which the auto-mode
-  classifier intercepts as a stamp-fabrication pattern. The classifier
-  is the primary defense against deliberate forgery; the script
-  catches accidental and obvious patterns.
+- **Replay / bash-pipe fabrication**: an agent with Bash access could
+  in principle construct a hook payload (`cat <<EOF | node
+  scripts/checklist-stamp.mjs`) reusing a real session
+  `tool_use_id` + `transcript_path` with fabricated reviewer text.
+  An earlier version of this script tried to cross-validate
+  `payload.tool_use_id` against the transcript file content; that
+  approach was empirically broken because the harness flushes both
+  the `tool_use` entry AND the `tool_result` entry to the transcript
+  AFTER firing the hook, so the entry isn't there to check at
+  hook-read time. The script can't distinguish real-from-bash-pipe
+  payloads purely from disk.
+- **The auto-mode classifier is the primary defense against
+  deliberate forgery.** It intercepts Bash-pipe attempts to
+  construct hook payloads and Write attempts to forge stamp files
+  directly. The script-level checks here catch accidents and
+  obvious patterns; they don't pretend to close every adversarial
+  surface.
+- **`head_sha` partial mitigation**: a replayed stamp from an
+  earlier commit fails `/ship-ticket`'s head_sha check at merge
+  time. Only a same-commit replay would slip through that check.
 
 The stamp's `verdict_hash` records the SHA-256 of the reviewer text
 the hook captured from `tool_response.content[].text`. If a verdict

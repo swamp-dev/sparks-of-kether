@@ -47,9 +47,10 @@ export type VerifyResult =
   | { ok: false; reason: string };
 
 /**
- * Verify the payload was emitted by an actual harness hook firing,
- * not constructed by an agent piping fabricated JSON to the script.
- * Cross-validates `payload.tool_use_id` against the session
- * transcript at `payload.transcript_path`.
+ * Sanity-check the payload looks like a real harness hook fire.
+ * Stat-checks `payload.transcript_path` (exists, owned, recent
+ * mtime) and validates `payload.tool_use_id` is present. Does NOT
+ * cross-reference transcript file content — the harness flushes
+ * transcript entries post-hook, so the cross-check can't work.
  */
 export function verifyTranscript(payload: HookPayload): VerifyResult;

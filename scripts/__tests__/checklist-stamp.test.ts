@@ -171,25 +171,14 @@ describe('verifyTranscript', () => {
     expect(result.reason).toMatch(/missing tool_use_id/);
   });
 
-  it('rejects payload when tool_use_id is not found in transcript', () => {
+  it('accepts payload with a present tool_use_id (no content cross-check)', () => {
+    // Transcript content does NOT need to contain the tool_use_id
+    // — the harness flushes that entry post-hook. The script only
+    // sanity-checks that the field is present in the payload.
     writeFileSync(transcriptPath, '{"some":"unrelated entry"}\n');
     const result = verifyTranscript({
       transcript_path: transcriptPath,
-      tool_use_id: 'toolu_fabricated',
-    });
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error('unreachable: just asserted ok=false');
-    expect(result.reason).toMatch(/not found in transcript/);
-  });
-
-  it('accepts payload when tool_use_id appears in transcript', () => {
-    writeFileSync(
-      transcriptPath,
-      '{"type":"assistant","content":[{"type":"tool_use","id":"toolu_legit","name":"Agent"}]}\n',
-    );
-    const result = verifyTranscript({
-      transcript_path: transcriptPath,
-      tool_use_id: 'toolu_legit',
+      tool_use_id: 'toolu_anything',
     });
     expect(result.ok).toBe(true);
   });

@@ -45,7 +45,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 function readStdin() {
@@ -136,38 +136,41 @@ function listWorktrees(sessionCwd) {
 }
 
 /**
- * Verify the payload was emitted by an actual harness hook firing,
- * not constructed by an agent piping fabricated JSON to the script.
+ * Sanity-check the payload looks like a real harness hook fire.
  *
- * The harness writes a JSONL transcript at `payload.transcript_path`
- * containing every assistant message and tool call in the session.
- * Each tool use has a stable `id` (the `tool_use_id` we get in the
- * payload), written to the transcript when the tool is dispatched.
- * If a payload's tool_use_id doesn't appear in the transcript, the
- * payload is fabricated.
+ * **Why no transcript content cross-check**: empirically, the harness
+ * writes both the `tool_use` entry AND the `tool_result` entry to
+ * the JSONL transcript AFTER firing the hook. A prior version of
+ * this function (#618) read the transcript and rejected if
+ * `tool_use_id` wasn't found there; that check rejected every
+ * legitimate code-reviewer call because the entry isn't flushed
+ * yet at hook-read time. The transcript-cross-check approach was
+ * based on a wrong assumption about harness flush ordering and is
+ * removed.
  *
- * **What this catches**: payloads constructed via bash pipe with a
- * synthetic / made-up tool_use_id. The transcript only contains
- * tool_use_ids the harness actually dispatched.
+ * **What this checks instead**: the lightweight stat properties of
+ * `payload.transcript_path`. A real harness payload references a
+ * transcript file that exists, is owned by the current user, and
+ * was written-to recently. A fabricated payload pointing at a fake
+ * or stale transcript fails these guards. `tool_use_id` is required
+ * present (non-empty) but not cross-checked against transcript
+ * content.
  *
- * **What this does NOT catch**: replay attacks where the agent reuses
- * a real tool_use_id from an earlier session call. Mitigations:
- *   - `/ship-ticket` validates the stamp's head_sha matches the PR's
- *     current HEAD, so a replayed stamp from an earlier commit is
- *     refused at merge time.
- *   - Constructing the payload at all requires Bash, which the
- *     auto-mode classifier intercepts as a stamp-fabrication pattern.
+ * **What the gate actually relies on**:
+ *   - The `PostToolUse:Agent` hook fires only on real subagent
+ *     dispatches; the harness controls when it fires.
+ *   - The auto-mode classifier intercepts Bash-pipe attempts to
+ *     construct payloads outside of the hook.
+ *   - `/ship-ticket` requires `written_via=hook` so a stamp file
+ *     written directly via the Write tool (also classifier-blocked)
+ *     wouldn't satisfy the gate.
+ *   - `/ship-ticket` requires the stamp's `head_sha` to match the
+ *     PR's current HEAD, so a replayed-stamp attack from an earlier
+ *     commit is refused at merge time.
  *
- * **Why no reviewer-text cross-check**: empirically, the harness
- * writes the tool_result entry to the transcript concurrently with /
- * after firing the hook, so the reviewer text isn't reliably present
- * in the transcript at hook-read time. A prior version of this
- * function tried to sample-match the reviewer text against the
- * transcript with retries; it consistently rejected legitimate calls
- * because the harness flushes the result after the hook completes.
- * The reviewer text comes from `payload.tool_response.content[].text`
- * which the harness puts in the payload directly — that's the
- * authoritative source.
+ * The script-level checks here catch accidents (missing fields,
+ * pointed-at-stale-transcript fabrication); deliberate forgery is
+ * the classifier's responsibility.
  *
  * Returns `{ ok: true }` on success, `{ ok: false, reason: ... }`
  * if verification fails.
@@ -190,19 +193,8 @@ export function verifyTranscript(payload) {
     return { ok: false, reason: `transcript_path ${path} hasn't been modified in ${Math.floor(ageMs / 1000)}s — stale, suggests fabricated payload` };
   }
 
-  const toolUseId = payload.tool_use_id;
-  if (!toolUseId) {
-    return { ok: false, reason: 'payload missing tool_use_id — cannot cross-reference transcript' };
-  }
-
-  let transcript;
-  try {
-    transcript = readFileSync(path, 'utf8');
-  } catch (e) {
-    return { ok: false, reason: `cannot read transcript ${path}: ${e.message}` };
-  }
-  if (!transcript.includes(toolUseId)) {
-    return { ok: false, reason: `tool_use_id ${toolUseId} not found in transcript — fabricated payload` };
+  if (!payload.tool_use_id) {
+    return { ok: false, reason: 'payload missing tool_use_id' };
   }
 
   return { ok: true };
