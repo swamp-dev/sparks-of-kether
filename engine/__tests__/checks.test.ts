@@ -11,10 +11,12 @@ import {
   YESOD_DREAM_PEEK_BONUS,
   TIFERET_BALANCE_TILT,
   TIFERET_LOPSIDED_TILT,
+  NETZACH_DECLARED_DESIRE_BONUS,
+  NETZACH_RETRY_DC_TILT,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
-import type { GameState } from '../types';
+import type { GameState, PlayerState } from '../types';
 import { EMPTY_PENDING_MODIFIERS } from '../types';
 
 // ──────────────── rollCheck (pure math) ────────────────
@@ -1878,6 +1880,407 @@ describe('resolveChallenge — Tiferet Two-Pillar Balance (#488)', () => {
     expect(result.value.outcome.pass).toBe(false);
     expect(result.value.outcome.effectiveDC).toBe(16);
     expect(result.value.tiferetBalance?.tilt).toBe(2);
+  });
+});
+
+// ──────────────── resolveChallenge — Netzach Declared Desire (#489) ────────────────
+
+describe('resolveChallenge — Netzach Declared Desire (#489)', () => {
+  // Netzach base DC = 12 (sefirot.ts), stat = passion.
+  //
+  // Bonus-eligible signs (water + Venus-ruled, design § 3.5):
+  //   cancer, scorpio, pisces, taurus, libra
+  // Control signs (no bonus):
+  //   aries, gemini, leo, virgo, sagittarius, capricorn, aquarius
+  //
+  // `soulDoorDelta: 0` set explicitly throughout to bypass the
+  // resolver's auto-inject — otherwise the player's zodiac would shift
+  // the DC and confound the Netzach-tilt observations.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+    soulDoorDelta: 0,
+  };
+
+  function netzachState(
+    overrides: Partial<PlayerState> = {},
+    encounter?: NonNullable<GameState['encounter']>,
+  ): GameState {
+    return makeState(
+      {
+        position: 'netzach',
+        stats: statSheet({ passion: 10 }),
+        ...overrides,
+      },
+      encounter !== undefined ? { encounter } : {},
+    );
+  }
+
+  it('exposes NETZACH_DECLARED_DESIRE_BONUS / NETZACH_RETRY_DC_TILT as locked design constants', () => {
+    expect(NETZACH_DECLARED_DESIRE_BONUS).toBe(2);
+    expect(NETZACH_RETRY_DC_TILT).toBe(1);
+  });
+
+  // ── Sign-conditional +2 flatBonus (5 bonus-eligible signs)
+
+  it.each([
+    ['cancer', 'water'],
+    ['scorpio', 'water'],
+    ['pisces', 'water'],
+    ['taurus', 'Venus-ruled'],
+    ['libra', 'Venus-ruled'],
+  ] as const)(
+    'declared %s (%s) at Netzach: +2 flatBonus on the roll',
+    (zodiacSign, _label) => {
+      const state = netzachState({ zodiacSign, declaredDesire: 'tiferet' });
+      const result = resolveChallenge({
+        state,
+        playerId: 'p1',
+        sefirah: 'netzach',
+        modifiers: blankMods,
+        rng: { d20: () => 5, int: () => 5 },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+    },
+  );
+
+  // ── Control signs: no bonus
+
+  it.each(['aries', 'gemini', 'leo', 'virgo', 'sagittarius', 'capricorn', 'aquarius'] as const)(
+    'declared %s (non-water/Venus, control) at Netzach: no flatBonus',
+    (zodiacSign) => {
+      const state = netzachState({ zodiacSign, declaredDesire: 'tiferet' });
+      const result = resolveChallenge({
+        state,
+        playerId: 'p1',
+        sefirah: 'netzach',
+        modifiers: blankMods,
+        rng: { d20: () => 5, int: () => 5 },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    },
+  );
+
+  it('undeclared (no declaredDesire) at Netzach: no flatBonus, even for a water sign', () => {
+    // The bonus requires BOTH declaration AND eligible sign. A water
+    // sign that hasn't declared their desire gets nothing.
+    const state = netzachState({ zodiacSign: 'cancer' /* no declaredDesire */ });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('caller-supplied flatBonus stacks with the Netzach sign bonus', () => {
+    // A future twist or Spark might bring its own flatBonus. The
+    // Netzach +2 must STACK, not replace.
+    const state = netzachState({ zodiacSign: 'pisces', declaredDesire: 'binah' });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: { ...blankMods, flatBonus: 3 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5);
+  });
+
+  // ── Retry-DC penalty for undeclared retries
+
+  it('undeclared + netzachPriorFails === 0: no retry DC tilt (first attempt)', () => {
+    const state = netzachState(
+      { zodiacSign: 'aries' /* undeclared */ },
+      { sefirah: 'netzach', seed: 1, retryCount: 0, netzachPriorFails: 0 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+  });
+
+  it('undeclared + netzachPriorFails >= 1: DC +1 (Aphrodite tightens on the retry)', () => {
+    const state = netzachState(
+      { zodiacSign: 'aries' /* undeclared */ },
+      { sefirah: 'netzach', seed: 1, retryCount: 1, netzachPriorFails: 1 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(13);
+  });
+
+  it('declared + netzachPriorFails >= 1: NO retry DC tilt (declaration exempts)', () => {
+    const state = netzachState(
+      { zodiacSign: 'aries', declaredDesire: 'binah' },
+      { sefirah: 'netzach', seed: 1, retryCount: 1, netzachPriorFails: 1 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+  });
+
+  // ── netzachPriorFails increments on a failed resolve
+
+  it('failed Netzach resolve: netzachPriorFails increments on the envelope', () => {
+    // Stat 0 + roll 1 = 1 < DC 12 → fail. The Netzach branch bumps
+    // priorFails so a subsequent retry sees DC +1 if still undeclared.
+    const state = netzachState(
+      { zodiacSign: 'aries', stats: statSheet({ passion: 0 }) },
+      { sefirah: 'netzach', seed: 1, retryCount: 0, netzachPriorFails: 0 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState.encounter?.netzachPriorFails).toBe(1);
+  });
+
+  it('failed Netzach resolve stacks the priorFails counter across attempts', () => {
+    const state = netzachState(
+      { zodiacSign: 'aries', stats: statSheet({ passion: 0 }) },
+      { sefirah: 'netzach', seed: 1, retryCount: 2, netzachPriorFails: 2 },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState.encounter?.netzachPriorFails).toBe(3);
+  });
+
+  it('failed Netzach resolve at a NON-Netzach Sefirah does NOT touch netzachPriorFails (control)', () => {
+    // Regression guard: the increment is gated on
+    // `sefirah === 'netzach'`. A failed Hod resolve must not bump it.
+    const state = makeState(
+      { position: 'hod', stats: statSheet({ intellect: 0 }), zodiacSign: 'aries' },
+      {
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0, netzachPriorFails: 5 },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // priorFails stays at 5 — Hod doesn't touch the Netzach counter.
+    expect(result.value.newState.encounter?.netzachPriorFails).toBe(5);
+  });
+
+  // ── pendingStatBuff set on pass with declaration
+
+  it('pass at Netzach with declaration (non-Netzach Sefirah): pendingStatBuff set to +1 on declared sefirah', () => {
+    const state = netzachState({
+      zodiacSign: 'aries',
+      declaredDesire: 'tiferet',
+      stats: statSheet({ passion: 20 }),
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    const player = result.value.newState.players[0];
+    expect(player?.pendingStatBuff).toEqual({ sefirah: 'tiferet', amount: 1 });
+  });
+
+  it('pass at Netzach declaring Netzach itself: pendingStatBuff amount is +2 (congruence rewarded)', () => {
+    const state = netzachState({
+      zodiacSign: 'aries',
+      declaredDesire: 'netzach',
+      stats: statSheet({ passion: 20 }),
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    const player = result.value.newState.players[0];
+    expect(player?.pendingStatBuff).toEqual({ sefirah: 'netzach', amount: 2 });
+  });
+
+  it('pass at Netzach WITHOUT declaration: no pendingStatBuff set', () => {
+    const state = netzachState({
+      zodiacSign: 'aries' /* undeclared */,
+      stats: statSheet({ passion: 20 }),
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    const player = result.value.newState.players[0];
+    expect(player?.pendingStatBuff).toBeUndefined();
+  });
+
+  // ── pendingStatBuff consumption at the next stat-check
+
+  it('pendingStatBuff applies to the matching Sefirah on a later check, then clears', () => {
+    // Player passed Netzach earlier, declared Tiferet → pendingStatBuff
+    // = { sefirah: 'tiferet', amount: 1 }. Now they arrive at Tiferet.
+    // Stat 4 (harmony) + buff 1 = effective stat 5; roll 9 → total 14;
+    // Tiferet DC = 14 → pass. Without the buff: 4 + 9 = 13 < 14 → fail.
+    const state = makeState(
+      {
+        position: 'tiferet',
+        stats: statSheet({ harmony: 4 }),
+        zodiacSign: 'aries',
+        pendingStatBuff: { sefirah: 'tiferet', amount: 1 },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: blankMods,
+      rng: { d20: () => 9, int: () => 9 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.outcome.total).toBe(9 + 5); // roll + buffed stat
+    // Consumed regardless of pass/fail.
+    const player = result.value.newState.players[0];
+    expect(player?.pendingStatBuff).toBeUndefined();
+  });
+
+  it('pendingStatBuff does NOT apply to a non-matching Sefirah; buff stays staged for later', () => {
+    // Player declared Tiferet but arrives at Hod first. Hod's stat
+    // (intellect) is not what the buff applies to — pass through with
+    // no bump, buff preserved for a later Tiferet attempt.
+    const state = makeState({
+      position: 'hod',
+      stats: statSheet({ intellect: 4 }),
+      zodiacSign: 'aries',
+      pendingStatBuff: { sefirah: 'tiferet', amount: 1 },
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // No stat bump: 4 + 5 = 9 (not 10).
+    expect(result.value.outcome.total).toBe(9);
+    // Buff preserved.
+    const player = result.value.newState.players[0];
+    expect(player?.pendingStatBuff).toEqual({ sefirah: 'tiferet', amount: 1 });
+  });
+
+  it('pendingStatBuff is consumed even on a failed matching check (one-shot lifetime)', () => {
+    // Per design § 3.5: "consumed by the next stat-check this turn.
+    // After consumption it expires." The lifetime is one-shot; failing
+    // the check still spends the buff.
+    const state = makeState({
+      position: 'tiferet',
+      stats: statSheet({ harmony: 0 }),
+      zodiacSign: 'aries',
+      pendingStatBuff: { sefirah: 'tiferet', amount: 1 },
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: blankMods,
+      // Stat 0 + buff 1 + roll 1 = 2 < DC 14 → fail.
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    const player = result.value.newState.players[0];
+    expect(player?.pendingStatBuff).toBeUndefined();
+  });
+
+  // ── Sefirah-gating regression guards
+
+  it('non-Netzach Sefirot do not award the declared-desire bonus (Hod control)', () => {
+    // The +2 flatBonus is gated on `sefirah === 'netzach'`. A Hod
+    // resolve with a declared-desire player + eligible sign must NOT
+    // see the bonus.
+    const state = makeState({
+      position: 'hod',
+      stats: statSheet({ intellect: 10 }),
+      zodiacSign: 'cancer',
+      declaredDesire: 'netzach',
+    });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.outcome.effectiveDC).toBe(12); // Hod base, no Netzach tilt
   });
 });
 

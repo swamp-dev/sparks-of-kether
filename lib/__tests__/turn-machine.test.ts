@@ -3475,6 +3475,127 @@ describe('turnReducer — new PrepModifier variants (#334)', () => {
       if (!result.ok) return;
       expect(result.value.next.state.pendingModifiers.declareDesires).toEqual([]);
     });
+
+    it('confirm: writes player.declaredDesire when staged at Netzach (#489)', () => {
+      // Design § 3.5: "Once `prep-confirm` fires with this modifier
+      // present, the engine writes `activePlayer.declaredDesire =
+      // sefirah` on the player record." Permanent for the rest of
+      // the run.
+      const player = makePlayer({
+        id: 'p1',
+        position: 'netzach',
+        stats: {
+          unity: 10, insight: 10, understanding: 10,
+          lovingkindness: 10, strength: 10, harmony: 10,
+          passion: 12, intellect: 10, intuition: 10, body: 10,
+        },
+      });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          encounter: { sefirah: 'netzach', seed: 1, retryCount: 0 },
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            declareDesires: ['tiferet'],
+          },
+        },
+      );
+      const passOutcome: CheckOutcome = {
+        rolled: 18,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 30,
+        effectiveDC: 12,
+        pass: true,
+      };
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-confirm', sefirah: 'netzach', outcome: passOutcome },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const updatedPlayer = result.value.next.state.players.find((p) => p.id === 'p1');
+      expect(updatedPlayer?.declaredDesire).toBe('tiferet');
+    });
+
+    it('add: rejects declare-desire targeting Malkuth (no encounter, no Spark to want, § 3.5 edge case)', () => {
+      // Design § 3.5 edge case: "Player declares Malkuth: blocked at
+      // `prep-add-modifier` (Malkuth has no encounter, no Spark to
+      // want)." Without this guard, a player stages `declare-desire:
+      // 'malkuth'` and the prep-confirm Netzach gate writes a useless
+      // permanent `declaredDesire: 'malkuth'` onto their record,
+      // burning their one-per-game declaration. Reject at stage time.
+      const player = makePlayer({ id: 'p1', position: 'netzach' });
+      const state = makeState({}, { players: [player] });
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        {
+          kind: 'prep-add-modifier',
+          modifier: { kind: 'declare-desire', sefirah: 'malkuth' },
+        },
+        RNG,
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.reason.kind).toBe('invalid-desire-target');
+    });
+
+    it('confirm: does NOT overwrite an existing declaredDesire (first declaration locks, § 3.5)', () => {
+      // Design § 3.5 edge case: "Player declares twice across the run:
+      // blocked. The first declaration locks. Subsequent
+      // `declare-desire` modifiers at later Netzach re-encounters are
+      // dropped at confirm." The drop is silent; the staged sefirah
+      // is still cleared from pendingModifiers (consumption invariant),
+      // but the locked declaredDesire is preserved.
+      const player = makePlayer({
+        id: 'p1',
+        position: 'netzach',
+        declaredDesire: 'binah',
+        stats: {
+          unity: 10, insight: 10, understanding: 10,
+          lovingkindness: 10, strength: 10, harmony: 10,
+          passion: 12, intellect: 10, intuition: 10, body: 10,
+        },
+      });
+      const state = makeState(
+        {},
+        {
+          players: [player],
+          encounter: { sefirah: 'netzach', seed: 1, retryCount: 0 },
+          pendingModifiers: {
+            ...EMPTY_PENDING_MODIFIERS,
+            declareDesires: ['tiferet'],
+          },
+        },
+      );
+      const passOutcome: CheckOutcome = {
+        rolled: 18,
+        statContribution: 12,
+        modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+        total: 30,
+        effectiveDC: 12,
+        pass: true,
+      };
+      const result = turnReducer(
+        { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+        { kind: 'prep-confirm', sefirah: 'netzach', outcome: passOutcome },
+        RNG,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const updatedPlayer = result.value.next.state.players.find((p) => p.id === 'p1');
+      // Original declaration preserved; second staged sefirah dropped.
+      expect(updatedPlayer?.declaredDesire).toBe('binah');
+      expect(result.value.next.state.pendingModifiers.declareDesires).toEqual([]);
+      // Drop is surfaced via `meta.dropped` so the UI can render the
+      // "Already declared: Binah" copy.
+      expect(result.value.meta?.dropped).toContainEqual({
+        kind: 'declare-desire',
+        sefirah: 'tiferet',
+      });
+    });
   });
 
   describe('dream-guess (Yesod)', () => {

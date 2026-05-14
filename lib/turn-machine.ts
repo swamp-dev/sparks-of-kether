@@ -267,6 +267,17 @@ export type TurnReducerError =
     }
   | { readonly kind: 'no-active-player' }
   | { readonly kind: 'prep-cap-exceeded'; readonly cap: number }
+  | {
+      /**
+       * #489 — design § 3.5 edge case "Player declares Malkuth: blocked
+       * at `prep-add-modifier` (Malkuth has no encounter, no Spark to
+       * want)." The stage-time guard fires before the cap check so the
+       * player can re-stage a valid target without burning their
+       * one-per-encounter declaration slot.
+       */
+      readonly kind: 'invalid-desire-target';
+      readonly sefirah: SefirahKey;
+    }
   | { readonly kind: 'card-not-in-hand'; readonly arcanum: number }
   | {
       readonly kind: 'spark-not-held';
@@ -934,6 +945,18 @@ export function turnReducer(
           };
           break;
         case 'declare-desire':
+          // § 3.5 edge case: "Player declares Malkuth: blocked at
+          // `prep-add-modifier`" — Malkuth has no encounter and no
+          // Spark to want; staging it would have written a permanent-
+          // but-useless declaredDesire on the player record at confirm,
+          // burning their one-per-game declaration. Check this BEFORE
+          // the cap so the rejection surfaces the actual reason.
+          if (event.modifier.sefirah === 'malkuth') {
+            return {
+              ok: false,
+              reason: { kind: 'invalid-desire-target', sefirah: 'malkuth' },
+            };
+          }
           // § 3.5 (§ 2.7 surface table row): "Max one per run, locks."
           // The pre-confirm cap mirrors § 3.1 (name-card) and § 3.6
           // (dream-guess). The post-confirm lock is enforced separately
@@ -1219,6 +1242,41 @@ export function turnReducer(
           dreamGuesses: [],
         },
       };
+      // #489 / `design/per-sefirah-mechanics.md` § 3.5 — Netzach
+      // Declared Desire write-through. When a `declare-desire` was
+      // staged AND the encounter is at Netzach AND this player has
+      // not already declared, the vow lands on `player.declaredDesire`
+      // (permanent for the rest of the run). Subsequent declarations
+      // at later Netzach re-encounters are dropped here — the first
+      // declaration locks, per the design's "Player declares twice
+      // across the run: blocked. The first declaration locks." The
+      // drop surfaces through `meta.dropped` so the chassis can render
+      // the "Already declared: X" copy. Reads from
+      // `state.pendingModifiers.declareDesires` (the pre-consume
+      // snapshot — `consumeBurns` doesn't touch `pendingModifiers`, so
+      // the staged sefirah is still here at this point) so the value
+      // is available even though `consumedClearedNew` clears it below.
+      const stagedDesire = state.pendingModifiers.declareDesires[0];
+      const writeDesire =
+        stagedDesire !== undefined &&
+        state.encounter?.sefirah === 'netzach' &&
+        player.declaredDesire === undefined;
+      const dropDesire =
+        stagedDesire !== undefined &&
+        state.encounter?.sefirah === 'netzach' &&
+        player.declaredDesire !== undefined;
+      const droppedWithDesire: readonly PrepModifier[] =
+        dropDesire && stagedDesire !== undefined
+          ? [...dropped, { kind: 'declare-desire', sefirah: stagedDesire }]
+          : dropped;
+      const consumedWithDesire: GameState = writeDesire
+        ? {
+            ...consumedClearedNew,
+            players: consumedClearedNew.players.map((p) =>
+              p.id === player.id ? { ...p, declaredDesire: stagedDesire } : p,
+            ),
+          }
+        : consumedClearedNew;
       // On pass: clear ALL pendingModifiers (the encounter resolved
       // successfully — nothing to retry — so the cumulative card /
       // spark / assist stacks fall away too) and clear the encounter
@@ -1228,11 +1286,11 @@ export function turnReducer(
       // dream-pillar re-seed, etc.) without re-init.
       const baseState: GameState = passed
         ? {
-            ...consumedClearedNew,
+            ...consumedWithDesire,
             pendingModifiers: EMPTY_PENDING_MODIFIERS,
             encounter: undefined,
           }
-        : consumedClearedNew;
+        : consumedWithDesire;
       const stateAfter: GameState = {
         ...baseState,
         phase: 'challenge',
@@ -1243,7 +1301,7 @@ export function turnReducer(
         ok: true,
         value: {
           next: { state: stateAfter },
-          meta: { challenge: result.value, dropped },
+          meta: { challenge: result.value, dropped: droppedWithDesire },
         },
       };
     }

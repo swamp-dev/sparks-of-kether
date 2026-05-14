@@ -81,8 +81,29 @@ export function endTurn(state: GameState): GameState {
     // without a non-null assertion.
     throw new Error('endTurn: next player slot is empty (length 0?)');
   }
+  // #489 — `design/per-sefirah-mechanics.md` § 3.5: `pendingStatBuff`
+  // expires on `phase: 'end'` if not consumed by the next stat-check
+  // this turn. Strip it from the OUTGOING active player so the buff
+  // doesn't leak into a future turn where the player might revisit
+  // their declared Sefirah. Only the active player can hold a buff
+  // (resolveChallenge writes it for the resolving player), so other
+  // seats are passed through unchanged. Rebuild the `players` array
+  // ONLY when there's actually a buff to clear, so the common case
+  // preserves `next.players === state.players` referential equality.
+  const outgoing = state.players[currentIdx];
+  const playersWithBuffExpired =
+    outgoing?.pendingStatBuff !== undefined
+      ? state.players.map((p) => {
+          if (p.id !== state.activePlayerId) return p;
+          // `exactOptionalPropertyTypes: true` rejects `pendingStatBuff:
+          // undefined` — omit the key entirely via destructure-and-rest.
+          const { pendingStatBuff: _, ...rest } = p;
+          return rest;
+        })
+      : state.players;
   return {
     ...state,
+    players: playersWithBuffExpired,
     activePlayerId: nextPlayer.id,
     pendingDiscard: undefined,
     lastAction: undefined,

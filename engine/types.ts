@@ -202,6 +202,57 @@ export interface PlayerState {
    * keeps ordering deterministic if two players' stamps collide.
    */
   readonly arrivedAtKetherAt?: number | undefined;
+  /**
+   * Netzach Declared Desire (#489; `design/per-sefirah-mechanics.md`
+   * § 3.5). The Sefirah this player named at Netzach as the Spark they
+   * most want to earn before endgame. Set at `prep-confirm` when a
+   * `declare-desire` modifier is staged on a Netzach encounter; once
+   * set, **never cleared** (one declaration per game; the vow stands
+   * for the rest of the run). Subsequent `declare-desire` modifiers at
+   * later Netzach re-encounters are dropped at confirm.
+   *
+   * Read at `resolveChallenge` for two distinct effects:
+   *   - **Sign-conditional +2 flatBonus** at Netzach when the player's
+   *     `zodiacSign` is water (Cancer/Scorpio/Pisces) or Venus-ruled
+   *     (Taurus/Libra).
+   *   - **Exempts** the player from the retry-DC +1 penalty when
+   *     `state.encounter.netzachPriorFails > 0` (the penalty fires only
+   *     for undeclared retries — Aphrodite tightens when nothing was
+   *     named).
+   *
+   * On pass at Netzach with this set, the engine also writes
+   * `pendingStatBuff` for the next stat-check this turn (+1, or +2 if
+   * the declared Sefirah is Netzach itself — congruence is rewarded).
+   *
+   * Optional/additive: existing snapshots without this field survive
+   * deserialisation; players who never reach Netzach legitimately have
+   * it `undefined` forever.
+   */
+  readonly declaredDesire?: SefirahKey;
+  /**
+   * Netzach Declared Desire (#489) follow-up bump. Set by
+   * `resolveChallenge` on a successful Netzach pass when the player
+   * has a `declaredDesire` declared: a temporary +1 (or +2 if they
+   * declared Netzach itself) to the stat for their declared Sefirah,
+   * "passion fuels the next strike." Consumed at the next stat-check
+   * this turn whose `sefirah` matches `pendingStatBuff.sefirah`, then
+   * cleared. Cleared on `phase: 'end'` if not consumed (one-turn
+   * lifetime per design § 3.5; the buff is for the turn's *next*
+   * check, not a long-lived stat shift).
+   *
+   * `sefirah` is the Sefirah whose stat-check this buff applies to —
+   * i.e. the player's `declaredDesire`. `amount` is the magnitude
+   * (1 for cross-Sefirah declarations, 2 when the player declared
+   * Netzach itself).
+   *
+   * Optional/additive: undefined when the player has not passed
+   * Netzach (with a declaration) yet, or the buff already consumed /
+   * expired.
+   */
+  readonly pendingStatBuff?: {
+    readonly sefirah: SefirahKey;
+    readonly amount: number;
+  };
 }
 
 /**

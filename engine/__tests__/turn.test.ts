@@ -169,6 +169,45 @@ describe('endTurn', () => {
     // Cleared so the next turn doesn't drag the resolved record forward.
     expect(next.pendingDiscard).toBeUndefined();
   });
+
+  it('clears pendingStatBuff on the outgoing player (#489)', () => {
+    // Design § 3.5: "consumed by the next stat-check this turn. After
+    // consumption it expires. (If no further check this turn, it
+    // expires on `phase: 'end'`.)" The buff lifetime is bounded to the
+    // active player's turn; an unconsumed buff must not leak into a
+    // future turn where the player might revisit their declared
+    // Sefirah.
+    const players = [
+      makePlayer({
+        id: 'p1',
+        pendingStatBuff: { sefirah: 'tiferet', amount: 1 },
+      }),
+      makePlayer({ id: 'p2' }),
+    ];
+    const state = makeState({}, { players, activePlayerId: 'p1' });
+    const next = endTurn(state);
+    const outgoing = next.players.find((p) => p.id === 'p1');
+    expect(outgoing?.pendingStatBuff).toBeUndefined();
+  });
+
+  it('leaves pendingStatBuff alone for non-active players (#489)', () => {
+    // Structurally pendingStatBuff is only ever set on the active
+    // player (resolveChallenge writes it for the player whose turn is
+    // resolving), but this is a defense-in-depth guard: a future
+    // multiplayer state-sync bug should not have endTurn fan out and
+    // wipe other players' (non-existent) buffs as a side effect.
+    const players = [
+      makePlayer({ id: 'p1' }),
+      makePlayer({
+        id: 'p2',
+        pendingStatBuff: { sefirah: 'binah', amount: 2 },
+      }),
+    ];
+    const state = makeState({}, { players, activePlayerId: 'p1' });
+    const next = endTurn(state);
+    const otherPlayer = next.players.find((p) => p.id === 'p2');
+    expect(otherPlayer?.pendingStatBuff).toEqual({ sefirah: 'binah', amount: 2 });
+  });
 });
 
 describe('discard', () => {

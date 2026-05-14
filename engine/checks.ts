@@ -1,4 +1,4 @@
-import { sefirahByKey, tryPathByNumber } from '@/data';
+import { sefirahByKey, tryPathByNumber, zodiacSignByKey } from '@/data';
 import type { Pillar, SefirahKey } from '@/data';
 import { pathByArcanum } from '@/data';
 import { applyEvent } from './counters';
@@ -66,6 +66,29 @@ export const TIFERET_BALANCE_TILT = -2;
  */
 export const TIFERET_LOPSIDED_TILT = 2;
 
+/**
+ * Netzach Declared Desire (#489; `design/per-sefirah-mechanics.md`
+ * § 3.5) sign-conditional bonus. Locked at +2. Applied as a roll-side
+ * `flatBonus` at `resolveChallenge` when the encounter is at Netzach
+ * AND the active player has `declaredDesire !== undefined` AND their
+ * `zodiacSign` is water (Cancer / Scorpio / Pisces) or Venus-ruled
+ * (Taurus / Libra) — the five signs whose archetypal voice already
+ * runs on want and feeling. The other seven signs declare and get the
+ * `pendingStatBuff` but no roll bonus on the Netzach check itself.
+ */
+export const NETZACH_DECLARED_DESIRE_BONUS = 2;
+
+/**
+ * Netzach Declared Desire (#489) retry-DC tilt. Locked at +1. Applied
+ * DC-side at `resolveChallenge` when the encounter is at Netzach AND
+ * `state.encounter.netzachPriorFails > 0` AND the active player has
+ * `declaredDesire === undefined`. "Aphrodite tightens on the second
+ * strike when nothing was named" — the design's C6 fix replaces the
+ * structurally-unreachable "next visit" trigger with the same-encounter
+ * react-retry trigger.
+ */
+export const NETZACH_RETRY_DC_TILT = 1;
+
 // ──────────────── Public types ────────────────
 
 export interface CheckModifiers {
@@ -127,6 +150,17 @@ export interface CheckModifiers {
    * helper rather than re-deriving the rule.
    */
   readonly tiferetTilt?: number;
+  /**
+   * Netzach Declared Desire retry-DC tilt (#489;
+   * `design/per-sefirah-mechanics.md` § 3.5 C6 fix). Applied DC-side,
+   * additive with `shortcutPenalty`, `soulDoorDelta`, and `tiferetTilt`
+   * per S6 composition order. Auto-folded by `resolveChallenge` from
+   * `(state.encounter.netzachPriorFails, activePlayer.declaredDesire)`
+   * when `sefirah === 'netzach'`. UI callers that pre-compute outcome
+   * must compute and supply this themselves (mirrors the
+   * `#488 contract` on Tiferet — see `ResolveChallengeInput.outcome`).
+   */
+  readonly netzachRetryTilt?: number;
 }
 
 export type ChallengeRejection =
@@ -213,6 +247,41 @@ export interface TiferetBalanceEvent {
 }
 
 /**
+ * Netzach Declared Desire resolve-time event (#489;
+ * `design/per-sefirah-mechanics.md` § 3.5). Emitted by `resolveChallenge`
+ * on every Netzach resolve so the chassis can render the prep-result
+ * banner with the right copy:
+ *
+ *   - `kind: 'netzach-declared-bonus'` — declared AND sign-eligible
+ *     (water or Venus-ruled); +2 flatBonus folded in.
+ *   - `kind: 'netzach-declared-no-bonus'` — declared but sign isn't
+ *     eligible; banner notes the declaration without the bonus.
+ *   - `kind: 'netzach-undeclared'` — no declaration; the banner can
+ *     surface the retry-DC if priorFails > 0.
+ *
+ * `declared` is the Sefirah the player named (when present);
+ * `retryDcTilt` is the magnitude added DC-side (0 or
+ * `NETZACH_RETRY_DC_TILT`). The event NEVER carries the sign-bonus
+ * magnitude — that lives in `outcome.modifierBreakdown.flatBonus` and
+ * downstream consumers can read it there.
+ */
+export type NetzachDeclaredDesireEvent =
+  | {
+      readonly kind: 'netzach-declared-bonus';
+      readonly declared: SefirahKey;
+      readonly retryDcTilt: 0;
+    }
+  | {
+      readonly kind: 'netzach-declared-no-bonus';
+      readonly declared: SefirahKey;
+      readonly retryDcTilt: 0;
+    }
+  | {
+      readonly kind: 'netzach-undeclared';
+      readonly retryDcTilt: number;
+    };
+
+/**
  * What a successful `resolveChallenge` invocation returns.
  *
  * **IMPORTANT:** `ok: true` means "the challenge was resolved" (the
@@ -266,6 +335,15 @@ export interface ChallengeSuccess {
    * the "stage 2+ burns" banner-copy fallback.
    */
   readonly tiferetBalance?: TiferetBalanceEvent;
+  /**
+   * Present on every Netzach resolve (`sefirah === 'netzach'`). The
+   * Declared Desire mechanic surfaces three branches (declared+bonus,
+   * declared+no-bonus, undeclared) so the chassis can render the
+   * prep-result banner with the right copy. The event NEVER carries
+   * the sign-bonus magnitude — that lives in
+   * `outcome.modifierBreakdown.flatBonus`.
+   */
+  readonly netzachDeclaredDesire?: NetzachDeclaredDesireEvent;
 }
 
 // ──────────────── rollCheck (pure math) ────────────────
@@ -307,8 +385,15 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   // replaces would surface in the "composition: shortcut + soul door +
   // tiferet tilt stack" test in checks.test.ts.
   const tiferetAdjustment = modifiers.tiferetTilt ?? 0;
+  // #489: Netzach Declared Desire retry-DC tilt (design § 3.5 C6).
+  // Additive with shortcut + Soul Door + Tiferet per S6.
+  const netzachAdjustment = modifiers.netzachRetryTilt ?? 0;
   const effectiveDC =
-    dc + shortcutAdjustment + soulDoorAdjustment + tiferetAdjustment;
+    dc +
+    shortcutAdjustment +
+    soulDoorAdjustment +
+    tiferetAdjustment +
+    netzachAdjustment;
 
   return {
     rolled,
@@ -496,10 +581,45 @@ export function resolveChallenge(
     };
   }
 
+  // #489 / `design/per-sefirah-mechanics.md` § 3.5 — Netzach Declared
+  // Desire. Two effects: a roll-side +2 flatBonus when the player has
+  // declared AND their sign is water/Venus-ruled; a DC-side +1 retry
+  // tilt when they have NOT declared AND `netzachPriorFails > 0`.
+  // The event emits on every Netzach resolve so the chassis can render
+  // the prep-result banner regardless of outcome.
+  const netzach = sefirah === 'netzach' ? evaluateNetzachDeclaredDesire(state, player) : undefined;
+  if (netzach !== undefined) {
+    if (netzach.bonus > 0) {
+      resolvedModifiers = {
+        ...resolvedModifiers,
+        flatBonus: (resolvedModifiers.flatBonus ?? 0) + netzach.bonus,
+      };
+    }
+    if (netzach.retryTilt > 0) {
+      resolvedModifiers = {
+        ...resolvedModifiers,
+        netzachRetryTilt:
+          (resolvedModifiers.netzachRetryTilt ?? 0) + netzach.retryTilt,
+      };
+    }
+  }
+
+  // #489 — pendingStatBuff consumption. The Netzach buff is set on the
+  // active player when they pass Netzach with a declaration; it applies
+  // to the next stat-check this turn whose sefirah matches the buff's
+  // declared sefirah. Apply BEFORE the roll so the stat input reflects
+  // the bump, and clear the buff regardless of outcome (one-shot).
+  const buffApplies =
+    player.pendingStatBuff !== undefined &&
+    player.pendingStatBuff.sefirah === sefirah;
+  const buffedStat = buffApplies
+    ? stat + (player.pendingStatBuff?.amount ?? 0)
+    : stat;
+
   const outcome =
     input.outcome ??
     rollCheck({
-      stat,
+      stat: buffedStat,
       dc: sefirahRecord.challenge.dc,
       modifiers: resolvedModifiers,
       rng,
@@ -528,28 +648,71 @@ export function resolveChallenge(
     ? consumeYesodDreamGuess(stateAfterHodConsume)
     : stateAfterHodConsume;
 
+  // #489 — consume the pendingStatBuff REGARDLESS of pass/fail (design
+  // § 3.5: "consumed by the next stat-check this turn. After consumption
+  // it expires."). Only consumed when it applied — a buff for a
+  // different sefirah passes through untouched and waits for the
+  // matching attempt.
+  const stateAfterBuffConsume = buffApplies
+    ? clearPendingStatBuff(stateAfterYesodConsume, playerId)
+    : stateAfterYesodConsume;
+
+  // #489 — increment `netzachPriorFails` on a failed Netzach resolve
+  // (design § 3.5 C6 fix). Only fires when the encounter envelope is
+  // present and at Netzach; defensive against a Netzach resolve called
+  // without an envelope (test fixtures, future bots).
+  const shouldBumpNetzachPriorFails =
+    !outcome.pass &&
+    sefirah === 'netzach' &&
+    state.encounter?.sefirah === 'netzach';
+  const stateAfterNetzachFailBump = shouldBumpNetzachPriorFails
+    ? bumpNetzachPriorFails(stateAfterBuffConsume)
+    : stateAfterBuffConsume;
+
   if (!outcome.pass) {
     return {
       ok: true,
       value: {
-        newState: stateAfterYesodConsume,
+        newState: stateAfterNetzachFailBump,
         outcome,
         ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
         ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
         ...(tiferet !== undefined ? { tiferetBalance: tiferet.event } : {}),
+        ...(netzach !== undefined ? { netzachDeclaredDesire: netzach.event } : {}),
       },
     };
   }
 
+  // #489 — Netzach pass with a `declaredDesire` set: write the
+  // `pendingStatBuff` to the active player for their next stat-check
+  // this turn. +1 for cross-Sefirah declarations; +2 if the player
+  // declared Netzach itself (congruence rewarded per design § 3.5).
+  // Fires AFTER the Spark + cleared-set update so the freshly-cleared
+  // Netzach Spark and the buff land on the same player record.
+  const desire = player.declaredDesire;
+  const shouldSetBuff = sefirah === 'netzach' && desire !== undefined;
+  const buffAmount = desire === 'netzach' ? 2 : 1;
+  // Build the player base, then layer the buff. `exactOptionalPropertyTypes:
+  // true` rejects `pendingStatBuff: undefined`, so we omit the key when
+  // there's nothing to set. The pass-at-Netzach-with-declaration case is
+  // the only path that sets a new buff; the consume case has already
+  // run at `stateAfterBuffConsume` and stripped the key for matching
+  // buffs.
+  const { pendingStatBuff: _existingBuff, ...playerBaseNoBuff } = player;
   const updatedPlayer: PlayerState = {
-    ...player,
+    ...playerBaseNoBuff,
     clearedSefirot: new Set(player.clearedSefirot).add(sefirah),
     sparksHeld: new Set(player.sparksHeld).add(sefirah),
+    ...(shouldSetBuff && desire !== undefined
+      ? { pendingStatBuff: { sefirah: desire, amount: buffAmount } }
+      : !buffApplies && player.pendingStatBuff !== undefined
+        ? { pendingStatBuff: player.pendingStatBuff }
+        : {}),
   };
 
   const stateWithCleared: GameState = {
-    ...stateAfterYesodConsume,
-    players: stateAfterYesodConsume.players.map((p) =>
+    ...stateAfterNetzachFailBump,
+    players: stateAfterNetzachFailBump.players.map((p) =>
       p.id === playerId ? updatedPlayer : p,
     ),
   };
@@ -578,6 +741,7 @@ export function resolveChallenge(
       ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
       ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
       ...(tiferet !== undefined ? { tiferetBalance: tiferet.event } : {}),
+      ...(netzach !== undefined ? { netzachDeclaredDesire: netzach.event } : {}),
     },
   };
 }
@@ -916,5 +1080,107 @@ export function evaluateTiferetBalance(state: GameState): {
       pillarsTouched,
       burnCount,
     },
+  };
+}
+
+// ──────────────── Netzach Declared Desire helpers (#489) ────────────────
+
+/**
+ * Evaluate the Netzach Declared Desire effects against the active
+ * player and the current encounter envelope. Returns the roll-side
+ * `bonus` (0 or `NETZACH_DECLARED_DESIRE_BONUS`), the DC-side
+ * `retryTilt` (0 or `NETZACH_RETRY_DC_TILT`), and the resolve-time
+ * event the chassis renders to the prep-result banner.
+ *
+ * **Rule (design § 3.5):**
+ *   - **bonus (+2 flatBonus):** active player has `declaredDesire`
+ *     set AND their `zodiacSign` is water (Cancer/Scorpio/Pisces) or
+ *     Venus-ruled (Taurus/Libra). Five of twelve signs total — the
+ *     archetypes whose voice already runs on want and feeling.
+ *   - **retryTilt (+1 DC):** active player has NOT declared AND
+ *     `state.encounter.netzachPriorFails > 0`. The C6 fix replaces the
+ *     structurally-unreachable "next visit" trigger with the same-
+ *     encounter react-retry trigger ("Aphrodite tightens").
+ *
+ * The two effects are mutually exclusive — a declared player gets the
+ * sign bonus (or not, depending on sign) but never the retry tilt;
+ * an undeclared player gets the retry tilt (when priorFails > 0) but
+ * never the sign bonus. The event's three variants reflect this.
+ */
+function evaluateNetzachDeclaredDesire(
+  state: GameState,
+  player: PlayerState,
+): {
+  readonly bonus: number;
+  readonly retryTilt: number;
+  readonly event: NetzachDeclaredDesireEvent;
+} {
+  const declared = player.declaredDesire;
+  if (declared !== undefined) {
+    const signEligible = isNetzachBonusSign(player.zodiacSign);
+    const bonus = signEligible ? NETZACH_DECLARED_DESIRE_BONUS : 0;
+    return {
+      bonus,
+      retryTilt: 0,
+      event: signEligible
+        ? { kind: 'netzach-declared-bonus', declared, retryDcTilt: 0 }
+        : { kind: 'netzach-declared-no-bonus', declared, retryDcTilt: 0 },
+    };
+  }
+  const priorFails = state.encounter?.netzachPriorFails ?? 0;
+  const retryTilt = priorFails > 0 ? NETZACH_RETRY_DC_TILT : 0;
+  return {
+    bonus: 0,
+    retryTilt,
+    event: { kind: 'netzach-undeclared', retryDcTilt: retryTilt },
+  };
+}
+
+/**
+ * `true` iff the zodiac sign is one of the five Netzach-bonus-eligible
+ * signs: water (Cancer/Scorpio/Pisces) or Venus-ruled (Taurus/Libra).
+ * Reads the canonical `ZodiacSign` record so a future change to a
+ * sign's element/ruler in `data/zodiac-signs.ts` flows through
+ * automatically.
+ */
+function isNetzachBonusSign(sign: PlayerState['zodiacSign']): boolean {
+  const z = zodiacSignByKey(sign);
+  return z.element === 'water' || z.ruler === 'venus';
+}
+
+/**
+ * Increment `state.encounter.netzachPriorFails` by 1. Called on a
+ * failed Netzach resolve (#489 design § 3.5 C6). The caller checks the
+ * envelope is present and at Netzach before invoking; this helper
+ * trusts that invariant.
+ */
+function bumpNetzachPriorFails(state: GameState): GameState {
+  const envelope = state.encounter;
+  if (envelope === undefined) return state;
+  return {
+    ...state,
+    encounter: {
+      ...envelope,
+      netzachPriorFails: (envelope.netzachPriorFails ?? 0) + 1,
+    },
+  };
+}
+
+/**
+ * Clear `pendingStatBuff` on the named player. Returns the input state
+ * unchanged when the player isn't in `state.players` (defensive — the
+ * caller resolves the player from `state.players.find` upstream so
+ * this branch is structurally unreachable today).
+ */
+function clearPendingStatBuff(state: GameState, playerId: string): GameState {
+  return {
+    ...state,
+    players: state.players.map((p) => {
+      if (p.id !== playerId) return p;
+      // `exactOptionalPropertyTypes: true` rejects `pendingStatBuff:
+      // undefined` — omit the key entirely via destructure-and-rest.
+      const { pendingStatBuff: _, ...rest } = p;
+      return rest;
+    }),
   };
 }
