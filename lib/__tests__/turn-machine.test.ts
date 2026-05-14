@@ -3723,3 +3723,165 @@ describe('turnReducer — new PrepModifier variants (#334)', () => {
     });
   });
 });
+
+describe('turnReducer — Gevurah Sacred Sacrifice (#487)', () => {
+  // Design § 3.2: at Gevurah, prep-confirm requires the active player
+  // to have staged at least one card-burn — unless their hand is empty
+  // (the waiver). "Stage at least one burn to continue."
+
+  const passOutcome: CheckOutcome = {
+    rolled: 18,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 28,
+    effectiveDC: 15,
+    pass: true,
+  };
+
+  function gevurahStats() {
+    return {
+      unity: 10, insight: 10, understanding: 10,
+      lovingkindness: 10, strength: 10, harmony: 10,
+      passion: 10, intellect: 10, intuition: 10, body: 10,
+    };
+  }
+
+  it('rejects prep-confirm at Gevurah with non-empty hand and no staged card-burns', () => {
+    // The gate fires: hand has cards, but the player tried to confirm
+    // without burning any. They must stage at least one.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [21, 5, 3],
+      stats: gevurahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS /* no cardBurns */ },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('gevurah-requires-burn');
+  });
+
+  it('allows prep-confirm at Gevurah with empty hand (waiver: sacrifice is the staging itself)', () => {
+    // Design § 3.2 edge case: "Empty hand: gate waives. The player
+    // can still confirm with no burn; they take whatever roll they
+    // get." Mostly a no-op practically — Gevurah's DC 15 plus empty
+    // hand usually means accepting setback — but the gate must not
+    // brick the player.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [],
+      stats: gevurahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('allows prep-confirm at Gevurah when a card-burn is staged', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [21, 5, 3],
+      stats: gevurahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects prep-confirm at Gevurah with only spark-burns staged (design § 3.2: Spark-burn alone does NOT satisfy the gate)', () => {
+    // Design § 3.2 edge case: "Spark-burn substitution: a Spark-burn
+    // alone does *not* satisfy the gate. The gate is specifically a
+    // card sacrifice — Sparks are earned, not held the way a hand is
+    // held." Pin this: the gate checks cardBurns specifically, not
+    // any-burn. A refactor that accidentally ORs sparkBurns.length into
+    // the condition would silently violate the spec.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'gevurah',
+      hand: [21, 5, 3],
+      sparksHeld: new Set(['hod']),
+      stats: gevurahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'gevurah', seed: 1, retryCount: 0 },
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          sparkBurns: [{ sefirah: 'hod', sourcePlayerId: 'p1' }],
+        },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('gevurah-requires-burn');
+  });
+
+  it('non-Gevurah Sefirah is not gated (Hod control: empty cardBurns allowed)', () => {
+    // The gate is gated on `encounter.sefirah === 'gevurah'`. At any
+    // other Sefirah, prep-confirm with no staged burns is the default
+    // (you just take the roll with no modifiers).
+    const player = makePlayer({
+      id: 'p1',
+      position: 'hod',
+      hand: [21, 5, 3],
+      stats: gevurahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});

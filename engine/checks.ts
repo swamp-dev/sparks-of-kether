@@ -89,6 +89,26 @@ export const NETZACH_DECLARED_DESIRE_BONUS = 2;
  */
 export const NETZACH_RETRY_DC_TILT = 1;
 
+/**
+ * Gevurah Sacred Sacrifice (#487; `design/per-sefirah-mechanics.md`
+ * § 3.2) dearest-card bonus. Locked at +2. Applied as a roll-side
+ * `flatBonus` at `resolveChallenge` when the encounter is at Gevurah
+ * AND the active player has staged a card-burn whose arcanum equals
+ * `Math.max(...activePlayer.hand)` (the dearest card by raw rank,
+ * computed before any burn-card removal). Stacks with the standard +3
+ * `cardBurn` already counted by `cardBurns`, so a dearest burn nets
+ * +5 on the roll — parity with a Spark-burn, "the highest-cost
+ * sacrifice gets the highest-cost reward."
+ *
+ * The mechanic's tuning intent (design § 3.2 S8) is that strength ~10
+ * + dearest tilt + d20 on DC 15 auto-passes on roll 0+: Gevurah's
+ * tension is in the *choice* to burn the rank-highest card, not in
+ * the dice. The reducer-side `gevurah-requires-burn` gate (see
+ * `lib/turn-machine.ts` `prep-confirm`) makes the choice unavoidable
+ * unless the player's hand is empty.
+ */
+export const GEVURAH_DEAREST_BONUS = 2;
+
 // ──────────────── Public types ────────────────
 
 export interface CheckModifiers {
@@ -602,6 +622,24 @@ export function resolveChallenge(
           (resolvedModifiers.netzachRetryTilt ?? 0) + netzach.retryTilt,
       };
     }
+  }
+
+  // #487 / `design/per-sefirah-mechanics.md` § 3.2 — Gevurah Sacred
+  // Sacrifice dearest-card tilt. If the active player has staged a
+  // card-burn whose arcanum equals the dearest card in their current
+  // hand (Math.max), fold +2 into flatBonus. Stacks with the standard
+  // +3 cardBurn (already counted by `cardBurns`) so a dearest burn
+  // nets +5. The reducer-side `gevurah-requires-burn` gate
+  // (lib/turn-machine.ts:prep-confirm) ensures at least one burn is
+  // staged when the player's hand is non-empty; this engine arm only
+  // determines whether that burn was the dearest one.
+  const gevurahBonus =
+    sefirah === 'gevurah' ? evaluateGevurahDearestBonus(state, player) : 0;
+  if (gevurahBonus > 0) {
+    resolvedModifiers = {
+      ...resolvedModifiers,
+      flatBonus: (resolvedModifiers.flatBonus ?? 0) + gevurahBonus,
+    };
   }
 
   // #489 — pendingStatBuff consumption. The Netzach buff is set on the
@@ -1183,4 +1221,53 @@ function clearPendingStatBuff(state: GameState, playerId: string): GameState {
       return rest;
     }),
   };
+}
+
+// ──────────────── Gevurah Sacred Sacrifice helpers (#487) ────────────────
+
+/**
+ * Evaluate the Gevurah Sacred Sacrifice dearest-card bonus against the
+ * active player's staged card-burns and current hand. Returns the
+ * total flat bonus (0 or `GEVURAH_DEAREST_BONUS` per matching burn).
+ *
+ * **Rule (design § 3.2):** dearest = `Math.max(...player.hand)` (the
+ * raw rank-highest card the player currently holds). For each staged
+ * burn whose arcanum equals the dearest, +2. In practice burns are
+ * one-per-arcanum (each card is unique in the standard deck) so the
+ * bonus fires at most once, but the "per matching" framing is faithful
+ * to the design wording — a future variant that allows duplicate
+ * burns would scale.
+ *
+ * **Empty hand:** returns 0. `Math.max()` over an empty array returns
+ * `-Infinity` which would NEVER match a real arcanum (0-21), but we
+ * short-circuit explicitly to keep the intent obvious. The reducer-
+ * side gate waives at empty hand so this branch is reached only when
+ * a future caller bypasses the reducer (test fixtures, bots).
+ *
+ * **Retry semantics:** the design specifies the dearest re-evaluates
+ * "against the new hand state (the previously-burned card is gone),
+ * so the new highest-rank card becomes the new dearest. The boundary
+ * is each prep, not the encounter as a whole." This falls out naturally
+ * from `player.hand` reflecting only cards currently held — burns
+ * consumed in prior failed prep-confirms are no longer in the hand.
+ *
+ * **No resolve-time event.** Unlike Hod/Yesod/Tiferet/Netzach which
+ * each emit a named `ChallengeSuccess.<mechanic>` field for the chassis
+ * to read, Gevurah ships nothing. Downstream UI distinguishes a Gevurah
+ * dearest-burn from any other +2 flatBonus by gating on
+ * `sefirah === 'gevurah' && outcome.modifierBreakdown.flatBonus > 0`.
+ * Asymmetry is intentional — Gevurah's mechanic doesn't carry any
+ * payload beyond "the dearest fired," which the breakdown already
+ * surfaces.
+ */
+function evaluateGevurahDearestBonus(
+  state: GameState,
+  player: PlayerState,
+): number {
+  if (player.hand.length === 0) return 0;
+  const dearest = Math.max(...player.hand);
+  const matches = state.pendingModifiers.cardBurns.filter(
+    (a) => a === dearest,
+  ).length;
+  return matches * GEVURAH_DEAREST_BONUS;
 }

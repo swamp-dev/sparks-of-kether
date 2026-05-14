@@ -13,6 +13,7 @@ import {
   TIFERET_LOPSIDED_TILT,
   NETZACH_DECLARED_DESIRE_BONUS,
   NETZACH_RETRY_DC_TILT,
+  GEVURAH_DEAREST_BONUS,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -2282,5 +2283,235 @@ describe('resolveChallenge — Netzach Declared Desire (#489)', () => {
     expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
     expect(result.value.outcome.effectiveDC).toBe(12); // Hod base, no Netzach tilt
   });
+});
+
+// ──────────────── resolveChallenge — Gevurah Sacred Sacrifice (#487) ────────────────
+
+describe('resolveChallenge — Gevurah Sacred Sacrifice (#487)', () => {
+  // Gevurah base DC = 15 (sefirot.ts), stat = strength.
+  // The dearest is `Math.max(...activePlayer.hand)` — burning that
+  // card adds +2 flatBonus on top of the standard +3 cardBurn,
+  // so a dearest burn nets +5 vs the non-dearest +3.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+    soulDoorDelta: 0,
+  };
+
+  it('exposes GEVURAH_DEAREST_BONUS as the locked design constant', () => {
+    // Locked at +2 — composes with the standard +3 cardBurn to net the
+    // +5 design intent (parity with a Spark-burn).
+    expect(GEVURAH_DEAREST_BONUS).toBe(2);
+  });
+
+  it('burn-of-dearest at Gevurah: +2 flatBonus (totals +5 with cardBurn)', () => {
+    // Hand [21, 5, 3] → dearest = 21. Staged burn of 21.
+    // Strength 10 + roll 5 + cardBurn 3 + dearestBonus 2 = 20 ≥ DC 15.
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [21, 5, 3],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [21] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(3);
+    expect(result.value.outcome.total).toBe(5 + 10 + 3 + 2);
+    expect(result.value.outcome.pass).toBe(true);
+  });
+
+  it('burn-of-non-dearest at Gevurah: no flatBonus (just the standard cardBurn)', () => {
+    // Hand [21, 5, 3] → dearest = 21. Staged burn of 5 (not dearest).
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [21, 5, 3],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(3);
+    expect(result.value.outcome.total).toBe(5 + 10 + 3);
+  });
+
+  it('multiple burns including dearest: +2 fires (once per matching arcanum)', () => {
+    // Hand [21, 5, 3] → dearest = 21. Staged burns of 21 AND 5.
+    // Two cardBurns = +6 from the standard count. Dearest 21 matched = +2.
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [21, 5, 3],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [21, 5] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+    expect(result.value.outcome.modifierBreakdown.cardBurn).toBe(6);
+    expect(result.value.outcome.total).toBe(5 + 10 + 6 + 2);
+  });
+
+  it('multiple burns without dearest: no flatBonus', () => {
+    // Hand [21, 5, 3] → dearest = 21. Staged burns of 5 AND 3 (no 21).
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [21, 5, 3],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5, 3] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('no burn staged at Gevurah: no flatBonus (the gate is the reducer\'s job)', () => {
+    // The dearest-tilt mechanic is independent of the reducer's
+    // gevurah-requires-burn gate. If the engine is called with no
+    // staged burns (e.g. from a fixture / test / future bot bypassing
+    // the reducer), the dearest evaluation simply returns no bonus.
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [21, 5, 3],
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('empty hand at Gevurah with a (stale) staged burn: no dearest tilt (Math.max over empty)', () => {
+    // Defensive: an empty hand has no "dearest" to match against. The
+    // engine returns 0 bonus; a corrupted fixture won't fall through
+    // to a misleading +Infinity or NaN.
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [21] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('caller-supplied flatBonus stacks with the Gevurah dearest bonus', () => {
+    // A future twist or Spark might bring its own flatBonus. The
+    // dearest +2 must STACK, not replace.
+    const state = makeState(
+      {
+        position: 'gevurah',
+        stats: statSheet({ strength: 10 }),
+        hand: [21, 5, 3],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [21] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'gevurah',
+      modifiers: { ...blankMods, cardBurns: 1, flatBonus: 3 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(5); // 3 caller + 2 dearest
+  });
+
+  it('non-Gevurah Sefirah does not award the dearest tilt (Hod control)', () => {
+    // Regression guard: the dearest evaluation is gated on
+    // `sefirah === 'gevurah'`. A Hod resolve with a burn-of-highest
+    // must not see the +2.
+    const state = makeState(
+      {
+        position: 'hod',
+        stats: statSheet({ intellect: 10 }),
+        hand: [21, 5, 3],
+      },
+      {
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [21] },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'hod',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
 });
 

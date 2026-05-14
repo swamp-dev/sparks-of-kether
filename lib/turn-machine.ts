@@ -278,6 +278,19 @@ export type TurnReducerError =
       readonly kind: 'invalid-desire-target';
       readonly sefirah: SefirahKey;
     }
+  | {
+      /**
+       * #487 — design § 3.2: at Gevurah, `prep-confirm` requires the
+       * active player to have staged at least one card-burn — "the
+       * sacrifice is the staging itself." The gate waives only when the
+       * player's hand is empty (`hand.length === 0`), in which case the
+       * confirm proceeds with no burn. Otherwise the confirm is blocked
+       * with this rejection; the UI surfaces it inline ("Stage at least
+       * one burn to continue") and the player either stages a burn or
+       * (rarely) accepts setback.
+       */
+      readonly kind: 'gevurah-requires-burn';
+    }
   | { readonly kind: 'card-not-in-hand'; readonly arcanum: number }
   | {
       readonly kind: 'spark-not-held';
@@ -1149,6 +1162,19 @@ export function turnReducer(
           ok: false,
           reason: { kind: 'wrong-sub-phase', expected: 'prep', actual: challengeSubPhase },
         };
+      }
+      // #487 — design § 3.2: Gevurah requires at least one staged
+      // card-burn to confirm. The empty-hand waiver lets the player
+      // confirm anyway (sacrifice is the *staging* itself, not an
+      // absolute requirement); a player with cards in hand has to
+      // burn at least one. Fires BEFORE `translatePendingModifiers`
+      // so the rejection surfaces fast without doing unrelated work.
+      if (
+        state.encounter?.sefirah === 'gevurah' &&
+        player.hand.length > 0 &&
+        state.pendingModifiers.cardBurns.length === 0
+      ) {
+        return { ok: false, reason: { kind: 'gevurah-requires-burn' } };
       }
       const {
         modifiers: translated,
