@@ -1,5 +1,6 @@
 import { sefirahByKey, tryPathByNumber } from '@/data';
 import type { Pillar, SefirahKey } from '@/data';
+import { pathByArcanum } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
 import { soulDoorDcDelta } from './soul-door-bonus';
@@ -45,6 +46,25 @@ export const HOD_WORD_MATCH_BONUS = 5;
  * `state.encounter.dreamPillar`.
  */
 export const YESOD_DREAM_PEEK_BONUS = 5;
+
+/**
+ * Tiferet Two-Pillar Balance (#488; `design/per-sefirah-mechanics.md`
+ * § 3.4) balanced-burn tilt. Applied DC-side: a balanced sacrifice (≥ 2
+ * burns whose `pillarsCrossed` union covers both Mercy and Severity)
+ * eases the check by -2. Composes additively with `shortcutPenalty` and
+ * `soulDoorDelta` (S6 composition order). Locked at -2 — symmetric with
+ * the lopsided penalty so the spread between "integrated" and "one-sided"
+ * sacrifice is a clean 4-DC swing.
+ */
+export const TIFERET_BALANCE_TILT = -2;
+
+/**
+ * Tiferet Two-Pillar Balance (#488) lopsided-burn tilt. Applied DC-side:
+ * ≥ 2 burns whose `pillarsCrossed` union covers only one of {Mercy,
+ * Severity} (or only Balance) — "lopsided sacrifice" — raises the bar by
+ * +2. 0 or 1 burns is "silent stillness," no tilt either way.
+ */
+export const TIFERET_LOPSIDED_TILT = 2;
 
 // ──────────────── Public types ────────────────
 
@@ -92,6 +112,21 @@ export interface CheckModifiers {
    * Sefirah consumers ship as separate downstream tickets.
    */
   readonly flatBonus?: number;
+  /**
+   * Tiferet Two-Pillar Balance tilt (#488;
+   * `design/per-sefirah-mechanics.md` § 3.4). Applied DC-side, additive
+   * with `shortcutPenalty` and `soulDoorDelta` per S6 composition order:
+   *
+   *   `effectiveDC = baseDC + shortcutPenalty + soulDoorDelta + tiferetTilt`
+   *
+   * Auto-folded by `resolveChallenge` from the player's staged
+   * `pendingModifiers.cardBurns` when `sefirah === 'tiferet'` — callers
+   * do not set this directly except in tests or to mirror the engine's
+   * effective DC in pre-roll UI. `evaluateTiferetBalance` is the single
+   * source of truth for the computation; UI code should consult that
+   * helper rather than re-deriving the rule.
+   */
+  readonly tiferetTilt?: number;
 }
 
 export type ChallengeRejection =
@@ -155,6 +190,29 @@ export type YesodDreamPeekEvent =
   | { readonly kind: 'yesod-dream-peek-miss'; readonly named: Pillar };
 
 /**
+ * Tiferet Two-Pillar Balance resolve-time event (#488;
+ * `design/per-sefirah-mechanics.md` § 3.4). Emitted by `resolveChallenge`
+ * on every Tiferet resolve (pass OR fail) — the mechanic shifts the DC
+ * regardless of outcome, and the chassis renders the prep-result banner
+ * either way. Single variant carries the computed tilt, the set of
+ * pillars touched across all staged card-burns, and the burn count.
+ *
+ * `tilt` values are pinned to the design constants
+ * `TIFERET_BALANCE_TILT` (-2), `TIFERET_LOPSIDED_TILT` (+2), or 0.
+ * `pillarsTouched` is the deduplicated set-union of every staged burn's
+ * `pillarsCrossed` pair (emitted as an array for JSON-stable
+ * serialization; consumers that need set semantics rewrap).
+ * `burnCount` mirrors `pendingModifiers.cardBurns.length` at resolve
+ * time — useful for the "stage 2+ burns" banner-copy branch.
+ */
+export interface TiferetBalanceEvent {
+  readonly kind: 'tiferet-balance';
+  readonly tilt: number;
+  readonly pillarsTouched: readonly Pillar[];
+  readonly burnCount: number;
+}
+
+/**
  * What a successful `resolveChallenge` invocation returns.
  *
  * **IMPORTANT:** `ok: true` means "the challenge was resolved" (the
@@ -199,6 +257,15 @@ export interface ChallengeSuccess {
    * matched pillar.
    */
   readonly yesodDreamPeek?: YesodDreamPeekEvent;
+  /**
+   * Present on every Tiferet resolve (`sefirah === 'tiferet'`). The
+   * Two-Pillar Balance mechanic shifts the DC on both pass and fail
+   * branches, so the event always fires — the chassis renders the prep-
+   * result banner regardless of outcome. Carries the DC tilt, the
+   * pillars touched across all staged burns, and the burn count for
+   * the "stage 2+ burns" banner-copy fallback.
+   */
+  readonly tiferetBalance?: TiferetBalanceEvent;
 }
 
 // ──────────────── rollCheck (pure math) ────────────────
@@ -235,7 +302,13 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   // (a Door for that class) faces baseDC + 3 - 2 = baseDC + 1.
   const shortcutAdjustment = modifiers.shortcutPenalty ? SHORTCUT_DC_PENALTY : 0;
   const soulDoorAdjustment = modifiers.soulDoorDelta ?? 0;
-  const effectiveDC = dc + shortcutAdjustment + soulDoorAdjustment;
+  // #488: Tiferet Two-Pillar Balance tilt (design § 3.4 S6 composition).
+  // Additive with shortcut + Soul Door; a regression that multiplies or
+  // replaces would surface in the "composition: shortcut + soul door +
+  // tiferet tilt stack" test in checks.test.ts.
+  const tiferetAdjustment = modifiers.tiferetTilt ?? 0;
+  const effectiveDC =
+    dc + shortcutAdjustment + soulDoorAdjustment + tiferetAdjustment;
 
   return {
     rolled,
@@ -284,6 +357,18 @@ export interface ResolveChallengeInput {
    * the engine path (`outcome` absent), where the resolver controls
    * the modifier construction. UI callers that ignore this will see
    * the player's roll evaluated against the un-discounted DC.
+   *
+   * **#488 contract.** Same obligation applies to the Tiferet
+   * `tiferetTilt`. When `sefirah === 'tiferet'` AND `outcome` is
+   * supplied, the caller is responsible for having computed
+   * `outcome.effectiveDC` with the Tiferet tilt already folded in —
+   * call `evaluateTiferetBalance(state)` and pass the returned
+   * `tilt` as `modifiers.tiferetTilt` into `rollCheck` when producing
+   * the pre-roll outcome. The resolver's auto-fold of `tiferetTilt`
+   * only runs on the engine path (`outcome` absent); a UI caller that
+   * skips this will see the player's roll evaluated against the un-
+   * tilted DC even though the chassis will broadcast a
+   * `tiferetBalance` event claiming otherwise.
    */
   readonly outcome?: CheckOutcome;
 }
@@ -398,6 +483,19 @@ export function resolveChallenge(
     };
   }
 
+  // #488 / `design/per-sefirah-mechanics.md` § 3.4 — Tiferet Two-Pillar
+  // Balance. Unlike Hod/Yesod (roll-side +5), Tiferet tilts the DC by
+  // ±2 based on the pillar set-union of staged card-burns. The event
+  // emits on every Tiferet resolve (pass or fail) so the chassis can
+  // render the banner regardless of outcome.
+  const tiferet = sefirah === 'tiferet' ? evaluateTiferetBalance(state) : undefined;
+  if (tiferet !== undefined) {
+    resolvedModifiers = {
+      ...resolvedModifiers,
+      tiferetTilt: (resolvedModifiers.tiferetTilt ?? 0) + tiferet.tilt,
+    };
+  }
+
   const outcome =
     input.outcome ??
     rollCheck({
@@ -438,6 +536,7 @@ export function resolveChallenge(
         outcome,
         ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
         ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
+        ...(tiferet !== undefined ? { tiferetBalance: tiferet.event } : {}),
       },
     };
   }
@@ -478,6 +577,7 @@ export function resolveChallenge(
       outcome,
       ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
       ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
+      ...(tiferet !== undefined ? { tiferetBalance: tiferet.event } : {}),
     },
   };
 }
@@ -751,5 +851,70 @@ function rollbackPosition(state: GameState, playerId: string): GameState {
   return {
     ...state,
     players: state.players.map((p) => (p.id === playerId ? updatedPlayer : p)),
+  };
+}
+
+// ──────────────── Tiferet Two-Pillar Balance helpers (#488) ────────────────
+
+/**
+ * Evaluate the Tiferet Two-Pillar Balance tilt against the player's
+ * currently-staged card-burns (`state.pendingModifiers.cardBurns`).
+ *
+ * Returns the DC tilt, the deduplicated pillar set-union touched by the
+ * staged burns, and the resolve-time event the chassis renders to the
+ * banner. Always returns a record — the gate on
+ * `sefirah === 'tiferet'` lives at the call site. Trusts that staged
+ * arcana are valid (0–21); upstream `prep-add-modifier` already
+ * validates against the player's hand at staging time, so a malformed
+ * arcanum here would have failed earlier.
+ *
+ * **Rule (design § 3.4):**
+ *   - 0 or 1 burns: tilt 0 (rule explicitly requires ≥ 2 burns regardless
+ *     of one-card span — single horizontal-rung burn is "silent stillness").
+ *   - ≥ 2 burns AND set-union covers both Mercy AND Severity:
+ *     tilt `TIFERET_BALANCE_TILT` (-2, the heart integrates light and
+ *     shadow).
+ *   - ≥ 2 burns otherwise (one pole only, or only Balance):
+ *     tilt `TIFERET_LOPSIDED_TILT` (+2, lopsided sacrifice).
+ *
+ * The single source of truth for the rule. UI callers that want to
+ * render a live tilt preview before `prep-confirm` should call this
+ * (or share the helper via `lib/`) rather than re-deriving the rule.
+ *
+ * `pillarsTouched` ordering follows insertion-order of the underlying
+ * `Set`: each burn's `pillarsCrossed` pair is visited left-to-right,
+ * first-seen-wins. Tests that care about identity use
+ * `new Set(...)` to ignore ordering; serialized as an array for stable
+ * JSON for the multiplayer-broadcast event.
+ */
+export function evaluateTiferetBalance(state: GameState): {
+  readonly tilt: number;
+  readonly event: TiferetBalanceEvent;
+} {
+  const burns = state.pendingModifiers.cardBurns;
+  const burnCount = burns.length;
+
+  const touched = new Set<Pillar>();
+  for (const arcanum of burns) {
+    const path = pathByArcanum(arcanum);
+    touched.add(path.pillarsCrossed[0]);
+    touched.add(path.pillarsCrossed[1]);
+  }
+  const pillarsTouched = [...touched];
+
+  let tilt = 0;
+  if (burnCount >= 2) {
+    const spansBothPoles = touched.has('mercy') && touched.has('severity');
+    tilt = spansBothPoles ? TIFERET_BALANCE_TILT : TIFERET_LOPSIDED_TILT;
+  }
+
+  return {
+    tilt,
+    event: {
+      kind: 'tiferet-balance',
+      tilt,
+      pillarsTouched,
+      burnCount,
+    },
   };
 }

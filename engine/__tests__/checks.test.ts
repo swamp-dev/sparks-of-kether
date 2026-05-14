@@ -9,6 +9,8 @@ import {
   SHORTCUT_DC_PENALTY,
   HOD_WORD_MATCH_BONUS,
   YESOD_DREAM_PEEK_BONUS,
+  TIFERET_BALANCE_TILT,
+  TIFERET_LOPSIDED_TILT,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -1580,6 +1582,302 @@ describe('resolveChallenge — Yesod Dream-Peek (#354)', () => {
     if (!result.ok) return;
     // +2 caller + +5 Yesod match = +7 total flatBonus.
     expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(7);
+  });
+});
+
+// ──────────────── resolveChallenge — Tiferet Two-Pillar Balance (#488) ────────────────
+
+describe('resolveChallenge — Tiferet Two-Pillar Balance (#488)', () => {
+  // Arcana fixtures (from data/paths.ts):
+  //   arc  0 (Fool)        → path 11 ['balance','mercy']
+  //   arc  2 (Priestess)   → path 13 ['balance','balance']
+  //   arc  3 (Empress)     → path 14 ['mercy','severity']
+  //   arc  5 (Hierophant)  → path 16 ['mercy','mercy']
+  //   arc  7 (Chariot)     → path 18 ['severity','severity']
+  //   arc 12 (Hanged Man)  → path 23 ['severity','severity']
+  //   arc 14 (Temperance)  → path 25 ['balance','balance']
+  //   arc 16 (Tower)       → path 27 ['mercy','severity']
+  //   arc 21 (World)       → path 32 ['balance','balance']
+  //
+  // Tiferet base DC = 14 (sefirot.ts), stat = harmony.
+  //
+  // `soulDoorDelta: 0` is set explicitly throughout to bypass the
+  // resolver's auto-inject (#244) — otherwise the player's default
+  // zodiac (Aries, which is exalted at Tiferet) would shift the DC
+  // and confound the Tiferet-tilt observations.
+
+  const blankMods: CheckModifiers = {
+    assistStats: [],
+    cardBurns: 0,
+    sparkBurns: 0,
+    shortcutPenalty: false,
+    soulDoorDelta: 0,
+  };
+
+  // Roll-side total kept high so we isolate DC-side observations.
+  // Stat 20 + roll 1 = 21. Easily clears any plausible DC.
+  const easyRng = { d20: () => 1, int: () => 1 };
+
+  function tiferetState(cardBurns: readonly number[]): GameState {
+    return makeState(
+      { position: 'tiferet', stats: statSheet({ harmony: 20 }) },
+      { pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns } },
+    );
+  }
+
+  it('exposes TIFERET_BALANCE_TILT / TIFERET_LOPSIDED_TILT as locked design constants', () => {
+    // Pinned by `design/per-sefirah-mechanics.md` § 3.4 Rule.
+    expect(TIFERET_BALANCE_TILT).toBe(-2);
+    expect(TIFERET_LOPSIDED_TILT).toBe(2);
+  });
+
+  it('0 burns: base DC, no tilt — heart accepts silent stillness', () => {
+    const state = tiferetState([]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: blankMods,
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Tiferet DC = 14, no tilt → effectiveDC = 14.
+    expect(result.value.outcome.effectiveDC).toBe(14);
+    expect(result.value.tiferetBalance).toEqual({
+      kind: 'tiferet-balance',
+      tilt: 0,
+      pillarsTouched: [],
+      burnCount: 0,
+    });
+  });
+
+  it('1 burn (Tower — both poles in one card): no tilt (rule requires ≥ 2 burns)', () => {
+    // The Tower's path crosses Mercy↔Severity, but the rule explicitly
+    // requires ≥ 2 burns regardless of one-card span — "the encounter is
+    // about integration through pairing, not luck-of-the-hand."
+    // CheckModifiers.cardBurns = 1 means total += 3 (one CARD_BURN_BONUS).
+    const state = tiferetState([16]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 1 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(14);
+    expect(result.value.tiferetBalance).toEqual({
+      kind: 'tiferet-balance',
+      tilt: 0,
+      pillarsTouched: ['mercy', 'severity'],
+      burnCount: 1,
+    });
+  });
+
+  it('2 burns covering both Mercy and Severity (Hierophant + Hanged Man): DC −2', () => {
+    // Hierophant (mercy/mercy) ∪ Hanged Man (severity/severity) = {mercy, severity}.
+    const state = tiferetState([5, 12]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+    expect(result.value.tiferetBalance?.tilt).toBe(-2);
+    expect(new Set(result.value.tiferetBalance?.pillarsTouched ?? [])).toEqual(
+      new Set(['mercy', 'severity']),
+    );
+  });
+
+  it('2 burns (Tower mercy+severity + Hanged Man severity+severity): DC −2 (horizontal-rung composes)', () => {
+    // Tower (mercy/severity) ∪ Hanged Man (severity/severity) = {mercy, severity}.
+    // The single horizontal-rung burn alone wouldn't qualify, but
+    // paired with any second burn the union still spans both poles.
+    const state = tiferetState([16, 12]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+    expect(result.value.tiferetBalance?.tilt).toBe(-2);
+  });
+
+  it('2 burns covering only Severity (Chariot + Hanged Man): DC +2 (lopsided)', () => {
+    // Chariot (severity/severity) ∪ Hanged Man (severity/severity) = {severity}.
+    const state = tiferetState([7, 12]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(16);
+    expect(result.value.tiferetBalance).toEqual({
+      kind: 'tiferet-balance',
+      tilt: 2,
+      pillarsTouched: ['severity'],
+      burnCount: 2,
+    });
+  });
+
+  it('2 burns covering only Balance (High Priestess + Temperance): DC +2 (no Mercy or Severity touched)', () => {
+    // High Priestess (balance/balance) ∪ Temperance (balance/balance) = {balance}.
+    // Per design: "if every burn has at least one Balance side AND no
+    // burn touches both Mercy and Severity, the result is one-sided or
+    // no-sided — DC +2."
+    const state = tiferetState([2, 14]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(16);
+    expect(result.value.tiferetBalance?.tilt).toBe(2);
+    expect(new Set(result.value.tiferetBalance?.pillarsTouched ?? [])).toEqual(
+      new Set(['balance']),
+    );
+  });
+
+  it('3 burns spanning Severity + Balance + Mercy: DC −2', () => {
+    // Chariot (severity) ∪ Priestess (balance) ∪ Hierophant (mercy)
+    // = {mercy, severity, balance}. Both poles touched → balanced tilt.
+    const state = tiferetState([7, 2, 5]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 3 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(12);
+    expect(result.value.tiferetBalance?.tilt).toBe(-2);
+    expect(new Set(result.value.tiferetBalance?.pillarsTouched ?? [])).toEqual(
+      new Set(['mercy', 'severity', 'balance']),
+    );
+  });
+
+  it('composition: 2 balanced burns + shortcut + Soul Door delta stack additively (S6)', () => {
+    // From the design test matrix row 8: DC = base 14 + 3 (shortcut)
+    // + (-2) (soul door) + (-2) (Tiferet tilt) = 13.
+    const state = tiferetState([5, 12]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: {
+        ...blankMods,
+        cardBurns: 2,
+        shortcutPenalty: true,
+        soulDoorDelta: -2,
+      },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.effectiveDC).toBe(13);
+  });
+
+  it('non-Tiferet Sefirot do not emit a tiferetBalance event (Yesod control)', () => {
+    // Regression guard: the Tiferet arm must be gated on
+    // `sefirah === 'tiferet'`. A Yesod resolve must NOT carry a
+    // tiferetBalance field even if cardBurns happen to be staged.
+    const state = makeState(
+      { position: 'yesod', stats: statSheet({ intuition: 20 }) },
+      { pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5, 12] } },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.tiferetBalance).toBeUndefined();
+    expect(result.value.outcome.effectiveDC).toBe(12); // Yesod base 12, no tilt
+  });
+
+  it('Tiferet tilt is DC-side, not roll-side (does not appear in flatBonus breakdown)', () => {
+    // The design specifies the tilt composes with shortcut and Soul Door
+    // *on the DC side*. A regression that misroutes it to flatBonus
+    // would shift the score by ±2 instead of the bar — same pass/fail
+    // for many rolls but a different display and a different
+    // interaction with the DC-side composition test above.
+    const state = tiferetState([5, 12]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: easyRng,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // flatBonus only included when > 0. A roll-side regression would
+    // produce flatBonus: 2 here.
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
+
+  it('tiferetBalance event emitted on the PASS branch (chassis renders banner regardless of outcome)', () => {
+    // The mechanic shifts the bar regardless of pass/fail; the chassis
+    // wants the event on either branch so it can render the prep-result
+    // banner. `tiferetState` sets `harmony: 20`, so stat 20 + roll 1 +
+    // cardBurn 6 = 27 clears the (eased) DC 14 − 2 = 12 → pass. The
+    // dedicated fail-branch test below covers the symmetric case with
+    // `harmony: 0`.
+    const state = tiferetState([5, 12]);
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.tiferetBalance).toBeDefined();
+  });
+
+  it('tiferetBalance event emitted on the FAIL branch (regression guard for pass/fail symmetry)', () => {
+    const state = makeState(
+      { position: 'tiferet', stats: statSheet({ harmony: 0 }) },
+      { pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [7, 12] } },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'tiferet',
+      modifiers: { ...blankMods, cardBurns: 2 },
+      // Stat 0 + roll 1 + cardBurn 6 = 7 < DC 14 + 2 = 16 → fail.
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.outcome.effectiveDC).toBe(16);
+    expect(result.value.tiferetBalance?.tilt).toBe(2);
   });
 });
 
