@@ -141,18 +141,39 @@ describe('pantheons registry (#547)', () => {
       }
     });
 
-    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B4)', () => {
+    it('matrix fallback identity for slots not yet authored Egyptian-side (post-B5)', () => {
       // B2 (#552) shipped names + codex avatar. B3 (#553) shipped the
       // verdict matrix (PR 1 — solar quartet; PR 2 — contemplative
       // cluster); `sefirahVerdicts` is now fully Egyptian-authored.
-      // B4 (#554) ships the Egyptian blessing matrix below. The
-      // remaining slots (`sefirahPlayerResponses`, `sefirahFraming`,
-      // `sefirahFramingPlaceholder`) continue to use the greco-roman
-      // matrices until their authoring tickets land (#553 follow-up,
-      // #555).
-      expect(p.sefirahFraming).toBe(sefirahFraming);
-      expect(p.sefirahFramingPlaceholder).toBe(grecoRoman.sefirahFramingPlaceholder);
+      // B4 (#554) shipped the Egyptian blessing matrix; B5 (#555)
+      // ships the framing matrix below. `sefirahFraming`,
+      // `sefirahFramingPlaceholder`, and `sefirahBlessings` are all
+      // Egyptian-authored. Only `sefirahPlayerResponses` remains as
+      // greco-roman fallback (#553 follow-up).
       expect(p.sefirahPlayerResponses).toBe(grecoRoman.sefirahPlayerResponses);
+    });
+
+    it('sefirahFraming is now the Egyptian matrix (#555)', () => {
+      // B5 (#555) authors the full Egyptian framing matrix (288
+      // strings across 8 encounter avatars × 12 signs × 3 variants).
+      // The matrix object is distinct from the greco-roman one.
+      // Spot-check Ra (chesed) Aries for solar/throne/kingdom imagery
+      // and Thoth (hod) Virgo for ink/reed/page/wedjat imagery; full
+      // anchor checks live in
+      // `data/pantheons/egyptian/__tests__/framing.test.ts`.
+      expect(p.sefirahFraming).not.toBe(sefirahFraming);
+      const raAries = p.sefirahFraming.chesed.aries.join(' ').toLowerCase();
+      expect(raAries).toMatch(/throne|sun|kingdom|noon|sky|light/);
+      const thothVirgo = p.sefirahFraming.hod.virgo.join(' ').toLowerCase();
+      expect(thothVirgo).toMatch(/reed|page|ink|wedjat|line|arcanum|tablet|scribe/);
+    });
+
+    it('sefirahFramingPlaceholder is now the Egyptian map (#555)', () => {
+      // Each placeholder names the Egyptian primary deity.
+      expect(p.sefirahFramingPlaceholder).not.toBe(grecoRoman.sefirahFramingPlaceholder);
+      expect(p.sefirahFramingPlaceholder.chesed).toContain('Ra');
+      expect(p.sefirahFramingPlaceholder.hod).toContain('Thoth');
+      expect(p.sefirahFramingPlaceholder.tiferet).toContain('Osiris');
     });
 
     it('sefirahVerdicts is the fully-Egyptian matrix (#553 complete)', () => {
