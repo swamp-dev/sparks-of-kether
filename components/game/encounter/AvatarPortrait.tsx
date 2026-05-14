@@ -129,7 +129,14 @@ export function AvatarPortrait({
             // tuned per-character in #483 if any look wrong in situ.
             className="absolute inset-0 h-full w-full object-cover"
             style={{ objectPosition: 'center 25%' }}
-            onError={() => setImageFailed(true)}
+            onError={() => {
+              if (typeof console !== 'undefined' && console.warn) {
+                console.warn(
+                  `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to placeholder letter`,
+                );
+              }
+              setImageFailed(true);
+            }}
           />
         ) : (
           <span

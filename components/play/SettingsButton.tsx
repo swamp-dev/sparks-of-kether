@@ -170,14 +170,14 @@ export function SettingsButton(): JSX.Element {
               data-action="toggle-sound"
               className={`relative h-6 w-11 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination ${
                 soundEnabled
-                  ? 'border-illumination bg-illumination/40'
+                  ? 'border-illumination bg-illumination/70'
                   : 'border-veil/40 bg-ground'
               }`}
             >
               <span
                 aria-hidden="true"
-                className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-veil transition-transform ${
-                  soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-transform ${
+                  soundEnabled ? 'translate-x-6 bg-ground' : 'translate-x-1 bg-veil'
                 }`}
               />
             </button>

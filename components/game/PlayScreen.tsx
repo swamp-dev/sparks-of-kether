@@ -18,6 +18,7 @@ import { isKetherHeld } from '@/engine/kether';
 import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
 import { useSound } from '@/lib/sound/useSound';
+import { useMusic } from '@/lib/music/useMusic';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -231,6 +232,12 @@ export function PlayScreen({
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   const endgame = checkEndgame(turn.state);
+
+  // #526: ambient music. Must come before any early returns so the hook
+  // fires on every render path. During a challenge, the active player's
+  // position is the encounter Sefirah — use it directly rather than
+  // waiting for challengeContext to be built later in the component.
+  useMusic(turn.phase === 'challenge' && activePlayer !== undefined ? activePlayer.position : 'play');
 
   // Final Threshold takeover: once the engine flips `phase: 'kether'`
   // (K1's `maybeTriggerKetherRitual` fires when every player has

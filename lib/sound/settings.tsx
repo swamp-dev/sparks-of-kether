@@ -94,6 +94,18 @@ export function SoundSettingsProvider({
   const setSoundEnabled = useCallback((next: boolean) => {
     setSoundEnabledState(next);
     if (typeof window !== 'undefined') {
+      if (next) {
+        // Unlock the browser audio context synchronously while we are
+        // still inside the click event's user-activation window.
+        // Without this, every subsequent playSound() call (fired from
+        // useEffect, outside the gesture chain) is silently rejected by
+        // Chrome/Safari autoplay policy on sites with low MEI.
+        try {
+          const unlock = new Audio();
+          const p = unlock.play();
+          if (p && typeof p.catch === 'function') p.catch(() => undefined);
+        } catch { /* ignore */ }
+      }
       try {
         window.localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, next ? 'true' : 'false');
       } catch {

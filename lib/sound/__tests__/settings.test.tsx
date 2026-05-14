@@ -86,6 +86,50 @@ describe('useSoundEnabled', () => {
     expect(localStorage.getItem(SOUND_ENABLED_STORAGE_KEY)).toBe('false');
   });
 
+  it('attempts an audio unlock play when sound transitions from off to on', () => {
+    // The unlock play must happen synchronously inside `setSoundEnabled`
+    // so it is still within the browser's user-gesture activation window
+    // (click → handler → setSoundEnabled → play). If the play is deferred
+    // to a useEffect or setTimeout it arrives outside the activation
+    // window and Chrome/Safari silently reject it — the user hears nothing
+    // even with the toggle ON.
+    const playCalls: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class FakeAudio {
+        src: string;
+        play = vi.fn(() => {
+          playCalls.push(this.src);
+          return Promise.resolve();
+        });
+        constructor(src?: string) {
+          this.src = src ?? '';
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(playCalls).toHaveLength(0); // no play at mount
+
+    act(() => {
+      result.current.setSoundEnabled(true);
+    });
+
+    expect(playCalls.length).toBeGreaterThan(0);
+
+    // Disabling again should NOT trigger another unlock attempt.
+    act(() => {
+      result.current.setSoundEnabled(false);
+    });
+    const countAfterEnable = playCalls.length;
+    act(() => {
+      result.current.setSoundEnabled(false);
+    });
+    expect(playCalls.length).toBe(countAfterEnable);
+
+    vi.unstubAllGlobals();
+  });
+
   it('returns a silent-OFF stub when used outside of the provider', () => {
     // Defensive default — sound is opt-in by design, so a missing
     // provider effectively keeps the game quiet rather than crashing
