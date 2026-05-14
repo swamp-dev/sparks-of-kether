@@ -73,14 +73,13 @@ Capture the branch name (`headRefName`) — it should match
 
 ### 3. Verify the per-PR checklist stamp (mechanical gate)
 
-`/finish-ticket` step 8.5 writes a stamp file at
-`.claude/state/checklist-<sanitized-branch>.json` via
+The `PostToolUse:Agent` hook in `.claude/settings.json` writes a
+stamp file at
+`<worktree>/.claude/state/checklist-<sanitized-branch>.json` via
 `scripts/checklist-stamp.mjs` after each `code-reviewer` invocation.
-The `PostToolUse:Agent` hook in `.claude/settings.json` writes the
-same stamp automatically when the hook is loaded, but the explicit
-step is the load-bearing path. **This is the mechanical gate** —
-unlike a Journal entry the agent writes itself, the stamp is the
-output of running a script with the reviewer's actual response text.
+The script captures the reviewer's verbatim output directly from the
+harness's `tool_response.content[].text` payload — the agent never
+writes the reviewer text. **This is the mechanical gate.**
 
 ```bash
 # Variables: $PR_NUMBER and $headRefName were captured in step 2.
@@ -92,52 +91,81 @@ branch_safe=$(printf '%s' "$headRefName" | tr -c 'a-zA-Z0-9._-' '_')
 stamp=".claude/state/checklist-${branch_safe}.json"
 
 if [ ! -f "$stamp" ]; then
-  echo "Refusing merge: no checklist stamp at $stamp. Run /finish-ticket (which invokes scripts/checklist-stamp.mjs in step 8.5) for this branch first."
+  echo "Refusing merge: no checklist stamp at $stamp. Run /finish-ticket for this branch first; the PostToolUse:Agent hook will write the stamp when code-reviewer is invoked."
   exit 1
 fi
 
 stamp_sha=$(jq -r '.head_sha' "$stamp")
 stamp_verdict=$(jq -r '.verdict' "$stamp")
+stamp_via=$(jq -r '.written_via' "$stamp")
 
 # Capture HEAD_SHA fresh — the gate must validate against the LIVE PR
 # HEAD, not a value carried from earlier in the session.
 HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
 
 if [ "$stamp_sha" != "$HEAD_SHA" ]; then
-  echo "Refusing merge: stamp is for SHA $stamp_sha but PR HEAD is $HEAD_SHA. Re-run code-reviewer + step 8.5 on the current commit."
+  echo "Refusing merge: stamp is for SHA $stamp_sha but PR HEAD is $HEAD_SHA. Re-run code-reviewer on the current commit so the hook writes a fresh stamp."
   exit 1
 fi
 if [ "$stamp_verdict" != "ship" ]; then
-  echo "Refusing merge: stamp records verdict='$stamp_verdict' (expected 'ship'). Address findings and re-run reviewer + step 8.5."
+  echo "Refusing merge: stamp records verdict='$stamp_verdict' (expected 'ship'). Address findings and re-run reviewer."
+  exit 1
+fi
+if [ "$stamp_via" != "hook" ]; then
+  echo "Refusing merge: stamp was written via '$stamp_via' (expected 'hook'). Only PostToolUse:Agent-written stamps satisfy the gate; any other path means the reviewer text didn't come from a real subagent dispatch."
   exit 1
 fi
 ```
 
-This gate is **fail-closed**: missing stamp, stale SHA, or non-`ship`
-verdict all stop the skill. The script overwrites the stamp on each
-invocation, so the re-review loop in `/finish-ticket` step 8a
-naturally produces a fresh stamp at the new HEAD.
+This gate is **fail-closed**: missing stamp, stale SHA, non-`ship`
+verdict, or non-`hook` provenance all stop the skill. The script
+overwrites the stamp on each code-reviewer invocation, so the
+re-review loop in `/finish-ticket` naturally produces a fresh stamp
+at the new HEAD.
 
 The per-ticket Journal file (`journal/<NN>-<slug>.md` per #429)
 remains the **human-readable audit record** of why the verdict was
-what it was — but it's no longer the gate. The stamp file is.
+what it was — but it's not the gate. The stamp file is.
 
-**Adversarial limit**: a determined agent with Write tool access
-could forge the stamp file. The mechanical gate is robust against:
-- accidental skip ("I forgot to run code-reviewer / step 8.5")
+**Adversarial limits**. The mechanical gate is robust against:
+- accidental skip ("I forgot to run code-reviewer")
 - context compaction ("the reviewer output got summarized away")
 - false-positive Journal markers (the prior honor-system pattern)
-- bootstrap chicken-and-egg (`/finish-ticket` step 8.5 doesn't
-  depend on settings.json being loaded; the script call works
-  whether the hook fires or not)
+- the agent paraphrasing reviewer output and feeding it back via
+  an explicit-mode helper (removed 2026-05-14; the script has no
+  CLI fallback any more)
+- the agent piping a fabricated hook payload via Bash
+  (`cat <<EOF | node scripts/checklist-stamp.mjs`) — the script
+  cross-validates `payload.tool_use_id` against the harness-written
+  session transcript at `payload.transcript_path`; payloads with
+  synthetic tool_use_ids fail this check
+- worktree-cwd routing failures (the hook scans the reviewer
+  prompt + output for worktree paths and routes the stamp to the
+  matching worktree's `.claude/state/`, not to the session cwd
+  which is usually the main repo on `main`)
 
-It is NOT robust against an agent intentionally bypassing review.
-The gap from "the script ran with reviewer-shaped data" to "the
-reviewer actually produced that data" is unavoidable as long as the
-agent has Write access and can construct synthetic payloads. The
-stamp's `verdict_hash` is recorded for forensic audit but never
-validated by the gate; future tooling could add live cross-validation
-against the captured reviewer output if needed.
+**Known limitations** that the gate does NOT close on its own:
+- **Replay**: an agent could in principle replay a real `tool_use_id`
+  from an earlier reviewer call in the same session with fabricated
+  reviewer text. The transcript-text cross-check is impractical: the
+  harness writes the tool_result entry concurrently with / after
+  firing the hook, so the reviewer text isn't reliably present at
+  hook-read time. The `head_sha` check at merge moment partially
+  mitigates this — a replayed stamp is for an earlier commit and
+  won't satisfy the current PR's head_sha — but a same-commit replay
+  is theoretically possible.
+- **Bash-pipe fabrication beyond the classifier**: constructing the
+  payload at all requires running Bash, which the auto-mode
+  classifier intercepts as a stamp-fabrication pattern. The classifier
+  is the primary defense against deliberate forgery; the script
+  catches accidental and obvious patterns.
+
+The stamp's `verdict_hash` records the SHA-256 of the reviewer text
+the hook captured from `tool_response.content[].text`. If a verdict
+is disputed later, fetching the actual reviewer output from the
+session transcript (where the harness writes it eventually) and
+re-hashing proves whether the recorded stamp matches what was
+reviewed.
 
 ### 4. Confirm hosted CI is green against the current commit
 

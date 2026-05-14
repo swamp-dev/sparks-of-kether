@@ -177,30 +177,22 @@ with a note in the PR body.
 Note the commit SHA at the moment of the first review (`git rev-parse HEAD`)
 — step 8a uses it to compute "what changed since the first review."
 
-### 8.5. Write the checklist stamp
+### 8.5. Verify the checklist stamp was written
 
-The `PostToolUse:Agent` hook in `.claude/settings.json` ALSO writes
-the stamp automatically when settings.json is loaded at session
-start, but the explicit invocation here is the **load-bearing path** —
-it doesn't depend on hook config being loaded. Belt-and-suspenders.
-The hook is the redundant safety net; this step is the gate.
+The `PostToolUse:Agent` hook in `.claude/settings.json` writes the
+stamp automatically after every `code-reviewer` invocation. The
+hook captures the reviewer's verbatim output from the harness's
+`tool_response` payload and writes
+`<worktree>/.claude/state/checklist-<sanitized-branch>.json`
+with `{ branch, head_sha, ran_at, verdict, verdict_hash,
+reviewer_text_length, written_via }`.
 
-Save the reviewer's full markdown response to a temp file (use the
-Write tool — the agent already has the response in context), then
-invoke the script:
-
-```bash
-sha=$(git rev-parse --short HEAD)
-out=/tmp/checklist-reviewer-${sha}.md
-# Write tool saves the reviewer's full response to $out, then:
-node scripts/checklist-stamp.mjs --reviewer-output "$out"
-rm "$out"
-```
-
-The script reads the file, parses the verdict from the `## Verdict`
-markdown header, and writes
-`.claude/state/checklist-<sanitized-branch>.json` with `{ branch,
-head_sha, ran_at, verdict, verdict_hash, written_via }`.
+The agent does NOT write this stamp. `scripts/checklist-stamp.mjs`
+runs only as a hook (the `--reviewer-output FILE` CLI mode was
+removed 2026-05-14 because it was the gate-fabrication surface).
+The auto-mode classifier blocks attempts to fabricate stamps via
+the Write tool. **If the hook didn't fire, do not try to work
+around it** — surface the failure to the user.
 
 **Verify the stamp was written and the verdict is what you expect**
 before continuing:
@@ -209,13 +201,22 @@ before continuing:
 jq '{verdict, head_sha, written_via}' .claude/state/checklist-*.json
 ```
 
-Expected: `verdict` matches what the reviewer returned (`ship`, `fix`,
-`block`, or `rework`); `head_sha` matches current HEAD;
-`written_via` is `explicit`. If `verdict` is `unknown`, the reviewer
-output is missing the `## Verdict` markdown header (truncation /
-unusual format) — re-run code-reviewer asking for a clean verdict
-section before continuing. If anything else looks off, surface to
-the user — `/ship-ticket` will refuse without a fresh, valid stamp.
+Expected: `verdict` matches what the reviewer returned (`ship`,
+`fix`, `block`, or `rework`); `head_sha` matches current HEAD;
+`written_via` is `hook`. If the stamp doesn't exist:
+
+- Confirm `.claude/settings.json` declares the `PostToolUse:Agent`
+  hook running `node scripts/checklist-stamp.mjs`.
+- Settings.json edits made mid-session don't reload — if you just
+  introduced or changed the hook, the user needs to restart the
+  session.
+- If the hook is configured but still didn't fire, surface to the
+  user. Don't `node scripts/checklist-stamp.mjs ...` manually;
+  there is no CLI fallback that satisfies the gate.
+
+If `verdict` is `unknown`, the reviewer output is missing the
+`## Verdict` markdown header — re-run code-reviewer asking for a
+clean verdict section.
 
 ### 8a. Re-review on substantial fixes
 
