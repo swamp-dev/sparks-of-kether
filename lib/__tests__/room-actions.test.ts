@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyClientAction } from '../room-actions';
 import { turnReducer, type PrepModifier } from '../turn-machine';
 import { seededRng } from '@/engine/rng';
+import { EMPTY_SHELL_STATE } from '@/engine/types';
 import { makePlayer, makeState } from '@/test/fixtures';
 
 describe('applyClientAction — move', () => {
@@ -694,7 +695,12 @@ describe('applyClientAction — react-continue (#390)', () => {
 describe('applyClientAction — accept-setback', () => {
   it('ticks separation +1 on a regular failure', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
-    const state = makeState({}, { players: [player], separation: 3 });
+    // Pre-banish 1 shell: a real game at sep=3 would have already
+    // activated the first shell, so the maybeActivateShell hook is a no-op.
+    const state = makeState(
+      {},
+      { players: [player], separation: 3, shells: { ...EMPTY_SHELL_STATE, malkuth: 'banished' } },
+    );
     const result = applyClientAction(
       state,
       { kind: 'accept-setback', playerId: 'p1', sefirah: 'gevurah' },

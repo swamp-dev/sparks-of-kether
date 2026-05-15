@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SefirahKey } from '@/data';
 import { checkEndgame, resolveFinalThreshold } from '@/engine/endgame';
+import { EMPTY_SHELL_STATE } from '@/engine/types';
 import type { GameState, PlayerState } from '@/engine/types';
 import { makeFullGame } from '@/test/fixtures';
 import { scenario } from '@/test/scenario';
@@ -173,12 +174,17 @@ describe('playthrough — win path (2 players)', () => {
 describe('playthrough — loss path (2 players)', () => {
   it('drives separation to 15 via accept-setback', () => {
     // One step from the loss threshold; one accepted setback tips
-    // the team over.
+    // the team over. All shells pre-banished because a real game at
+    // sep=14 would have already decided all 4 activation slots.
+    const allBanished = Object.fromEntries(
+      Object.keys(EMPTY_SHELL_STATE).map((k) => [k, 'banished']),
+    ) as typeof EMPTY_SHELL_STATE;
     const base = makeFullGame({ playerCount: 2, seed: 11 });
     const initial: GameState = {
       ...base,
       players: base.players.map((p) => ({ ...p, position: 'gevurah' })),
       separation: 14,
+      shells: allBanished,
     };
     const p1 = initial.players[0]!.id;
 
@@ -194,12 +200,17 @@ describe('playthrough — loss path (2 players)', () => {
   it('shortcut setback ticks separation +2 (drives loss faster)', () => {
     // From separation 13, a +2 shortcut setback tips to 15. Same
     // outcome as the previous test but proves the +2 shortcut path
-    // is wired through the dispatcher.
+    // is wired through the dispatcher. All shells pre-banished to
+    // prevent activation cascade at this artificially high separation.
+    const allBanished = Object.fromEntries(
+      Object.keys(EMPTY_SHELL_STATE).map((k) => [k, 'banished']),
+    ) as typeof EMPTY_SHELL_STATE;
     const base = makeFullGame({ playerCount: 2, seed: 11 });
     const initial: GameState = {
       ...base,
       players: base.players.map((p) => ({ ...p, position: 'tiferet' })),
       separation: 13,
+      shells: allBanished,
     };
     const p1 = initial.players[0]!.id;
 

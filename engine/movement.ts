@@ -1,6 +1,7 @@
 import { paths, sefirahByKey, tryPathByNumber } from '@/data';
 import type { Path, SefirahKey } from '@/data';
 import { applyEvent, applyEvents, recordPillarMove } from './counters';
+import { maybeActivateShell } from './shells';
 import type { GameState, MoveRejection, MoveResult, PlayerState, Result } from './types';
 
 // ──────────────── Pure derivations ────────────────
@@ -169,6 +170,10 @@ export function applyMove(
   };
   // Fold pillar threshold events into counters.
   nextState = applyEvents(nextState, streakResult.events);
+  // #17: pillar-streak-imbalance raises Separation → check Shell awakening.
+  if (streakResult.events.some((e) => e.kind === 'pillar-streak-imbalance')) {
+    nextState = maybeActivateShell(nextState);
+  }
 
   // "Downward" = toward Malkuth (higher sefirah.number). Moving
   // voluntarily downward grants +1 Illumination per design/mechanics.md

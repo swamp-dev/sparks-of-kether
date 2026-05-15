@@ -3,6 +3,7 @@ import type { Pillar, SefirahKey } from '@/data';
 import { pathByArcanum } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
+import { banishShell, maybeActivateShell } from './shells';
 import { soulDoorDcDelta } from './soul-door-bonus';
 import type { CheckOutcome, GameState, PlayerState, Result } from './types';
 
@@ -1014,11 +1015,14 @@ export function resolveChallenge(
       p.id === playerId ? updatedPlayer : p,
     ),
   };
+  // #17: Clearing a Sefirah banishes its Shell (active → banished) or
+  // stillborns it (dormant → banished). No-op if already banished.
+  const stateWithBanishment = banishShell(stateWithCleared, sefirah);
   // Each counter bump goes through applyEvent — single source of truth.
   // Spark earned for the challenger; one assist-contributed event per
   // assistant (design/mechanics.md: "the assistant gets the +1, not
   // the challenger").
-  let newState = applyEvent(stateWithCleared, {
+  let newState = applyEvent(stateWithBanishment, {
     kind: 'spark-earned',
     playerId,
     sefirah,
@@ -1251,12 +1255,14 @@ export function acceptSetback(state: GameState, input: SetbackInput): GameState 
     sefirah: input.sefirah,
     shortcut,
   });
+  // #17: Run Shell awakening after every Separation increase.
+  const afterShells = maybeActivateShell(afterCounterTick);
 
   if (!shortcut) {
-    return afterCounterTick;
+    return afterShells;
   }
 
-  return rollbackPosition(afterCounterTick, input.playerId);
+  return rollbackPosition(afterShells, input.playerId);
 }
 
 /**
