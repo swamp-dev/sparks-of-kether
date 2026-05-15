@@ -4,6 +4,8 @@ import type { EncounterAvatarKey, SefirahKey } from '@/data/types';
 import { sefirahMarkLetter } from '@/data';
 import { usePantheon } from '@/lib/settings/pantheon';
 import { SEFIRAH_FRAME_TOKENS } from './sefirah-frame-tokens';
+import type { AvatarPose } from './encounter-pose';
+import { AvatarSilhouette } from './AvatarSilhouette';
 
 /**
  * Disco-Elysium-style avatar portrait for the EncounterScreen.
@@ -50,6 +52,12 @@ interface AvatarPortraitProps {
    * visual focus.
    */
   readonly size?: 'small' | 'stage';
+  /**
+   * Current avatar pose — drives the SVG silhouette shown at stage
+   * size when the commissioned portrait is unavailable. Defaults to
+   * `'idle'`. See `encounter-pose.ts` for the full state machine.
+   */
+  readonly pose?: AvatarPose;
   readonly className?: string;
 }
 
@@ -59,6 +67,7 @@ export function AvatarPortrait({
   caption,
   state,
   size = 'small',
+  pose = 'idle',
   className,
 }: AvatarPortraitProps): JSX.Element {
   const { pantheon } = usePantheon();
@@ -109,6 +118,7 @@ export function AvatarPortrait({
       data-sefirah={sefirah}
       data-avatar-state={state}
       data-avatar-size={size}
+      data-avatar-pose={pose}
       className={wrapperClass}
     >
       <div className={frameClass}>
@@ -138,14 +148,17 @@ export function AvatarPortrait({
               setImageFailed(true);
             }}
           />
+        ) : size === 'stage' ? (
+          <AvatarSilhouette
+            pose={pose}
+            sefirah={sefirah}
+            reducedMotion={false}
+            className="absolute inset-0 text-veil"
+          />
         ) : (
           <span
             aria-hidden
-            className={
-              size === 'stage'
-                ? 'absolute inset-0 flex items-center justify-center font-hebrew text-7xl text-veil'
-                : 'font-hebrew text-3xl text-veil'
-            }
+            className="font-hebrew text-3xl text-veil"
             data-avatar-placeholder-letter
           >
             {letter}
