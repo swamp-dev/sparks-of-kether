@@ -537,7 +537,7 @@ export function PlayScreen({
           `inline-block` would defeat the aspect-ratio sizing if
           applied to the wrapper itself.
         */}
-        <div className="w-full max-w-xl lg:max-w-none lg:w-auto lg:aspect-[400/620] lg:h-[calc(100vh-180px)] lg:max-h-[640px]">
+        <div className="w-full max-w-2xl lg:max-w-none lg:w-auto lg:aspect-[400/620] lg:h-[calc(100vh-120px)] lg:max-h-[820px]">
           <TreeBoard
             state={turn.state}
             {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}

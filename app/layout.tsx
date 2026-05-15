@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Fraunces, Frank_Ruhl_Libre, Inter } from 'next/font/google';
 import { Starfield } from '@/components/atmosphere/Starfield';
 import { Substrate } from '@/components/atmosphere/Substrate';
+import { OrreryBackdrop } from '@/components/atmosphere/OrreryBackdrop';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
 import { PantheonSettingsProvider } from '@/lib/settings/pantheon';
 import './globals.css';
@@ -34,10 +35,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${hebrew.variable}`}>
       <body className="font-sans">
-        {/* #311: atmospheric stack. Substrate (-z-20: indigo + bloom +
-            grain) sits behind Starfield (-z-10: stars), which sits
-            behind page content. Both are decorative and click-through. */}
+        {/* #311 atmospheric stack (back → front):
+              - Substrate      (-z-20): indigo void + bloom + grain
+              - OrreryBackdrop (-z-15): sun + orbiting planets (#636)
+              - Starfield      (-z-10): static stars
+            Each layer occupies a distinct z-tier so the painting order
+            doesn't depend on the DOM ordering below. All three are
+            decorative and click-through. */}
         <Substrate />
+        <OrreryBackdrop />
         <Starfield />
         {/* #321: sound settings provider. Wraps every route so any
             descendant can call `useSound()` / `useSoundEnabled()`.

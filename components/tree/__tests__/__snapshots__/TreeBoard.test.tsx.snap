@@ -16,21 +16,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
       Tree of Life — ten Sefirot connected by twenty-two paths
     </title>
     <defs>
-      <radialgradient
-        cx="50%"
-        cy="40%"
-        id="tree-bg-:rb:"
-        r="70%"
-      >
-        <stop
-          offset="0%"
-          stop-color="#1a1542"
-        />
-        <stop
-          offset="100%"
-          stop-color="#0e0a1f"
-        />
-      </radialgradient>
       <lineargradient
         gradientUnits="userSpaceOnUse"
         id="card-lit-11-:rb:"
@@ -450,11 +435,6 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         />
       </lineargradient>
     </defs>
-    <rect
-      fill="url(#tree-bg-:rb:)"
-      height="620"
-      width="400"
-    />
     <g
       aria-hidden="true"
     >
@@ -570,7 +550,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"
@@ -603,7 +583,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"
@@ -636,7 +616,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"
@@ -669,7 +649,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -702,7 +682,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -735,7 +715,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -768,7 +748,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="80"
@@ -801,7 +781,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="80"
@@ -834,7 +814,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -867,7 +847,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -900,7 +880,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -933,7 +913,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="80"
@@ -966,7 +946,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="80"
@@ -999,7 +979,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"
@@ -1032,7 +1012,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"
@@ -1065,7 +1045,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"
@@ -1098,7 +1078,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -1131,7 +1111,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -1164,7 +1144,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="320"
@@ -1197,7 +1177,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="80"
@@ -1230,7 +1210,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="80"
@@ -1263,7 +1243,7 @@ exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
         <line
           pointer-events="none"
           stroke="#f8f8ff"
-          stroke-opacity="0.35"
+          stroke-opacity="0.45"
           stroke-width="1.5"
           style="transition: stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out;"
           x1="200"

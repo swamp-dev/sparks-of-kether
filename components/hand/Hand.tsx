@@ -48,12 +48,6 @@ interface HandProps {
   /** Aria label for the whole hand region (e.g. "Andy's hand, 4 cards"). */
   readonly ariaLabel?: string;
   /**
-   * Initial open/closed state. Defaults to true (cards visible). When
-   * false, the hand renders a compact stack badge that the player taps
-   * to expand. (#132)
-   */
-  readonly defaultOpen?: boolean;
-  /**
    * #412 — fires when a drag gesture starts on a card. Pointer
    * movement crossed the threshold; the consumer is expected to thread
    * the arcanum into the Tree's `highlightedCard` so paths light up
@@ -95,25 +89,28 @@ const MAX_FAN_DEG = 12;
 /**
  * Card overlap when the hand is open. Cards render at `w-24` (96 px =
  * 6 rem) on narrow viewports and `w-36` (144 px = 9 rem) on `sm:` and
- * up (#38). Each subsequent card overlaps its predecessor by 55% of
- * the card's width, which advances 45% of card width per slot and
- * keeps a 6-card hand inside a 320 px viewport (96 + 5 × 43.2 = 312
- * px) and a 576 px max-w-xl on desktop (144 + 5 × 64.8 = 468 px).
+ * up (#38). Each subsequent card overlaps its predecessor by 48% of
+ * the card's width, advancing 52% per slot.
+ *
+ * 6 rem × 0.48 = 2.88 rem (mobile, set inline below)
+ * 9 rem × 0.48 = 4.32 rem (sm:, set as a Tailwind utility — must be
+ *   a literal string for JIT detection, see slot className)
+ *
+ * Width check:
+ *  - desktop 6-card fan: 144 + 5 × (144 × 0.52) ≈ 518 px (fits the
+ *    576 px `max-w-xl` container).
+ *  - mobile 6-card fan:  96 + 5 × (96 × 0.52)  ≈ 346 px — overflows
+ *    a 320 px viewport by ~26 px. Acceptable because the open hand
+ *    is `position: fixed` at the viewport bottom; the outer edges of
+ *    the fan extend past the viewport edges (clipped, not scrolled).
  *
  * #290: previously expressed as `marginLeft: '-55%'`, but CSS resolves
  * a percentage margin against the **parent's** content-box width, not
- * against the element itself. With a 576 px parent that became
- * −316 px per card — collapsing 5/6-card hands into a stack and
- * pushing the rightmost slots past the `overflow-x-hidden` clip, so
- * the player saw only the first 4 cards. The overlap is now expressed
- * in card-relative units (rem), tracking the responsive `w-24
- * sm:w-36` card width via a Tailwind responsive utility on each slot.
- *
- * 6 rem × 0.55 = 3.3 rem (mobile, set inline below)
- * 9 rem × 0.55 = 4.95 rem (sm:, set as a Tailwind utility — must be
- *   a literal string for JIT detection, see slot className)
+ * against the element itself. The overlap is now expressed in
+ * card-relative units (rem), tracking the responsive `w-24 sm:w-36`
+ * card width via a Tailwind responsive utility on each slot.
  */
-const CARD_OVERLAP_REM_BASE = '-3.3rem';
+const CARD_OVERLAP_REM_BASE = '-2.88rem';
 
 /**
  * Free-floating hand (#579, reworked). The hand is a `position: fixed`
@@ -159,7 +156,6 @@ export function Hand({
   onCardHover,
   selectedArcanum,
   ariaLabel,
-  defaultOpen = true,
   onCardDragStart,
   onCardDragEnd,
   onCardDragCancel,
@@ -167,7 +163,6 @@ export function Hand({
   className,
 }: HandProps): JSX.Element {
   const [focusIndex, setFocusIndex] = useState(0);
-  const [open, setOpen] = useState(defaultOpen);
   // Peek-shelf expand/hide state. False = peeking (only PEEK_HEIGHT_PX
   // of cards visible); true = fully revealed. Controlled by
   // mouseenter/leave on the fan, keyboard focus, and drag state.
@@ -346,35 +341,6 @@ export function Hand({
     if (reduceMotion) setHandExpanded(true);
   }, [reduceMotion]);
 
-  // #132: collapsed state — render a small badge with the card count
-  // instead of the full fan. A tap on the badge reopens the hand.
-  // The mount runs the `hand-fade-in` keyframe (Tailwind config) so
-  // the badge eases in rather than snapping. `motion-reduce:animate-none`
-  // honours the user's reduced-motion preference.
-  if (!open) {
-    return (
-      <div
-        role="group"
-        aria-label={computedLabel}
-        data-hand
-        data-hand-state="closed"
-        data-visible={visible ? 'true' : 'false'}
-        className={`animate-hand-fade-in motion-reduce:animate-none ${className ?? ''}`}
-        style={{ display: 'flex', justifyContent: 'center' }}
-      >
-        <button
-          type="button"
-          onClick={() => { setOpen(true); expandHand(); }}
-          data-action="open-hand"
-          className="rounded border border-veil/30 px-4 py-2 text-sm"
-          aria-expanded="false"
-        >
-          {hand.length} card{hand.length === 1 ? '' : 's'} — tap to open
-        </button>
-      </div>
-    );
-  }
-
   // #579 — open hand: fixed-position overlay anchored to viewport bottom.
   // `pointer-events-none` outer + `pointer-events-auto` inner lets clicks
   // pass through empty space to the Tree while cards remain interactive.
@@ -420,31 +386,11 @@ export function Hand({
             : {}),
         }}
       >
-      {/*
-        Always render the close button so the hand can be collapsed
-        even when empty — earlier the gating on `hand.length > 0` left
-        the open hand stuck if a player drew zero cards (#132 reviewer).
-        `z-10` keeps it above the rotated card edges in a full 6-card
-        fan, where the rightmost card's corner can otherwise overlap.
-        `min-h-11 min-w-11` meets WCAG 2.5.5 tap-target on mobile (#38).
-      */}
-      <button
-        type="button"
-        onClick={() => { setOpen(false); setHandExpanded(false); }}
-        data-action="close-hand"
-        aria-expanded="true"
-        aria-label="Collapse hand"
-        className="absolute right-0 top-0 z-10 flex min-h-11 min-w-11 items-center justify-center rounded border border-veil/20 bg-ground/80 text-base opacity-70 hover:opacity-100"
-      >
-        ×
-      </button>
       {hand.length === 0 ? (
-        // #208: explicit empty-state copy. The open hand at length 0
-        // would otherwise render as the close button alone — no
-        // signal to the player that the absence is intentional state
-        // ("you've played all your cards") rather than a UI miss.
-        // The closed badge already carries the count; this mirrors
-        // it in the open variant.
+        // #208: explicit empty-state copy. Without it, an empty hand
+        // would render nothing — no signal that the absence is
+        // intentional state ("you've played all your cards") rather
+        // than a UI miss.
         <p
           data-hand-empty
           className="px-8 py-12 text-center text-sm opacity-60"
@@ -551,11 +497,9 @@ export function Hand({
         const ariaDisabled = !interactive;
         const htmlDisabled = !visible;
         // #463: zIndex tiers — magnified > selected > unselected stack
-        // (left over right). All stay below the parent's `z-10` close
-        // button. With HAND_CAP=6 the magnified ceiling is `hand.length
-        // + 2` = 8, comfortably under 10. Even the over-cap Meditate
-        // path (#291, hand size up to 8) keeps it at 10 → still under
-        // any future close-button bump if we ever raise it.
+        // (left over right). With HAND_CAP=6 the magnified ceiling is
+        // `hand.length + 2` = 8; the over-cap Meditate path (#291,
+        // hand size up to 8) raises it to 10.
         let zIndex: number;
         if (isMagnified) {
           zIndex = hand.length + 2;
@@ -701,22 +645,22 @@ export function Hand({
             // overrides the rem base set inline above — without an
             // additional inline-style branch that would require a
             // matchMedia subscription. Tailwind's JIT needs the class
-            // to be a literal string; `-4.95rem` is 9rem × 0.55 (see
+            // to be a literal string; `-4.32rem` is 9rem × 0.48 (see
             // overlap doc above the constant).
             //
             // #463: focus-visible ring is the load-bearing keyboard
             // focus indicator, applied independently of the scale
             // transform — it remains visible under
             // `prefers-reduced-motion` even when the magnify is off.
-            className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 ${i === 0 ? '' : 'sm:!ml-[-4.95rem]'}`.trim()}
+            className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 ${i === 0 ? '' : 'sm:!ml-[-4.32rem]'}`.trim()}
           >
             {visible ? (
               // #38: responsive width — `w-24` on narrow (96 px),
-              // `w-36` on `sm:` and up (144 px). The 24/36 pair plus
-              // the `-3.3rem` / `sm:-4.95rem` overlap (#290) keeps a
-              // 6-card fan inside a 320 px viewport without
-              // horizontal scroll. #132's "1.5× scale for arm's
-              // length" still applies on desktop.
+              // `w-36` on `sm:` and up (144 px). Combined with the
+              // `-2.88rem` / `sm:-4.32rem` overlap (#290), a 6-card
+              // fan sits inside the desktop `max-w-xl` container and
+              // overflows a 320 px mobile viewport by ~26 px (clipped
+              // at viewport edge — see CARD_OVERLAP doc above).
               <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
             ) : (
               <CardBack className="w-24 sm:w-36" />

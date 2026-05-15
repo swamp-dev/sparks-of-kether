@@ -81,10 +81,14 @@ const config: Config = {
         // `stroke-opacity` is the spec-correct CSS property name —
         // camelCased `strokeOpacity` works in Chrome but is dropped
         // by Firefox / Safari.
+        // #636: rest opacity (`0.45`) matches TreeBoard's at-rest path
+        // stroke after the Tree dissolved into the orrery backdrop —
+        // pulse start/end should not visibly dim the path before
+        // brightening.
         'path-travel-pulse': {
-          '0%': { 'stroke-opacity': '0.35' },
+          '0%': { 'stroke-opacity': '0.45' },
           '50%': { 'stroke-opacity': '1', filter: 'drop-shadow(0 0 6px #ffd700)' },
-          '100%': { 'stroke-opacity': '0.35' },
+          '100%': { 'stroke-opacity': '0.45' },
         },
         // #37: sefirah clear pulse. Scale + glow on the node when
         // its challenge is passed. Triggered by the same data-attribute
@@ -233,6 +237,17 @@ const config: Config = {
         // than wobble. Authored under `motion-safe:` at the call site
         // so reduced-motion users see the static constellation.
         'constellation-rotate': 'rotate-360 60s linear infinite',
+        // Six concentric orbits in the play-screen orrery backdrop.
+        // Cadences scale outward (Mercury fast, Saturn slow) and
+        // alternate direction for visual variety. Authored under
+        // `motion-safe:` at the call site so reduced-motion users see
+        // a static orrery.
+        'orrery-orbit-1': 'rotate-360 24s linear infinite',
+        'orrery-orbit-2': 'rotate-360 42s linear infinite reverse',
+        'orrery-orbit-3': 'rotate-360 70s linear infinite',
+        'orrery-orbit-4': 'rotate-360 110s linear infinite reverse',
+        'orrery-orbit-5': 'rotate-360 170s linear infinite',
+        'orrery-orbit-6': 'rotate-360 240s linear infinite reverse',
         // #481: encounter-prep stage avatar entrance. ~600ms with
         // `ease-emerge` (out-expo) so the settle reads as "arrived".
         // `forwards` keeps the wrapper at the 100% keyframe state
