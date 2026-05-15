@@ -39,9 +39,9 @@ function trackUrl(track: AmbientTrack): string {
  *     played if enabled.
  */
 export function useMusic(track: AmbientTrack): void {
-  const { soundEnabled } = useSoundEnabled();
-  const enabledRef = useRef(soundEnabled);
-  enabledRef.current = soundEnabled;
+  const { musicEnabled } = useSoundEnabled();
+  const enabledRef = useRef(musicEnabled);
+  enabledRef.current = musicEnabled;
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export function useMusic(track: AmbientTrack): void {
     };
   }, [track]);
 
-  // This effect only responds to soundEnabled changes. `track` is intentionally
+  // This effect only responds to musicEnabled changes. `track` is intentionally
   // omitted from the dep array — track changes are fully handled by the effect
   // above (which pauses the old element and starts a new one). Including `track`
   // here would fire an extra pause() or play() against the newly-created element.
@@ -83,7 +83,7 @@ export function useMusic(track: AmbientTrack): void {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (soundEnabled) {
+    if (musicEnabled) {
       const p = audio.play();
       if (p && typeof p.catch === 'function') {
         p.catch((err: unknown) => {
@@ -95,5 +95,5 @@ export function useMusic(track: AmbientTrack): void {
     } else {
       audio.pause();
     }
-  }, [soundEnabled]);
+  }, [musicEnabled]);
 }

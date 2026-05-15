@@ -4,11 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 import type { AxeResults } from 'axe-core';
 import { SettingsButton } from '../SettingsButton';
-import { SoundSettingsProvider, SOUND_ENABLED_STORAGE_KEY } from '@/lib/sound/settings';
+import {
+  SoundSettingsProvider,
+  SFX_ENABLED_STORAGE_KEY,
+  MUSIC_ENABLED_STORAGE_KEY,
+} from '@/lib/sound/settings';
 
-// Mirrors the helper in components/__tests__/a11y.test.tsx —
-// vitest-axe 0.1.0's matcher fights vitest 4's expect-context, so
-// assert on .violations directly. (Same coverage, simpler surface.)
 function expectNoViolations(results: AxeResults): void {
   if (results.violations.length === 0) return;
   const summary = results.violations
@@ -18,14 +19,12 @@ function expectNoViolations(results: AxeResults): void {
 }
 
 /**
- * Settings button + popover for the play surface (#321).
+ * Settings button + popover (#321, #76, #77).
  *
  * - Floating cog button bottom-right of game pages.
- * - Opens a popover with Sound on/off + reduced-motion read-out.
- * - Reduced-motion is read-only (system-driven); copy reflects the
- *   user's current `prefers-reduced-motion` value.
- * - Toggling Sound persists to `localStorage` (already covered by
- *   the settings test; this spec checks the wiring at the UI layer).
+ * - Opens a popover with two toggles: Sound effects (SFX) + Music.
+ * - SFX defaults ON; Music defaults OFF.
+ * - Reduced-motion is read-only (system-driven).
  * - Esc closes the popover.
  * - Focus trap: Tab cycles within the popover.
  * - Axe-clean.
@@ -64,7 +63,6 @@ describe('SettingsButton', () => {
     renderWithProvider();
     const button = screen.getByRole('button', { name: /settings/i });
     expect(button).toBeInTheDocument();
-    // The popover is closed initially.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -75,16 +73,30 @@ describe('SettingsButton', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('toggles soundEnabled when the sound switch is flipped', async () => {
+  it('SFX toggle defaults ON and persists to localStorage', async () => {
     const user = userEvent.setup();
     renderWithProvider();
     await user.click(screen.getByRole('button', { name: /settings/i }));
     const dialog = screen.getByRole('dialog');
-    const soundSwitch = within(dialog).getByRole('switch', { name: /sound/i });
-    expect(soundSwitch).toHaveAttribute('aria-checked', 'false');
-    await user.click(soundSwitch);
-    expect(soundSwitch).toHaveAttribute('aria-checked', 'true');
-    expect(localStorage.getItem(SOUND_ENABLED_STORAGE_KEY)).toBe('true');
+    const sfxSwitch = within(dialog).getByRole('switch', { name: /sound effects/i });
+    expect(sfxSwitch).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(sfxSwitch);
+    expect(sfxSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBe('false');
+  });
+
+  it('Music toggle defaults OFF and persists to localStorage', async () => {
+    const user = userEvent.setup();
+    renderWithProvider();
+    await user.click(screen.getByRole('button', { name: /settings/i }));
+    const dialog = screen.getByRole('dialog');
+    const musicSwitch = within(dialog).getByRole('switch', { name: /music/i });
+    expect(musicSwitch).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(musicSwitch);
+    expect(musicSwitch).toHaveAttribute('aria-checked', 'true');
+    expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBe('true');
   });
 
   it('shows reduced-motion as a read-only system-driven status', async () => {
@@ -93,8 +105,6 @@ describe('SettingsButton', () => {
     renderWithProvider();
     await user.click(screen.getByRole('button', { name: /settings/i }));
     const dialog = screen.getByRole('dialog');
-    // The reduced-motion row shows "On" or similar status copy and is
-    // not interactive (no role="switch", just a status reading).
     const status = within(dialog).getByTestId('reduced-motion-status');
     expect(status).toHaveTextContent(/on|reduce/i);
   });

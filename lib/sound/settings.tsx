@@ -10,35 +10,33 @@ import {
 } from 'react';
 
 /**
- * Sound settings store (#321).
+ * Sound settings store (#321, #76).
  *
- * One toggle: `soundEnabled`. Persists to `localStorage` so the user's
- * choice survives reloads. The provider is mounted once at the app
- * root; `useSoundEnabled()` reads it from any descendant.
+ * Two independent toggles:
+ *   - `sfxEnabled`   — Sound effects. Default ON. SFX fire on user
+ *     gestures (clicks), so defaulting ON is not hostile; the browser's
+ *     autoplay policy is not triggered.
+ *   - `musicEnabled` — Ambient music. Default OFF. Music auto-plays in
+ *     useEffects (outside the gesture chain), so we keep it opt-in to
+ *     avoid auto-playing audio on first visit.
  *
- * Defaults:
- *   - OFF when there is no stored preference. Auto-playing audio in
- *     a browser tab is hostile by default; the player has to opt in.
- *   - OFF when the user has `prefers-reduced-motion: reduce` set,
- *     even with no stored preference. A user who has signalled "do
- *     less" should not be greeted by chimes; they can flip the
- *     toggle in Settings if they want them.
- *   - The stored preference WINS over the reduced-motion default —
- *     so a reduced-motion user who has explicitly turned sound on
- *     keeps sound on. (#321 spec: "user can override.")
+ * Both persist to `localStorage` under stable keys. On first visit (no
+ * stored preference) they resolve to their respective defaults.
  *
- * Stack note: the project has no global state library yet (the
- * stack table in CLAUDE.md lists Zustand as a future choice but it
- * is not installed). A React Context provider is functionally
- * equivalent at this scale and avoids a stack drift. If Zustand
- * lands later, this can become one slice.
+ * Reduced-motion: if the user has `prefers-reduced-motion: reduce` and
+ * no stored preference, SFX also defaults OFF — a user who has
+ * signalled "do less" should not be greeted by chimes. A stored
+ * preference always wins over the reduced-motion heuristic.
  */
 
-export const SOUND_ENABLED_STORAGE_KEY = 'sok.soundEnabled';
+export const SFX_ENABLED_STORAGE_KEY = 'sok.sfxEnabled';
+export const MUSIC_ENABLED_STORAGE_KEY = 'sok.musicEnabled';
 
 interface SoundSettingsContextValue {
-  readonly soundEnabled: boolean;
-  readonly setSoundEnabled: (next: boolean) => void;
+  readonly sfxEnabled: boolean;
+  readonly setSfxEnabled: (next: boolean) => void;
+  readonly musicEnabled: boolean;
+  readonly setMusicEnabled: (next: boolean) => void;
 }
 
 const SoundSettingsContext = createContext<SoundSettingsContextValue | null>(null);
@@ -47,78 +45,95 @@ interface SoundSettingsProviderProps {
   readonly children: ReactNode;
 }
 
-/**
- * Read the initial `soundEnabled` value from `localStorage` if
- * present; otherwise fall back to the reduced-motion-aware default.
- *
- * Runs INSIDE `useState`'s lazy initializer so the first render's
- * value is correct without a flash from `false` → stored value.
- *
- * Returns `false` on the server (SSR has no `localStorage` and no
- * `window.matchMedia`). The `useEffect` below re-syncs on mount in
- * case the client's stored preference differs.
- */
-function readInitial(): boolean {
+function hasReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function readSfxInitial(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    const stored = window.localStorage.getItem(SOUND_ENABLED_STORAGE_KEY);
+    const stored = window.localStorage.getItem(SFX_ENABLED_STORAGE_KEY);
     if (stored === 'true') return true;
     if (stored === 'false') return false;
-  } catch {
-    // localStorage can throw in private-browsing modes / quota
-    // exceeded. Fall through to the default.
-  }
-  // No stored preference: respect prefers-reduced-motion if available.
-  if (typeof window.matchMedia === 'function') {
-    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mql.matches) return false;
-  }
-  return false;
+  } catch { /* localStorage can throw in private-browsing / quota exceeded */ }
+  // No stored preference: defer to reduced-motion heuristic.
+  if (hasReducedMotion()) return false;
+  return true; // SFX default: ON
+}
+
+function readMusicInitial(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const stored = window.localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY);
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+  } catch { /* ignore */ }
+  return false; // Music default: OFF (ambient auto-play is hostile by default)
+}
+
+function unlockAudioContext(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const unlock = new Audio();
+    const p = unlock.play();
+    if (p && typeof p.catch === 'function') p.catch(() => undefined);
+  } catch { /* ignore */ }
+}
+
+function persist(key: string, value: boolean): void {
+  try {
+    window.localStorage.setItem(key, value ? 'true' : 'false');
+  } catch { /* ignore quota / private-browsing errors */ }
 }
 
 export function SoundSettingsProvider({
   children,
 }: SoundSettingsProviderProps): JSX.Element {
-  const [soundEnabled, setSoundEnabledState] = useState<boolean>(readInitial);
+  const [sfxEnabled, setSfxState] = useState<boolean>(readSfxInitial);
+  const [musicEnabled, setMusicState] = useState<boolean>(readMusicInitial);
 
-  // Re-sync on mount in case the SSR-rendered initial (`false`) is
-  // overridden by a stored client-side preference. Without this,
-  // the first client-side render after hydration would still show
-  // false; the initial render commits the SSR value, and `useState`'s
-  // lazy initializer re-runs only on remount.
+  // Re-sync on mount in case SSR-rendered initial differs from stored value.
   useEffect(() => {
-    const next = readInitial();
-    setSoundEnabledState((prev) => (prev === next ? prev : next));
+    const sfx = readSfxInitial();
+    const music = readMusicInitial();
+    setSfxState((prev) => (prev === sfx ? prev : sfx));
+    setMusicState((prev) => (prev === music ? prev : music));
   }, []);
 
-  const setSoundEnabled = useCallback((next: boolean) => {
-    setSoundEnabledState(next);
+  const setSfxEnabled = useCallback((next: boolean) => {
+    setSfxState(next);
     if (typeof window !== 'undefined') {
       if (next) {
-        // Unlock the browser audio context synchronously while we are
-        // still inside the click event's user-activation window.
-        // Without this, every subsequent playSound() call (fired from
-        // useEffect, outside the gesture chain) is silently rejected by
-        // Chrome/Safari autoplay policy on sites with low MEI.
-        try {
-          const unlock = new Audio();
-          const p = unlock.play();
-          if (p && typeof p.catch === 'function') p.catch(() => undefined);
-        } catch { /* ignore */ }
+        // Unlock browser audio context synchronously inside the gesture
+        // window so subsequent playSound() calls (in effects, outside
+        // the gesture chain) are accepted by Chrome/Safari autoplay policy.
+        unlockAudioContext();
       }
-      try {
-        window.localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, next ? 'true' : 'false');
-      } catch {
-        // localStorage write can throw under quota / private-mode.
-        // Drop the write silently — the in-memory state still
-        // reflects the user's choice for this session.
+      persist(SFX_ENABLED_STORAGE_KEY, next);
+    }
+  }, []);
+
+  const setMusicEnabled = useCallback((next: boolean) => {
+    setMusicState(next);
+    if (typeof window !== 'undefined') {
+      if (next) {
+        // Same unlock needed for music: useMusic plays in a useEffect,
+        // which is outside any gesture chain.
+        unlockAudioContext();
       }
+      persist(MUSIC_ENABLED_STORAGE_KEY, next);
     }
   }, []);
 
   const value = useMemo(
-    (): SoundSettingsContextValue => ({ soundEnabled, setSoundEnabled }),
-    [soundEnabled, setSoundEnabled],
+    (): SoundSettingsContextValue => ({
+      sfxEnabled,
+      setSfxEnabled,
+      musicEnabled,
+      setMusicEnabled,
+    }),
+    [sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled],
   );
 
   return (
@@ -129,16 +144,12 @@ export function SoundSettingsProvider({
 }
 
 /**
- * Read the current sound setting + setter.
+ * Read the current sound settings + setters.
  *
- * If no `<SoundSettingsProvider />` is mounted up-tree, returns a
- * silent-OFF stub: `soundEnabled = false`, `setSoundEnabled` is a
- * no-op. This is the safe default — sound is opt-in by design, so
- * a missing provider effectively keeps the game quiet.
- *
- * In production the provider is mounted at `app/layout.tsx`, so
- * this defensive branch only kicks in for unit tests that mount
- * a sound-consuming component without the wrapper.
+ * Safe default when no `<SoundSettingsProvider />` is mounted up-tree:
+ * both flags OFF, setters are no-ops. Sound is opt-in by design, so a
+ * missing provider keeps the game quiet rather than crashing unit tests
+ * that mount a sound-consuming component without the wrapper.
  */
 export function useSoundEnabled(): SoundSettingsContextValue {
   const ctx = useContext(SoundSettingsContext);
@@ -149,6 +160,8 @@ export function useSoundEnabled(): SoundSettingsContextValue {
 }
 
 const DEFAULT_DISABLED_VALUE: SoundSettingsContextValue = {
-  soundEnabled: false,
-  setSoundEnabled: () => undefined,
+  sfxEnabled: false,
+  setSfxEnabled: () => undefined,
+  musicEnabled: false,
+  setMusicEnabled: () => undefined,
 };

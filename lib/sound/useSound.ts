@@ -54,7 +54,7 @@ interface UseSoundReturn {
 }
 
 export function useSound(): UseSoundReturn {
-  const { soundEnabled } = useSoundEnabled();
+  const { sfxEnabled } = useSoundEnabled();
   const cacheRef = useRef<Partial<Record<SoundCue, HTMLAudioElement>>>({});
   // Per-cue play timestamps (ms since epoch). Bounded by
   // MAX_REPEATS_PER_WINDOW + 1 entries — we drop entries older than
@@ -65,8 +65,8 @@ export function useSound(): UseSoundReturn {
   // stable across renders (no need to invalidate the callback when
   // the toggle flips). The closure reads the ref's current value at
   // call time.
-  const enabledRef = useRef(soundEnabled);
-  enabledRef.current = soundEnabled;
+  const enabledRef = useRef(sfxEnabled);
+  enabledRef.current = sfxEnabled;
 
   const playSound = useCallback((cue: SoundCue): void => {
     if (!enabledRef.current) return;
