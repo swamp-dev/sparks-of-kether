@@ -733,6 +733,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             state={avatarState}
             size="small"
             pose={pose}
+            reducedMotion={reducedMotion}
             {...(avatarNameLabel !== undefined
               ? { avatarName: avatarNameLabel }
               : {})}
@@ -838,6 +839,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
               state="prep"
               size="stage"
               pose={pose}
+              reducedMotion={reducedMotion}
               {...(avatarNameLabel !== undefined
                 ? { avatarName: avatarNameLabel }
                 : {})}

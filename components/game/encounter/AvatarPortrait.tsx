@@ -58,6 +58,14 @@ interface AvatarPortraitProps {
    * `'idle'`. See `encounter-pose.ts` for the full state machine.
    */
   readonly pose?: AvatarPose;
+  /**
+   * Mirror of the parent's `prefers-reduced-motion` snapshot. Passed
+   * through to `AvatarSilhouette` so its SVG opacity/transform
+   * transitions are suppressed for reduced-motion users. Defaults to
+   * `false` (transitions enabled) — pass `true` when the parent
+   * has already resolved the media query.
+   */
+  readonly reducedMotion?: boolean;
   readonly className?: string;
 }
 
@@ -68,6 +76,7 @@ export function AvatarPortrait({
   state,
   size = 'small',
   pose = 'idle',
+  reducedMotion = false,
   className,
 }: AvatarPortraitProps): JSX.Element {
   const { pantheon } = usePantheon();
@@ -142,7 +151,7 @@ export function AvatarPortrait({
             onError={() => {
               if (typeof console !== 'undefined' && console.warn) {
                 console.warn(
-                  `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to placeholder letter`,
+                  `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to AvatarSilhouette placeholder`,
                 );
               }
               setImageFailed(true);
@@ -152,7 +161,7 @@ export function AvatarPortrait({
           <AvatarSilhouette
             pose={pose}
             sefirah={sefirah}
-            reducedMotion={false}
+            reducedMotion={reducedMotion}
             className="absolute inset-0 text-veil"
           />
         ) : (
