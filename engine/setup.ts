@@ -210,5 +210,7 @@ export function initializeGame(input: InitializeGameInput): GameState {
     // #503: per-turn Meditate cap flag. Initialized false; set true
     // by the `meditate` reducer; cleared by `endTurn` on seat rotation.
     meditatedThisTurn: false,
+    // #17: Shell of Yesod (Illusion) and Shell of Chokmah (Paralysis)
+    // fields. Both are absent at game start — additive/optional fields.
   };
 }

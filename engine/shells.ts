@@ -1,4 +1,4 @@
-import { sefirot } from '@/data';
+import { paths, sefirot } from '@/data';
 import type { SefirahKey } from '@/data';
 import { applyEvent } from './counters';
 import type { GameState, ShellStateMap, ShellStatus } from './types';
@@ -163,10 +163,54 @@ export function maybeActivateShell(state: GameState): GameState {
     // through applyEvent so the rule lives in events.ts.
     if (newStatus === 'active') {
       result = applyEvent(result, { kind: 'shell-activated', sefirah: target });
+      // #17: Shell of Yesod (Illusion) — choose and persist the illusory
+      // path at awakening time. Deterministic so it survives reload.
+      if (target === 'yesod' && result.illusoryPath === undefined) {
+        result = { ...result, illusoryPath: pickIllusoryPath(result) };
+      }
     }
   }
 
   return result;
+}
+
+// ──────────────── Illusion path derivation ────────────────
+
+/**
+ * Pick a path to mark as illusory for the Shell of Yesod. The choice
+ * is deterministic from the current GameState so it survives reload
+ * without needing RNG. The formula maps separation and illumination to
+ * a path index in the 22-path range (numbered 11–32).
+ */
+function pickIllusoryPath(state: GameState): number {
+  // 22 paths total, numbered 11–32. Using two independent counters
+  // avoids the common case where illumination=0 collapses to sep-only.
+  return ((state.separation * 7 + state.illumination * 13) % paths.length) + 11;
+}
+
+// ──────────────── Shell-state selectors ────────────────
+
+/**
+ * Returns `'private'` when the Shell of Kether (Fragmentation) is active,
+ * `'public'` otherwise. UI and engine code should gate hand-sharing and
+ * card-peek paths on this value.
+ */
+export function handVisibility(state: GameState): 'public' | 'private' {
+  return isFragmentationActive(state) ? 'private' : 'public';
+}
+
+/**
+ * Returns the arcanum number that would be announced as the top of the draw
+ * pile when the Shell of Hod (Deception) is active, or `undefined` when
+ * the Shell is dormant / banished. The true top card is `state.deck[0]`.
+ * A player who draws blind gets the real card; a player who peeks gets this.
+ */
+export function deceptiveTopCard(state: GameState): number | undefined {
+  if (!isDeceptionActive(state) || state.deck.length === 0) return undefined;
+  // Rotate the true top card label by (separation mod deck size), wrapping
+  // within the existing deck so the announced card is always a real one.
+  const trueIdx = ((state.deck[0] ?? 0) + state.separation) % state.deck.length;
+  return state.deck[trueIdx];
 }
 
 // ──────────────── Banishment ────────────────

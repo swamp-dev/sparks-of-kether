@@ -1,7 +1,13 @@
 import { paths, sefirahByKey, tryPathByNumber } from '@/data';
 import type { Path, SefirahKey } from '@/data';
 import { applyEvent, applyEvents, recordPillarMove } from './counters';
-import { maybeActivateShell } from './shells';
+import {
+  isInertiaActive,
+  isIllusionActive,
+  isObsessionActive,
+  isParalysisActive,
+  maybeActivateShell,
+} from './shells';
 import type { GameState, MoveRejection, MoveResult, PlayerState, Result } from './types';
 
 // ──────────────── Pure derivations ────────────────
@@ -82,6 +88,21 @@ export function canTravelPath(
     };
   }
 
+  // #17: Shell of Malkuth (Inertia) — movement costs two cards. If the
+  // player holds only the path-card, they cannot move (must Meditate).
+  if (isInertiaActive(state) && player.hand.length === 1) {
+    return { ok: false, reason: { kind: 'inertia-one-card' } };
+  }
+
+  // #17: Shell of Chokmah (Paralysis) — cannot play a card for movement
+  // on the same turn it was drawn.
+  if (isParalysisActive(state) && (state.drawnThisTurn ?? []).includes(path.arcanumNumber)) {
+    return {
+      ok: false,
+      reason: { kind: 'paralysis-drawn-this-turn', arcanumNumber: path.arcanumNumber },
+    };
+  }
+
   return { ok: true, value: { path, player } };
 }
 
@@ -117,6 +138,9 @@ export interface ApplyMoveOptions {
  *     timestamp so the ritual's witness-order rule (§ 2.2) reads the
  *     true arrival, not a return.
  */
+/** Paths adjacent to Netzach. Traveling these is blocked by Obsession. */
+const NETZACH_ADJACENT_PATHS = new Set([21, 24, 28, 29]);
+
 export function applyMove(
   state: GameState,
   playerId: string,
@@ -127,11 +151,46 @@ export function applyMove(
   if (!validation.ok) return validation;
   const { path, player } = validation.value;
 
-  const fromSefirah = sefirahByKey(player.position);
-  const destination: SefirahKey = path.from === player.position ? path.to : path.from;
-  const toSefirah = sefirahByKey(destination);
   const handIndex = player.hand.indexOf(path.arcanumNumber);
-  const nextHand = [...player.hand.slice(0, handIndex), ...player.hand.slice(handIndex + 1)];
+  const handMinusPathCard = [...player.hand.slice(0, handIndex), ...player.hand.slice(handIndex + 1)];
+
+  // #17: Shell of Netzach (Obsession) — playing a card on a Netzach-adjacent
+  // path burns the card with no movement. The card can still count for
+  // assists / card-burn bonuses, but `applyMove`'s position logic is skipped.
+  if (isObsessionActive(state) && NETZACH_ADJACENT_PATHS.has(pathNumber)) {
+    return {
+      ok: true,
+      value: {
+        ...state,
+        players: state.players.map((p) =>
+          p.id === playerId ? { ...player, hand: handMinusPathCard } : p,
+        ),
+        discardPile: [...state.discardPile, path.arcanumNumber],
+      },
+    };
+  }
+
+  // #17: Shell of Yesod (Illusion) — the illusory path's listed destination
+  // is false. Traveling it returns the player to their origin (the path leads
+  // nowhere). Card is still consumed.
+  const trueDestination: SefirahKey = path.from === player.position ? path.to : path.from;
+  const destination: SefirahKey =
+    isIllusionActive(state) && pathNumber === state.illusoryPath
+      ? player.position
+      : trueDestination;
+
+  // #17: Shell of Malkuth (Inertia) — movement costs two cards.
+  // `canTravelPath` already rejected the 1-card case; here we discard the
+  // last remaining card in hand as the extra cost.
+  const inertiaExtra: number | undefined =
+    isInertiaActive(state) && handMinusPathCard.length > 0
+      ? handMinusPathCard[handMinusPathCard.length - 1]
+      : undefined;
+  const nextHand =
+    inertiaExtra !== undefined ? handMinusPathCard.slice(0, -1) : handMinusPathCard;
+
+  const fromSefirah = sefirahByKey(player.position);
+  const toSefirah = sefirahByKey(destination);
 
   // #345: stamp the Kether arrival timestamp on the first arrival only.
   // The clock injection keeps `applyMove` deterministic in tests; in
@@ -162,10 +221,15 @@ export function applyMove(
   // what counts toward streaks; Balance moves are neutral.
   const streakResult = recordPillarMove(state.pillarStreak, toSefirah.pillar);
 
+  const discardedCards =
+    inertiaExtra !== undefined
+      ? [path.arcanumNumber, inertiaExtra]
+      : [path.arcanumNumber];
+
   let nextState: GameState = {
     ...state,
     players: state.players.map((p) => (p.id === playerId ? nextPlayer : p)),
-    discardPile: [...state.discardPile, path.arcanumNumber],
+    discardPile: [...state.discardPile, ...discardedCards],
     pillarStreak: streakResult.streak,
   };
   // Fold pillar threshold events into counters.

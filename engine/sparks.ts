@@ -3,6 +3,7 @@ import { applyEvent } from './counters';
 import { recycleDiscardIntoDeck } from './draws';
 import type { Rng } from './rng';
 import { HAND_CAP } from './setup';
+import { isHoardingActive, isVanityActive } from './shells';
 import type { GameState, PlayerAbilityFlags, PlayerState, Result, SpentSpark } from './types';
 
 // ──────────────── Public types ────────────────
@@ -32,7 +33,11 @@ export type SparkRejection =
   // Distinct from `payload-invalid` so the orchestrator can offer
   // the giver a different recipient instead of treating it as a
   // logic error.
-  | { readonly kind: 'gift-rejected-cap-full'; readonly toPlayerId: string };
+  | { readonly kind: 'gift-rejected-cap-full'; readonly toPlayerId: string }
+  // #17 — Shell of Chesed (Hoarding): all card gifts blocked while active.
+  | { readonly kind: 'hoarding-gifts-blocked' }
+  // #17 — Shell of Tiferet (Vanity): Tiferet Soul Aspect ability disabled.
+  | { readonly kind: 'vanity-ability-disabled' };
 
 // ──────────────── Helpers ────────────────
 
@@ -166,10 +171,18 @@ function applyAbility(
 ): Result<GameState, SparkRejection> {
   switch (ability.kind) {
     case 'chesed-grace':
+      // #17: Shell of Chesed (Hoarding) — no card gifts while active.
+      if (isHoardingActive(state)) {
+        return { ok: false, reason: { kind: 'hoarding-gifts-blocked' } };
+      }
       return applyChesedGrace(state, player, ability.toPlayerId, ability.arcanumNumber);
     case 'gevurah-severance':
       return { ok: true, value: { ...state, shellCancellationsAvailable: state.shellCancellationsAvailable + 1 } };
     case 'tiferet-harmony':
+      // #17: Shell of Tiferet (Vanity) — Tiferet Soul Aspect ability disabled.
+      if (isVanityActive(state)) {
+        return { ok: false, reason: { kind: 'vanity-ability-disabled' } };
+      }
       return { ok: true, value: replacePlayer(state, setFlags(player, { harmonyArmed: true })) };
     case 'hod-clarity':
       return applyHodClarity(state, ability.arcanumNumber);
