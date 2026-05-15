@@ -42,9 +42,6 @@ import { RitualLedger } from './RitualLedger';
 const ROLL_ANIMATION_MS = 700;
 const HASTEN_ANIMATION_MS = 1500;
 
-// How many particle dots to scatter around the avatar on the blessing page.
-const PARTICLE_COUNT = 10;
-
 interface BlessingRitualProps {
   readonly rng: Rng;
   readonly sign: ZodiacSignKey;
@@ -342,6 +339,7 @@ export function BlessingRitual({
               Shows placeholder outlines before rolling, real dice after. */}
           <div className="relative mt-6 flex flex-col items-center gap-3">
             <div
+              role="group"
               data-roll={lastRoll ? 'true' : 'false'}
               aria-label={
                 lastRoll
@@ -435,12 +433,12 @@ export function BlessingRitual({
 
 // Pre-computed particle positions so they are stable across renders.
 // Random-looking but deterministic — no Math.random() in render.
-const PARTICLE_DOTS: ReadonlyArray<{
+const PARTICLE_DOTS: readonly {
   top: string;
   left: string;
   opacity: number;
   delay: string;
-}> = [
+}[] = [
   { top: '12%', left: '8%',  opacity: 0.6, delay: '0ms' },
   { top: '28%', left: '85%', opacity: 0.4, delay: '400ms' },
   { top: '45%', left: '4%',  opacity: 0.5, delay: '800ms' },
