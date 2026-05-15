@@ -114,7 +114,7 @@ export const encounter: TrackManifest = {
     const droneCutoffCenter = 600;
     const droneCutoffSwing = 80;
     const droneLp = onePoleLowpass(droneCutoffCenter, sr);
-    const droneGain = 0.30;
+    const droneGain = 0.3;
 
     const droneBuffer = new Float32Array(totalSamples);
     for (let i = 0; i < totalSamples; i++) {
@@ -164,8 +164,7 @@ export const encounter: TrackManifest = {
     const malletPitches = [A3, C_SHARP_4, E4];
     const earliestMalletSec = WARMUP_SEC + CROSSFADE_SEC + 1;
     const MALLET_TAIL_SEC = 5; // 0.6 × 5 + 2 reverb headroom
-    const latestMalletSec =
-      WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - MALLET_TAIL_SEC;
+    const latestMalletSec = WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - MALLET_TAIL_SEC;
 
     const rng = makePrng(SEED);
     type Mallet = { startSample: number; pitchHz: number; panPos: number };
@@ -177,8 +176,7 @@ export const encounter: TrackManifest = {
       if (nextMalletSec >= latestMalletSec) break;
       mallets.push({
         startSample: Math.floor(nextMalletSec * sr),
-        pitchHz:
-          malletPitches[Math.floor(rng() * malletPitches.length)] ?? A3,
+        pitchHz: malletPitches[Math.floor(rng() * malletPitches.length)] ?? A3,
         panPos: (rng() * 2 - 1) * 0.4,
       });
     }
@@ -227,10 +225,7 @@ export const encounter: TrackManifest = {
     let pulseT = 0;
     while (pulseT < totalSamples / sr) {
       const startSample = Math.floor(pulseT * sr);
-      const renderLen = Math.min(
-        totalSamples - startSample,
-        Math.floor(sr * PULSE_DURATION_SEC),
-      );
+      const renderLen = Math.min(totalSamples - startSample, Math.floor(sr * PULSE_DURATION_SEC));
       // Each pulse is its own bandpass-filtered noise — independent
       // BPF state per pulse so we don't carry state across pulses.
       const bpf = biquadBandpass(2000, 8, sr);
@@ -253,15 +248,9 @@ export const encounter: TrackManifest = {
     const wetRight = new Float32Array(totalSamples);
     for (let i = 0; i < totalSamples; i++) {
       const dryL =
-        (droneBuffer[i] ?? 0) +
-        (padLeft[i] ?? 0) +
-        (malletLeft[i] ?? 0) +
-        (pulseLeft[i] ?? 0);
+        (droneBuffer[i] ?? 0) + (padLeft[i] ?? 0) + (malletLeft[i] ?? 0) + (pulseLeft[i] ?? 0);
       const dryR =
-        (droneBuffer[i] ?? 0) +
-        (padRight[i] ?? 0) +
-        (malletRight[i] ?? 0) +
-        (pulseRight[i] ?? 0);
+        (droneBuffer[i] ?? 0) + (padRight[i] ?? 0) + (malletRight[i] ?? 0) + (pulseRight[i] ?? 0);
       const [l, r] = verb.process(dryL, dryR);
       wetLeft[i] = l;
       wetRight[i] = r;

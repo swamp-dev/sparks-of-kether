@@ -33,9 +33,8 @@ export default function StatSheetDemoPage(): JSX.Element {
     <main className="min-h-screen p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Stat Sheet</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
-        Character panel — 10 stats and Sparks held. The gold-ringed row
-        is the stat being checked this turn. Class-derived bonuses are
-        folded into the stat values at game start.
+        Character panel — 10 stats and Sparks held. The gold-ringed row is the stat being checked
+        this turn. Class-derived bonuses are folded into the stat values at game start.
       </p>
 
       <div data-demo-canvas>
@@ -61,13 +60,7 @@ export default function StatSheetDemoPage(): JSX.Element {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): JSX.Element {
+function Section({ title, children }: { title: string; children: React.ReactNode }): JSX.Element {
   return (
     <section className="mt-10">
       <h2 className="mb-4 font-display text-lg tracking-widest opacity-90">{title}</h2>

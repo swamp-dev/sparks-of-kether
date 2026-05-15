@@ -140,11 +140,7 @@ export function PeerCursor({
       data-y={String(position.y)}
       aria-hidden="true"
       style={style}
-      className={`
-        pointer-events-none absolute z-30
-        -translate-x-1 -translate-y-1
-        ${className ?? ''}
-      `}
+      className={`pointer-events-none absolute z-30 -translate-x-1 -translate-y-1 ${className ?? ''} `}
     >
       {/* SVG arrow tinted via inline fill so per-peer color works
           without Tailwind class generation. */}
@@ -166,12 +162,7 @@ export function PeerCursor({
       <span
         data-testid={`peer-cursor-label-${cursor.playerId}`}
         data-stale={labelStale ? 'true' : 'false'}
-        className="
-          absolute left-5 top-3 whitespace-nowrap
-          rounded-sm px-1.5 py-0.5 text-xs font-semibold text-white
-          transition-opacity duration-300 ease-flow
-          data-[stale=true]:opacity-0
-        "
+        className="absolute left-5 top-3 whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold text-white transition-opacity duration-300 ease-flow data-[stale=true]:opacity-0"
         style={{ backgroundColor: cursor.color }}
       >
         {cursor.name}

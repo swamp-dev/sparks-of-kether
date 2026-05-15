@@ -19,11 +19,7 @@ import { renderHook, act } from '@testing-library/react';
  * a single source of truth at `app/layout.tsx`.
  */
 
-import {
-  PANTHEON_STORAGE_KEY,
-  PantheonSettingsProvider,
-  usePantheon,
-} from '../pantheon';
+import { PANTHEON_STORAGE_KEY, PantheonSettingsProvider, usePantheon } from '../pantheon';
 import { pantheons } from '@/data/pantheons';
 
 const wrapper = ({ children }: { children: React.ReactNode }): React.JSX.Element => (

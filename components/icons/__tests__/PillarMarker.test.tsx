@@ -21,11 +21,8 @@ describe('PillarMarker', () => {
     expect(new Set(html).size).toBe(3);
   });
 
-  it.each(['mercy', 'severity', 'balance'] as const)(
-    'matches snapshot for %s',
-    (pillar) => {
-      const { container } = render(<PillarMarker pillar={pillar} />);
-      expect(container.firstChild).toMatchSnapshot();
-    },
-  );
+  it.each(['mercy', 'severity', 'balance'] as const)('matches snapshot for %s', (pillar) => {
+    const { container } = render(<PillarMarker pillar={pillar} />);
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

@@ -38,9 +38,7 @@ describe('signGlowColor (#445)', () => {
     'pisces',
   ])('passes through the raw SIGN_COLORS hex for %s', (sign) => {
     // Pass-through: glow uses the same hex as the card surface.
-    expect(signGlowColor(sign)).toBe(
-      attributionColor({ kind: 'sign', value: sign }),
-    );
+    expect(signGlowColor(sign)).toBe(attributionColor({ kind: 'sign', value: sign }));
   });
 
   it('returns a strict #rrggbb shape for every sign', () => {
@@ -59,9 +57,7 @@ describe('signGlowColor (#445)', () => {
       'pisces',
     ];
     for (const sign of signs) {
-      expect(signGlowColor(sign), `glow colour for ${sign}`).toMatch(
-        /^#[0-9a-f]{6}$/,
-      );
+      expect(signGlowColor(sign), `glow colour for ${sign}`).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
 });
@@ -72,14 +68,10 @@ describe('attributionColor — card-surface hex unchanged after #445', () => {
   // attributionColor calls through signGlowColor, Scorpio's chip would
   // suddenly read pink and these tests would fail.
   it('still returns the dark maroon for Scorpio card surfaces', () => {
-    expect(attributionColor({ kind: 'sign', value: 'scorpio' })).toBe(
-      '#5e2a4a',
-    );
+    expect(attributionColor({ kind: 'sign', value: 'scorpio' })).toBe('#5e2a4a');
   });
 
   it('still returns the dark slate for Capricorn card surfaces', () => {
-    expect(attributionColor({ kind: 'sign', value: 'capricorn' })).toBe(
-      '#2a3a4a',
-    );
+    expect(attributionColor({ kind: 'sign', value: 'capricorn' })).toBe('#2a3a4a');
   });
 });

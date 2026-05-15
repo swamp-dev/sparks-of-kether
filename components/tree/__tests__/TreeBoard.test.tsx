@@ -69,9 +69,7 @@ describe('TreeBoard', () => {
     // legend or hover tooltip elsewhere in the SVG) can legitimately
     // include Hebrew text without breaking this regression-pin.
     const { container } = render(<TreeBoard />);
-    const hebrewInNodes = container.querySelectorAll(
-      '[data-layer="nodes"] [lang="he"]',
-    );
+    const hebrewInNodes = container.querySelectorAll('[data-layer="nodes"] [lang="he"]');
     expect(hebrewInNodes.length).toBe(0);
   });
 
@@ -149,9 +147,7 @@ describe('TreeBoard', () => {
       const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
       const text = node?.querySelector('text');
       const expected = contrastTextColour(sefirah.color);
-      expect(text?.getAttribute('fill'), `text fill for ${sefirah.key}`).toBe(
-        expected,
-      );
+      expect(text?.getAttribute('fill'), `text fill for ${sefirah.key}`).toBe(expected);
     }
   });
 
@@ -165,15 +161,11 @@ describe('TreeBoard', () => {
   it('renders a hover/focus glow span per Sefirah with peer-hover and peer-focus-visible classes (#505)', () => {
     const { container } = render(<TreeBoard state={makeState()} />);
     for (const sefirah of sefirot) {
-      const glow = container.querySelector(
-        `[data-hover-glow="${sefirah.key}"]`,
-      );
+      const glow = container.querySelector(`[data-hover-glow="${sefirah.key}"]`);
       expect(glow, `hover glow for ${sefirah.key}`).not.toBeNull();
       const className = glow?.className ?? '';
       expect(className).toContain(`peer-hover:shadow-glow-${sefirah.key}`);
-      expect(className).toContain(
-        `peer-focus-visible:shadow-glow-${sefirah.key}`,
-      );
+      expect(className).toContain(`peer-focus-visible:shadow-glow-${sefirah.key}`);
     }
   });
 
@@ -234,9 +226,7 @@ describe('TreeBoard', () => {
 describe('TreeBoard — #384 mode-aware Sefirah click', () => {
   it('without onSefirahClick: renders <a href="/sefirah/{key}"> per node (Codex navigation default)', () => {
     const { container } = render(<TreeBoard state={makeState()} />);
-    const links = container.querySelectorAll<HTMLAnchorElement>(
-      'a[data-sefirah-link]',
-    );
+    const links = container.querySelectorAll<HTMLAnchorElement>('a[data-sefirah-link]');
     expect(links.length).toBe(10);
     for (const link of links) {
       const key = link.getAttribute('data-sefirah-link');
@@ -247,12 +237,8 @@ describe('TreeBoard — #384 mode-aware Sefirah click', () => {
 
   it('with onSefirahClick: renders <button> per node (no href, no anchor)', () => {
     const onSefirahClick = vi.fn();
-    const { container } = render(
-      <TreeBoard state={makeState()} onSefirahClick={onSefirahClick} />,
-    );
-    const buttons = container.querySelectorAll<HTMLButtonElement>(
-      'button[data-sefirah-link]',
-    );
+    const { container } = render(<TreeBoard state={makeState()} onSefirahClick={onSefirahClick} />);
+    const buttons = container.querySelectorAll<HTMLButtonElement>('button[data-sefirah-link]');
     expect(buttons.length).toBe(10);
     expect(container.querySelectorAll('a[data-sefirah-link]').length).toBe(0);
     for (const button of buttons) {
@@ -262,9 +248,7 @@ describe('TreeBoard — #384 mode-aware Sefirah click', () => {
 
   it('clicking a node with onSefirahClick fires the handler with the Sefirah key — no navigation', () => {
     const onSefirahClick = vi.fn();
-    const { container } = render(
-      <TreeBoard state={makeState()} onSefirahClick={onSefirahClick} />,
-    );
+    const { container } = render(<TreeBoard state={makeState()} onSefirahClick={onSefirahClick} />);
     const tiferetButton = container.querySelector<HTMLButtonElement>(
       'button[data-sefirah-link="tiferet"]',
     );

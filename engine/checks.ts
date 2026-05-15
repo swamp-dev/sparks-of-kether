@@ -3,7 +3,13 @@ import type { Pillar, SefirahKey } from '@/data';
 import { pathByArcanum } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
-import { banishShell, isCrueltyActive, isDespairActive, isVanityActive, maybeActivateShell } from './shells';
+import {
+  banishShell,
+  isCrueltyActive,
+  isDespairActive,
+  isVanityActive,
+  maybeActivateShell,
+} from './shells';
 import { soulDoorDcDelta } from './soul-door-bonus';
 import type { CheckOutcome, GameState, PlayerState, Result } from './types';
 
@@ -759,8 +765,7 @@ export function resolveChallenge(
     if (netzach.retryTilt > 0) {
       resolvedModifiers = {
         ...resolvedModifiers,
-        netzachRetryTilt:
-          (resolvedModifiers.netzachRetryTilt ?? 0) + netzach.retryTilt,
+        netzachRetryTilt: (resolvedModifiers.netzachRetryTilt ?? 0) + netzach.retryTilt,
       };
     }
   }
@@ -774,8 +779,7 @@ export function resolveChallenge(
   // (lib/turn-machine.ts:prep-confirm) ensures at least one burn is
   // staged when the player's hand is non-empty; this engine arm only
   // determines whether that burn was the dearest one.
-  const gevurahBonus =
-    sefirah === 'gevurah' ? evaluateGevurahDearestBonus(state, player) : 0;
+  const gevurahBonus = sefirah === 'gevurah' ? evaluateGevurahDearestBonus(state, player) : 0;
   if (gevurahBonus > 0) {
     resolvedModifiers = {
       ...resolvedModifiers,
@@ -789,8 +793,7 @@ export function resolveChallenge(
   // counted by `cardBurns` in rollCheck. Higher-rank cards thus
   // matter more — "concrete losses count." The extra folds into
   // flatBonus.
-  const binahExtra =
-    sefirah === 'binah' ? evaluateBinahBurnBonus(state) : 0;
+  const binahExtra = sefirah === 'binah' ? evaluateBinahBurnBonus(state) : 0;
   if (binahExtra > 0) {
     resolvedModifiers = {
       ...resolvedModifiers,
@@ -813,15 +816,13 @@ export function resolveChallenge(
   // which case `outcome.effectiveDC` is treated as the unmodified DC).
   // Without this gate a caller following the JSDoc would double-apply
   // the reduction.
-  const chesedGiftCount =
-    sefirah === 'chesed' ? state.pendingModifiers.giftCards.length : 0;
+  const chesedGiftCount = sefirah === 'chesed' ? state.pendingModifiers.giftCards.length : 0;
   const chesedUnfolding = chesedGiftCount > 0;
   if (chesedUnfolding && input.outcome === undefined) {
     const reduction = -Math.min(chesedGiftCount + 1, CHESED_DC_REDUCTION_CAP);
     resolvedModifiers = {
       ...resolvedModifiers,
-      chesedGiftDcReduction:
-        (resolvedModifiers.chesedGiftDcReduction ?? 0) + reduction,
+      chesedGiftDcReduction: (resolvedModifiers.chesedGiftDcReduction ?? 0) + reduction,
     };
   }
 
@@ -857,11 +858,7 @@ export function resolveChallenge(
     // future UI caller that pre-applies the +2 in their
     // `outcome.total` would get a phantom +2 in the engine-side
     // breakdown that doesn't actually shift the outcome.
-    if (
-      chokmahModCount === 0 &&
-      isFireSign(player.zodiacSign) &&
-      input.outcome === undefined
-    ) {
+    if (chokmahModCount === 0 && isFireSign(player.zodiacSign) && input.outcome === undefined) {
       resolvedModifiers = {
         ...resolvedModifiers,
         flatBonus: (resolvedModifiers.flatBonus ?? 0) + CHOKMAH_FLASH_BONUS,
@@ -898,11 +895,8 @@ export function resolveChallenge(
   // declared sefirah. Apply BEFORE the roll so the stat input reflects
   // the bump, and clear the buff regardless of outcome (one-shot).
   const buffApplies =
-    player.pendingStatBuff !== undefined &&
-    player.pendingStatBuff.sefirah === sefirah;
-  const buffedStat = buffApplies
-    ? stat + (player.pendingStatBuff?.amount ?? 0)
-    : stat;
+    player.pendingStatBuff !== undefined && player.pendingStatBuff.sefirah === sefirah;
+  const buffedStat = buffApplies ? stat + (player.pendingStatBuff?.amount ?? 0) : stat;
 
   const outcome =
     input.outcome ??
@@ -964,8 +958,7 @@ export function resolveChallenge(
   // `newState !== state` — the only path in `resolveChallenge` where
   // that's true on a failed roll. Existing tests that assert "fail
   // returns same reference" use non-Hod Sefirot so they remain green.
-  const hadNameCard =
-    sefirah === 'hod' && state.pendingModifiers.nameCards.length > 0;
+  const hadNameCard = sefirah === 'hod' && state.pendingModifiers.nameCards.length > 0;
   const stateAfterHodConsume = hadNameCard ? consumeHodNameCard(state) : state;
 
   // #354 — consume the Yesod dream-guess REGARDLESS of pass/fail (design
@@ -973,8 +966,7 @@ export function resolveChallenge(
   // fires whenever a dream-guess was staged at a Yesod resolve, including
   // the malformed-envelope drop branch where `evaluateYesodDreamPeek`
   // returns undefined.
-  const hadDreamGuess =
-    sefirah === 'yesod' && state.pendingModifiers.dreamGuesses.length > 0;
+  const hadDreamGuess = sefirah === 'yesod' && state.pendingModifiers.dreamGuesses.length > 0;
   const stateAfterYesodConsume = hadDreamGuess
     ? consumeYesodDreamGuess(stateAfterHodConsume)
     : stateAfterHodConsume;
@@ -996,9 +988,7 @@ export function resolveChallenge(
   // accidentally bump Netzach's counter (different Sefirah anyway,
   // but the gate is explicit).
   const shouldBumpNetzachPriorFails =
-    !effectiveOutcome.pass &&
-    sefirah === 'netzach' &&
-    state.encounter?.sefirah === 'netzach';
+    !effectiveOutcome.pass && sefirah === 'netzach' && state.encounter?.sefirah === 'netzach';
   const stateAfterNetzachFailBump = shouldBumpNetzachPriorFails
     ? bumpNetzachPriorFails(stateAfterBuffConsume)
     : stateAfterBuffConsume;
@@ -1046,9 +1036,7 @@ export function resolveChallenge(
 
   const stateWithCleared: GameState = {
     ...stateAfterNetzachFailBump,
-    players: stateAfterNetzachFailBump.players.map((p) =>
-      p.id === playerId ? updatedPlayer : p,
-    ),
+    players: stateAfterNetzachFailBump.players.map((p) => (p.id === playerId ? updatedPlayer : p)),
   };
   // #17: Clearing a Sefirah banishes its Shell (active → banished) or
   // stillborns it (dormant → banished). No-op if already banished.
@@ -1343,10 +1331,7 @@ function rollbackPosition(state: GameState, playerId: string): GameState {
   // shortcut path here means the caller's `shortcut` flag was wrong
   // (client bug, malicious payload, or transitional snapshot). No-op
   // the position change; the Separation tick already happened upstream.
-  if (
-    path.pillarsCrossed[0] !== 'balance' ||
-    path.pillarsCrossed[1] !== 'balance'
-  ) {
+  if (path.pillarsCrossed[0] !== 'balance' || path.pillarsCrossed[1] !== 'balance') {
     return state;
   }
 
@@ -1584,15 +1569,10 @@ function clearPendingStatBuff(state: GameState, playerId: string): GameState {
  * payload beyond "the dearest fired," which the breakdown already
  * surfaces.
  */
-function evaluateGevurahDearestBonus(
-  state: GameState,
-  player: PlayerState,
-): number {
+function evaluateGevurahDearestBonus(state: GameState, player: PlayerState): number {
   if (player.hand.length === 0) return 0;
   const dearest = Math.max(...player.hand);
-  const matches = state.pendingModifiers.cardBurns.filter(
-    (a) => a === dearest,
-  ).length;
+  const matches = state.pendingModifiers.cardBurns.filter((a) => a === dearest).length;
   return matches * GEVURAH_DEAREST_BONUS;
 }
 

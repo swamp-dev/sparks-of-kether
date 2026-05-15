@@ -147,11 +147,7 @@ function freqWithIntegerCycles(targetHz: number, durationSec: number): number {
   return Math.round(targetHz * durationSec) / durationSec;
 }
 
-function makeDroneOscillator(
-  freqHz: number,
-  sampleRate: number,
-  shape: DroneShape,
-): () => number {
+function makeDroneOscillator(freqHz: number, sampleRate: number, shape: DroneShape): () => number {
   if (shape === 'square') return squarePolyBlep(freqHz, sampleRate);
   if (shape === 'sine') return sineOsc(freqHz, sampleRate);
   return sawtoothPolyBlep(freqHz, sampleRate);
@@ -209,10 +205,7 @@ export function buildEncounterTrack(config: EncounterConfig): TrackManifest {
         const droneAFreq = freqWithIntegerCycles(drone.pitchHz * detuneA, loopSpanSec);
         const droneBFreq = freqWithIntegerCycles(drone.pitchHz * detuneB, loopSpanSec);
         const oscA = makeDroneOscillator(droneAFreq, sr, shape);
-        const oscB =
-          drone.detuneCents > 0
-            ? makeDroneOscillator(droneBFreq, sr, shape)
-            : null;
+        const oscB = drone.detuneCents > 0 ? makeDroneOscillator(droneBFreq, sr, shape) : null;
         const subOsc =
           drone.subPitchHz !== undefined
             ? sineOsc(freqWithIntegerCycles(drone.subPitchHz, loopSpanSec), sr)
@@ -281,20 +274,19 @@ export function buildEncounterTrack(config: EncounterConfig): TrackManifest {
       if (events !== undefined) {
         const rng = makePrng(seed);
         const earliestSec = warmupSec + crossfadeSec + 1;
-        const latestSec =
-          warmupSec + durationSec - crossfadeSec - events.tailSafetySec;
+        const latestSec = warmupSec + durationSec - crossfadeSec - events.tailSafetySec;
 
         type Evt = { startSample: number; pitchHz: number; panPos: number };
         const list: Evt[] = [];
         let cursor = earliestSec + 1;
         while (true) {
-          const interval =
-            events.avgIntervalSec + (rng() * 2 - 1) * events.jitterSec;
+          const interval = events.avgIntervalSec + (rng() * 2 - 1) * events.jitterSec;
           cursor += interval;
           if (cursor >= latestSec) break;
           const pitchHz =
             events.pitchesHz[Math.floor(rng() * events.pitchesHz.length)] ??
-            (events.pitchesHz[0] ?? 440);
+            events.pitchesHz[0] ??
+            440;
           const panPos = (rng() * 2 - 1) * events.panRange;
           list.push({
             startSample: Math.floor(cursor * sr),
@@ -354,8 +346,7 @@ export function buildEncounterTrack(config: EncounterConfig): TrackManifest {
         const motifTotalSec = melody.notes.reduce((sum, n) => sum + n.durationSec, 0);
         const voice = melody.voice ?? 'celesta';
         const melodyPan = melody.pan ?? 0;
-        const safeLatestRawSec =
-          warmupSec + durationSec - crossfadeSec - melody.tailSafetySec;
+        const safeLatestRawSec = warmupSec + durationSec - crossfadeSec - melody.tailSafetySec;
         for (const startLoopSec of melody.startOffsetsLoopSec) {
           const startRawSec = warmupSec + startLoopSec;
           if (startRawSec + motifTotalSec > safeLatestRawSec) {
@@ -373,10 +364,7 @@ export function buildEncounterTrack(config: EncounterConfig): TrackManifest {
           }
           let cursor = Math.floor(startRawSec * sr);
           for (const note of melody.notes) {
-            const renderLen = Math.min(
-              totalSamples - cursor,
-              Math.floor(sr * melody.decaySec * 5),
-            );
+            const renderLen = Math.min(totalSamples - cursor, Math.floor(sr * melody.decaySec * 5));
             if (voice === 'celesta') {
               const fund = sineOsc(note.pitchHz, sr);
               const harm = sineOsc(note.pitchHz * 3, sr);
@@ -384,10 +372,7 @@ export function buildEncounterTrack(config: EncounterConfig): TrackManifest {
               const env = expDecay(melody.decaySec, sr);
               for (let i = 0; i < renderLen; i++) {
                 const e = env();
-                const v =
-                  (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) *
-                  e *
-                  melody.gain;
+                const v = (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melody.gain;
                 const { left: l, right: r } = pan(v, melodyPan);
                 melodyLeft[cursor + i]! += l;
                 melodyRight[cursor + i]! += r;
@@ -423,15 +408,9 @@ export function buildEncounterTrack(config: EncounterConfig): TrackManifest {
       const wetRight = new Float32Array(totalSamples);
       for (let i = 0; i < totalSamples; i++) {
         const dryL =
-          (droneBuffer[i] ?? 0) +
-          (padLeft[i] ?? 0) +
-          (evtLeft[i] ?? 0) +
-          (melodyLeft[i] ?? 0);
+          (droneBuffer[i] ?? 0) + (padLeft[i] ?? 0) + (evtLeft[i] ?? 0) + (melodyLeft[i] ?? 0);
         const dryR =
-          (droneBuffer[i] ?? 0) +
-          (padRight[i] ?? 0) +
-          (evtRight[i] ?? 0) +
-          (melodyRight[i] ?? 0);
+          (droneBuffer[i] ?? 0) + (padRight[i] ?? 0) + (evtRight[i] ?? 0) + (melodyRight[i] ?? 0);
         const [l, r] = verb.process(dryL, dryR);
         wetLeft[i] = l;
         wetRight[i] = r;

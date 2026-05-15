@@ -13,13 +13,13 @@ describe('CardBack', () => {
 
   it('accepts an aria-label override', () => {
     const { container } = render(<CardBack ariaLabel="Andy's card, hidden" />);
-    expect(
-      container.querySelector('[data-card="back"]')?.getAttribute('aria-label'),
-    ).toBe("Andy's card, hidden");
+    expect(container.querySelector('[data-card="back"]')?.getAttribute('aria-label')).toBe(
+      "Andy's card, hidden",
+    );
   });
 
   it('passes className through to the SVG', () => {
-    const { container } = render(<CardBack className="w-24 h-auto" />);
+    const { container } = render(<CardBack className="h-auto w-24" />);
     const svg = container.querySelector('[data-card="back"]');
     expect(svg?.getAttribute('class') ?? '').toMatch(/w-24/);
   });
@@ -32,27 +32,21 @@ describe('CardBack', () => {
 
   it('renders the hexagram seal as two overlaid triangles', () => {
     const { container } = render(<CardBack />);
-    expect(
-      container.querySelector('[data-cardback-element="hexagram-up"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[data-cardback-element="hexagram-down"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-cardback-element="hexagram-up"]')).not.toBeNull();
+    expect(container.querySelector('[data-cardback-element="hexagram-down"]')).not.toBeNull();
   });
 
   it('renders four corner flourishes', () => {
     const { container } = render(<CardBack />);
-    const flourishes = container.querySelectorAll(
-      '[data-cardback-element="corner-flourish"]',
-    );
+    const flourishes = container.querySelectorAll('[data-cardback-element="corner-flourish"]');
     expect(flourishes.length).toBe(4);
   });
 
   it('renders the four Tetragrammaton letters (Yod-Heh-Vav-Heh) at cardinal points', () => {
     const { container } = render(<CardBack />);
-    const letters = Array.from(
-      container.querySelectorAll('[data-tetragrammaton-letter]'),
-    ).map((el) => el.getAttribute('data-tetragrammaton-letter'));
+    const letters = Array.from(container.querySelectorAll('[data-tetragrammaton-letter]')).map(
+      (el) => el.getAttribute('data-tetragrammaton-letter'),
+    );
     // Yod-Heh-Vav-Heh — the canonical four letters.
     expect(letters).toEqual(['י', 'ה', 'ו', 'ה']);
   });

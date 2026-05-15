@@ -52,9 +52,7 @@ async function walkToPlayScreen(page: Page): Promise<void> {
  * this seeded deal — the test then skips the assertion rather than
  * fail on an arrangement we can't dispatch.
  */
-async function findValidDragPair(
-  page: Page,
-): Promise<{
+async function findValidDragPair(page: Page): Promise<{
   readonly cardSlot: number;
   readonly arcanum: number;
   readonly pathNumber: number;
@@ -72,9 +70,7 @@ async function findValidDragPair(
     const arcanumMatch = /Arcanum (\d+)/.exec(ariaLabel);
     if (!arcanumMatch || arcanumMatch[1] === undefined) continue;
     const arcanum = Number(arcanumMatch[1]);
-    const card = page
-      .locator(`[data-card-slot][data-arcanum="${arcanum}"]`)
-      .first();
+    const card = page.locator(`[data-card-slot][data-arcanum="${arcanum}"]`).first();
     if ((await card.count()) === 0) continue;
     const slotAttr = await card.getAttribute('data-card-slot');
     if (slotAttr === null) continue;
@@ -87,16 +83,11 @@ async function findValidDragPair(
   return null;
 }
 
-test('drag-to-play: dragging a card onto a matching path moves the player', async ({
-  page,
-}) => {
+test('drag-to-play: dragging a card onto a matching path moves the player', async ({ page }) => {
   await page.goto('/play?seed=1492');
   await walkToPlayScreen(page);
   await expect(page.locator('[data-play-screen]')).toBeVisible();
-  await expect(page.locator('[data-play-screen]')).toHaveAttribute(
-    'data-phase',
-    'move',
-  );
+  await expect(page.locator('[data-play-screen]')).toHaveAttribute('data-phase', 'move');
 
   const pair = await findValidDragPair(page);
   test.skip(
@@ -105,9 +96,7 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   );
   if (pair === null) return;
 
-  const card = page.locator(
-    `[data-card-slot][data-arcanum="${pair.arcanum}"]`,
-  );
+  const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
 
   // Expand the floating hand from peek mode before computing bounding
@@ -141,10 +130,7 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   // Phase has left 'move' — the drop dispatched. Either 'end' (no
   // challenge) or 'challenge' depending on whether the destination
   // Sefirah is uncleared and check-flagged. Both are valid.
-  await expect(page.locator('[data-play-screen]')).not.toHaveAttribute(
-    'data-phase',
-    'move',
-  );
+  await expect(page.locator('[data-play-screen]')).not.toHaveAttribute('data-phase', 'move');
 });
 
 test('drag-to-play: dragging onto a non-matching path is rejected with announcement', async ({
@@ -204,10 +190,7 @@ test('drag-to-play: dragging onto a non-matching path is rejected with announcem
 
   // Phase stayed at 'move' (rejected drop) and the aria-live region
   // carries an announcement.
-  await expect(page.locator('[data-play-screen]')).toHaveAttribute(
-    'data-phase',
-    'move',
-  );
+  await expect(page.locator('[data-play-screen]')).toHaveAttribute('data-phase', 'move');
   await expect(page.locator('[data-drag-announcement]')).toContainText(
     /cannot|that path|no path/i,
     { timeout: 3000 },
@@ -230,9 +213,7 @@ test('drag-to-play: keyboard fallback — click-to-select then click-path still 
   test.skip(pair === null, 'No eligible card / path pair for keyboard fallback.');
   if (pair === null) return;
 
-  const card = page.locator(
-    `[data-card-slot][data-arcanum="${pair.arcanum}"]`,
-  );
+  const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   await card.click();
   await expect(card).toHaveAttribute('data-selected', 'true');
 
@@ -241,8 +222,5 @@ test('drag-to-play: keyboard fallback — click-to-select then click-path still 
   // routes through PlayScreen.handlePathClick.
   await page.locator(`[data-path="${pair.pathNumber}"]`).click();
 
-  await expect(page.locator('[data-play-screen]')).not.toHaveAttribute(
-    'data-phase',
-    'move',
-  );
+  await expect(page.locator('[data-play-screen]')).not.toHaveAttribute('data-phase', 'move');
 });

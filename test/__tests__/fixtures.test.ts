@@ -50,9 +50,7 @@ describe('makeFullGame', () => {
     const b = makeFullGame({ playerCount: 4, seed: 7 });
     // Deck order, hand contents, all derived state must match.
     expect(a.deck).toEqual(b.deck);
-    expect(a.players.map((p) => p.hand)).toEqual(
-      b.players.map((p) => p.hand),
-    );
+    expect(a.players.map((p) => p.hand)).toEqual(b.players.map((p) => p.hand));
   });
 
   it('produces different state for different seeds', () => {
@@ -80,9 +78,7 @@ describe('makeFullGame', () => {
     // narrows to 2 | 3 | 4. The runtime guard is the actual gate
     // we want to assert; pretend a caller has bypassed the type.
     const bad = (n: number) =>
-      ({ playerCount: n, seed: 0 } as unknown as Parameters<
-        typeof makeFullGame
-      >[0]);
+      ({ playerCount: n, seed: 0 }) as unknown as Parameters<typeof makeFullGame>[0];
     expect(() => makeFullGame(bad(1))).toThrow();
     expect(() => makeFullGame(bad(5))).toThrow();
   });
@@ -116,9 +112,7 @@ describe('scenario', () => {
     // player likely does not hold card 0; if they do, swap to a
     // path number unlikely to be in their hand. We pick path 99
     // which is invalid by definition (paths run 11–32).
-    expect(() => scenario(initial).move(p0, 99).run()).toThrow(
-      ScenarioFailedError,
-    );
+    expect(() => scenario(initial).move(p0, 99).run()).toThrow(ScenarioFailedError);
   });
 
   it('snapshots stateAtFailure (the snapshot is decoupled from the live state object)', () => {
@@ -157,8 +151,7 @@ describe('scenario', () => {
       expect(err.stateAtFailure.activePlayerId).toBe(after.activePlayerId);
       // ...but is a different object. Cast through `unknown` to
       // bypass readonly and prove the field is independent.
-      (err.stateAtFailure as unknown as { separation: number }).separation =
-        9999;
+      (err.stateAtFailure as unknown as { separation: number }).separation = 9999;
       // Without structuredClone, this would now also be 9999.
       expect(after.separation).not.toBe(9999);
     }

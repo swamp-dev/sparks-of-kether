@@ -45,50 +45,32 @@ interface FakeChannel {
   subscribe: ReturnType<typeof vi.fn>;
   fireRow: (event: 'INSERT' | 'UPDATE' | 'DELETE', row: unknown, old?: unknown) => void;
 }
-
-// useLobby now subscribes to two channels: lobby_players and lobby_room.
-// Track each handler separately so tests can fire events on the right one.
-const channelHandlers = new Map<
-  string,
-  (payload: { eventType: string; new: unknown; old: unknown }) => void
->();
-// Legacy alias: `channelHandler` points to the players channel handler for
-// backward-compatible test assertions.
-let channelHandler:
-  | ((payload: { eventType: string; new: unknown; old: unknown }) => void)
-  | null = null;
+let channelHandler: ((payload: { eventType: string; new: unknown; old: unknown }) => void) | null =
+  null;
 let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 
-function makeFakeChannel(channelName: string): FakeChannel {
+function makeFakeChannel(): FakeChannel {
   const channel: FakeChannel = {
     on: vi.fn(function (
       this: FakeChannel,
       _event: string,
       _filter: unknown,
-      handler: (payload: {
-        eventType: string;
-        new: unknown;
-        old: unknown;
-      }) => void,
+      handler: (payload: { eventType: string; new: unknown; old: unknown }) => void,
     ) {
-      channelHandlers.set(channelName, handler);
-      // Keep legacy alias pointed at the players channel.
-      if (channelName.startsWith('lobby_players')) {
-        channelHandler = handler;
-      }
+      channelHandler = handler;
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb?: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb?: (status: string) => void) {
+      // Defer so the React effect can settle. The callback is
+      // optional in the Supabase client's runtime API; the lobby
+      // hook doesn't pass one.
       if (cb !== undefined) {
         setTimeout(() => cb(channelSubscribeStatus), 0);
       }
       return this;
     }),
     fireRow: (event, row, old) =>
-      channelHandlers.get(channelName)?.({ eventType: event, new: row, old: old ?? null }),
+      channelHandler?.({ eventType: event, new: row, old: old ?? null }),
   };
   return channel;
 }
@@ -102,7 +84,7 @@ vi.mock('../supabase', async (importActual) => {
         getUser: vi.fn(async () => userResult),
         getSession: vi.fn(async () => sessionResult),
       },
-      channel: (name: string) => makeFakeChannel(name),
+      channel: () => makeFakeChannel(),
       removeChannel: vi.fn(),
       from: (table: string) => ({
         select: () => ({
@@ -134,7 +116,6 @@ const VALID_ROOM: RoomRow = {
   created_at: 't',
   started_at: null,
   finished_at: null,
-  paused_at: null,
 };
 
 const VALID_PLAYERS: readonly PlayerRow[] = [
@@ -172,7 +153,6 @@ describe('useLobby', () => {
     updateCalls = [];
     updateResponse = { error: null };
     channelHandler = null;
-    channelHandlers.clear();
     channelSubscribeStatus = 'SUBSCRIBED';
     vi.stubGlobal(
       'fetch',
@@ -423,20 +403,16 @@ describe('useLobby', () => {
     // updates on a CHANNEL_ERROR; the host stares at a Begin that
     // never lights up. The fix surfaces an error string so the
     // failure has a paper trail.
-    // The lobby_room CHANNEL_ERROR also clears room so the play page
-    // renders the error UI rather than a ghost state with stale room.state.
     channelSubscribeStatus = 'CHANNEL_ERROR';
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* swallow during this test */
-      });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* swallow during this test */
+    });
     const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);
     });
-    // room is null because CHANNEL_ERROR on lobby_room clears it.
-    expect(result.current.room).toBeNull();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
   });

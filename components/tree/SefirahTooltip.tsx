@@ -66,11 +66,7 @@ export function SefirahTooltip({
         <span className="font-display text-sm tracking-wide" data-tooltip-name>
           {sefirah.englishName}
         </span>
-        <span
-          lang="he"
-          className="font-hebrew text-sm opacity-90"
-          data-tooltip-hebrew
-        >
+        <span lang="he" className="font-hebrew text-sm opacity-90" data-tooltip-hebrew>
           {sefirah.hebrewName}
         </span>
       </div>

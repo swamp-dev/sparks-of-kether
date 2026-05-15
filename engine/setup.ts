@@ -84,10 +84,7 @@ export function deckCountFor(playerCount: number): 1 | 2 {
  * Pre-#237 this also applied a Soul Aspect +2 bonus on top; that
  * stack was removed when Soul Aspects were retired (Epic #212 T8).
  */
-function applyClassBonuses(
-  stats: StatSheet,
-  zodiacSign: ZodiacSignKey,
-): StatSheet {
+function applyClassBonuses(stats: StatSheet, zodiacSign: ZodiacSignKey): StatSheet {
   const zodiacDeltas = zodiacBonus(zodiacSign);
   const out: Partial<Record<StatKey, number>> = {};
   for (const stat of Object.keys(stats) as StatKey[]) {
@@ -115,9 +112,7 @@ function shuffle<T>(items: readonly T[], rng: Rng): T[] {
     const a = arr[i];
     const b = arr[j];
     if (a === undefined || b === undefined) {
-      throw new Error(
-        `shuffle: index out of bounds (i=${i}, j=${j}, length=${arr.length})`,
-      );
+      throw new Error(`shuffle: index out of bounds (i=${i}, j=${j}, length=${arr.length})`);
     }
     arr[i] = b;
     arr[j] = a;
@@ -182,9 +177,7 @@ export function initializeGame(input: InitializeGameInput): GameState {
   // already orders `players` by seat before calling here.
   const firstPlayer = playerStates[0];
   if (!firstPlayer) {
-    throw new Error(
-      'initializeGame: cannot initialize a game with zero players',
-    );
+    throw new Error('initializeGame: cannot initialize a game with zero players');
   }
 
   return {

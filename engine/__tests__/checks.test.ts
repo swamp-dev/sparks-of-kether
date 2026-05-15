@@ -688,10 +688,7 @@ describe('acceptSetback', () => {
     const state = makeState(
       {},
       {
-        players: [
-          makePlayer({ position: 'yesod', lastArrivalPathNumber: 25 }),
-          ally,
-        ],
+        players: [makePlayer({ position: 'yesod', lastArrivalPathNumber: 25 }), ally],
       },
     );
     const next = acceptSetback(state, {
@@ -1938,22 +1935,19 @@ describe('resolveChallenge — Netzach Declared Desire (#489)', () => {
     ['pisces', 'water'],
     ['taurus', 'Venus-ruled'],
     ['libra', 'Venus-ruled'],
-  ] as const)(
-    'declared %s (%s) at Netzach: +2 flatBonus on the roll',
-    (zodiacSign, _label) => {
-      const state = netzachState({ zodiacSign, declaredDesire: 'tiferet' });
-      const result = resolveChallenge({
-        state,
-        playerId: 'p1',
-        sefirah: 'netzach',
-        modifiers: blankMods,
-        rng: { d20: () => 5, int: () => 5 },
-      });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
-    },
-  );
+  ] as const)('declared %s (%s) at Netzach: +2 flatBonus on the roll', (zodiacSign, _label) => {
+    const state = netzachState({ zodiacSign, declaredDesire: 'tiferet' });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'netzach',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBe(2);
+  });
 
   // ── Control signs: no bonus
 
@@ -2189,14 +2183,12 @@ describe('resolveChallenge — Netzach Declared Desire (#489)', () => {
     // = { sefirah: 'tiferet', amount: 1 }. Now they arrive at Tiferet.
     // Stat 4 (harmony) + buff 1 = effective stat 5; roll 9 → total 14;
     // Tiferet DC = 14 → pass. Without the buff: 4 + 9 = 13 < 14 → fail.
-    const state = makeState(
-      {
-        position: 'tiferet',
-        stats: statSheet({ harmony: 4 }),
-        zodiacSign: 'aries',
-        pendingStatBuff: { sefirah: 'tiferet', amount: 1 },
-      },
-    );
+    const state = makeState({
+      position: 'tiferet',
+      stats: statSheet({ harmony: 4 }),
+      zodiacSign: 'aries',
+      pendingStatBuff: { sefirah: 'tiferet', amount: 1 },
+    });
     const result = resolveChallenge({
       state,
       playerId: 'p1',
@@ -2417,18 +2409,16 @@ describe('resolveChallenge — Gevurah Sacred Sacrifice (#487)', () => {
     expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
   });
 
-  it('no burn staged at Gevurah: no flatBonus (the gate is the reducer\'s job)', () => {
+  it("no burn staged at Gevurah: no flatBonus (the gate is the reducer's job)", () => {
     // The dearest-tilt mechanic is independent of the reducer's
     // gevurah-requires-burn gate. If the engine is called with no
     // staged burns (e.g. from a fixture / test / future bot bypassing
     // the reducer), the dearest evaluation simply returns no bonus.
-    const state = makeState(
-      {
-        position: 'gevurah',
-        stats: statSheet({ strength: 10 }),
-        hand: [21, 5, 3],
-      },
-    );
+    const state = makeState({
+      position: 'gevurah',
+      stats: statSheet({ strength: 10 }),
+      hand: [21, 5, 3],
+    });
     const result = resolveChallenge({
       state,
       playerId: 'p1',
@@ -2517,7 +2507,6 @@ describe('resolveChallenge — Gevurah Sacred Sacrifice (#487)', () => {
     if (!result.ok) return;
     expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
   });
-
 });
 
 // ──────────────── resolveChallenge — Chesed Overflow (#486) ────────────────
@@ -2634,10 +2623,7 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     // Spark is granted, Illumination +1." Stat 0 + roll 1 = 1 < DC 11
     // (modified). The d20 outcome.pass is false, but the encounter
     // semantic is "passed" — Spark earned, Sefirah cleared.
-    const state = chesedState(
-      [{ arcanum: 5, recipientId: 'p2' }],
-      { lovingkindness: 0 },
-    );
+    const state = chesedState([{ arcanum: 5, recipientId: 'p2' }], { lovingkindness: 0 });
     const result = resolveChallenge({
       state,
       playerId: 'p1',
@@ -2661,10 +2647,7 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     // With 1 gift, modified DC 11; passes that too. The overflow
     // grants +1 Illumination on top of the standard spark-earned +1,
     // so total Illumination delta = 2.
-    const state = chesedState(
-      [{ arcanum: 5, recipientId: 'p2' }],
-      { lovingkindness: 10 },
-    );
+    const state = chesedState([{ arcanum: 5, recipientId: 'p2' }], { lovingkindness: 10 });
     const result = resolveChallenge({
       state,
       playerId: 'p1',
@@ -2687,10 +2670,7 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     // With 1 gift, modified DC 11; 12 ≥ 11 → passes modified. The
     // encounter passes (Spark + Illumination +1) but NO overflow
     // bonus — the gift was load-bearing, not abundance beyond ask.
-    const state = chesedState(
-      [{ arcanum: 5, recipientId: 'p2' }],
-      { lovingkindness: 10 },
-    );
+    const state = chesedState([{ arcanum: 5, recipientId: 'p2' }], { lovingkindness: 10 });
     const result = resolveChallenge({
       state,
       playerId: 'p1',
@@ -2761,10 +2741,7 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     // The discriminator is precisely `total = 13` (the single-
     // reduction unmodifiedDC) which is below the double-reduction
     // unmodifiedDC of 15.
-    const state = chesedState(
-      [{ arcanum: 5, recipientId: 'p2' }],
-      { lovingkindness: 10 },
-    );
+    const state = chesedState([{ arcanum: 5, recipientId: 'p2' }], { lovingkindness: 10 });
     const preRolled = {
       rolled: 3,
       statContribution: 10,
@@ -2885,12 +2862,9 @@ describe('resolveChallenge — Binah Sit With Loss (#491)', () => {
     [19, 4],
     [20, 5],
     [21, 5],
-  ])(
-    'binahBurnTierBonus(%i) === %i (design § 3.7 tier table)',
-    (arcanum, expected) => {
-      expect(binahBurnTierBonus(arcanum)).toBe(expected);
-    },
-  );
+  ])('binahBurnTierBonus(%i) === %i (design § 3.7 tier table)', (arcanum, expected) => {
+    expect(binahBurnTierBonus(arcanum)).toBe(expected);
+  });
 
   it('Binah burn of low-arcanum card (arc 3): standard +3, no extra flatBonus', () => {
     // Tier 0-3 = +0 extra. Card grants only the standard cardBurn.
@@ -3217,22 +3191,29 @@ describe('resolveChallenge — Chokmah Act Before Thought (#490)', () => {
     },
   );
 
-  it.each(['taurus', 'gemini', 'cancer', 'virgo', 'libra', 'scorpio', 'capricorn', 'aquarius', 'pisces'] as const)(
-    'non-fire sign (%s) on 0-modifier flash: no flatBonus',
-    (zodiacSign) => {
-      const state = chokmahState({}, {}, { zodiacSign });
-      const result = resolveChallenge({
-        state,
-        playerId: 'p1',
-        sefirah: 'chokmah',
-        modifiers: blankMods,
-        rng: { d20: () => 5, int: () => 5 },
-      });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
-    },
-  );
+  it.each([
+    'taurus',
+    'gemini',
+    'cancer',
+    'virgo',
+    'libra',
+    'scorpio',
+    'capricorn',
+    'aquarius',
+    'pisces',
+  ] as const)('non-fire sign (%s) on 0-modifier flash: no flatBonus', (zodiacSign) => {
+    const state = chokmahState({}, {}, { zodiacSign });
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chokmah',
+      modifiers: blankMods,
+      rng: { d20: () => 5, int: () => 5 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
+  });
 
   it('fire sign with 1 modifier staged: NO flatBonus (flash requires 0 modifiers)', () => {
     // The fire-sign bonus is conditional on the current attempt
@@ -3312,5 +3293,3 @@ describe('resolveChallenge — Chokmah Act Before Thought (#490)', () => {
     expect(result.value.outcome.modifierBreakdown.flatBonus).toBeUndefined();
   });
 });
-
-

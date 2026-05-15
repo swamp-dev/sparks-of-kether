@@ -317,7 +317,7 @@ const gevurahBlessings = {
   virgo: [
     'Plain-eyed at the court — the falcon thanks you for the cleanness. The verdict comes without excess.',
     'Exact at the legal gate — the line drawn is the line that was needed. The falcon leaves the precision.',
-    'You missed no detail of the case. The falcon\'s claim lands exactly where your seeing pointed.',
+    "You missed no detail of the case. The falcon's claim lands exactly where your seeing pointed.",
   ],
   libra: [
     'Even-handed at the court — the falcon thanks you for the balance. The verdict holds both sides.',
@@ -340,7 +340,7 @@ const gevurahBlessings = {
     'Structured at the gate — the line drawn is the bone of justice. The falcon leaves it intact.',
   ],
   aquarius: [
-    'You argued the case from outside the court\'s accepted procedure and the falcon allowed the angle. The verdict the line draws is precedent-setting.',
+    "You argued the case from outside the court's accepted procedure and the falcon allowed the angle. The verdict the line draws is precedent-setting.",
     'The falcon nodded at the unprecedented claim. The court the verdict opens is one others will have to build to.',
     'You made the case in a register the legal tradition had not anticipated. The line the falcon draws is yours; the court adjusts.',
   ],

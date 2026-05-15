@@ -3,10 +3,7 @@ import type { CheckModifiers, CheckOutcome } from '@/engine/checks';
 import type { Rng } from '@/engine/rng';
 import { seededRng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
-import {
-  applyClientAction,
-  type ClientAction,
-} from '@/lib/room-actions';
+import { applyClientAction, type ClientAction } from '@/lib/room-actions';
 
 /**
  * Scenario builder — fluent helper for tests that need to drive a
@@ -46,9 +43,7 @@ export class ScenarioFailedError extends Error {
     public readonly rejection: unknown,
     stateAtFailure: GameState,
   ) {
-    super(
-      `scenario step ${stepIndex} failed: ${action.kind} → ${JSON.stringify(rejection)}`,
-    );
+    super(`scenario step ${stepIndex} failed: ${action.kind} → ${JSON.stringify(rejection)}`);
     this.name = 'ScenarioFailedError';
     this.stateAtFailure = structuredClone(stateAtFailure);
   }
@@ -230,9 +225,7 @@ function translateSubmitChallenge(
 ): readonly ClientAction[] {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) {
-    throw new Error(
-      `scenario.submitChallenge: player '${playerId}' not in state.players`,
-    );
+    throw new Error(`scenario.submitChallenge: player '${playerId}' not in state.players`);
   }
   const actions: ClientAction[] = [];
   for (let i = 0; i < modifiers.cardBurns; i++) {

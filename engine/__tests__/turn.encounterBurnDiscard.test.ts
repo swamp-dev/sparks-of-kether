@@ -40,10 +40,7 @@ describe('encounterBurnDiscard', () => {
   });
 
   it('leaves all other state fields unchanged', () => {
-    const players = [
-      makePlayer({ id: 'p1', hand: [3, 5] }),
-      makePlayer({ id: 'p2', hand: [8] }),
-    ];
+    const players = [makePlayer({ id: 'p1', hand: [3, 5] }), makePlayer({ id: 'p2', hand: [8] })];
     const state = makeState(
       {},
       {

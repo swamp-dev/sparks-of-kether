@@ -78,9 +78,7 @@ function freqWithIntegerCycles(targetHz: number, durationSec: number): number {
   return Math.round(targetHz * durationSec) / durationSec;
 }
 
-const choirFreqs = [C3, E3, G3, C4, E4, G4].map((f) =>
-  freqWithIntegerCycles(f, LOOP_SPAN_SEC),
-);
+const choirFreqs = [C3, E3, G3, C4, E4, G4].map((f) => freqWithIntegerCycles(f, LOOP_SPAN_SEC));
 const stringFreqs = [
   freqWithIntegerCycles(C2 * Math.pow(2, -4 / 1200), LOOP_SPAN_SEC),
   freqWithIntegerCycles(C2 * Math.pow(2, +4 / 1200), LOOP_SPAN_SEC),
@@ -159,8 +157,7 @@ export const blessing: TrackManifest = {
     const harpLeft = new Float32Array(totalSamples);
     const harpRight = new Float32Array(totalSamples);
     const harpStartSec = WARMUP_SEC + CROSSFADE_SEC + 2;
-    const harpEndSec =
-      WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - HARP_PAUSE_SEC;
+    const harpEndSec = WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - HARP_PAUSE_SEC;
 
     let beatIndex = 0;
     let beatT = harpStartSec;
@@ -170,10 +167,7 @@ export const blessing: TrackManifest = {
       const startSample = Math.floor(beatT * sr);
       const ks = ksPluck(pitchHz, sr, makePrng(SEED ^ beatIndex), HARP_DECAY_COEF);
       const env = expDecay(0.9, sr);
-      const renderLen = Math.min(
-        totalSamples - startSample,
-        Math.floor(sr * 1.5),
-      );
+      const renderLen = Math.min(totalSamples - startSample, Math.floor(sr * 1.5));
       for (let i = 0; i < renderLen; i++) {
         const s = ks() * env() * harpGain;
         const { left: l, right: r } = pan(s, panPos);
@@ -191,8 +185,7 @@ export const blessing: TrackManifest = {
     const bellDecaySec = 4;
     const bellStartEarliestSec = WARMUP_SEC + CROSSFADE_SEC + 5;
     const BELL_TAIL_SEC = bellDecaySec * 5 + 8; // generous reverb headroom
-    const bellEndLatestSec =
-      WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - BELL_TAIL_SEC;
+    const bellEndLatestSec = WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - BELL_TAIL_SEC;
     const bellLeft = new Float32Array(totalSamples);
     const bellRight = new Float32Array(totalSamples);
     let bellT = bellStartEarliestSec + 5;
@@ -205,10 +198,7 @@ export const blessing: TrackManifest = {
         { carrierHz: E7, modHz: E7 * 1.5, modIndex: 1.2, decaySec: bellDecaySec },
         sr,
       );
-      const renderLen = Math.min(
-        totalSamples - startSample,
-        Math.floor(sr * bellDecaySec * 5),
-      );
+      const renderLen = Math.min(totalSamples - startSample, Math.floor(sr * bellDecaySec * 5));
       const panPos = (rng() * 2 - 1) * 0.6;
       for (let i = 0; i < renderLen; i++) {
         const s = bell() * bellGain;
@@ -220,20 +210,14 @@ export const blessing: TrackManifest = {
 
     /* ----- Mix + reverb (cathedral) ----------------------------- */
 
-    const verb = schroederReverb({ tailSec: 8, wet: 0.50, sampleRate: sr });
+    const verb = schroederReverb({ tailSec: 8, wet: 0.5, sampleRate: sr });
     const wetLeft = new Float32Array(totalSamples);
     const wetRight = new Float32Array(totalSamples);
     for (let i = 0; i < totalSamples; i++) {
       const dryL =
-        (stringBuffer[i] ?? 0) +
-        (choirLeft[i] ?? 0) +
-        (harpLeft[i] ?? 0) +
-        (bellLeft[i] ?? 0);
+        (stringBuffer[i] ?? 0) + (choirLeft[i] ?? 0) + (harpLeft[i] ?? 0) + (bellLeft[i] ?? 0);
       const dryR =
-        (stringBuffer[i] ?? 0) +
-        (choirRight[i] ?? 0) +
-        (harpRight[i] ?? 0) +
-        (bellRight[i] ?? 0);
+        (stringBuffer[i] ?? 0) + (choirRight[i] ?? 0) + (harpRight[i] ?? 0) + (bellRight[i] ?? 0);
       const [l, r] = verb.process(dryL, dryR);
       wetLeft[i] = l;
       wetRight[i] = r;

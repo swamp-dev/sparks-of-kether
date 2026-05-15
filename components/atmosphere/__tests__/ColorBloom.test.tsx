@@ -15,9 +15,7 @@ describe('ColorBloom', () => {
   });
 
   it('builds a radial gradient that mentions the colour and the position', () => {
-    const { container } = render(
-      <ColorBloom color="#ffd700" position="top-right" />,
-    );
+    const { container } = render(<ColorBloom color="#ffd700" position="top-right" />);
     const layer = container.querySelector('[data-atmosphere="color-bloom"]');
     const style = layer?.getAttribute('data-bloom-css') ?? '';
     expect(style).toMatch(/radial-gradient/);
@@ -30,12 +28,10 @@ describe('ColorBloom', () => {
   it('intensity controls the inner-stop alpha', () => {
     const dim = render(<ColorBloom color="#ffd700" intensity={0.1} />).container;
     const bright = render(<ColorBloom color="#ffd700" intensity={0.4} />).container;
-    const dimStyle = dim
-      .querySelector('[data-atmosphere="color-bloom"]')
-      ?.getAttribute('data-bloom-css') ?? '';
-    const brightStyle = bright
-      .querySelector('[data-atmosphere="color-bloom"]')
-      ?.getAttribute('data-bloom-css') ?? '';
+    const dimStyle =
+      dim.querySelector('[data-atmosphere="color-bloom"]')?.getAttribute('data-bloom-css') ?? '';
+    const brightStyle =
+      bright.querySelector('[data-atmosphere="color-bloom"]')?.getAttribute('data-bloom-css') ?? '';
     // intensity 0.1 → 10.0% mix; intensity 0.4 → 40.0% mix.
     expect(dimStyle).toMatch(/#ffd700 10\.0%/);
     expect(brightStyle).toMatch(/#ffd700 40\.0%/);

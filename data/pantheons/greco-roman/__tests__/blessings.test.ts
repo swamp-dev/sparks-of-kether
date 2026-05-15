@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  pickBlessing,
-  sefirahBlessings,
-} from '../blessings';
+import { pickBlessing, sefirahBlessings } from '../blessings';
 import { seededRng } from '@/engine/rng';
 import type { SefirahKey, ZodiacSignKey } from '@/data';
 
@@ -66,9 +63,7 @@ describe('sefirahBlessings', () => {
   for (const sefirah of ALL_SEFIROT) {
     describe(`${sefirah} sub-matrix`, () => {
       it('covers all 12 zodiac signs', () => {
-        expect(Object.keys(sefirahBlessings[sefirah]).sort()).toEqual(
-          [...ALL_SIGNS].sort(),
-        );
+        expect(Object.keys(sefirahBlessings[sefirah]).sort()).toEqual([...ALL_SIGNS].sort());
       });
 
       for (const sign of ALL_SIGNS) {
@@ -77,7 +72,9 @@ describe('sefirahBlessings', () => {
           expect(variants).toHaveLength(3);
           for (const variant of variants) {
             expect(variant.length).toBeGreaterThan(0);
-            expect(variant.toLowerCase()).not.toMatch(/\btodo\b|\bfixme\b|\bxxx\b|\bplaceholder\b|\blorem\b/);
+            expect(variant.toLowerCase()).not.toMatch(
+              /\btodo\b|\bfixme\b|\bxxx\b|\bplaceholder\b|\blorem\b/,
+            );
           }
         });
       }

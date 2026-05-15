@@ -114,7 +114,7 @@ export function ShellPanel({
     prevShellsRef.current = shells;
   }, [shells, onShellAwakened, onShellBanished]);
 
-  const Heading = (`h${headingLevel}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6');
+  const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   const listLayout = compact ? 'compact' : 'panel';
   const listClass = compact
     ? 'flex flex-row flex-wrap items-end justify-center gap-2'
@@ -134,9 +134,7 @@ export function ShellPanel({
       data-shell-mode={compact ? 'compact' : 'panel'}
       className={className}
     >
-      <Heading className="mb-3 font-display text-lg tracking-widest">
-        Shells
-      </Heading>
+      <Heading className="mb-3 font-display text-lg tracking-widest">Shells</Heading>
       <ul data-shell-layout={listLayout} className={listClass}>
         {sefirot.map((sefirah) => (
           <li key={sefirah.key}>
@@ -211,12 +209,7 @@ const COMPACT_ICON_CLASS: Readonly<Record<ShellStatus, string>> = {
   banished: 'h-7 w-7',
 };
 
-function ShellSlot({
-  sefirah,
-  status,
-  keyword,
-  compact,
-}: ShellSlotProps): JSX.Element {
+function ShellSlot({ sefirah, status, keyword, compact }: ShellSlotProps): JSX.Element {
   const data = sefirahByKey(sefirah);
   const copy = SHELL_COPY[sefirah];
   const sefirahName = data.englishName;
@@ -258,8 +251,7 @@ function ShellSlot({
   // child of the halo wrapper, matching the pre-fix layout. Active
   // state replaces this with the wobble animation, which needs a
   // real box for `transform: rotate` to apply.
-  const wobbleClass =
-    status === 'active' ? 'motion-safe:animate-shell-active-wobble' : 'contents';
+  const wobbleClass = status === 'active' ? 'motion-safe:animate-shell-active-wobble' : 'contents';
 
   // Compact mode applies the size tier directly to the icon. Panel
   // mode uses a uniform h-10 so the grid stays tidy.

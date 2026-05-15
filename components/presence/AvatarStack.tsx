@@ -69,10 +69,7 @@ export function AvatarStack({
       {overflow > 0 && (
         <span
           data-testid="avatar-overflow"
-          className="
-            flex h-9 w-9 items-center justify-center rounded-full
-            border border-veil/30 bg-ground/70 text-xs text-veil/80
-          "
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-veil/30 bg-ground/70 text-xs text-veil/80"
           aria-label={`${overflow} more player${overflow === 1 ? '' : 's'}`}
         >
           +{overflow}
@@ -89,12 +86,7 @@ interface AvatarTokenProps {
   readonly onClick?: (playerId: string) => void;
 }
 
-function AvatarToken({
-  peer,
-  isActive,
-  isViewer,
-  onClick,
-}: AvatarTokenProps): JSX.Element {
+function AvatarToken({ peer, isActive, isViewer, onClick }: AvatarTokenProps): JSX.Element {
   const center = (peer.glyph ?? peer.name.charAt(0).toUpperCase()) || '?';
   const labelParts = [
     peer.name,
@@ -121,18 +113,7 @@ function AvatarToken({
       onClick={onClick === undefined ? undefined : () => onClick(peer.playerId)}
       aria-label={labelParts.join(' — ')}
       style={style}
-      className={`
-        relative flex h-9 w-9 items-center justify-center rounded-full
-        border-2 font-display text-xs uppercase tracking-wider
-        bg-ground/80 text-veil
-        transition-all duration-300 ease-emerge
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination
-        data-[online=false]:opacity-60
-        data-[online=false]:border-dashed
-        data-[active=true]:shadow-glow-tiferet
-        data-[active=true]:motion-safe:animate-breath
-        ${onClick === undefined ? '' : 'hover:scale-105'}
-      `}
+      className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 bg-ground/80 font-display text-xs uppercase tracking-wider text-veil transition-all duration-300 ease-emerge focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination data-[online=false]:border-dashed data-[online=false]:opacity-60 data-[active=true]:shadow-glow-tiferet data-[active=true]:motion-safe:animate-breath ${onClick === undefined ? '' : 'hover:scale-105'} `}
     >
       <span aria-hidden="true">{center}</span>
       {isActive && (

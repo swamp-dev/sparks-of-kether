@@ -176,14 +176,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
       </g>
 
       {/* Bottom accent band */}
-      <rect
-        x={20}
-        y={306}
-        width={VIEW_W - 40}
-        height={3}
-        rx={1.5}
-        fill={accent}
-      />
+      <rect x={20} y={306} width={VIEW_W - 40} height={3} rx={1.5} fill={accent} />
     </svg>
   );
 }

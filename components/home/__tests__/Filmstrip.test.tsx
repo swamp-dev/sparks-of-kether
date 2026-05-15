@@ -34,8 +34,6 @@ describe('Filmstrip', () => {
     const { container } = render(<Filmstrip />);
     const section = container.querySelector('[data-home-filmstrip]');
     expect(section).not.toBeNull();
-    expect(section?.getAttribute('aria-labelledby')).toBe(
-      'home-filmstrip-heading',
-    );
+    expect(section?.getAttribute('aria-labelledby')).toBe('home-filmstrip-heading');
   });
 });

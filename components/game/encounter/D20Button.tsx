@@ -88,11 +88,7 @@ export function D20Button({
       // glow halo on focused keyboard nav.
       className={`group relative flex flex-col items-center gap-1 rounded-full p-1 transition-all duration-300 ease-emerge focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-veil focus-visible:ring-offset-2 focus-visible:ring-offset-ground disabled:cursor-not-allowed disabled:opacity-60`}
       aria-label={
-        isRolling
-          ? 'Rolling…'
-          : isSettled && value !== undefined
-            ? `Rolled ${value}`
-            : 'Roll'
+        isRolling ? 'Rolling…' : isSettled && value !== undefined ? `Rolled ${value}` : 'Roll'
       }
     >
       <span

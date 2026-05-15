@@ -16,10 +16,7 @@ interface FlourishProps {
   readonly className?: string;
 }
 
-export function Flourish({
-  color = 'currentColor',
-  className,
-}: FlourishProps): JSX.Element {
+export function Flourish({ color = 'currentColor', className }: FlourishProps): JSX.Element {
   return (
     <svg
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}

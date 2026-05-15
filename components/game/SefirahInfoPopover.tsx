@@ -49,8 +49,7 @@ export function SefirahInfoPopover({
   const sefirah = sefirahByKey(sefirahKey);
   const meaning = SEFIRAH_MEANINGS[sefirahKey];
   const isSoulDoor =
-    activePlayerSign !== undefined &&
-    soulDoorsForSign(activePlayerSign).includes(sefirahKey);
+    activePlayerSign !== undefined && soulDoorsForSign(activePlayerSign).includes(sefirahKey);
 
   // Close on Escape. The dialog grabs focus on mount so the key
   // listener catches the user's Escape regardless of where focus
@@ -107,18 +106,10 @@ export function SefirahInfoPopover({
           <span aria-hidden="true">×</span>
         </button>
         <div className="flex items-baseline justify-between gap-2 pr-6">
-          <span
-            id={titleId}
-            className="font-display text-base tracking-wide"
-            data-popover-name
-          >
+          <span id={titleId} className="font-display text-base tracking-wide" data-popover-name>
             {sefirah.englishName}
           </span>
-          <span
-            lang="he"
-            className="font-hebrew text-base opacity-90"
-            data-popover-hebrew
-          >
+          <span lang="he" className="font-hebrew text-base opacity-90" data-popover-hebrew>
             {sefirah.hebrewName}
           </span>
         </div>
@@ -129,10 +120,7 @@ export function SefirahInfoPopover({
           Stat: {sefirah.stat}
         </p>
         {isSoulDoor ? (
-          <p
-            className="text-xs uppercase tracking-widest text-illumination"
-            data-popover-soul-door
-          >
+          <p className="text-xs uppercase tracking-widest text-illumination" data-popover-soul-door>
             ✦ Soul Door
           </p>
         ) : null}

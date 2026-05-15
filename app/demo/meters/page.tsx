@@ -15,8 +15,8 @@ export default function MetersDemoPage(): JSX.Element {
       <ColorBloom color="#9370db" position="center" intensity={0.1} />
       <h1 className="font-display text-3xl tracking-widest">Team Meters</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
-        Illumination + Separation. Bump values to see CSS-transition fill plus
-        the live aria announcement (visible in dev tools).
+        Illumination + Separation. Bump values to see CSS-transition fill plus the live aria
+        announcement (visible in dev tools).
       </p>
 
       <div className="mt-8 flex items-start gap-12">
@@ -33,11 +33,7 @@ export default function MetersDemoPage(): JSX.Element {
         </div>
 
         <div className="flex flex-col gap-3">
-          <Stepper
-            label="Illumination"
-            value={illum}
-            onChange={setIllum}
-          />
+          <Stepper label="Illumination" value={illum} onChange={setIllum} />
           <Stepper label="Separation" value={sep} onChange={setSep} />
           <button
             type="button"

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkEndgame } from '../endgame';
-import {
-  REQUIRED_ILLUMINATION_MARGIN,
-  SEPARATION_LOSS_THRESHOLD,
-} from '../endgame';
+import { REQUIRED_ILLUMINATION_MARGIN, SEPARATION_LOSS_THRESHOLD } from '../endgame';
 import {
   ketherPlayCard,
   ketherPassCard,
@@ -96,10 +93,7 @@ describe('isKetherHeld — pre-ritual hold predicate', () => {
   it('returns true when player is at Kether but the ritual has not started', () => {
     const p1 = makePlayer({ id: 'p1', position: 'kether' });
     const p2 = makePlayer({ id: 'p2', position: 'tiferet' });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
     expect(isKetherHeld(state, 'p1')).toBe(true);
     expect(isKetherHeld(state, 'p2')).toBe(false);
   });
@@ -475,9 +469,7 @@ describe('ketherConfirmClosure', () => {
     if (!result.ok) return;
     // Spark was dropped (not held), so illumination did NOT rise from it.
     expect(result.value.illumination).toBe(REQUIRED_ILLUMINATION_MARGIN);
-    expect(result.meta?.droppedSparks).toEqual([
-      { playerId: 'p1', sefirah: 'yesod' },
-    ]);
+    expect(result.meta?.droppedSparks).toEqual([{ playerId: 'p1', sefirah: 'yesod' }]);
   });
 });
 
@@ -539,10 +531,7 @@ describe('initKetherRitual', () => {
     // p1 arrives first, p2 arrives second — p2 is "last" so p2 opens.
     const p1 = makePlayer({ id: 'p1', position: 'kether', hand: [3, 7] });
     const p2 = makePlayer({ id: 'p2', position: 'kether', hand: [4] });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
     const arrivals = { p1: 100, p2: 200 };
     const result = initKetherRitual(state, arrivals);
     expect(result.ok).toBe(true);
@@ -562,10 +551,7 @@ describe('initKetherRitual', () => {
     // p1 and p2 arrive "simultaneously" — lex tie-break makes p2 last.
     const p1 = makePlayer({ id: 'p1', position: 'kether', hand: [3] });
     const p2 = makePlayer({ id: 'p2', position: 'kether', hand: [4] });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move' });
     const result = initKetherRitual(state, { p1: 100, p2: 100 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -875,10 +861,7 @@ describe('Kether trigger end-to-end (applyMove → maybeTriggerKetherRitual)', (
       position: 'tiferet',
       hand: [2],
     });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p2' });
     const moveResult = applyMove(state, 'p2', 13, { now: () => 200 });
     expect(moveResult.ok).toBe(true);
     if (!moveResult.ok) return;
@@ -904,10 +887,7 @@ describe('Kether trigger end-to-end (applyMove → maybeTriggerKetherRitual)', (
       position: 'tiferet',
       hand: [],
     });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move', activePlayerId: 'p1' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p1' });
     const moveResult = applyMove(state, 'p1', 13, { now: () => 100 });
     expect(moveResult.ok).toBe(true);
     if (!moveResult.ok) return;

@@ -32,10 +32,7 @@ function makeFakeChannel(): FakeChannel {
       if (filter.event) handlers.set(filter.event, handler);
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb: (status: string) => void) {
       // Defer so the React effect can settle.
       setTimeout(() => cb('SUBSCRIBED'), 0);
       return this;

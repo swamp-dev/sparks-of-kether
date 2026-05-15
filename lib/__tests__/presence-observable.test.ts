@@ -1,9 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  presenceSubscription,
-  type PresenceStatus,
-} from '../presence-observable';
+import { presenceSubscription, type PresenceStatus } from '../presence-observable';
 
 /**
  * Tests the pure presence subscription without React. The hook tests
@@ -33,19 +30,11 @@ function makeFakeClient(): SupabaseClient {
   let presenceStateValue: Record<string, { playerId: string; joinedAt: string }[]> = {};
 
   channel = {
-    on: vi.fn(function (
-      this: FakeChannel,
-      _scope: string,
-      _filter: unknown,
-      handler: () => void,
-    ) {
+    on: vi.fn(function (this: FakeChannel, _scope: string, _filter: unknown, handler: () => void) {
       syncHandler = handler;
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb: (status: string) => void) {
       statusHandler = cb;
       return this;
     }),

@@ -71,13 +71,7 @@ for (const route of ROUTES) {
       path: resolve(SCREENSHOT_DIR, `${route.slug}.png`),
       fullPage: true,
     });
-    expect(
-      response?.status(),
-      `expected a 2xx response from ${route.path}`,
-    ).toBeLessThan(400);
-    expect(
-      page.url(),
-      `expected to remain on ${route.path}, was redirected`,
-    ).toContain(route.path);
+    expect(response?.status(), `expected a 2xx response from ${route.path}`).toBeLessThan(400);
+    expect(page.url(), `expected to remain on ${route.path}, was redirected`).toContain(route.path);
   });
 }

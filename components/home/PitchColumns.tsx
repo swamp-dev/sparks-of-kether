@@ -47,12 +47,7 @@ const COLUMNS: readonly Column[] = [
     title: 'Cooperative',
     body: 'Two to four players. Real-time. No winner — only the team. You ascend together or not at all.',
     glyph: (
-      <svg
-        viewBox="0 0 48 48"
-        className="h-12 w-12"
-        role="presentation"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 48 48" className="h-12 w-12" role="presentation" aria-hidden="true">
         {/* Three interlocking discs — three players, one Tree. */}
         <circle cx={18} cy={20} r={9} fill={COOPERATIVE_GOLD} fillOpacity={0.6} />
         <circle cx={30} cy={20} r={9} fill={COOPERATIVE_GOLD} fillOpacity={0.6} />
@@ -65,12 +60,7 @@ const COLUMNS: readonly Column[] = [
     title: 'Symbolic',
     body: "You'll learn the ten Sefirot, the twenty-two paths, and the Major Arcana by playing — not as decoration, as the rules themselves.",
     glyph: (
-      <svg
-        viewBox="0 0 48 48"
-        className="h-12 w-12"
-        role="presentation"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 48 48" className="h-12 w-12" role="presentation" aria-hidden="true">
         {/* Aleph (א) — the first Hebrew letter, sized as a glyph
             inside a Sefirah-coloured disc. The letter's weight comes
             from `font-hebrew` so it matches the rest of the project's
@@ -99,19 +89,10 @@ const COLUMNS: readonly Column[] = [
     title: 'Short',
     body: 'One ascent in thirty to forty-five minutes. A complete journey, not an open world.',
     glyph: (
-      <svg
-        viewBox="0 0 48 48"
-        className="h-12 w-12"
-        role="presentation"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 48 48" className="h-12 w-12" role="presentation" aria-hidden="true">
         {/* Hourglass — minimal geometry: two stacked triangles in
             amber, with a thin glass outline. */}
-        <polygon
-          points="12,8 36,8 24,24 12,8"
-          fill={SHORT_MALKUTH_GLOW_AMBER}
-          fillOpacity={0.55}
-        />
+        <polygon points="12,8 36,8 24,24 12,8" fill={SHORT_MALKUTH_GLOW_AMBER} fillOpacity={0.55} />
         <polygon
           points="12,40 36,40 24,24 12,40"
           fill={SHORT_MALKUTH_GLOW_AMBER}
@@ -142,11 +123,7 @@ const COLUMNS: readonly Column[] = [
 
 export function PitchColumns({ className }: PitchColumnsProps): JSX.Element {
   return (
-    <section
-      data-home-pitch
-      aria-labelledby="home-pitch-heading"
-      className={className}
-    >
+    <section data-home-pitch aria-labelledby="home-pitch-heading" className={className}>
       {/* Hidden heading so the section has a programmatic name for
           AT users without adding visual weight above the columns —
           the columns themselves are the visual heading. */}
@@ -154,12 +131,7 @@ export function PitchColumns({ className }: PitchColumnsProps): JSX.Element {
         What is Sparks of Kether?
       </h2>
 
-      <ul
-        className="
-          mx-auto grid w-full max-w-4xl grid-cols-1 gap-8
-          sm:grid-cols-3 sm:gap-6
-        "
-      >
+      <ul className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6">
         {COLUMNS.map((col) => (
           <li
             key={col.key}
@@ -167,12 +139,8 @@ export function PitchColumns({ className }: PitchColumnsProps): JSX.Element {
             className="flex flex-col items-center gap-3 text-center"
           >
             {col.glyph}
-            <h3 className="font-display text-xl tracking-widest text-veil">
-              {col.title}
-            </h3>
-            <p className="max-w-xs text-sm leading-relaxed text-veil/80">
-              {col.body}
-            </p>
+            <h3 className="font-display text-xl tracking-widest text-veil">{col.title}</h3>
+            <p className="max-w-xs text-sm leading-relaxed text-veil/80">{col.body}</p>
           </li>
         ))}
       </ul>

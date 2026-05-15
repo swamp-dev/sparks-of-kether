@@ -33,10 +33,9 @@ export function CodexTeaser({ className }: CodexTeaserProps): JSX.Element {
       {/* Three-column teaser with fade-out suggesting more below */}
       <div className="relative mx-auto max-w-4xl">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-
           {/* Sefirot */}
           <div>
-            <h3 className="mb-3 font-display text-xs tracking-widest text-veil/50 uppercase">
+            <h3 className="mb-3 font-display text-xs uppercase tracking-widest text-veil/50">
               The 10 Sefirot
             </h3>
             <ul className="space-y-1.5">
@@ -50,14 +49,8 @@ export function CodexTeaser({ className }: CodexTeaserProps): JSX.Element {
                     className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: s.color }}
                   />
-                  <span className="font-display text-sm tracking-widest">
-                    {s.englishName}
-                  </span>
-                  <span
-                    lang="he"
-                    dir="rtl"
-                    className="font-hebrew ml-auto text-sm opacity-55"
-                  >
+                  <span className="font-display text-sm tracking-widest">{s.englishName}</span>
+                  <span lang="he" dir="rtl" className="ml-auto font-hebrew text-sm opacity-55">
                     {s.hebrewName}
                   </span>
                 </li>
@@ -67,7 +60,7 @@ export function CodexTeaser({ className }: CodexTeaserProps): JSX.Element {
 
           {/* Major Arcana */}
           <div>
-            <h3 className="mb-3 font-display text-xs tracking-widest text-veil/50 uppercase">
+            <h3 className="mb-3 font-display text-xs uppercase tracking-widest text-veil/50">
               The 22 Major Arcana
             </h3>
             <ul className="space-y-1.5">
@@ -79,9 +72,7 @@ export function CodexTeaser({ className }: CodexTeaserProps): JSX.Element {
                   <span className="w-5 shrink-0 font-display text-xs tabular-nums opacity-45">
                     {a.number}
                   </span>
-                  <span className="font-display text-sm tracking-widest">
-                    {a.name}
-                  </span>
+                  <span className="font-display text-sm tracking-widest">{a.name}</span>
                 </li>
               ))}
             </ul>
@@ -89,7 +80,7 @@ export function CodexTeaser({ className }: CodexTeaserProps): JSX.Element {
 
           {/* Paths */}
           <div>
-            <h3 className="mb-3 font-display text-xs tracking-widest text-veil/50 uppercase">
+            <h3 className="mb-3 font-display text-xs uppercase tracking-widest text-veil/50">
               The 22 Paths
             </h3>
             <ul className="space-y-1.5">
@@ -127,13 +118,7 @@ export function CodexTeaser({ className }: CodexTeaserProps): JSX.Element {
         <Link
           href="/codex"
           data-codex-teaser-link="explore"
-          className="
-            text-sm text-veil/60 underline-offset-2
-            hover:text-veil hover:underline
-            focus-visible:outline-none focus-visible:ring-1
-            focus-visible:ring-veil/60 focus-visible:ring-offset-2
-            focus-visible:ring-offset-void
-          "
+          className="text-sm text-veil/60 underline-offset-2 hover:text-veil hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void"
         >
           Explore all 54 entries →
         </Link>

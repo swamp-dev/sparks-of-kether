@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import {
-  createSupabaseServerClient,
-  createSupabaseServiceClient,
-} from '@/lib/supabase';
+import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/supabase';
 import {
   deserializeGameState,
   serializeGameState,
@@ -39,16 +36,10 @@ interface RouteParams {
   readonly params: { readonly code: string };
 }
 
-export async function POST(
-  request: Request,
-  { params }: RouteParams,
-): Promise<NextResponse> {
+export async function POST(request: Request, { params }: RouteParams): Promise<NextResponse> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
-    return NextResponse.json(
-      { error: 'missing-bearer-token' },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: 'missing-bearer-token' }, { status: 401 });
   }
   const token = authHeader.slice('bearer '.length).trim();
 
@@ -128,10 +119,7 @@ export async function POST(
     );
   }
   if (!snapshotLookup.data) {
-    return NextResponse.json(
-      { error: 'snapshot-missing' },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: 'snapshot-missing' }, { status: 404 });
   }
 
   const currentState = deserializeGameState(snapshotLookup.data.snapshot);
@@ -149,10 +137,7 @@ export async function POST(
       event_type: `rejected:${action.kind}`,
       payload: { action, reason: authResult.reason },
     });
-    return NextResponse.json(
-      { error: 'unauthorized', reason: authResult.reason },
-      { status: 403 },
-    );
+    return NextResponse.json({ error: 'unauthorized', reason: authResult.reason }, { status: 403 });
   }
 
   // #350: stamp `serverArrivedAtKether` server-side on every move.
@@ -163,9 +148,7 @@ export async function POST(
   // ignored by `applyMove` unless the move actually lands the player
   // at Kether, so non-Kether moves pay no cost.
   const stampedAction: ClientAction =
-    action.kind === 'move'
-      ? { ...action, serverArrivedAtKether: Date.now() }
-      : action;
+    action.kind === 'move' ? { ...action, serverArrivedAtKether: Date.now() } : action;
 
   // Fold the action. RNG is seeded from the row's last_event_id so
   // re-applying the same action against the same snapshot produces
@@ -191,10 +174,7 @@ export async function POST(
     );
   }
   if (!apply.ok) {
-    return NextResponse.json(
-      { error: 'action-rejected', detail: apply.error },
-      { status: 422 },
-    );
+    return NextResponse.json({ error: 'action-rejected', detail: apply.error }, { status: 422 });
   }
 
   // Persist: append the event row, write the new snapshot. NOTE:

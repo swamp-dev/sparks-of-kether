@@ -32,9 +32,7 @@ describe('integration: createRoom (real Supabase)', () => {
       // Surface the structured rejection in the assertion message so
       // CI failures are diagnostic without re-running with extra
       // logging.
-      throw new Error(
-        `createRoom rejected: ${JSON.stringify(result.error)}`,
-      );
+      throw new Error(`createRoom rejected: ${JSON.stringify(result.error)}`);
     }
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -43,28 +41,21 @@ describe('integration: createRoom (real Supabase)', () => {
     // createRoom calls signOut() then signInAnonymously() internally so
     // the userId captured by makeAnonClient() is stale after the call.
     // Verify the returned playerId matches the CURRENT session's auth.uid.
-    const { data: { user } } = await client.auth.getUser();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
     expect(result.value.playerId).toBe(user?.id);
 
     // Service-role read confirms both rows landed.
     const svc = getServiceClient();
-    const room = await svc
-      .from('rooms')
-      .select()
-      .eq('id', result.value.roomId)
-      .maybeSingle();
+    const room = await svc.from('rooms').select().eq('id', result.value.roomId).maybeSingle();
     expect(room.error).toBeNull();
     expect(room.data).not.toBeNull();
     expect((room.data as { state: string }).state).toBe('lobby');
 
-    const players = await svc
-      .from('players')
-      .select()
-      .eq('room_id', result.value.roomId);
+    const players = await svc.from('players').select().eq('room_id', result.value.roomId);
     expect(players.error).toBeNull();
     expect(players.data).toHaveLength(1);
-    expect((players.data as { id: string }[])[0]?.id).toBe(
-      result.value.playerId,
-    );
+    expect((players.data as { id: string }[])[0]?.id).toBe(result.value.playerId);
   });
 });

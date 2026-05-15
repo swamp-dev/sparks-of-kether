@@ -26,16 +26,16 @@ import type { SefirahKey, ZodiacSignKey } from './types';
  */
 export const soulDoorsBySign: Readonly<Record<ZodiacSignKey, readonly SefirahKey[]>> =
   Object.freeze({
-    aries:       Object.freeze(['chokmah', 'tiferet'] as const),
-    taurus:      Object.freeze(['chokmah', 'chesed']  as const),
-    gemini:      Object.freeze(['binah',   'tiferet'] as const),
-    cancer:      Object.freeze(['binah',   'gevurah'] as const),
-    leo:         Object.freeze(['chesed',  'gevurah'] as const),
-    virgo:       Object.freeze(['chesed',  'tiferet'] as const),
-    libra:       Object.freeze(['gevurah', 'tiferet'] as const),
-    scorpio:     Object.freeze(['tiferet', 'netzach'] as const),
-    sagittarius: Object.freeze(['tiferet', 'yesod']   as const),
-    capricorn:   Object.freeze(['tiferet', 'hod']     as const),
-    aquarius:    Object.freeze(['netzach', 'yesod']   as const),
-    pisces:      Object.freeze(['netzach']            as const),
+    aries: Object.freeze(['chokmah', 'tiferet'] as const),
+    taurus: Object.freeze(['chokmah', 'chesed'] as const),
+    gemini: Object.freeze(['binah', 'tiferet'] as const),
+    cancer: Object.freeze(['binah', 'gevurah'] as const),
+    leo: Object.freeze(['chesed', 'gevurah'] as const),
+    virgo: Object.freeze(['chesed', 'tiferet'] as const),
+    libra: Object.freeze(['gevurah', 'tiferet'] as const),
+    scorpio: Object.freeze(['tiferet', 'netzach'] as const),
+    sagittarius: Object.freeze(['tiferet', 'yesod'] as const),
+    capricorn: Object.freeze(['tiferet', 'hod'] as const),
+    aquarius: Object.freeze(['netzach', 'yesod'] as const),
+    pisces: Object.freeze(['netzach'] as const),
   });

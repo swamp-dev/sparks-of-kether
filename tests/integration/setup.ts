@@ -81,12 +81,7 @@ export async function makeAnonClient(): Promise<{
  */
 export async function wipeAllTables(): Promise<void> {
   const svc = getServiceClient();
-  for (const table of [
-    'game_events',
-    'game_states',
-    'players',
-    'rooms',
-  ] as const) {
+  for (const table of ['game_events', 'game_states', 'players', 'rooms'] as const) {
     const { error } = await svc.from(table).delete().not('id', 'is', null);
     if (error) {
       throw new Error(`wipeAllTables: ${table}: ${error.message}`);

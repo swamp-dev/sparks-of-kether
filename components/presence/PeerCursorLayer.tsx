@@ -115,9 +115,7 @@ export function PeerCursorLayer({
     if (ripples.length === 0) return;
     const handle = setInterval(() => {
       const now = Date.now();
-      setRipples((prev) =>
-        prev.filter((r) => now - r.mountedAt < TAP_RIPPLE_TTL_MS),
-      );
+      setRipples((prev) => prev.filter((r) => now - r.mountedAt < TAP_RIPPLE_TTL_MS));
     }, 200);
     return () => clearInterval(handle);
   }, [ripples.length]);
@@ -153,11 +151,7 @@ export function PeerCursorLayer({
         <span
           key={`${ripple.playerId}-${ripple.mountedAt}`}
           data-testid={`tap-ripple-${ripple.playerId}`}
-          className="
-            pointer-events-none absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2
-            rounded-full border-2
-            motion-safe:animate-[hand-fade-in_600ms_ease-out_forwards]
-          "
+          className="pointer-events-none absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 motion-safe:animate-[hand-fade-in_600ms_ease-out_forwards]"
           style={{
             left: `${ripple.x * 100}%`,
             top: `${ripple.y * 100}%`,

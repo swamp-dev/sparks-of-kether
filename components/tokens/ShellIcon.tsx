@@ -57,18 +57,12 @@ function jaggedRing(cx: number, cy: number, outer: number, inner: number): strin
   for (let i = 0; i < points * 2; i++) {
     const r = i % 2 === 0 ? outer : inner;
     const angle = (i * Math.PI) / points - Math.PI / 2;
-    verts.push(
-      `${(cx + Math.cos(angle) * r).toFixed(2)},${(cy + Math.sin(angle) * r).toFixed(2)}`,
-    );
+    verts.push(`${(cx + Math.cos(angle) * r).toFixed(2)},${(cy + Math.sin(angle) * r).toFixed(2)}`);
   }
   return verts.join(' ');
 }
 
-export function ShellIcon({
-  sefirah,
-  status = 'active',
-  className,
-}: ShellIconProps): JSX.Element {
+export function ShellIcon({ sefirah, status = 'active', className }: ShellIconProps): JSX.Element {
   const data = sefirahByKey(sefirah);
   const sefirahColor = data.color;
   const glyph = sefirahMarkLetter[sefirah];

@@ -34,9 +34,7 @@ describe('StatSheet — content', () => {
   });
 
   it('shows the player name in the header', () => {
-    const { container } = render(
-      <StatSheet player={makePlayer({ name: 'Bea' })} />,
-    );
+    const { container } = render(<StatSheet player={makePlayer({ name: 'Bea' })} />);
     expect(container.textContent).toContain('Bea');
   });
 
@@ -73,42 +71,36 @@ describe('StatSheet — class-bonus folding', () => {
 describe('StatSheet — active stat highlight', () => {
   it('marks the activeStat row with data-active=true', () => {
     const player = makePlayer();
-    const { container } = render(
-      <StatSheet player={player} activeStat="strength" />,
+    const { container } = render(<StatSheet player={player} activeStat="strength" />);
+    expect(container.querySelector('[data-stat-row="strength"]')?.getAttribute('data-active')).toBe(
+      'true',
     );
-    expect(
-      container.querySelector('[data-stat-row="strength"]')?.getAttribute('data-active'),
-    ).toBe('true');
     // All other stats are inactive.
-    expect(
-      container.querySelector('[data-stat-row="unity"]')?.getAttribute('data-active'),
-    ).toBe('false');
+    expect(container.querySelector('[data-stat-row="unity"]')?.getAttribute('data-active')).toBe(
+      'false',
+    );
   });
 
   it('updates the highlight when activeStat changes', () => {
     const player = makePlayer();
-    const { container, rerender } = render(
-      <StatSheet player={player} activeStat="strength" />,
+    const { container, rerender } = render(<StatSheet player={player} activeStat="strength" />);
+    expect(container.querySelector('[data-stat-row="strength"]')?.getAttribute('data-active')).toBe(
+      'true',
     );
-    expect(
-      container.querySelector('[data-stat-row="strength"]')?.getAttribute('data-active'),
-    ).toBe('true');
     rerender(<StatSheet player={player} activeStat="harmony" />);
-    expect(
-      container.querySelector('[data-stat-row="strength"]')?.getAttribute('data-active'),
-    ).toBe('false');
-    expect(
-      container.querySelector('[data-stat-row="harmony"]')?.getAttribute('data-active'),
-    ).toBe('true');
+    expect(container.querySelector('[data-stat-row="strength"]')?.getAttribute('data-active')).toBe(
+      'false',
+    );
+    expect(container.querySelector('[data-stat-row="harmony"]')?.getAttribute('data-active')).toBe(
+      'true',
+    );
   });
 });
 
 describe('StatSheet — modes', () => {
   it('compact mode collapses to a single row of stats + sparks', () => {
     const player = makePlayer({ sparksHeld: new Set(['kether']) });
-    const { container } = render(
-      <StatSheet player={player} mode="compact" />,
-    );
+    const { container } = render(<StatSheet player={player} mode="compact" />);
     expect(container.querySelector('[data-stat-sheet]')?.getAttribute('data-mode')).toBe('compact');
     // Still all 10 stat rows present.
     for (const stat of ALL_STATS) {
@@ -118,6 +110,8 @@ describe('StatSheet — modes', () => {
 
   it('expanded mode is the default', () => {
     const { container } = render(<StatSheet player={makePlayer()} />);
-    expect(container.querySelector('[data-stat-sheet]')?.getAttribute('data-mode')).toBe('expanded');
+    expect(container.querySelector('[data-stat-sheet]')?.getAttribute('data-mode')).toBe(
+      'expanded',
+    );
   });
 });

@@ -77,11 +77,7 @@ export interface PeerActionEvent {
   readonly ts: number;
 }
 
-export type PeerPresenceStatus =
-  | 'connected'
-  | 'error'
-  | 'closed'
-  | 'timed-out';
+export type PeerPresenceStatus = 'connected' | 'error' | 'closed' | 'timed-out';
 
 // ---------------------------------------------------------------------------
 // Parsers — defence-in-depth wire-format validation.
@@ -137,9 +133,10 @@ export function parseCursorEvent(input: unknown): PeerCursorEvent | null {
     if (!POINTER_TYPES.has(pointerType as PeerPointerType)) return null;
     safePointerType = pointerType as PeerPointerType;
   }
-  const evt: PeerCursorEvent = safePointerType !== undefined
-    ? { playerId, x, y, viewport: { w, h }, pointerType: safePointerType, ts }
-    : { playerId, x, y, viewport: { w, h }, ts };
+  const evt: PeerCursorEvent =
+    safePointerType !== undefined
+      ? { playerId, x, y, viewport: { w, h }, pointerType: safePointerType, ts }
+      : { playerId, x, y, viewport: { w, h }, ts };
   return evt;
 }
 
@@ -159,8 +156,7 @@ export function parseActionEvent(input: unknown): PeerActionEvent | null {
   if (typeof playerId !== 'string' || playerId.length === 0) return null;
   if (typeof ts !== 'number' || !Number.isFinite(ts)) return null;
   if (kind === null) return { playerId, kind: null, ts };
-  if (typeof kind !== 'string' || !ACTION_KINDS.has(kind as PeerActionKind))
-    return null;
+  if (typeof kind !== 'string' || !ACTION_KINDS.has(kind as PeerActionKind)) return null;
   return { playerId, kind: kind as PeerActionKind, ts };
 }
 
@@ -174,11 +170,7 @@ export function parseActionEvent(input: unknown): PeerActionEvent | null {
 // caller can pin the throttle without timer juggling.
 // ---------------------------------------------------------------------------
 
-export function shouldThrottleCursor(
-  now: number,
-  lastSentTs: number | null,
-  hz: number,
-): boolean {
+export function shouldThrottleCursor(now: number, lastSentTs: number | null, hz: number): boolean {
   if (lastSentTs === null) return false;
   const minWindowMs = 1000 / hz;
   return now - lastSentTs < minWindowMs;
@@ -261,10 +253,7 @@ export function peerPresenceSubscription(
         // tree. We deliberately do NOT throw — a thrown error here
         // would propagate up through the consumer's effect and break
         // the rest of the page.
-        if (
-          typeof console !== 'undefined' &&
-          process.env.NODE_ENV !== 'production'
-        ) {
+        if (typeof console !== 'undefined' && process.env.NODE_ENV !== 'production') {
           // eslint-disable-next-line no-console
           console.warn(
             '[peerPresenceSubscription] subscribe() called twice on the same instance — ignored.',
@@ -276,41 +265,29 @@ export function peerPresenceSubscription(
       const state: Active = { channel, callbacks, unsubscribed: false };
       active = state;
 
-      channel.on(
-        'broadcast' as 'system',
-        { event: 'cursor' },
-        (payload: { payload?: unknown }) => {
-          if (state.unsubscribed) return;
-          const parsed = parseCursorEvent(payload?.payload);
-          if (parsed === null) return;
-          if (parsed.playerId === selfPlayerId) return;
-          callbacks.onCursor(parsed);
-        },
-      );
+      channel.on('broadcast' as 'system', { event: 'cursor' }, (payload: { payload?: unknown }) => {
+        if (state.unsubscribed) return;
+        const parsed = parseCursorEvent(payload?.payload);
+        if (parsed === null) return;
+        if (parsed.playerId === selfPlayerId) return;
+        callbacks.onCursor(parsed);
+      });
 
-      channel.on(
-        'broadcast' as 'system',
-        { event: 'target' },
-        (payload: { payload?: unknown }) => {
-          if (state.unsubscribed) return;
-          const parsed = parseTargetEvent(payload?.payload);
-          if (parsed === null) return;
-          if (parsed.playerId === selfPlayerId) return;
-          callbacks.onTarget(parsed);
-        },
-      );
+      channel.on('broadcast' as 'system', { event: 'target' }, (payload: { payload?: unknown }) => {
+        if (state.unsubscribed) return;
+        const parsed = parseTargetEvent(payload?.payload);
+        if (parsed === null) return;
+        if (parsed.playerId === selfPlayerId) return;
+        callbacks.onTarget(parsed);
+      });
 
-      channel.on(
-        'broadcast' as 'system',
-        { event: 'action' },
-        (payload: { payload?: unknown }) => {
-          if (state.unsubscribed) return;
-          const parsed = parseActionEvent(payload?.payload);
-          if (parsed === null) return;
-          if (parsed.playerId === selfPlayerId) return;
-          callbacks.onAction(parsed);
-        },
-      );
+      channel.on('broadcast' as 'system', { event: 'action' }, (payload: { payload?: unknown }) => {
+        if (state.unsubscribed) return;
+        const parsed = parseActionEvent(payload?.payload);
+        if (parsed === null) return;
+        if (parsed.playerId === selfPlayerId) return;
+        callbacks.onAction(parsed);
+      });
 
       channel.subscribe((status) => {
         if (state.unsubscribed) return;

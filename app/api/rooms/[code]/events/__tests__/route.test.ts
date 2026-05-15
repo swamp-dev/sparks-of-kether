@@ -26,8 +26,7 @@ function makeFluent(table: string) {
   return {
     select: () => ({
       eq: () => ({
-        maybeSingle: async () =>
-          table === 'rooms' ? roomResponse : snapshotResponse,
+        maybeSingle: async () => (table === 'rooms' ? roomResponse : snapshotResponse),
       }),
     }),
     insert: (row: unknown) => {
@@ -40,8 +39,7 @@ function makeFluent(table: string) {
       const resolved = { data: { id: 1 }, error: null };
       const builder = {
         select: () => ({ single: async () => resolved }),
-        then: (resolve: (v: typeof resolved) => unknown) =>
-          Promise.resolve(resolved).then(resolve),
+        then: (resolve: (v: typeof resolved) => unknown) => Promise.resolve(resolved).then(resolve),
       };
       return builder;
     },
@@ -157,10 +155,9 @@ describe('POST /api/rooms/[code]/events — auth + identity gate', () => {
   });
 
   it('returns 400 when the action shape is malformed', async () => {
-    const res = await POST(
-      makeRequest({ not: 'an action' }, { authorization: 'Bearer x' }),
-      { params: { code: 'ABCDEF' } },
-    );
+    const res = await POST(makeRequest({ not: 'an action' }, { authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
     expect(body.error).toBe('invalid-action-shape');
@@ -173,7 +170,10 @@ describe('POST /api/rooms/[code]/events — auth + identity gate', () => {
     // a spurious room-not-found 404. Fix: use serviceClient for reads.
     setSessionCalls = [];
     await POST(
-      makeRequest({ kind: 'move', playerId: 'caller-uid', pathNumber: 13 }, { authorization: 'Bearer x' }),
+      makeRequest(
+        { kind: 'move', playerId: 'caller-uid', pathNumber: 13 },
+        { authorization: 'Bearer x' },
+      ),
       { params: { code: 'ABCDEF' } },
     );
     expect(setSessionCalls).toHaveLength(0);
@@ -274,10 +274,7 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
       error: null,
     };
     const res = await POST(
-      makeRequest(
-        { kind: 'end-turn', playerId: 'p1' },
-        { authorization: 'Bearer p1-token' },
-      ),
+      makeRequest({ kind: 'end-turn', playerId: 'p1' }, { authorization: 'Bearer p1-token' }),
       { params: { code: 'ABCDEF' } },
     );
     // 200 → active player allowed through; engine fold ran; service
@@ -302,10 +299,7 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     // intact in `detail`.
     getUserResult = { data: { user: { id: 'p1' } }, error: null };
     const res = await POST(
-      makeRequest(
-        { kind: 'end-turn', playerId: 'p1' },
-        { authorization: 'Bearer p1-token' },
-      ),
+      makeRequest({ kind: 'end-turn', playerId: 'p1' }, { authorization: 'Bearer p1-token' }),
       { params: { code: 'ABCDEF' } },
     );
     expect(res.status).toBe(422);
@@ -362,10 +356,7 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
       error: null,
     };
     const res = await POST(
-      makeRequest(
-        { kind: 'end-turn', playerId: 'ghost' },
-        { authorization: 'Bearer ghost-token' },
-      ),
+      makeRequest({ kind: 'end-turn', playerId: 'ghost' }, { authorization: 'Bearer ghost-token' }),
       { params: { code: 'ABCDEF' } },
     );
     expect(res.status).toBe(500);

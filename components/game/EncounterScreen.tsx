@@ -1,7 +1,6 @@
 'use client';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { arcanumByNumber, sefirahByKey, zodiacSigns } from '@/data';
-import { Hand } from '@/components/hand/Hand';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { sefirahByKey, zodiacSigns } from '@/data';
 import type { EncounterAvatarKey } from '@/data/types';
 import { usePantheon } from '@/lib/settings/pantheon';
 // Pickers are pantheon-neutral (matrix-as-parameter, post-#550) — the
@@ -12,10 +11,7 @@ import { usePantheon } from '@/lib/settings/pantheon';
 // imports. B3 (#553) ships Egyptian verdicts and B5 (#555) ships
 // Egyptian framing — those tickets are the natural moment to revisit
 // where the picker functions live.
-import {
-  pickPlayerResponse,
-  pickVerdict,
-} from '@/data/pantheons/greco-roman/verdicts';
+import { pickPlayerResponse, pickVerdict } from '@/data/pantheons/greco-roman/verdicts';
 import { pickFraming } from '@/data/pantheons/greco-roman/framing';
 import { sefirahTwist } from '@/data/sefirah-twists';
 import {
@@ -29,16 +25,12 @@ import {
 import type { Rng } from '@/engine/rng';
 import type { PlayerState } from '@/engine/types';
 import { StatSheet } from '@/components/player/StatSheet';
-import type {
-  ChallengeContext,
-  ChallengeResolution,
-} from '@/lib/challenge-types';
+import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor } from '@/lib/sound/cues';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
-import { derivePose } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
 import { RevealLine } from './encounter/RevealLine';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
@@ -143,9 +135,7 @@ interface EncounterScreenMultiplayerProps extends EncounterScreenCommonProps {
   readonly player: PlayerState;
 }
 
-export type EncounterScreenProps =
-  | EncounterScreenHotSeatProps
-  | EncounterScreenMultiplayerProps;
+export type EncounterScreenProps = EncounterScreenHotSeatProps | EncounterScreenMultiplayerProps;
 
 /**
  * Local UI sub-phase. Lags the engine's `challengeSubPhase` by one
@@ -170,15 +160,7 @@ const REDUCED_MOTION_RESOLVE_MS = 50;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
-  const {
-    context,
-    rng,
-    mode,
-    turn,
-    onResolved,
-    onCancel,
-    className,
-  } = props;
+  const { context, rng, mode, turn, onResolved, onCancel, className } = props;
   // `player` is optional in hot-seat, required in multiplayer. After
   // narrowing on `mode` TS would track this — but the consumers below
   // (card-burn / spark-burn synthesisers; embedded StatSheet render)
@@ -187,10 +169,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // undefined.
   const player: PlayerState | undefined = props.player;
   const { pantheon } = usePantheon();
-  const sefirahData = useMemo(
-    () => sefirahByKey(context.sefirah),
-    [context.sefirah],
-  );
+  const sefirahData = useMemo(() => sefirahByKey(context.sefirah), [context.sefirah]);
   // Malkuth (no-check) and Kether (collective) don't run a standard
   // d20 challenge. Mirrors the loud-fail in `ChallengeModal` rather
   // than silently rendering DC 0.
@@ -205,19 +184,14 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // committed outcome we're animating, and a one-tick `animatingResolve`
   // flag that lags the engine's instant `prep → react` jump just long
   // enough for the d20 spin to play.
-  const [stagedAssistIds, setStagedAssistIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
+  const [stagedAssistIds, setStagedAssistIds] = useState<ReadonlySet<string>>(() => new Set());
   const [stagedCardBurns, setStagedCardBurns] = useState(0);
   const [stagedSparkBurns, setStagedSparkBurns] = useState(0);
   // Shaped exactly like ChallengeModal's `outcome`/`committedModifiers`
   // pair so the resolve / react sub-states have both the d20 face and
   // the modifier breakdown.
-  const [resolvedOutcome, setResolvedOutcome] = useState<CheckOutcome | null>(
-    null,
-  );
-  const [committedModifiers, setCommittedModifiers] =
-    useState<CheckModifiers | null>(null);
+  const [resolvedOutcome, setResolvedOutcome] = useState<CheckOutcome | null>(null);
+  const [committedModifiers, setCommittedModifiers] = useState<CheckModifiers | null>(null);
   /**
    * Animation lag flag. The engine sets `challengeSubPhase: 'react'`
    * synchronously inside `prep-confirm`, but visually we want the
@@ -257,12 +231,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // re-pick the player line — see the useEffect below.)
   const [playerResponse] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
-    return pickPlayerResponse(
-      pantheon.sefirahPlayerResponses,
-      avatarKey,
-      context.playerSign,
-      rng,
-    );
+    return pickPlayerResponse(pantheon.sefirahPlayerResponses, avatarKey, context.playerSign, rng);
   });
   // Trial-framing line for the prep stage (#478). Picked ONCE per
   // encounter via the same lazy-initializer pattern as
@@ -281,12 +250,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // rebase the seeds in that file too.
   const [pickedFraming] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
-    return pickFraming(
-      pantheon.sefirahFraming,
-      avatarKey,
-      context.playerSign,
-      rng,
-    );
+    return pickFraming(pantheon.sefirahFraming, avatarKey, context.playerSign, rng);
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
   // #482 framing-complete signal. Flips to `true` when `RevealLine`
@@ -296,10 +260,6 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // use case) without that gate landing in this PR — see PR body for
   // the deferral rationale and test-impact survey.
   const [framingComplete, setFramingComplete] = useState(false);
-  // #90: burn-discard gate. Set to true when the player has staged card
-  // burns and clicks Roll — they must shed one card before the die rolls.
-  const [awaitingBurnDiscard, setAwaitingBurnDiscard] = useState(false);
-  const [burnDiscardHovered, setBurnDiscardHovered] = useState<number | undefined>(undefined);
 
   // Reset staged counters when the engine sub-phase loops back to
   // 'prep' (a `react-retry`). The engine's `pendingModifiers` carries
@@ -308,9 +268,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // Using `useEffect` keyed on `challengeSubPhase` avoids the bug
   // where a stale-prop transition (`challengeSubPhase: 'prep'` while
   // we're animating resolve) trampled the in-flight uiPhase.
-  const prevSubPhaseRef = useRef<typeof turn.challengeSubPhase>(
-    turn.challengeSubPhase,
-  );
+  const prevSubPhaseRef = useRef<typeof turn.challengeSubPhase>(turn.challengeSubPhase);
   useEffect(() => {
     const prev = prevSubPhaseRef.current;
     prevSubPhaseRef.current = turn.challengeSubPhase;
@@ -324,8 +282,6 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setResolvedOutcome(null);
       setCommittedModifiers(null);
       setAnimatingResolve(false);
-      setAwaitingBurnDiscard(false);
-      setBurnDiscardHovered(undefined);
       // #321: clear the verdict-cue ref so a retry's new outcome
       // fires its own cue. Without this, a retry that lands on the
       // same boolean (fail → fail) would still be a NEW outcome
@@ -362,8 +318,6 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     return 'react';
   })();
 
-  const pose = derivePose(uiSubPhase, framingComplete, resolvedOutcome);
-
   // #321: pass / fail cue. Fire once when the verdict reveals — i.e.
   // when the resolve animation finishes and the react sub-state is
   // about to render. The `firedForOutcomeRef` guard ties the cue to
@@ -398,17 +352,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;
-    return (
-      baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta
-    );
+    return baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta;
   }, [baseDC, context.shortcut, context.soulDoorDelta]);
   const soulDoorDelta = context.soulDoorDelta ?? 0;
   const showSoulDoor = soulDoorDelta < 0;
 
-  const allies = useMemo(
-    () => context.availableAllies ?? [],
-    [context.availableAllies],
-  );
+  const allies = useMemo(() => context.availableAllies ?? [], [context.availableAllies]);
   const maxCardBurns = context.availableCardBurns ?? 0;
   const maxSparkBurns = context.availableSparkBurns ?? 0;
 
@@ -417,10 +366,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // Surfaces "X cards burned, +Y modifier" so the player sees they're
   // stacking. On the initial encounter the engine's pending is empty
   // and this is just `stagedCardBurns`.
-  const cumulativeCardBurns =
-    (turn.pendingModifiers?.cardBurns.length ?? 0) + stagedCardBurns;
-  const cumulativeSparkBurns =
-    (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
+  const cumulativeCardBurns = (turn.pendingModifiers?.cardBurns.length ?? 0) + stagedCardBurns;
+  const cumulativeSparkBurns = (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
   const isRetry = (turn.pendingModifiers?.cardBurns.length ?? 0) > 0;
 
   const assistTotal = useMemo(() => {
@@ -534,11 +481,15 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     };
   }, []);
 
-  const doRoll = (): void => {
+  const handleRoll = (): void => {
+    // Defensive: only roll from prep. Without this guard, a double-
+    // click between the click handler and the state flush would fire
+    // two rolls and consume two values from `rng`.
+    if (uiSubPhase !== 'prep') return;
+    if (turn.challengeSubPhase !== 'prep') return;
+
     const modifiers: CheckModifiers = {
-      assistStats: allies
-        .filter((a) => stagedAssistIds.has(a.id))
-        .map((a) => a.stat),
+      assistStats: allies.filter((a) => stagedAssistIds.has(a.id)).map((a) => a.stat),
       // Use cumulative counts so a retry stacks. Engine validates at
       // confirm time and drops anything that no longer applies.
       cardBurns: cumulativeCardBurns,
@@ -591,11 +542,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // they aren't stuck on a static "Rolling…" screen with no visible
     // animation. Mirrors `D20Roll`'s no-animation branch.
     const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.(REDUCED_MOTION_QUERY).matches === true;
-    const delayMs = reduceMotion
-      ? REDUCED_MOTION_RESOLVE_MS
-      : RESOLVE_ANIMATION_MS;
+      typeof window !== 'undefined' && window.matchMedia?.(REDUCED_MOTION_QUERY).matches === true;
+    const delayMs = reduceMotion ? REDUCED_MOTION_RESOLVE_MS : RESOLVE_ANIMATION_MS;
     if (resolveTimerRef.current !== null) {
       clearTimeout(resolveTimerRef.current);
     }
@@ -605,53 +553,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     }, delayMs);
   };
 
-  // #90: deferred roll after burn-discard. React 18 batches all setState
-  // calls in a single event handler; calling doRoll() directly inside
-  // handleBurnDiscard would let turn.submitChallenge close over the
-  // pre-discard snapshot and silently overwrite the card removal.
-  // This ref is set to true by handleBurnDiscard and cleared by the
-  // useLayoutEffect below, which fires on the NEXT render — after
-  // encounterBurnDiscard's setSnapshot has committed — so doRoll() sees
-  // the post-discard state.
-  const pendingRollAfterBurnDiscardRef = useRef(false);
-  useLayoutEffect(() => {
-    if (!pendingRollAfterBurnDiscardRef.current) return;
-    pendingRollAfterBurnDiscardRef.current = false;
-    doRoll();
-  });
-
-  const handleRoll = (): void => {
-    // Defensive: only roll from prep. Without this guard, a double-
-    // click between the click handler and the state flush would fire
-    // two rolls and consume two values from `rng`.
-    if (uiSubPhase !== 'prep') return;
-    if (turn.challengeSubPhase !== 'prep') return;
-    // #90: if the player staged card burns and still has cards, require
-    // a burn-discard before rolling. UI gates it; engine no-ops if hand
-    // is empty so we skip the picker in that edge case.
-    if (cumulativeCardBurns > 0 && (player?.hand.length ?? 0) > 0) {
-      setAwaitingBurnDiscard(true);
-      return;
-    }
-    doRoll();
-  };
-
-  const handleBurnDiscard = (arcanum: number): void => {
-    if (!player) return;
-    turn.encounterBurnDiscard(arcanum);
-    setAwaitingBurnDiscard(false);
-    setBurnDiscardHovered(undefined);
-    // Defer the roll to the next render via pendingRollAfterBurnDiscardRef —
-    // see the useLayoutEffect above for why doRoll() cannot be called here.
-    pendingRollAfterBurnDiscardRef.current = true;
-  };
-
   const handleContinue = (): void => {
     if (resolvedOutcome === null || committedModifiers === null) return;
     if (!resolvedOutcome.pass) {
-      throw new Error(
-        'EncounterScreen.handleContinue: invoked on a failed outcome',
-      );
+      throw new Error('EncounterScreen.handleContinue: invoked on a failed outcome');
     }
     onResolvedRef.current({
       pass: true,
@@ -711,11 +616,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
         ? verdictLine
         : undefined;
   const avatarState: 'prep' | 'pass' | 'fail' =
-    uiSubPhase === 'prep'
-      ? 'prep'
-      : resolvedOutcome?.pass === true
-        ? 'pass'
-        : 'fail';
+    uiSubPhase === 'prep' ? 'prep' : resolvedOutcome?.pass === true ? 'pass' : 'fail';
   const avatarNameLabel =
     avatarHasCopy && avatarKey in pantheon.avatarNames
       ? pantheon.avatarNames[avatarKey].primary
@@ -728,8 +629,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // tests). Kether/Malkuth are already ruled out by the
   // `challenge.kind === 'check'` guard at mount time, so the
   // narrowed `avatarKey` lookup is total.
-  const framingLine =
-    pickedFraming ?? pantheon.sefirahFramingPlaceholder[avatarKey];
+  const framingLine = pickedFraming ?? pantheon.sefirahFramingPlaceholder[avatarKey];
 
   // "Twist" banner — only Sefirot with shipped per-Sefirah mechanics
   // (#353 Hod Word-Match, #354 Yesod Dream-Peek) get a banner today.
@@ -774,11 +674,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             sefirah={context.sefirah}
             state={avatarState}
             size="small"
-            pose={pose}
-            reducedMotion={reducedMotion}
-            {...(avatarNameLabel !== undefined
-              ? { avatarName: avatarNameLabel }
-              : {})}
+            {...(avatarNameLabel !== undefined ? { avatarName: avatarNameLabel } : {})}
             {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
           />
         ) : null}
@@ -833,11 +729,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
 
       {player ? (
         <div className="mt-3 rounded border border-veil/15 bg-ground/60 p-2">
-          <StatSheet
-            player={player}
-            mode="compact"
-            activeStat={sefirahData.stat}
-          />
+          <StatSheet player={player} mode="compact" activeStat={sefirahData.stat} />
         </div>
       ) : null}
 
@@ -880,14 +772,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
               sefirah={context.sefirah}
               state="prep"
               size="stage"
-              pose={pose}
-              reducedMotion={reducedMotion}
-              {...(avatarNameLabel !== undefined
-                ? { avatarName: avatarNameLabel }
-                : {})}
-              {...(avatarCaption !== undefined
-                ? { caption: avatarCaption }
-                : {})}
+              {...(avatarNameLabel !== undefined ? { avatarName: avatarNameLabel } : {})}
+              {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
             />
             <p
               data-encounter-framing
@@ -904,9 +790,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
                 data-encounter-twist
                 className={`rounded border px-3 py-1 text-center text-sm ${frameTokens.frameBorder}`}
               >
-                <span className="mr-2 uppercase tracking-widest opacity-60">
-                  Twist
-                </span>
+                <span className="mr-2 uppercase tracking-widest opacity-60">Twist</span>
                 {twistLine}
               </p>
             ) : null}
@@ -926,48 +810,15 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             cumulativeCardBurns={cumulativeCardBurns}
             cumulativeSparkBurns={cumulativeSparkBurns}
             isRetry={isRetry}
-            onRoll={awaitingBurnDiscard ? undefined : handleRoll}
+            onRoll={handleRoll}
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
           />
-          {awaitingBurnDiscard && player ? (
-            <div
-              data-burn-discard-picker
-              role="region"
-              aria-label="Discard one card before rolling"
-              className="mt-4 rounded border border-veil/30 bg-ground/80 p-4"
-            >
-              <p className="mb-2 font-display text-sm tracking-widest opacity-80">
-                Burning a card costs a discard — shed one card before the die rolls.
-              </p>
-              {burnDiscardHovered !== undefined ? (
-                <p className="mb-2 text-xs opacity-60">
-                  {arcanumByNumber(burnDiscardHovered).name}
-                </p>
-              ) : (
-                <p className="mb-2 text-xs opacity-60">
-                  Hover a card to see its name, then click ✕ to discard it.
-                </p>
-              )}
-              <Hand
-                hand={player.hand}
-                visible={true}
-                layout="inline"
-                discardMode={true}
-                onDiscard={handleBurnDiscard}
-                onCardHover={(n) => setBurnDiscardHovered(n)}
-                ariaLabel="Cards available to discard"
-              />
-            </div>
-          ) : null}
         </>
       ) : null}
 
       {uiSubPhase === 'resolve' && resolvedOutcome !== null ? (
-        <ResolvePanel
-          outcome={resolvedOutcome}
-          glowClass={frameTokens.buttonGlow}
-        />
+        <ResolvePanel outcome={resolvedOutcome} glowClass={frameTokens.buttonGlow} />
       ) : null}
 
       {uiSubPhase === 'react' && resolvedOutcome !== null ? (
@@ -978,9 +829,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           onAccept={handleAccept}
           reducedMotion={reducedMotion}
           glowClass={frameTokens.buttonGlow}
-          {...(avatarHasCopy
-            ? { avatarName: pantheon.avatarNames[avatarKey].primary }
-            : {})}
+          {...(avatarHasCopy ? { avatarName: pantheon.avatarNames[avatarKey].primary } : {})}
           {...(verdictLine !== undefined ? { verdictLine } : {})}
         />
       ) : null}
@@ -1007,7 +856,7 @@ interface PrepPanelProps {
   readonly cumulativeCardBurns: number;
   readonly cumulativeSparkBurns: number;
   readonly isRetry: boolean;
-  readonly onRoll: (() => void) | undefined;
+  readonly onRoll: () => void;
   readonly onCancel: (() => void) | undefined;
   /**
    * Sefirah-coloured glow class — applied to the d20 roll button so
@@ -1054,8 +903,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
           className="rounded border border-veil/20 bg-veil/5 px-3 py-1 text-xs opacity-80"
         >
           {cumulativeCardBurns} cards burned, +
-          {cumulativeCardBurns * CARD_BURN_BONUS +
-            cumulativeSparkBurns * SPARK_BURN_BONUS}
+          {cumulativeCardBurns * CARD_BURN_BONUS + cumulativeSparkBurns * SPARK_BURN_BONUS}
           {' modifier'}
         </p>
       ) : null}
@@ -1076,11 +924,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
                     checked ? 'ring-illumination' : 'ring-veil/20'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleAssist(ally.id)}
-                  />
+                  <input type="checkbox" checked={checked} onChange={() => toggleAssist(ally.id)} />
                   {ally.name} (+{Math.floor(ally.stat / 2)})
                   {mode === 'multiplayer' && checked ? (
                     // Multiplayer: surface the offering state so allies
@@ -1117,12 +961,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
       />
 
       <div className="flex items-center justify-center gap-4 pt-2">
-        <D20Button
-          state="idle"
-          glowClass={glowClass}
-          {...(onRoll !== undefined ? { onClick: onRoll } : {})}
-          caption="Roll"
-        />
+        <D20Button state="idle" glowClass={glowClass} onClick={onRoll} caption="Roll" />
         {onCancel ? (
           <button
             type="button"
@@ -1146,13 +985,7 @@ interface StepperProps {
   readonly onChange: (n: number) => void;
 }
 
-function Stepper({
-  kind,
-  label,
-  value,
-  max,
-  onChange,
-}: StepperProps): JSX.Element {
+function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Element {
   const dec = (): void => onChange(Math.max(0, value - 1));
   const inc = (): void => onChange(Math.min(max, value + 1));
   return (
@@ -1168,10 +1001,7 @@ function Stepper({
         >
           −
         </button>
-        <span
-          data-stepper-value={kind}
-          className="w-6 text-center font-display tabular-nums"
-        >
+        <span data-stepper-value={kind} className="w-6 text-center font-display tabular-nums">
           {value}
         </span>
         <button
@@ -1196,10 +1026,7 @@ interface ResolvePanelProps {
 
 function ResolvePanel({ outcome, glowClass }: ResolvePanelProps): JSX.Element {
   return (
-    <div
-      className="mt-6 flex flex-col items-center gap-3"
-      data-encounter-resolve
-    >
+    <div className="mt-6 flex flex-col items-center gap-3" data-encounter-resolve>
       <D20Button
         state="rolling"
         value={outcome.rolled}
@@ -1227,20 +1054,13 @@ function ResolvePanel({ outcome, glowClass }: ResolvePanelProps): JSX.Element {
 
 function ModifierStack({ outcome }: { outcome: CheckOutcome }): JSX.Element {
   return (
-    <ul
-      data-modifier-stack
-      className="mt-1 flex flex-wrap justify-center gap-2 text-xs opacity-80"
-    >
+    <ul data-modifier-stack className="mt-1 flex flex-wrap justify-center gap-2 text-xs opacity-80">
       <li data-stack-item="stat">+{outcome.statContribution} stat</li>
       {outcome.modifierBreakdown.cardBurn > 0 ? (
-        <li data-stack-item="card-burn">
-          +{outcome.modifierBreakdown.cardBurn} cards
-        </li>
+        <li data-stack-item="card-burn">+{outcome.modifierBreakdown.cardBurn} cards</li>
       ) : null}
       {outcome.modifierBreakdown.sparkBurn > 0 ? (
-        <li data-stack-item="spark-burn">
-          +{outcome.modifierBreakdown.sparkBurn} spark
-        </li>
+        <li data-stack-item="spark-burn">+{outcome.modifierBreakdown.sparkBurn} spark</li>
       ) : null}
       {outcome.modifierBreakdown.assist > 0 ? (
         <li data-stack-item="assist">+{outcome.modifierBreakdown.assist} ally</li>
@@ -1284,10 +1104,7 @@ function ReactPanel({
   verdictLine,
 }: ReactPanelProps): JSX.Element {
   return (
-    <div
-      className="mt-6 flex flex-col items-center gap-3"
-      data-encounter-react
-    >
+    <div className="mt-6 flex flex-col items-center gap-3" data-encounter-react>
       <D20Button
         state="settled"
         value={outcome.rolled}
@@ -1309,9 +1126,7 @@ function ReactPanel({
             outcome.modifierBreakdown.sparkBurn}{' '}
           = <span data-total>{outcome.total}</span> vs {outcome.effectiveDC}
         </span>
-        <p className="mt-1 text-sm opacity-80">
-          {outcome.pass ? 'Pass' : 'Fail'}
-        </p>
+        <p className="mt-1 text-sm opacity-80">{outcome.pass ? 'Pass' : 'Fail'}</p>
       </div>
       <VerdictReveal
         outcome={outcome}

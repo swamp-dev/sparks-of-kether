@@ -106,12 +106,7 @@ export function makeState(
  * positive in the dignity table so tests don't get surprise stat
  * shifts: Aries (net 0), Leo (net 0), Libra (net 0), Cancer (net 0).
  */
-const DEFAULT_ZODIAC_SIGN_ORDER: readonly ZodiacSignKey[] = [
-  'aries',
-  'leo',
-  'libra',
-  'cancer',
-];
+const DEFAULT_ZODIAC_SIGN_ORDER: readonly ZodiacSignKey[] = ['aries', 'leo', 'libra', 'cancer'];
 
 export interface MakeRoomOverrides {
   readonly id?: string;
@@ -191,21 +186,16 @@ export function makeFullGame(input: MakeFullGameInput): GameState {
   if (playerCount < 2 || playerCount > 4) {
     // initializeGame would also throw, but with a less-friendly
     // message about "deck count" instead of "player count."
-    throw new Error(
-      `makeFullGame: playerCount must be 2, 3, or 4 — got ${playerCount}`,
-    );
+    throw new Error(`makeFullGame: playerCount must be 2, 3, or 4 — got ${playerCount}`);
   }
-  const signs =
-    input.zodiacSigns ?? DEFAULT_ZODIAC_SIGN_ORDER.slice(0, playerCount);
+  const signs = input.zodiacSigns ?? DEFAULT_ZODIAC_SIGN_ORDER.slice(0, playerCount);
   if (signs.length !== playerCount) {
     throw new Error(
       `makeFullGame: zodiacSigns length ${signs.length} does not match playerCount ${playerCount}`,
     );
   }
   if (new Set(signs).size !== signs.length) {
-    throw new Error(
-      `makeFullGame: zodiacSigns must be unique across players`,
-    );
+    throw new Error(`makeFullGame: zodiacSigns must be unique across players`);
   }
   const setups: PlayerSetup[] = signs.map((sign, idx) => ({
     id: `p${idx + 1}`,

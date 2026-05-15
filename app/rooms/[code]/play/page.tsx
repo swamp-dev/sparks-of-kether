@@ -40,9 +40,8 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   const rng = useMemo(() => seededRng((lastEventId ?? 0) + 1), [lastEventId]);
   const { onlinePlayerIds } = usePresence(room?.id ?? null, currentPlayerId);
 
-  const currentPlayer = currentPlayerId !== null
-    ? players.find((p) => p.id === currentPlayerId) ?? null
-    : null;
+  const currentPlayer =
+    currentPlayerId !== null ? (players.find((p) => p.id === currentPlayerId) ?? null) : null;
 
   // Keep sok.lastGame fresh on every visit to this page so the "Continue
   // Game" banner stays visible for up to 30 days.
@@ -172,11 +171,7 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
       <ColorBloom color="#ffd700" position="bottom" intensity={0.12} />
       <SettingsButton />
 
-      <PlayScreen
-        initialState={gameState}
-        rng={rng}
-        roomCode={code}
-      />
+      <PlayScreen initialState={gameState} rng={rng} roomCode={code} />
 
       {isPaused ? (
         <PauseOverlay
@@ -204,35 +199,21 @@ function PauseOverlay({
   readonly onResume: () => void;
   readonly onLeave: () => void;
 }): JSX.Element {
-  const pausedAgo = pausedAt !== null
-    ? formatAgo(Date.now() - new Date(pausedAt).getTime())
-    : null;
+  const pausedAgo = pausedAt !== null ? formatAgo(Date.now() - new Date(pausedAt).getTime()) : null;
 
   return (
     <div
       data-pause-overlay
-      className="
-        fixed inset-0 z-50 flex flex-col items-center justify-center
-        bg-ground/80 backdrop-blur-sm
-      "
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-ground/80 backdrop-blur-sm"
     >
       <div className="w-full max-w-sm rounded border border-veil/20 bg-ground/90 px-8 py-8 text-center">
         <p className="font-display text-4xl tracking-widest text-veil/40">⏸</p>
-        <h1 className="mt-3 font-display text-2xl tracking-widest text-veil">
-          Game Paused
-        </h1>
-        {pausedAgo !== null ? (
-          <p className="mt-1 text-xs opacity-50">Paused {pausedAgo}</p>
-        ) : null}
-        <p className="mt-3 font-mono text-lg tracking-widest text-illumination">
-          {code}
-        </p>
+        <h1 className="mt-3 font-display text-2xl tracking-widest text-veil">Game Paused</h1>
+        {pausedAgo !== null ? <p className="mt-1 text-xs opacity-50">Paused {pausedAgo}</p> : null}
+        <p className="mt-3 font-mono text-lg tracking-widest text-illumination">{code}</p>
         <p className="mt-1 text-xs opacity-40">Share this code to let others rejoin</p>
         {resumeError !== null ? (
-          <p
-            role="alert"
-            className="mt-3 text-xs text-pillar-severity"
-          >
+          <p role="alert" className="mt-3 text-xs text-pillar-severity">
             {resumeError}
           </p>
         ) : null}
@@ -240,20 +221,14 @@ function PauseOverlay({
           <button
             type="button"
             onClick={onResume}
-            className="
-              w-full rounded bg-illumination px-6 py-3
-              font-display tracking-widest text-ground
-            "
+            className="w-full rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground"
           >
             Resume Game
           </button>
           <button
             type="button"
             onClick={onLeave}
-            className="
-              rounded border border-veil/30 px-6 py-2
-              text-xs uppercase tracking-widest text-veil/60
-            "
+            className="rounded border border-veil/30 px-6 py-2 text-xs uppercase tracking-widest text-veil/60"
           >
             Leave
           </button>

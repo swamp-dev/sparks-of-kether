@@ -1,47 +1,6 @@
 'use client';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useSoundEnabled } from '@/lib/sound/settings';
-
-function Toggle({
-  checked,
-  label,
-  onChange,
-  testId,
-}: {
-  checked: boolean;
-  label: string;
-  onChange: () => void;
-  testId: string;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      data-action={testId}
-      className={`relative h-6 w-11 overflow-hidden rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination ${
-        checked
-          ? 'border-illumination bg-illumination/70'
-          : 'border-veil/40 bg-ground'
-      }`}
-    >
-      <span
-        aria-hidden="true"
-        className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-transform ${
-          checked ? 'translate-x-[1.375rem] bg-ground' : 'translate-x-1 bg-veil'
-        }`}
-      />
-    </button>
-  );
-}
 
 /**
  * SettingsButton — floating cog button + popover for the play surface
@@ -71,7 +30,7 @@ function Toggle({
  */
 
 export function SettingsButton(): JSX.Element {
-  const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
+  const { soundEnabled, setSoundEnabled } = useSoundEnabled();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -129,9 +88,7 @@ export function SettingsButton(): JSX.Element {
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'Tab') return;
     if (!dialogRef.current) return;
-    const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
-      'button, [role="switch"]',
-    );
+    const focusables = dialogRef.current.querySelectorAll<HTMLElement>('button, [role="switch"]');
     if (focusables.length === 0) return;
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
@@ -156,7 +113,7 @@ export function SettingsButton(): JSX.Element {
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
         data-action="open-settings"
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-veil/40 bg-ground/80 text-veil shadow-lg backdrop-blur-sm transition-opacity hover:opacity-100 opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination"
+        className="flex h-11 w-11 items-center justify-center rounded-full border border-veil/40 bg-ground/80 text-veil opacity-80 shadow-lg backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination"
       >
         <CogGlyph />
       </button>
@@ -172,10 +129,7 @@ export function SettingsButton(): JSX.Element {
           className="absolute bottom-12 right-0 w-64 rounded border border-veil/30 bg-ground/95 p-4 text-veil shadow-xl backdrop-blur"
         >
           <div className="mb-3 flex items-center justify-between">
-            <h2
-              id="settings-heading"
-              className="font-display text-sm uppercase tracking-widest"
-            >
+            <h2 id="settings-heading" className="font-display text-sm uppercase tracking-widest">
               Settings
             </h2>
             <button
@@ -190,24 +144,30 @@ export function SettingsButton(): JSX.Element {
             </button>
           </div>
 
+          {/* Sound toggle. role="switch" + aria-checked is the
+              correct pattern for a binary on/off control with
+              persistent state — checkbox would be wrong (suggests a
+              form-submission semantic). */}
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm">Sound effects</span>
-            <Toggle
-              checked={sfxEnabled}
-              label="Toggle sound effects"
-              onChange={() => setSfxEnabled(!sfxEnabled)}
-              testId="toggle-sfx"
-            />
-          </div>
-
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm">Music</span>
-            <Toggle
-              checked={musicEnabled}
-              label="Toggle music"
-              onChange={() => setMusicEnabled(!musicEnabled)}
-              testId="toggle-music"
-            />
+            <span className="text-sm">Sound</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={soundEnabled}
+              aria-label="Toggle sound"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              data-action="toggle-sound"
+              className={`relative h-6 w-11 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination ${
+                soundEnabled ? 'border-illumination bg-illumination/70' : 'border-veil/40 bg-ground'
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-transform ${
+                  soundEnabled ? 'translate-x-6 bg-ground' : 'translate-x-1 bg-veil'
+                }`}
+              />
+            </button>
           </div>
 
           {/* Reduced motion — system-driven, read-only. Surface the
@@ -222,9 +182,7 @@ export function SettingsButton(): JSX.Element {
               {reducedMotion ? 'On (system)' : 'Off (system)'}
             </span>
           </div>
-          <p className="text-xs italic opacity-60">
-            Reduced motion follows your system setting.
-          </p>
+          <p className="text-xs italic opacity-60">Reduced motion follows your system setting.</p>
         </div>
       ) : null}
     </div>

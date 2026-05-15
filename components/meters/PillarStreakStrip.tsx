@@ -38,10 +38,7 @@ interface PillarStreakStripProps {
   readonly className?: string;
 }
 
-export function PillarStreakStrip({
-  state,
-  className,
-}: PillarStreakStripProps): JSX.Element {
+export function PillarStreakStrip({ state, className }: PillarStreakStripProps): JSX.Element {
   const same = state.sameCount;
   const alt = state.alternationCount;
   // Fresh state (0/0) is "none", not "imbalance" — the engine doesn't
@@ -65,14 +62,7 @@ export function PillarStreakStrip({
           // Balance is rendered but never `active` (engine doesn't
           // streak on Balance). Keeps the triptych visible.
           const ratio = isActive ? fillRatio : 0;
-          return (
-            <Chevron
-              key={pillar}
-              pillar={pillar}
-              active={isActive}
-              ratio={ratio}
-            />
-          );
+          return <Chevron key={pillar} pillar={pillar} active={isActive} ratio={ratio} />;
         })}
       </div>
       <span className="text-[10px] uppercase tracking-widest opacity-60">
@@ -145,9 +135,7 @@ function Chevron({ pillar, active, ratio }: ChevronProps): JSX.Element {
           }}
         />
       </svg>
-      <span className="text-[9px] uppercase tracking-widest opacity-50">
-        {pillar[0]}
-      </span>
+      <span className="text-[9px] uppercase tracking-widest opacity-50">{pillar[0]}</span>
     </div>
   );
 }

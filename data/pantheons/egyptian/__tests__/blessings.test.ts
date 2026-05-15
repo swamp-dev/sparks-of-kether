@@ -57,7 +57,10 @@ const ALL_SIGNS: readonly ZodiacSignKey[] = [
 ];
 
 const wordCount = (s: string): number =>
-  s.trim().split(/\s+/).filter((w) => w.length > 0).length;
+  s
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length > 0).length;
 
 describe('Egyptian blessing matrix (#554)', () => {
   it('covers all 10 Sefirot', () => {
@@ -78,9 +81,7 @@ describe('Egyptian blessing matrix (#554)', () => {
     for (const sefirah of ALL_SEFIROT) {
       describe(sefirah, () => {
         it('covers all 12 zodiac signs', () => {
-          expect(Object.keys(sefirahBlessings[sefirah]).sort()).toEqual(
-            [...ALL_SIGNS].sort(),
-          );
+          expect(Object.keys(sefirahBlessings[sefirah]).sort()).toEqual([...ALL_SIGNS].sort());
         });
 
         for (const sign of ALL_SIGNS) {
@@ -105,10 +106,7 @@ describe('Egyptian blessing matrix (#554)', () => {
         for (const sign of ALL_SIGNS) {
           for (const v of sefirahBlessings[sefirah][sign]) {
             const wc = wordCount(v);
-            expect(
-              wc,
-              `${sefirah}/${sign} (${wc} words): ${v}`,
-            ).toBeLessThanOrEqual(25);
+            expect(wc, `${sefirah}/${sign} (${wc} words): ${v}`).toBeLessThanOrEqual(25);
           }
         }
       });
@@ -204,15 +202,7 @@ describe('Egyptian blessing matrix (#554)', () => {
     // 'ra' is intentionally omitted — it's a common short syllable in
     // English ("draw", "raise", "fragrance") and would false-positive.
     // The other deity names are unambiguous substrings.
-    const encounterDeityNames = [
-      'amun',
-      'isis',
-      'horus',
-      'osiris',
-      'hathor',
-      'thoth',
-      'khonsu',
-    ];
+    const encounterDeityNames = ['amun', 'isis', 'horus', 'osiris', 'hathor', 'thoth', 'khonsu'];
 
     it('Kether blessings never name a specific encounter deity', () => {
       for (const sign of ALL_SIGNS) {

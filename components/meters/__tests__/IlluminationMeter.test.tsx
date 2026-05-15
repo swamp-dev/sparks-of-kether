@@ -21,9 +21,7 @@ describe('IlluminationMeter — rendering', () => {
       { value: 25, max: 10, expectedRatio: 100 },
     ];
     for (const { value, max, expectedRatio } of cases) {
-      const { container, unmount } = render(
-        <IlluminationMeter value={value} max={max} />,
-      );
+      const { container, unmount } = render(<IlluminationMeter value={value} max={max} />);
       const fill = container.querySelector('[data-meter-fill]') as HTMLElement | null;
       expect(fill, `value=${value} max=${max}`).not.toBeNull();
       expect(parseFloat(fill?.style.height ?? '')).toBeCloseTo(expectedRatio, 1);
@@ -61,9 +59,7 @@ describe('IlluminationMeter — change hook', () => {
     // Initial mount: no delta, no fire.
     expect(onInc).not.toHaveBeenCalled();
 
-    rerender(
-      <IlluminationMeter value={5} max={15} onIlluminationIncrease={onInc} />,
-    );
+    rerender(<IlluminationMeter value={5} max={15} onIlluminationIncrease={onInc} />);
     expect(onInc).toHaveBeenCalledTimes(1);
     expect(onInc).toHaveBeenCalledWith(2);
   });
@@ -73,19 +69,13 @@ describe('IlluminationMeter — change hook', () => {
     const { rerender } = render(
       <IlluminationMeter value={5} max={15} onIlluminationIncrease={onInc} />,
     );
-    rerender(
-      <IlluminationMeter value={3} max={15} onIlluminationIncrease={onInc} />,
-    );
-    rerender(
-      <IlluminationMeter value={3} max={15} onIlluminationIncrease={onInc} />,
-    );
+    rerender(<IlluminationMeter value={3} max={15} onIlluminationIncrease={onInc} />);
+    rerender(<IlluminationMeter value={3} max={15} onIlluminationIncrease={onInc} />);
     expect(onInc).not.toHaveBeenCalled();
   });
 
   it('halo opacity scales with fill ratio', () => {
-    const { container, rerender } = render(
-      <IlluminationMeter value={0} max={15} />,
-    );
+    const { container, rerender } = render(<IlluminationMeter value={0} max={15} />);
     const halo = container.querySelector('[data-illumination-halo]') as HTMLElement;
     expect(parseFloat(halo.style.opacity)).toBeCloseTo(0, 2);
 

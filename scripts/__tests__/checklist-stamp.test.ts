@@ -124,7 +124,10 @@ describe('findReviewedBranchAmong', () => {
 
 describe('findTargetWorktreeAmong', () => {
   const worktrees = [
-    { path: '/home/x/sok-554-egyptian-blessing-matrix', branch: 'feat/554-egyptian-blessing-matrix' },
+    {
+      path: '/home/x/sok-554-egyptian-blessing-matrix',
+      branch: 'feat/554-egyptian-blessing-matrix',
+    },
     { path: '/home/x/sok-555-egyptian-framing-copy', branch: 'feat/555-egyptian-framing-copy' },
     { path: '/home/x/sok-5', branch: 'feat/5-tiny' },
   ];

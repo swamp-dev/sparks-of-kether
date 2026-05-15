@@ -67,12 +67,7 @@ function Glyph({ stat }: { stat: StatKey }): JSX.Element {
       );
     case 'insight':
       // Sudden flash — a stylized lightning glyph.
-      return (
-        <path
-          d="M 14,3 L 7,12 L 11,12 L 8,21 L 16,11 L 12,11 Z"
-          {...stroke}
-        />
-      );
+      return <path d="M 14,3 L 7,12 L 11,12 L 8,21 L 16,11 L 12,11 Z" {...stroke} />;
     case 'understanding':
       // Nested squares — form within form.
       return (
@@ -93,12 +88,7 @@ function Glyph({ stat }: { stat: StatKey }): JSX.Element {
       // Single chevron mountain — a peak rising from a base. Two
       // separate triangles sharing an edge double-stroked the seam,
       // which read as a glitch at small sizes.
-      return (
-        <polygon
-          points="4,18 12,6 20,18"
-          {...stroke}
-        />
-      );
+      return <polygon points="4,18 12,6 20,18" {...stroke} />;
     case 'harmony':
       // Six-pointed star — alchemical balance, Tiferet.
       return (
@@ -109,12 +99,7 @@ function Glyph({ stat }: { stat: StatKey }): JSX.Element {
       );
     case 'passion':
       // Flame — upward leaping curve with a teardrop tip.
-      return (
-        <path
-          d="M 12,3 Q 6,11 12,21 Q 18,11 12,3 Z"
-          {...stroke}
-        />
-      );
+      return <path d="M 12,3 Q 6,11 12,21 Q 18,11 12,3 Z" {...stroke} />;
     case 'intellect':
       // Caduceus-ish / DNA strand — interweaving precision.
       return (
@@ -125,12 +110,7 @@ function Glyph({ stat }: { stat: StatKey }): JSX.Element {
       );
     case 'intuition':
       // Crescent moon — Yesod, dream-bearing.
-      return (
-        <path
-          d="M 16,4 A 8,8 0 1 0 16,20 A 6,6 0 1 1 16,4 Z"
-          {...stroke}
-        />
-      );
+      return <path d="M 16,4 A 8,8 0 1 0 16,20 A 6,6 0 1 1 16,4 Z" {...stroke} />;
     case 'body':
       // A simple grounded square with a vertical axis — embodiment,
       // standing on the earth.

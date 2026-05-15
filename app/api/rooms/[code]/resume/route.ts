@@ -20,10 +20,7 @@ interface RouteParams {
   readonly params: { readonly code: string };
 }
 
-export async function POST(
-  request: Request,
-  { params }: RouteParams,
-): Promise<NextResponse> {
+export async function POST(request: Request, { params }: RouteParams): Promise<NextResponse> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
     return NextResponse.json({ error: 'missing-bearer-token' }, { status: 401 });
@@ -50,10 +47,7 @@ export async function POST(
   const room = roomLookup.data;
 
   if (room.state !== 'paused') {
-    return NextResponse.json(
-      { error: 'room-not-paused', state: room.state },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: 'room-not-paused', state: room.state }, { status: 409 });
   }
 
   const memberLookup = await serviceClient

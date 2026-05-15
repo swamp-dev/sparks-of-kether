@@ -215,9 +215,7 @@ export function buildArchiveLinkSection(months) {
   const sorted = [...months].sort().reverse();
   const lines = ['## Archived entries', ''];
   if (sorted.length === 0) {
-    lines.push(
-      '_No archives yet. Future runs of `pnpm archive:journal` will populate this list._',
-    );
+    lines.push('_No archives yet. Future runs of `pnpm archive:journal` will populate this list._');
   } else {
     lines.push(
       'Older entries have been moved out of this file to keep its size manageable.',
@@ -275,9 +273,7 @@ export function applyArchive(text, cutoffYmd) {
   // section. New archives win in the merge but the union is what
   // gets rendered.
   const freshMonths = Object.keys(newArchives);
-  const allMonths = Array.from(
-    new Set([...previouslyArchivedMonths, ...freshMonths]),
-  );
+  const allMonths = Array.from(new Set([...previouslyArchivedMonths, ...freshMonths]));
 
   const archiveSection = buildArchiveLinkSection(allMonths);
 
@@ -380,9 +376,7 @@ if (invokedDirectly) {
   const cutoffArg = process.argv[2];
   const cutoff = cutoffArg ?? defaultCutoff();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(cutoff)) {
-    console.error(
-      `[archive-journal] invalid cutoff "${cutoff}" — expected YYYY-MM-DD`,
-    );
+    console.error(`[archive-journal] invalid cutoff "${cutoff}" — expected YYYY-MM-DD`);
     process.exit(2);
   }
 
@@ -408,10 +402,7 @@ if (invokedDirectly) {
     console.log('[archive-journal] Journal.md unchanged');
   }
 
-  console.log(
-    `[archive-journal] cutoff=${cutoff} archived=${archiveCount} ` +
-      `month-files`,
-  );
+  console.log(`[archive-journal] cutoff=${cutoff} archived=${archiveCount} ` + `month-files`);
 }
 
 /**

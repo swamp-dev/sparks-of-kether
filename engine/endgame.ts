@@ -101,10 +101,7 @@ export function checkEndgame(state: GameState): EndgameStatus {
   }
 
   const allAtKether = state.players.every((p) => p.position === 'kether');
-  if (
-    allAtKether &&
-    state.illumination >= state.separation + REQUIRED_ILLUMINATION_MARGIN
-  ) {
+  if (allAtKether && state.illumination >= state.separation + REQUIRED_ILLUMINATION_MARGIN) {
     return { status: 'won' };
   }
 
@@ -219,10 +216,7 @@ export type FinalThresholdRejection =
   | 'card-not-held'
   | 'spark-not-held';
 
-export type FinalThresholdResult = Result<
-  FinalThresholdSuccess,
-  FinalThresholdRejection
->;
+export type FinalThresholdResult = Result<FinalThresholdSuccess, FinalThresholdRejection>;
 
 /**
  * Resolve the Final Threshold: play any remaining cards, burn sparks
@@ -235,9 +229,7 @@ export type FinalThresholdResult = Result<
  *
  * Pre-condition: every player is at Kether. Otherwise rejection.
  */
-export function resolveFinalThreshold(
-  input: FinalThresholdInput,
-): FinalThresholdResult {
+export function resolveFinalThreshold(input: FinalThresholdInput): FinalThresholdResult {
   const { cardPlays, sparkBurns } = input;
   let workingState = input.state;
 
@@ -258,16 +250,11 @@ export function resolveFinalThreshold(
     if (cardIdx === -1) {
       return { ok: false, reason: 'card-not-held' };
     }
-    const newHand = [
-      ...player.hand.slice(0, cardIdx),
-      ...player.hand.slice(cardIdx + 1),
-    ];
+    const newHand = [...player.hand.slice(0, cardIdx), ...player.hand.slice(cardIdx + 1)];
     const newPlayer: PlayerState = { ...player, hand: newHand };
     workingState = {
       ...workingState,
-      players: workingState.players.map((p) =>
-        p.id === newPlayer.id ? newPlayer : p,
-      ),
+      players: workingState.players.map((p) => (p.id === newPlayer.id ? newPlayer : p)),
       discardPile: [...workingState.discardPile, play.arcanumNumber],
     };
   }
@@ -283,9 +270,7 @@ export function resolveFinalThreshold(
     const newPlayer: PlayerState = { ...player, sparksHeld: newSparksHeld };
     workingState = {
       ...workingState,
-      players: workingState.players.map((p) =>
-        p.id === newPlayer.id ? newPlayer : p,
-      ),
+      players: workingState.players.map((p) => (p.id === newPlayer.id ? newPlayer : p)),
       spentSparks: [
         ...workingState.spentSparks,
         { playerId: burn.playerId, sefirah: burn.sefirah },
@@ -300,9 +285,7 @@ export function resolveFinalThreshold(
 
   workingState = applyEvents(workingState, events);
 
-  const won =
-    workingState.illumination >=
-    workingState.separation + REQUIRED_ILLUMINATION_MARGIN;
+  const won = workingState.illumination >= workingState.separation + REQUIRED_ILLUMINATION_MARGIN;
   return {
     ok: true,
     value: won

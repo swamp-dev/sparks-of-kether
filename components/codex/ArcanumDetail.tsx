@@ -1,10 +1,5 @@
 import Link from 'next/link';
-import {
-  arcanumByNumber,
-  letterByKey,
-  pathByNumber,
-  sefirahByKey,
-} from '@/data';
+import { arcanumByNumber, letterByKey, pathByNumber, sefirahByKey } from '@/data';
 import { arcanumCodex } from '@/data/codex-content';
 import { ArcanumCard } from '@/components/cards/ArcanumCard';
 import { toRoman } from './roman';
@@ -34,10 +29,7 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
   const toSefirah = sefirahByKey(path.to);
 
   return (
-    <article
-      data-codex-arcanum={number}
-      className="mx-auto max-w-5xl px-6 py-12 text-veil"
-    >
+    <article data-codex-arcanum={number} className="mx-auto max-w-5xl px-6 py-12 text-veil">
       <header className="mb-10 grid grid-cols-1 gap-8 md:grid-cols-[max-content_1fr] md:items-center">
         {/* Hero card — reuses the existing card primitive. The SVG
             sizes via its 5:8 aspect ratio when given an explicit
@@ -51,20 +43,12 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
             Major Arcanum {toRoman(arc.number)} ·{' '}
             <span className="tabular-nums">#{arc.number}</span>
           </div>
-          <h1 className="font-display text-5xl tracking-widest">
-            {arc.name}
-          </h1>
+          <h1 className="font-display text-5xl tracking-widest">{arc.name}</h1>
           <div className="flex items-center justify-center gap-3 md:justify-start">
-            <span
-              lang="he"
-              dir="rtl"
-              className="font-hebrew text-4xl"
-            >
+            <span lang="he" dir="rtl" className="font-hebrew text-4xl">
               {letter.glyph}
             </span>
-            <span className="font-display text-lg tracking-widest opacity-80">
-              {letter.name}
-            </span>
+            <span className="font-display text-lg tracking-widest opacity-80">{letter.name}</span>
             <span className="opacity-60">·</span>
             <Link
               href={`/path/${path.number}`}
@@ -73,21 +57,13 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
               Path {path.number}
             </Link>
           </div>
-          <p className="max-w-prose text-base italic opacity-80">
-            {codex.meaning}
-          </p>
+          <p className="max-w-prose text-base italic opacity-80">{codex.meaning}</p>
         </div>
       </header>
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-[3fr_2fr]">
-        <section
-          aria-labelledby="english-pane-heading"
-          className="space-y-6"
-        >
-          <h2
-            id="english-pane-heading"
-            className="font-display text-2xl tracking-widest"
-          >
+        <section aria-labelledby="english-pane-heading" className="space-y-6">
+          <h2 id="english-pane-heading" className="font-display text-2xl tracking-widest">
             Symbolism &amp; role
           </h2>
           <p className="leading-relaxed">{codex.gameRole}</p>
@@ -100,27 +76,18 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
               </span>{' '}
               {letter.name} — {letter.meaning}
             </dd>
-            <dt className="font-display tracking-widest opacity-70">
-              Letter value
-            </dt>
+            <dt className="font-display tracking-widest opacity-70">Letter value</dt>
             <dd className="tabular-nums">{letter.value}</dd>
-            <dt className="font-display tracking-widest opacity-70">
-              Letter class
-            </dt>
+            <dt className="font-display tracking-widest opacity-70">Letter class</dt>
             <dd className="capitalize">{letter.class}</dd>
-            <dt className="font-display tracking-widest opacity-70">
-              Attribution
-            </dt>
+            <dt className="font-display tracking-widest opacity-70">Attribution</dt>
             <dd className="capitalize">
               {arc.attribution.kind}: {arc.attribution.value}
             </dd>
           </dl>
 
           <section aria-labelledby="keywords-heading" className="space-y-2">
-            <h3
-              id="keywords-heading"
-              className="font-display text-lg tracking-widest"
-            >
+            <h3 id="keywords-heading" className="font-display text-lg tracking-widest">
               Keywords
             </h3>
             <ul className="flex flex-wrap gap-2 text-sm">
@@ -142,10 +109,7 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
             aria-labelledby="path-pane-heading"
             className="space-y-3 rounded border border-veil/10 p-5"
           >
-            <h2
-              id="path-pane-heading"
-              className="font-display text-lg tracking-widest opacity-80"
-            >
+            <h2 id="path-pane-heading" className="font-display text-lg tracking-widest opacity-80">
               Path
             </h2>
             <p className="text-sm leading-relaxed">
@@ -173,8 +137,7 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
               .
             </p>
             <p className="text-xs leading-relaxed opacity-70">
-              Pillars crossed: {path.pillarsCrossed[0]} ↔{' '}
-              {path.pillarsCrossed[1]}.
+              Pillars crossed: {path.pillarsCrossed[0]} ↔ {path.pillarsCrossed[1]}.
             </p>
           </section>
         </aside>
@@ -185,8 +148,7 @@ export function ArcanumDetail({ number }: ArcanumDetailProps): JSX.Element {
           ← Back to Codex
         </Link>
         <span className="mx-3 opacity-40">·</span>
-        From{' '}
-        <code className="rounded bg-white/5 px-1">reference/arcana.md</code>.
+        From <code className="rounded bg-white/5 px-1">reference/arcana.md</code>.
       </footer>
     </article>
   );

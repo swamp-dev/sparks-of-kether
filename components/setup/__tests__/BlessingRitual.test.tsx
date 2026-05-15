@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { BlessingRitual } from '../BlessingRitual';
 import { seededRng } from '@/engine/rng';
 import { sefirot } from '@/data';
@@ -41,7 +41,8 @@ describe('BlessingRitual — flow', () => {
   it('end-to-end: 10 steps yield a full StatSheet, each in [3, 18]', () => {
     let result: StatSheet | null = null;
     render(
-      <BlessingRitual sign="aries"
+      <BlessingRitual
+        sign="aries"
         rng={seededRng(7)}
         onComplete={(s) => {
           result = s;
@@ -66,7 +67,8 @@ describe('BlessingRitual — flow', () => {
     const runOnce = (): StatSheet => {
       let result: StatSheet | null = null;
       const { unmount } = render(
-        <BlessingRitual sign="aries"
+        <BlessingRitual
+          sign="aries"
           rng={seededRng(42)}
           onComplete={(s) => {
             result = s;
@@ -111,10 +113,7 @@ describe('BlessingRitual — step gating', () => {
   it('does not render a "Receive" CTA at any of the 10 steps (#250)', () => {
     render(<BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />);
     for (const s of sefirot) {
-      expect(
-        screen.queryByRole('button', { name: /Receive/i }),
-        `pre-roll at ${s.key}`,
-      ).toBeNull();
+      expect(screen.queryByRole('button', { name: /Receive/i }), `pre-roll at ${s.key}`).toBeNull();
       fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
       expect(
         screen.queryByRole('button', { name: /Receive/i }),
@@ -174,9 +173,7 @@ describe('BlessingRitual — onComplete', () => {
     }
     expect(onComplete).not.toHaveBeenCalled();
     // Summary is visible.
-    expect(
-      screen.queryByRole('button', { name: /Continue/i }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Continue/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
@@ -193,18 +190,12 @@ describe('BlessingRitual — onComplete', () => {
   });
 
   it('Hasten path also requires a Continue click before onComplete (#215)', () => {
-    vi.useFakeTimers();
-    try {
-      const onComplete = vi.fn();
-      render(<BlessingRitual rng={seededRng(7)} sign="aries" onComplete={onComplete} />);
-      fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
-      act(() => { vi.advanceTimersByTime(1600); });
-      expect(onComplete).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
-      expect(onComplete).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.useRealTimers();
-    }
+    const onComplete = vi.fn();
+    render(<BlessingRitual rng={seededRng(7)} sign="aries" onComplete={onComplete} />);
+    fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
+    expect(onComplete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -212,7 +203,8 @@ describe('BlessingRitual — summary', () => {
   it('renders a summary row for each of the 10 stats — visible before Continue (#215)', () => {
     let result: StatSheet | null = null;
     const { container } = render(
-      <BlessingRitual sign="aries"
+      <BlessingRitual
+        sign="aries"
         rng={seededRng(99)}
         onComplete={(s) => {
           result = s;
@@ -255,66 +247,54 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
   // repeat plays. Provide a "Hasten the rite" affordance that fills
   // the remaining stats in one click and advances to the summary.
   it('renders a Hasten button that rolls all remaining stats at once', () => {
-    vi.useFakeTimers();
-    try {
-      let result: StatSheet | null = null;
-      const { container } = render(
-        <BlessingRitual sign="aries"
-          rng={seededRng(7)}
-          onComplete={(s) => {
-            result = s;
-          }}
-        />,
-      );
-      const skip = screen.getByRole('button', { name: /Hasten the rite/i });
-      fireEvent.click(skip);
-      act(() => { vi.advanceTimersByTime(1600); });
-      // Should land on the summary panel.
-      expect(
-        container.querySelector('[data-blessing-ritual][data-status="complete"]'),
-      ).not.toBeNull();
-      // #215: explicit Continue gate before onComplete.
-      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
-      // All 10 stats present.
-      for (const stat of STAT_KEYS) {
-        expect(result?.[stat]).toBeGreaterThanOrEqual(3);
-        expect(result?.[stat]).toBeLessThanOrEqual(18);
-      }
-    } finally {
-      vi.useRealTimers();
+    let result: StatSheet | null = null;
+    const { container } = render(
+      <BlessingRitual
+        sign="aries"
+        rng={seededRng(7)}
+        onComplete={(s) => {
+          result = s;
+        }}
+      />,
+    );
+    const skip = screen.getByRole('button', { name: /Hasten the rite/i });
+    fireEvent.click(skip);
+    // Should land on the summary panel.
+    expect(
+      container.querySelector('[data-blessing-ritual][data-status="complete"]'),
+    ).not.toBeNull();
+    // #215: explicit Continue gate before onComplete.
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    // All 10 stats present.
+    for (const stat of STAT_KEYS) {
+      expect(result?.[stat]).toBeGreaterThanOrEqual(3);
+      expect(result?.[stat]).toBeLessThanOrEqual(18);
     }
   });
 
   it('Hasten works mid-ceremony — partial stats are preserved, the rest are rolled', () => {
-    vi.useFakeTimers();
-    try {
-      let result: StatSheet | null = null;
-      render(
-        <BlessingRitual sign="aries"
-          rng={seededRng(7)}
-          onComplete={(s) => {
-            result = s;
-          }}
-        />,
-      );
-      // Roll + advance the first two Sefirot manually.
-      for (let i = 0; i < 2; i++) {
-        fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
-        // Advance past the roll animation timer (700ms) so rolling state clears.
-        act(() => { vi.advanceTimersByTime(800); });
-        fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
-      }
-      // Hasten from the third step onward.
-      fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
-      act(() => { vi.advanceTimersByTime(1600); });
-      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
-      // All 10 still present in the result.
-      for (const stat of STAT_KEYS) {
-        expect(result?.[stat]).toBeGreaterThanOrEqual(3);
-        expect(result?.[stat]).toBeLessThanOrEqual(18);
-      }
-    } finally {
-      vi.useRealTimers();
+    let result: StatSheet | null = null;
+    render(
+      <BlessingRitual
+        sign="aries"
+        rng={seededRng(7)}
+        onComplete={(s) => {
+          result = s;
+        }}
+      />,
+    );
+    // Roll + advance the first two Sefirot manually.
+    for (let i = 0; i < 2; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    }
+    // Hasten from the third step onward.
+    fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    // All 10 still present in the result.
+    for (const stat of STAT_KEYS) {
+      expect(result?.[stat]).toBeGreaterThanOrEqual(3);
+      expect(result?.[stat]).toBeLessThanOrEqual(18);
     }
   });
 });
@@ -516,19 +496,18 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     // Sanity: blessing IS set in the rolled state.
-    expect(container.querySelector('[data-blessing-ritual]')?.getAttribute('data-blessing-state')).toBe('set');
+    expect(
+      container.querySelector('[data-blessing-ritual]')?.getAttribute('data-blessing-state'),
+    ).toBe('set');
     expect(container.querySelector('[data-blessing-quote]')).not.toBeNull();
 
-    vi.useFakeTimers();
     fireEvent.click(screen.getByRole('button', { name: /Hasten the rite/i }));
-    act(() => { vi.advanceTimersByTime(1600); });
-    vi.useRealTimers();
 
     // Verify we're on the Summary screen (data-status='complete').
     const root = container.querySelector('[data-blessing-ritual]');
     expect(root?.getAttribute('data-status')).toBe('complete');
     // Load-bearing assertion: blessing state was cleared by the skip
-    // handler. Removing `setBlessing(null)` from the timeout callback
+    // handler. Removing `setBlessing(null)` from handleSkipCeremony
     // would flip this to 'set' and fail the test.
     expect(root?.getAttribute('data-blessing-state')).toBe('null');
   });

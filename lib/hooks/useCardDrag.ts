@@ -64,10 +64,7 @@ function releasePointerCaptureSafe(el: Element, pointerId: number): void {
 interface UseCardDragReturn {
   readonly state: CardDragState;
   readonly handlers: {
-    readonly onPointerDown: (
-      e: PointerEvent<HTMLElement>,
-      arcanum: number,
-    ) => void;
+    readonly onPointerDown: (e: PointerEvent<HTMLElement>, arcanum: number) => void;
     readonly onPointerMove: (e: PointerEvent<HTMLElement>) => void;
     readonly onPointerUp: (e: PointerEvent<HTMLElement>) => void;
     readonly onPointerCancel: (e: PointerEvent<HTMLElement>) => void;
@@ -85,24 +82,21 @@ export function useCardDrag(options: UseCardDragOptions): UseCardDragReturn {
   const onEffectRef = useRef(options.onEffect);
   onEffectRef.current = options.onEffect;
 
-  const dispatch = useCallback(
-    (event: Parameters<typeof reduceCardDrag>[1]): void => {
-      setState((prev) => {
-        const step = reduceCardDrag(prev, event);
-        const effect = step.effect;
-        if (effect !== undefined) {
-          // Defer the effect to a microtask so the state update
-          // commits before the consumer's effect runs. Without this,
-          // a `click` effect that calls `onCardSelect` (which ends in
-          // a `setState` in the parent) would fire mid-reduce and
-          // batch unpredictably under React 18.
-          queueMicrotask(() => onEffectRef.current(effect));
-        }
-        return step.state;
-      });
-    },
-    [],
-  );
+  const dispatch = useCallback((event: Parameters<typeof reduceCardDrag>[1]): void => {
+    setState((prev) => {
+      const step = reduceCardDrag(prev, event);
+      const effect = step.effect;
+      if (effect !== undefined) {
+        // Defer the effect to a microtask so the state update
+        // commits before the consumer's effect runs. Without this,
+        // a `click` effect that calls `onCardSelect` (which ends in
+        // a `setState` in the parent) would fire mid-reduce and
+        // batch unpredictably under React 18.
+        queueMicrotask(() => onEffectRef.current(effect));
+      }
+      return step.state;
+    });
+  }, []);
 
   const onPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>, arcanum: number): void => {

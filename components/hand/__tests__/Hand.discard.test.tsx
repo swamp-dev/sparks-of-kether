@@ -11,9 +11,7 @@ import { Hand } from '../Hand';
  */
 describe('Hand — discard mode', () => {
   it('renders no discard icons when discardMode is false', () => {
-    const { container } = render(
-      <Hand hand={[0, 1, 2]} visible={true} discardMode={false} />,
-    );
+    const { container } = render(<Hand hand={[0, 1, 2]} visible={true} discardMode={false} />);
     expect(container.querySelectorAll('[data-discard-icon]').length).toBe(0);
   });
 
@@ -47,13 +45,9 @@ describe('Hand — discard mode', () => {
   });
 
   it('each discard icon has a correct aria-label with the card name', () => {
-    render(
-      <Hand hand={[0]} visible={true} discardMode={true} onDiscard={vi.fn()} />,
-    );
+    render(<Hand hand={[0]} visible={true} discardMode={true} onDiscard={vi.fn()} />);
     const cardName = arcanumByNumber(0).name;
-    expect(
-      screen.getByRole('button', { name: `Discard ${cardName}` }),
-    ).toBeDefined();
+    expect(screen.getByRole('button', { name: `Discard ${cardName}` })).toBeDefined();
   });
 
   it('clicking a discard icon fires onDiscard with the arcanum', () => {

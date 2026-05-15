@@ -37,9 +37,7 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
   // #313: the home page was redesigned. The h1 is unique; pin it
   // by level=1 so the assertion is unambiguous against the
   // PitchColumns sr-only h2 which also names the game.
-  await expect(
-    page.getByRole('heading', { level: 1, name: /sparks of kether/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /sparks of kether/i })).toBeVisible();
   // #313: the three entry points (New game / Join game / Hot-seat)
   // sit behind a single "Begin the ascent" disclosure trigger. Click
   // the trigger first to reveal them; wait for the panel to be in
@@ -60,9 +58,7 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
   // sign-aware blessing copy).
   for (let player = 1; player <= 2; player++) {
     // #236: zodiac-sign picker — first phase.
-    await expect(
-      page.getByRole('heading', { name: /Choose your sign/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
     // P1 picks Aries; P2 picks Leo — both available, both distinct.
     // #314: the picker is a carousel. With nothing taken, aries is
     // the default-focused stage, so P1's confirm is one click. For
@@ -73,22 +69,16 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
       // Sequence after #370 with aries taken by P1:
       //   start: taurus (auto-skipped past aries) → 1st next: gemini
       //   → 2nd: cancer → 3rd: leo.
-      const nextArrow = page
-        .getByRole('button', { name: /^Next sign$/ })
-        .first();
+      const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
       for (let i = 0; i < 3; i++) {
         await nextArrow.click();
       }
     }
     const signLabel = player === 1 ? 'Aries' : 'Leo';
-    await page
-      .getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) })
-      .click();
+    await page.getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) }).click();
 
     // Then the blessing ritual.
-    await expect(
-      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
-    ).toBeVisible();
+    await expect(page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`))).toBeVisible();
 
     // Ten steps: Roll 3d6 → Next.
     for (let step = 0; step < 10; step++) {
@@ -98,9 +88,7 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
 
     // #215: the ritual pauses on a Summary screen. Click Continue
     // to advance to the next player (or the lobby for player 2).
-    await expect(
-      page.getByRole('heading', { name: /The Tree has spoken/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /The Tree has spoken/i })).toBeVisible();
     await page.getByRole('button', { name: /^Continue$/ }).click();
   }
 
@@ -120,14 +108,14 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
   await expect(page.locator('[data-stat-sheet]')).toBeVisible();
   // Tree is a figure with the right title.
   await expect(
-    page.getByRole('figure').filter({ hasText: /Tree of Life/i }).first(),
+    page
+      .getByRole('figure')
+      .filter({ hasText: /Tree of Life/i })
+      .first(),
   ).toBeVisible();
 
   // Phase machine should land in 'move' for the first turn.
-  await expect(page.locator('[data-play-screen]')).toHaveAttribute(
-    'data-phase',
-    'move',
-  );
+  await expect(page.locator('[data-play-screen]')).toHaveAttribute('data-phase', 'move');
 
   // #368: clicking the leftmost card must succeed without force-click.
   // Pre-fix, the SVG of card 1 occluded card 0's bounding-box centre,

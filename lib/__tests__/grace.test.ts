@@ -1,10 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import {
-  computeGraceState,
-  GRACE_PERIOD_MS,
-  useDisconnectGrace,
-} from '../grace';
+import { computeGraceState, GRACE_PERIOD_MS, useDisconnectGrace } from '../grace';
 
 const t0 = 1_700_000_000_000;
 

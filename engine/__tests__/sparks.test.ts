@@ -73,11 +73,16 @@ describe('useSpark — Chesed (Grace)', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [5] });
     const receiver = makePlayer({ id: 'p2', hand: [] });
     const state = makeState({}, { players: [giver, receiver] });
-    const result = useSpark(state, 'p1', {
-      kind: 'chesed-grace',
-      toPlayerId: 'p2',
-      arcanumNumber: 5,
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'chesed-grace',
+        toPlayerId: 'p2',
+        arcanumNumber: 5,
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -92,11 +97,16 @@ describe('useSpark — Chesed (Grace)', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [1] });
     const receiver = makePlayer({ id: 'p2' });
     const state = makeState({}, { players: [giver, receiver] });
-    const result = useSpark(state, 'p1', {
-      kind: 'chesed-grace',
-      toPlayerId: 'p2',
-      arcanumNumber: 99,
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'chesed-grace',
+        toPlayerId: 'p2',
+        arcanumNumber: 99,
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('payload-invalid');
@@ -105,11 +115,16 @@ describe('useSpark — Chesed (Grace)', () => {
   it('rejects if the receiver does not exist', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [5] });
     const state = makeState({}, { players: [giver] });
-    const result = useSpark(state, 'p1', {
-      kind: 'chesed-grace',
-      toPlayerId: 'ghost',
-      arcanumNumber: 5,
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'chesed-grace',
+        toPlayerId: 'ghost',
+        arcanumNumber: 5,
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('payload-invalid');
@@ -118,11 +133,16 @@ describe('useSpark — Chesed (Grace)', () => {
   it('rejects self-gift (giver === receiver)', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [5] });
     const state = makeState({}, { players: [giver] });
-    const result = useSpark(state, 'p1', {
-      kind: 'chesed-grace',
-      toPlayerId: 'p1',
-      arcanumNumber: 5,
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'chesed-grace',
+        toPlayerId: 'p1',
+        arcanumNumber: 5,
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('payload-invalid');
@@ -136,11 +156,16 @@ describe('useSpark — Chesed (Grace)', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [5] });
     const receiver = makePlayer({ id: 'p2', hand: [10, 11, 12, 13, 14, 15] });
     const state = makeState({}, { players: [giver, receiver] });
-    const result = useSpark(state, 'p1', {
-      kind: 'chesed-grace',
-      toPlayerId: 'p2',
-      arcanumNumber: 5,
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'chesed-grace',
+        toPlayerId: 'p2',
+        arcanumNumber: 5,
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('gift-rejected-cap-full');
@@ -202,10 +227,15 @@ describe('useSpark — Netzach (Courage)', () => {
 describe('useSpark — Yesod (Intuition)', () => {
   it('replaces the top-N cards of the deck with the given order (N = reorder.length)', () => {
     const state = stateWithSpark('yesod', {}, { deck: [10, 20, 30, 40, 50] });
-    const result = useSpark(state, 'p1', {
-      kind: 'yesod-intuition',
-      reorder: [30, 10, 20],
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'yesod-intuition',
+        reorder: [30, 10, 20],
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.deck).toEqual([30, 10, 20, 40, 50]);
@@ -213,10 +243,15 @@ describe('useSpark — Yesod (Intuition)', () => {
 
   it('rejects a reorder that is not a permutation of the actual top-N', () => {
     const state = stateWithSpark('yesod', {}, { deck: [10, 20, 30, 40] });
-    const result = useSpark(state, 'p1', {
-      kind: 'yesod-intuition',
-      reorder: [10, 20, 99],
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'yesod-intuition',
+        reorder: [10, 20, 99],
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('payload-invalid');
@@ -224,10 +259,15 @@ describe('useSpark — Yesod (Intuition)', () => {
 
   it('rejects a reorder that asks for more cards than the deck has', () => {
     const state = stateWithSpark('yesod', {}, { deck: [10, 20] });
-    const result = useSpark(state, 'p1', {
-      kind: 'yesod-intuition',
-      reorder: [10, 20, 30],
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'yesod-intuition',
+        reorder: [10, 20, 30],
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('payload-invalid');
@@ -324,10 +364,7 @@ describe('useSpark — Kether (Unity)', () => {
   it('recycles discard pile when deck empties mid-distribution', () => {
     const p1 = playerWithSpark('kether', { id: 'p1', hand: [] });
     const p2 = makePlayer({ id: 'p2', hand: [] });
-    const state = makeState(
-      {},
-      { players: [p1, p2], deck: [7], discardPile: [20, 21] },
-    );
+    const state = makeState({}, { players: [p1, p2], deck: [7], discardPile: [20, 21] });
     const result = useSpark(state, 'p1', { kind: 'kether-unity' }, RNG());
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -431,11 +468,16 @@ describe('useSpark — invariants across all abilities', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [5] });
     const receiver = makePlayer({ id: 'p2', hand: [] });
     const state = makeState({}, { players: [giver, receiver] });
-    const result = useSpark(state, 'p1', {
-      kind: 'chesed-grace',
-      toPlayerId: 'p2',
-      arcanumNumber: 5,
-    }, RNG());
+    const result = useSpark(
+      state,
+      'p1',
+      {
+        kind: 'chesed-grace',
+        toPlayerId: 'p2',
+        arcanumNumber: 5,
+      },
+      RNG(),
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.players[0]?.sparksHeld.has('chesed')).toBe(false);

@@ -81,9 +81,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
     if (!isOpen) return;
     const panel = panelRef.current;
     if (panel === null) return;
-    const firstInput = panel.querySelector<HTMLInputElement>(
-      'input:not([disabled])',
-    );
+    const firstInput = panel.querySelector<HTMLInputElement>('input:not([disabled])');
     firstInput?.focus();
   }, [isOpen]);
 
@@ -149,21 +147,15 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
         // content even though the user can't see or focus it; this
         // is allowed by the ARIA spec.)
         hidden={isOpen}
-        className="
-          group mx-auto inline-flex items-center justify-center gap-3
-          rounded-full border-2 border-illumination/70 bg-ground/40
-          px-10 py-5 font-display text-xl tracking-widest text-illumination
-          shadow-glow-tiferet transition-all duration-300 ease-emerge
-          hover:bg-ground/60 hover:border-illumination
-          focus-visible:outline-none focus-visible:ring-2
-          focus-visible:ring-illumination focus-visible:ring-offset-2
-          focus-visible:ring-offset-void
-          motion-safe:animate-breath
-        "
+        className="group mx-auto inline-flex items-center justify-center gap-3 rounded-full border-2 border-illumination/70 bg-ground/40 px-10 py-5 font-display text-xl tracking-widest text-illumination shadow-glow-tiferet transition-all duration-300 ease-emerge hover:border-illumination hover:bg-ground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination focus-visible:ring-offset-2 focus-visible:ring-offset-void motion-safe:animate-breath"
       >
-        <span aria-hidden="true" className="text-2xl">✦</span>
+        <span aria-hidden="true" className="text-2xl">
+          ✦
+        </span>
         Begin the ascent
-        <span aria-hidden="true" className="text-2xl">✦</span>
+        <span aria-hidden="true" className="text-2xl">
+          ✦
+        </span>
       </button>
 
       {isOpen ? (
@@ -173,11 +165,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
           role="region"
           aria-labelledby={TRIGGER_ID}
           data-home-portal-panel
-          className="
-            mx-auto w-full max-w-md rounded-lg border border-veil/15
-            bg-ground/60 p-6 backdrop-blur-sm
-            transition-opacity duration-300 ease-emerge
-          "
+          className="mx-auto w-full max-w-md rounded-lg border border-veil/15 bg-ground/60 p-6 backdrop-blur-sm transition-opacity duration-300 ease-emerge"
           // No `aria-hidden` here — the panel is the active region.
         >
           {/* Header inside the open panel — affords a way back to the
@@ -194,11 +182,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
               type="button"
               data-home-portal-close
               onClick={() => setIsOpen(false)}
-              className="
-                rounded text-xs uppercase tracking-widest text-veil/70
-                hover:text-veil focus-visible:outline-none
-                focus-visible:ring-1 focus-visible:ring-veil/60
-              "
+              className="rounded text-xs uppercase tracking-widest text-veil/70 hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60"
               aria-label="Collapse and return to the portal"
             >
               Close
@@ -219,14 +203,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
             href="/play"
             data-home-hotseat
             data-home-cta="hotseat"
-            className="
-              block w-full rounded border border-veil/30 px-6 py-3
-              text-center font-display tracking-widest text-veil
-              transition-colors duration-200 ease-flow
-              hover:border-veil/60
-              focus-visible:outline-none focus-visible:ring-2
-              focus-visible:ring-veil/60
-            "
+            className="block w-full rounded border border-veil/30 px-6 py-3 text-center font-display tracking-widest text-veil transition-colors duration-200 ease-flow hover:border-veil/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-veil/60"
           >
             Hot-seat / single-machine
           </Link>
