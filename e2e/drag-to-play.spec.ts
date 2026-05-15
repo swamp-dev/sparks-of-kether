@@ -109,6 +109,13 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
     `[data-card-slot][data-arcanum="${pair.arcanum}"]`,
   );
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
+
+  // Expand the floating hand from peek mode before computing bounding
+  // boxes — otherwise the hover triggered by mouse.move shifts the card
+  // position between box-capture and mouse.down, missing the element.
+  await page.locator('[data-hand-fan]').hover();
+  await page.waitForTimeout(350);
+
   const cardBox = await card.boundingBox();
   const pathBox = await path.boundingBox();
   expect(cardBox).not.toBeNull();
@@ -170,6 +177,16 @@ test('drag-to-play: dragging onto a non-matching path is rejected with announcem
   if (mismatchedPathNumber === null) return;
 
   const path = page.locator(`[data-drop-zone="path-${mismatchedPathNumber}"]`);
+
+  // The hand floats in peek mode until hovered. Hovering triggers the
+  // expand animation (HAND_REVEAL_MS=280 ms). We must expand BEFORE
+  // computing the bounding box — otherwise page.mouse.move to the
+  // peek-position card triggers expansion mid-sequence, the card shifts
+  // upward, and page.mouse.down() misses it entirely (no pointerdown
+  // on the card ⇒ drag never starts ⇒ announcement never fires).
+  await page.locator('[data-hand-fan]').hover();
+  await page.waitForTimeout(350); // 280 ms reveal + buffer
+
   const cardBox = await card.boundingBox();
   const pathBox = await path.boundingBox();
   if (!cardBox || !pathBox) return;
