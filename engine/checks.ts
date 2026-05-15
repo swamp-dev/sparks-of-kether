@@ -3,6 +3,7 @@ import type { Pillar, SefirahKey } from '@/data';
 import { pathByArcanum } from '@/data';
 import { applyEvent } from './counters';
 import type { Rng } from './rng';
+import { banishShell, isCrueltyActive, isDespairActive, isVanityActive, maybeActivateShell } from './shells';
 import { soulDoorDcDelta } from './soul-door-bonus';
 import type { CheckOutcome, GameState, PlayerState, Result } from './types';
 
@@ -274,6 +275,14 @@ export interface CheckModifiers {
    * the engine treats `outcome.effectiveDC` as the no-tilt baseline).
    */
   readonly chokmahTilt?: number;
+  /**
+   * #17 — Shell DC adjustments (Cruelty +2 at Gevurah; Vanity +2 on
+   * Harmony checks when no Tiferet player). Applied DC-side, additive
+   * with all other tilts. Auto-folded by `resolveChallenge` on the
+   * engine path; UI callers that pre-roll outcome must supply it (or
+   * omit/0 to treat `outcome.effectiveDC` as the no-shell baseline).
+   */
+  readonly shellDcAdjustment?: number;
 }
 
 export type ChallengeRejection =
@@ -534,6 +543,7 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
   // additively per S6, after the chassis deltas (last in the formula
   // matches the design's "chassis deltas first, Chokmah tilt last").
   const chokmahAdjustment = modifiers.chokmahTilt ?? 0;
+  const shellAdjustment = modifiers.shellDcAdjustment ?? 0;
   const effectiveDC =
     dc +
     shortcutAdjustment +
@@ -541,7 +551,8 @@ export function rollCheck(input: RollCheckInput): CheckOutcome {
     tiferetAdjustment +
     netzachAdjustment +
     chesedAdjustment +
-    chokmahAdjustment;
+    chokmahAdjustment +
+    shellAdjustment;
 
   return {
     rolled,
@@ -670,7 +681,9 @@ export function resolveChallenge(
     return { ok: false, reason: { kind: 'already-cleared', sefirah } };
   }
 
-  const stat = player.stats[sefirahRecord.stat];
+  // #17: Shell of Gevurah (Cruelty) — every player's Strength stat -1.
+  const crueltyPenalty = isCrueltyActive(state) && sefirahRecord.stat === 'strength' ? -1 : 0;
+  const stat = player.stats[sefirahRecord.stat] + crueltyPenalty;
   // #244: auto-inject Soul Door delta from the player's class when
   // the caller hasn't supplied one. UI callers (ChallengeModal) set
   // their own so the pre-roll animation matches the engine's DC; the
@@ -856,6 +869,29 @@ export function resolveChallenge(
     }
   }
 
+  // #17 — Shell DC auto-folds (engine path only; UI callers supply
+  // `shellDcAdjustment` directly or omit/0 for the no-shell baseline).
+  if (input.outcome === undefined) {
+    let shellDc = 0;
+    // Shell of Gevurah (Cruelty): Gevurah challenges are DC +2.
+    if (isCrueltyActive(state) && sefirah === 'gevurah') shellDc += 2;
+    // Shell of Tiferet (Vanity): Harmony stat checks are DC +2 when no
+    // player is at Tiferet.
+    if (
+      isVanityActive(state) &&
+      sefirahRecord.stat === 'harmony' &&
+      !state.players.some((p) => p.position === 'tiferet')
+    ) {
+      shellDc += 2;
+    }
+    if (shellDc !== 0) {
+      resolvedModifiers = {
+        ...resolvedModifiers,
+        shellDcAdjustment: (resolvedModifiers.shellDcAdjustment ?? 0) + shellDc,
+      };
+    }
+  }
+
   // #489 — pendingStatBuff consumption. The Netzach buff is set on the
   // active player when they pass Netzach with a declaration; it applies
   // to the next stat-check this turn whose sefirah matches the buff's
@@ -1014,21 +1050,32 @@ export function resolveChallenge(
       p.id === playerId ? updatedPlayer : p,
     ),
   };
+  // #17: Clearing a Sefirah banishes its Shell (active → banished) or
+  // stillborns it (dormant → banished). No-op if already banished.
+  const stateWithBanishment = banishShell(stateWithCleared, sefirah);
   // Each counter bump goes through applyEvent — single source of truth.
   // Spark earned for the challenger; one assist-contributed event per
   // assistant (design/mechanics.md: "the assistant gets the +1, not
   // the challenger").
-  let newState = applyEvent(stateWithCleared, {
+  let newState = applyEvent(stateWithBanishment, {
     kind: 'spark-earned',
     playerId,
     sefirah,
   });
-  for (const _stat of modifiers.assistStats) {
-    newState = applyEvent(newState, {
-      kind: 'assist-contributed',
-      challengerId: playerId,
-      sefirah,
-    });
+  // #17: Shell of Binah (Despair) — ally assists produce no Illumination
+  // while Despair is active. Emit the event only when Despair is dormant
+  // or banished; Despair state is from *before* the sefirah-clear (if
+  // Binah was just cleared, stateWithBanishment already marked Binah
+  // banished, so isDespairActive returns false here). Correct — assists
+  // on a Binah-clear do earn Illumination since clearing Binah ends Despair.
+  if (!isDespairActive(stateWithBanishment)) {
+    for (const _stat of modifiers.assistStats) {
+      newState = applyEvent(newState, {
+        kind: 'assist-contributed',
+        challengerId: playerId,
+        sefirah,
+      });
+    }
   }
 
   // #486 — Chesed Overflow bonus. When unfolding AND the d20 would
@@ -1251,12 +1298,14 @@ export function acceptSetback(state: GameState, input: SetbackInput): GameState 
     sefirah: input.sefirah,
     shortcut,
   });
+  // #17: Run Shell awakening after every Separation increase.
+  const afterShells = maybeActivateShell(afterCounterTick);
 
   if (!shortcut) {
-    return afterCounterTick;
+    return afterShells;
   }
 
-  return rollbackPosition(afterCounterTick, input.playerId);
+  return rollbackPosition(afterShells, input.playerId);
 }
 
 /**

@@ -216,7 +216,12 @@ describe('turnReducer — phase transitions', () => {
     // `'draw'` phase is gone, so accept-setback lands in `'end'`
     // directly with `lastAction: 'move-draw'` set.
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
-    const state = makeState({}, { players: [player], separation: 3 });
+    // Pre-banish 1 shell: a real game at sep=3 would have already
+    // activated the first shell, so the maybeActivateShell hook is a no-op.
+    const state = makeState(
+      {},
+      { players: [player], separation: 3, shells: { ...EMPTY_SHELL_STATE, malkuth: 'banished' } },
+    );
     const result = turnReducer(
       { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
       { kind: 'accept-setback', sefirah: 'gevurah' },

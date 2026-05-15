@@ -108,6 +108,9 @@ export function endTurn(state: GameState): GameState {
     pendingDiscard: undefined,
     lastAction: undefined,
     meditatedThisTurn: false,
+    // #17: Paralysis (Shell of Chokmah) — clear per-turn draw log on
+    // seat rotation so the restriction resets for the next player.
+    drawnThisTurn: undefined,
   };
 }
 

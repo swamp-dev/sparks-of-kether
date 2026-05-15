@@ -1,5 +1,6 @@
 import type { Rng } from './rng';
 import { HAND_CAP, STARTING_HAND_SIZE } from './setup';
+import { isParalysisActive } from './shells';
 import type { GameState } from './types';
 
 /**
@@ -145,6 +146,14 @@ export function drawNCards(
     deck = deck.slice(1);
     remaining -= 1;
   }
+  // #17: Paralysis (Shell of Chokmah) — track which arcanum numbers
+  // were drawn this turn so canTravelPath can block them from being
+  // played for movement on the same turn they were drawn.
+  const newlyDrawn = pHand.slice(player.hand.length);
+  const drawnThisTurn =
+    isParalysisActive(state) && newlyDrawn.length > 0
+      ? [...(state.drawnThisTurn ?? []), ...newlyDrawn]
+      : state.drawnThisTurn;
   return {
     ...state,
     players: state.players.map((p, idx) =>
@@ -152,5 +161,6 @@ export function drawNCards(
     ),
     deck,
     discardPile: discard,
+    ...(drawnThisTurn !== state.drawnThisTurn ? { drawnThisTurn } : {}),
   };
 }

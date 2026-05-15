@@ -498,6 +498,24 @@ export interface GameState {
    * synthesize.
    */
   readonly ketherRitual?: KetherRitualState | undefined;
+  /**
+   * #17 — Illusion Shell (Shell of Yesod). The path number chosen
+   * deterministically when Yesod's Shell activates. Players paying
+   * to travel this path arrive at the far Sefirah's neighbour instead
+   * of the listed destination. `undefined` when the Shell is dormant
+   * or banished. Additive — snapshots predating this field treat it
+   * as `undefined` (Illusion not active).
+   */
+  readonly illusoryPath?: number | undefined;
+  /**
+   * #17 — Paralysis Shell (Shell of Chokmah). Arcanum numbers the
+   * active player has drawn on this turn; they cannot be played for
+   * movement while Paralysis is active. Cleared at seat rotation in
+   * `endTurn`. `undefined` / missing means no cards were drawn this
+   * turn (treated as empty). Additive — snapshots predating this
+   * field treat it as `undefined` (no restriction).
+   */
+  readonly drawnThisTurn?: readonly number[] | undefined;
 }
 
 /**
@@ -828,6 +846,12 @@ export type MoveRejection =
       readonly kind: 'path-does-not-connect';
       readonly from: SefirahKey;
       readonly pathNumber: number;
-    };
+    }
+  // #17 — Shell of Malkuth (Inertia): player has only one card, which
+  // would be consumed by the move; no spare card to pay the extra cost.
+  | { readonly kind: 'inertia-one-card' }
+  // #17 — Shell of Chokmah (Paralysis): the path-card was drawn this
+  // turn and cannot be played until next turn while Paralysis is active.
+  | { readonly kind: 'paralysis-drawn-this-turn'; readonly arcanumNumber: number };
 
 export type MoveResult = Result<GameState, MoveRejection>;
