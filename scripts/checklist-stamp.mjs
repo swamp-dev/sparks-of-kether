@@ -188,10 +188,13 @@ export function verifyTranscript(payload) {
   if (typeof process.getuid === 'function' && stat.uid !== process.getuid()) {
     return { ok: false, reason: `transcript_path ${path} not owned by current user` };
   }
-  const ageMs = Date.now() - stat.mtimeMs;
-  if (ageMs > 5 * 60 * 1000) {
-    return { ok: false, reason: `transcript_path ${path} hasn't been modified in ${Math.floor(ageMs / 1000)}s — stale, suggests fabricated payload` };
-  }
+  // Note: mtime check intentionally absent. The harness writes transcript
+  // entries (tool_use + tool_result) AFTER firing the PostToolUse hook, so
+  // the transcript file is always stale relative to hook-fire time. A 5-minute
+  // mtime window incorrectly rejects every legitimate call whose preceding
+  // message was >5 minutes ago (common during long code-reviewer runs).
+  // Existence + ownership + tool_use_id presence is sufficient; the session
+  // UUID embedded in the path is the primary anti-fabrication guard.
 
   if (!payload.tool_use_id) {
     return { ok: false, reason: 'payload missing tool_use_id' };

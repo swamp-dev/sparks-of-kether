@@ -219,11 +219,12 @@ describe('verifyTranscript', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('rejects payload when transcript file mtime is stale (>5 min)', () => {
-    // Simulate a stale transcript by setting its mtime far in the
-    // past via `utimes`. A real harness writes the transcript
-    // continuously; a stale file suggests a fabricated payload
-    // pointing at an old / fake transcript.
+  it('accepts payload even when transcript mtime is old', () => {
+    // The harness writes transcript entries AFTER firing the hook, so
+    // the transcript mtime at hook-fire time reflects the PREVIOUS
+    // message, which may be many minutes old. The mtime check was
+    // removed because it rejected every legitimate long-running
+    // code-reviewer call. A "stale" transcript is normal.
     writeFileSync(transcriptPath, '{"tool_use_id":"toolu_x","content":"x"}\n');
     const oldTime = new Date(Date.now() - 10 * 60 * 1000);
     utimesSync(transcriptPath, oldTime, oldTime);
@@ -231,9 +232,7 @@ describe('verifyTranscript', () => {
       transcript_path: transcriptPath,
       tool_use_id: 'toolu_x',
     });
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error('unreachable: just asserted ok=false');
-    expect(result.reason).toMatch(/stale/);
+    expect(result.ok).toBe(true);
   });
 
   it('skips uid check when process.getuid is not a function (Windows fallback)', () => {
