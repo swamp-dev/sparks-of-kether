@@ -553,12 +553,11 @@ describe('Shell of Netzach — Obsession', () => {
 
 describe('Shell of Hod — Deception', () => {
   it('returns a different arcanum as the top-of-deck label when Deception is active', () => {
-    const state = makeState(
+    // separation=1, deck=[5,7,11,13]: trueIdx = 1%4 = 1 → deck[1]=7 ≠ deck[0]=5
+    const withDeck = makeState(
       {},
-      { shells: { ...EMPTY_SHELL_STATE, hod: 'active' } },
+      { separation: 1, shells: { ...EMPTY_SHELL_STATE, hod: 'active' }, deck: [5, 7, 11, 13] },
     );
-    // Ensure deck has cards
-    const withDeck: typeof state = { ...state, deck: [5, 7, 11, 13] };
     const deceived = deceptiveTopCard(withDeck);
     expect(deceived).toBeDefined();
     expect(deceived).not.toBe(withDeck.deck[0]); // different from true top
@@ -605,6 +604,19 @@ describe('Shell of Yesod — Illusion', () => {
     expect(after.illusoryPath).toBeDefined();
     expect(after.illusoryPath).toBeGreaterThanOrEqual(11);
     expect(after.illusoryPath).toBeLessThanOrEqual(32);
+  });
+
+  it('clears illusoryPath when banishShell removes the Yesod Shell', () => {
+    const state = makeState(
+      {},
+      {
+        shells: { ...EMPTY_SHELL_STATE, yesod: 'active' },
+        illusoryPath: 20,
+      },
+    );
+    const after = banishShell(state, 'yesod');
+    expect(after.shells.yesod).toBe('banished');
+    expect(after.illusoryPath).toBeUndefined();
   });
 });
 

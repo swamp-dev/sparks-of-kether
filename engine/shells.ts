@@ -207,9 +207,9 @@ export function handVisibility(state: GameState): 'public' | 'private' {
  */
 export function deceptiveTopCard(state: GameState): number | undefined {
   if (!isDeceptionActive(state) || state.deck.length === 0) return undefined;
-  // Rotate the true top card label by (separation mod deck size), wrapping
-  // within the existing deck so the announced card is always a real one.
-  const trueIdx = ((state.deck[0] ?? 0) + state.separation) % state.deck.length;
+  // Rotate by separation mod deck size so the announced card is always a
+  // real deck entry and the lie updates each time Separation grows.
+  const trueIdx = state.separation % state.deck.length;
   return state.deck[trueIdx];
 }
 
@@ -226,8 +226,13 @@ export function deceptiveTopCard(state: GameState): number | undefined {
  */
 export function banishShell(state: GameState, sefirah: SefirahKey): GameState {
   if (state.shells[sefirah] === 'banished') return state;
-  return {
+  const next: GameState = {
     ...state,
     shells: { ...state.shells, [sefirah]: 'banished' },
   };
+  // Clearing Yesod retires the illusory path — it belongs to the Shell.
+  if (sefirah === 'yesod' && next.illusoryPath !== undefined) {
+    return { ...next, illusoryPath: undefined };
+  }
+  return next;
 }
