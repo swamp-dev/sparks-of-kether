@@ -91,6 +91,14 @@ export async function createRoom(
   input: CreateRoomInput,
 ): Promise<Result<CreateRoomSuccess, CreateRoomError>> {
   const { client, nickname } = input;
+
+  // Clear any existing anonymous session before starting a new room.
+  // players.id = auth.uid() is the primary key, so a stale player row
+  // from a previous session causes the insert below to fail with 23505.
+  // Room creation always starts fresh — the caller is explicitly leaving
+  // any prior state behind.
+  await client.auth.signOut();
+
   const auth = await ensureAnonymousSession(client);
   if (!auth.ok) {
     return { ok: false, error: { kind: 'auth-failed', cause: auth.error.cause } };
