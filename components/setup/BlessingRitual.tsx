@@ -26,41 +26,43 @@ import { RitualLedger } from './RitualLedger';
  *
  * Flow per step:
  *   1. Avatar portrait + Sefirah essence line + invocation appear.
- *   2. Player rolls 3d6. The dice animate (RAF-based cycling) then
- *      settle on the actual values; the blessing quote + Next appear
- *      immediately so tests and impatient players aren't blocked.
- *   3. The total reveals; the player clicks **Next** to advance.
- * After Malkuth, a summary screen lists all 10 stats and waits for
- * an explicit "Continue" click before emitting `onComplete(statSheet)`.
+ *      Three dice placeholders are always visible so the layout is
+ *      stable before and after rolling (#71).
+ *   2. Player rolls 3d6. The dice animate then settle on actual values;
+ *      the blessing quote + Next appear immediately.
+ *   3. The player clicks **Next** to advance.
  *
- * State machine per step: `'awaiting' → 'rolled'`. The advance click
- * jumps to the next step's `'awaiting'`. The dice `rolling` boolean
- * is a separate animation-only flag — it does not gate the Next button.
+ * "Hasten the rite" now plays a brief animation (#72): all remaining
+ * dice roll simultaneously for 1500ms before jumping to the summary.
  *
- * Pure presentation. The component takes a seeded `rng` so tests can
- * assert exact rolls. Production callers wire the engine's session RNG.
+ * State machine: `'awaiting' | 'rolled' | 'hastening'`. The `hastening`
+ * state shows a grid of all remaining dice rolling in parallel.
  */
 
 const ROLL_ANIMATION_MS = 700;
+const HASTEN_ANIMATION_MS = 1500;
+
+// How many particle dots to scatter around the avatar on the blessing page.
+const PARTICLE_COUNT = 10;
 
 interface BlessingRitualProps {
   readonly rng: Rng;
-  /**
-   * The player's zodiac sign. Required: each Sefirah's blessing line
-   * is selected from the per-sign matrix (#252) and tagged with the
-   * dignity tier (#254) for tone-styling. Production callers must run
-   * the sign-picker phase before mounting BlessingRitual.
-   */
   readonly sign: ZodiacSignKey;
   readonly onComplete: (stats: StatSheet) => void;
   readonly className?: string;
 }
 
-type StepStatus = 'awaiting' | 'rolled';
+type StepStatus = 'awaiting' | 'rolled' | 'hastening';
 
 interface BlessingRender {
   readonly quote: string;
   readonly tier: DignityRelationship;
+}
+
+interface HastenEntry {
+  readonly sefirahKey: string;
+  readonly englishName: string;
+  readonly roll: readonly [number, number, number];
 }
 
 export function BlessingRitual({
@@ -76,12 +78,9 @@ export function BlessingRitual({
   const [lastRoll, setLastRoll] = useState<readonly [number, number, number] | null>(null);
   const [rolling, setRolling] = useState(false);
   const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Quote + tier are computed once at roll-time and held in state so
-  // they don't re-pick (and consume rng) on every render. Cleared at
-  // step advance; never present in the 'awaiting' state.
   const [blessing, setBlessing] = useState<BlessingRender | null>(null);
+  const [hastenData, setHastenData] = useState<HastenEntry[] | null>(null);
 
-  // Clear any pending animation timer on unmount.
   useEffect(() => {
     return () => {
       if (rollTimerRef.current !== null) clearTimeout(rollTimerRef.current);
@@ -106,9 +105,6 @@ export function BlessingRitual({
     }, ROLL_ANIMATION_MS);
     if (currentSefirah) {
       setStats((prev) => ({ ...prev, [currentSefirah.stat]: a + b + c }));
-      // Pick the blessing quote off the same rng — uniform-from-3 per
-      // T3's `quoteForBlessing`. Compute the tier separately so the
-      // rendered element can carry it for tone-styling.
       setBlessing({
         quote: quoteForBlessing(
           pantheon.sefirahBlessings,
@@ -123,7 +119,6 @@ export function BlessingRitual({
 
   const handleAdvance = (): void => {
     if (stepStatus !== 'rolled') return;
-    // Cancel any in-flight animation timer before advancing.
     if (rollTimerRef.current !== null) {
       clearTimeout(rollTimerRef.current);
       rollTimerRef.current = null;
@@ -135,25 +130,36 @@ export function BlessingRitual({
     setRolling(false);
   };
 
-  // #133: skip-to-summary — roll all remaining Sefirot in one click,
-  // preserve any stats already rolled, and jump to the summary screen.
+  // #133 / #72: hasten → animate all remaining dice, then jump to summary.
   const handleSkipCeremony = (): void => {
+    if (stepStatus === 'hastening') return;
     const fresh: Partial<Record<StatKey, number>> = {};
+    const entries: HastenEntry[] = [];
     for (let i = stepIndex; i < sefirot.length; i++) {
       const s = sefirot[i];
       if (!s) continue;
       if (stats[s.stat] !== undefined) continue;
-      fresh[s.stat] = rng.int(1, 6) + rng.int(1, 6) + rng.int(1, 6);
+      const a = rng.int(1, 6);
+      const b = rng.int(1, 6);
+      const c = rng.int(1, 6);
+      fresh[s.stat] = a + b + c;
+      entries.push({ sefirahKey: s.key, englishName: s.englishName, roll: [a, b, c] });
     }
-    setStats((prev) => ({ ...prev, ...fresh }));
-    setStepIndex(sefirot.length);
-    setStepStatus('awaiting');
-    setLastRoll(null);
-    setBlessing(null);
-    setRolling(false);
+    setHastenData(entries);
+    setStepStatus('hastening');
+    if (rollTimerRef.current !== null) clearTimeout(rollTimerRef.current);
+    rollTimerRef.current = setTimeout(() => {
+      setStats((prev) => ({ ...prev, ...fresh }));
+      setStepIndex(sefirot.length);
+      setStepStatus('awaiting');
+      setLastRoll(null);
+      setBlessing(null);
+      setRolling(false);
+      setHastenData(null);
+      rollTimerRef.current = null;
+    }, HASTEN_ANIMATION_MS);
   };
 
-  // #215: explicit Continue handler. Validates the StatSheet first.
   const handleContinue = (): void => {
     const missing: StatKey[] = [];
     for (const s of sefirot) {
@@ -182,8 +188,51 @@ export function BlessingRitual({
     return <p>Ritual complete.</p>;
   }
 
-  // Avatar name for the current Sefirah (kether + malkuth have no
-  // commissioned portrait — AvatarPortrait handles the fallback).
+  // Hasten animation: show all remaining dice rolling simultaneously.
+  if (stepStatus === 'hastening' && hastenData !== null) {
+    return (
+      <section
+        data-blessing-ritual
+        data-step={stepIndex}
+        data-sefirah={currentSefirah.key}
+        data-status="hastening"
+        data-blessing-state="null"
+        aria-label="Hastening the rite — rolling all remaining blessings"
+        className={`mx-auto max-w-5xl text-center ${className ?? ''}`}
+      >
+        <p className="font-display text-2xl tracking-widest opacity-70">
+          The rite quickens…
+        </p>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label="Rolling all remaining blessings"
+          className="mt-8 flex flex-wrap justify-center gap-6"
+        >
+          {hastenData.map(({ sefirahKey, englishName, roll }) => (
+            <div key={sefirahKey} className="flex flex-col items-center gap-2">
+              <div className="flex gap-1.5">
+                {roll.map((d, j) => (
+                  <D6Roll
+                    key={j}
+                    value={d}
+                    rolling={true}
+                    durationMs={HASTEN_ANIMATION_MS - 150}
+                    announceToAt={false}
+                    className="h-10 w-10"
+                  />
+                ))}
+              </div>
+              <span className="text-[0.6rem] uppercase tracking-widest opacity-50">
+                {englishName}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   const isEncounterSefirah =
     currentSefirah.key !== 'kether' && currentSefirah.key !== 'malkuth';
   const avatarName = isEncounterSefirah
@@ -197,23 +246,42 @@ export function BlessingRitual({
       data-step={stepIndex}
       data-sefirah={currentSefirah.key}
       data-status={stepStatus}
-      // #380: explicit observability of the blessing-state invariant.
       data-blessing-state={blessing === null ? 'null' : 'set'}
       aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
       className={`mx-auto max-w-5xl ${className ?? ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
-      {/*
-        Three-column layout at md+: avatar portrait (left) | ceremony
-        (centre) | ledger (right). Single column on mobile — avatar,
-        then ceremony text, then ledger — preserving the natural reading
-        order for small screens.
-      */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_2fr_1fr] md:items-start md:gap-8">
 
-        {/* Left: Sefirah avatar portrait */}
-        <div className="flex flex-col items-center gap-2 md:items-end md:pt-8">
+        {/* Left: avatar with ambient glow ring (#73) */}
+        <div className="relative flex flex-col items-center gap-2 md:items-end md:pt-8">
+          {/* Pulsing radiant ring behind the avatar */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center md:items-start md:justify-end md:pt-8"
+          >
+            <div
+              className="h-40 w-40 rounded-full opacity-20 motion-safe:animate-pulse"
+              style={{ background: `radial-gradient(circle, ${currentSefirah.color} 0%, transparent 70%)` }}
+            />
+          </div>
+          {/* Ambient particle field — small colored dots (#73) */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            {PARTICLE_DOTS.map((dot, i) => (
+              <div
+                key={i}
+                className="absolute h-1 w-1 rounded-full motion-safe:animate-pulse"
+                style={{
+                  top: dot.top,
+                  left: dot.left,
+                  background: currentSefirah.color,
+                  opacity: dot.opacity,
+                  animationDelay: dot.delay,
+                }}
+              />
+            ))}
+          </div>
           <AvatarPortrait
             sefirah={currentSefirah.key}
             {...(avatarName !== undefined ? { avatarName } : {})}
@@ -229,24 +297,38 @@ export function BlessingRitual({
           </span>
         </div>
 
-        {/* Centre: ceremony — step counter, name, essence, dice, Roll, Skip */}
-        <div className="text-center">
-          <p className="text-xs uppercase tracking-widest opacity-60">
+        {/* Centre: ceremony — step counter, name, essence, dice, CTA */}
+        <div className="relative text-center">
+          {/* Decorative Hebrew glyph watermark (#73) */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
+          >
+            <span
+              className="select-none font-hebrew text-[10rem] leading-none opacity-[0.04]"
+              lang="he"
+              style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
+            >
+              {currentSefirah.hebrewName}
+            </span>
+          </div>
+
+          <p className="relative text-xs uppercase tracking-widest opacity-60">
             Step {stepIndex + 1} of {sefirot.length}
           </p>
 
-          <h2 className="mt-3 font-display text-3xl tracking-widest" data-sefirah-name>
+          <h2 className="relative mt-3 font-display text-3xl tracking-widest" data-sefirah-name>
             {currentSefirah.englishName}
           </h2>
           <p
-            className="mt-1 font-hebrew text-2xl"
+            className="relative mt-1 font-hebrew text-2xl"
             lang="he"
             style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
           >
             {currentSefirah.hebrewName}
           </p>
 
-          <p className="mt-4 italic opacity-80" data-essence>
+          <p className="relative mt-4 italic opacity-80" data-essence>
             &ldquo;{copy.essence}&rdquo;
             <span
               className="mt-2 block not-italic text-sm opacity-90"
@@ -256,7 +338,63 @@ export function BlessingRitual({
             </span>
           </p>
 
-          <div className="mt-6 flex flex-col items-center gap-3">
+          {/* Dice row — always present to prevent layout shift (#71).
+              Shows placeholder outlines before rolling, real dice after. */}
+          <div className="relative mt-6 flex flex-col items-center gap-3">
+            <div
+              data-roll={lastRoll ? 'true' : 'false'}
+              aria-label={
+                lastRoll
+                  ? `Rolled ${lastRoll[0]} + ${lastRoll[1]} + ${lastRoll[2]} = ${lastRoll[0] + lastRoll[1] + lastRoll[2]}`
+                  : 'Dice pending'
+              }
+              className="flex gap-3"
+            >
+              {lastRoll ? (
+                lastRoll.map((d, i) => (
+                  <D6Roll
+                    key={i}
+                    value={d}
+                    rolling={rolling}
+                    durationMs={ROLL_ANIMATION_MS}
+                    announceToAt={false}
+                    className="h-14 w-14"
+                  />
+                ))
+              ) : (
+                [0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    className="h-14 w-14 rounded border border-veil/20 opacity-25"
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Stat total — visible after roll */}
+            {lastRoll ? (
+              <p
+                data-stat-total={currentSefirah.stat}
+                className="font-display text-3xl tabular-nums text-illumination"
+              >
+                {lastRoll[0] + lastRoll[1] + lastRoll[2]}
+              </p>
+            ) : null}
+
+            {/* Blessing quote — visible after roll */}
+            {blessing && lastRoll ? (
+              <blockquote
+                data-blessing-quote
+                data-dignity-tier={blessing.tier}
+                className="mt-2 max-w-prose px-4 text-center text-sm italic leading-relaxed opacity-90"
+                style={{ color: currentSefirah.color }}
+              >
+                {blessing.quote}
+              </blockquote>
+            ) : null}
+
+            {/* CTA — Roll or Next, always in same vertical slot */}
             {stepStatus === 'awaiting' ? (
               <button
                 type="button"
@@ -266,18 +404,16 @@ export function BlessingRitual({
               >
                 Roll 3d6
               </button>
-            ) : null}
-
-            {stepStatus === 'rolled' && lastRoll ? (
-              <RollDisplay
-                roll={lastRoll}
-                stat={currentSefirah.stat}
-                blessing={blessing}
-                sefirahColor={currentSefirah.color}
-                rolling={rolling}
-                onAdvance={handleAdvance}
-              />
-            ) : null}
+            ) : (
+              <button
+                type="button"
+                onClick={handleAdvance}
+                data-action="advance"
+                className="rounded border border-illumination px-4 py-2 text-sm tracking-widest"
+              >
+                Next
+              </button>
+            )}
 
             <button
               type="button"
@@ -297,73 +433,25 @@ export function BlessingRitual({
   );
 }
 
-interface RollDisplayProps {
-  readonly roll: readonly [number, number, number];
-  readonly stat: StatKey;
-  readonly blessing: BlessingRender | null;
-  readonly sefirahColor: string;
-  readonly rolling: boolean;
-  readonly onAdvance: () => void;
-}
-
-function RollDisplay({
-  roll,
-  stat,
-  blessing,
-  sefirahColor,
-  rolling,
-  onAdvance,
-}: RollDisplayProps): JSX.Element {
-  const total = roll[0] + roll[1] + roll[2];
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex flex-col items-center gap-3"
-    >
-      <div
-        data-roll
-        aria-label={`Rolled ${roll[0]} + ${roll[1]} + ${roll[2]} = ${total}`}
-        className="flex gap-3"
-      >
-        {roll.map((d, i) => (
-          <D6Roll
-            key={i}
-            value={d}
-            rolling={rolling}
-            durationMs={ROLL_ANIMATION_MS}
-            announceToAt={false}
-            className="h-14 w-14"
-          />
-        ))}
-      </div>
-      <p
-        data-stat-total={stat}
-        className="font-display text-3xl tabular-nums text-illumination"
-      >
-        {total}
-      </p>
-      {blessing ? (
-        <blockquote
-          data-blessing-quote
-          data-dignity-tier={blessing.tier}
-          className="mt-2 max-w-prose px-4 text-center text-sm italic leading-relaxed opacity-90"
-          style={{ color: sefirahColor }}
-        >
-          {blessing.quote}
-        </blockquote>
-      ) : null}
-      <button
-        type="button"
-        onClick={onAdvance}
-        data-action="advance"
-        className="rounded border border-illumination px-4 py-2 text-sm tracking-widest"
-      >
-        Next
-      </button>
-    </div>
-  );
-}
+// Pre-computed particle positions so they are stable across renders.
+// Random-looking but deterministic — no Math.random() in render.
+const PARTICLE_DOTS: ReadonlyArray<{
+  top: string;
+  left: string;
+  opacity: number;
+  delay: string;
+}> = [
+  { top: '12%', left: '8%',  opacity: 0.6, delay: '0ms' },
+  { top: '28%', left: '85%', opacity: 0.4, delay: '400ms' },
+  { top: '45%', left: '4%',  opacity: 0.5, delay: '800ms' },
+  { top: '65%', left: '90%', opacity: 0.3, delay: '1200ms' },
+  { top: '80%', left: '15%', opacity: 0.6, delay: '200ms' },
+  { top: '18%', left: '72%', opacity: 0.4, delay: '600ms' },
+  { top: '55%', left: '78%', opacity: 0.5, delay: '1000ms' },
+  { top: '38%', left: '20%', opacity: 0.3, delay: '1400ms' },
+  { top: '72%', left: '60%', opacity: 0.5, delay: '300ms' },
+  { top: '8%',  left: '48%', opacity: 0.4, delay: '700ms' },
+];
 
 function Summary({
   stats,
