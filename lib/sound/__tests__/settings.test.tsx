@@ -2,29 +2,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 /**
- * Pin the settings store contract (#321):
+ * Pin the settings store contract (#321, #76):
  *
- *   - `useSoundEnabled()` returns the current setting + a setter.
- *   - Default is OFF (auto-playing audio is a UX trap; opt-in only).
- *   - When `prefers-reduced-motion: reduce`, the default flips to OFF
- *     even without explicit user choice. (User can override.)
- *   - The setter persists to `localStorage` under a stable key so the
- *     next mount reads the user's choice.
- *
- * The provider is `<SoundSettingsProvider />` so consumers can mount
- * a single source of truth at `app/layout.tsx`. Tests render the hook
- * inside a wrapper that mounts the provider once.
+ *   - `sfxEnabled` defaults ON (SFX fire on user gestures, not hostile).
+ *   - `musicEnabled` defaults OFF (ambient auto-play is hostile by default).
+ *   - Both respect `prefers-reduced-motion: reduce` on first visit (default OFF).
+ *   - Stored preferences win over the reduced-motion heuristic.
+ *   - Setters persist to `localStorage` under stable keys.
  */
 
-import { SoundSettingsProvider, useSoundEnabled, SOUND_ENABLED_STORAGE_KEY } from '../settings';
+import {
+  SoundSettingsProvider,
+  useSoundEnabled,
+  SFX_ENABLED_STORAGE_KEY,
+  MUSIC_ENABLED_STORAGE_KEY,
+} from '../settings';
 
 const wrapper = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
   <SoundSettingsProvider>{children}</SoundSettingsProvider>
 );
 
 const setReducedMotion = (reduce: boolean): void => {
-  // jsdom's matchMedia is undefined by default; stub it so the
-  // provider's mount-time read can resolve.
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: query.includes('prefers-reduced-motion: reduce') ? reduce : false,
     media: query,
@@ -35,7 +33,7 @@ const setReducedMotion = (reduce: boolean): void => {
   }));
 };
 
-describe('useSoundEnabled', () => {
+describe('useSoundEnabled — sfxEnabled', () => {
   beforeEach(() => {
     localStorage.clear();
     setReducedMotion(false);
@@ -45,54 +43,48 @@ describe('useSoundEnabled', () => {
     vi.unstubAllGlobals();
   });
 
-  it('defaults OFF when there is no stored preference and no reduced-motion request', () => {
+  it('defaults ON when there is no stored preference and no reduced-motion request', () => {
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    expect(result.current.soundEnabled).toBe(false);
+    expect(result.current.sfxEnabled).toBe(true);
   });
 
   it('defaults OFF when prefers-reduced-motion: reduce is set, even with no stored preference', () => {
     setReducedMotion(true);
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    expect(result.current.soundEnabled).toBe(false);
+    expect(result.current.sfxEnabled).toBe(false);
   });
 
   it('reads stored true on mount when localStorage has the key', () => {
-    localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, 'true');
+    localStorage.setItem(SFX_ENABLED_STORAGE_KEY, 'true');
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    expect(result.current.soundEnabled).toBe(true);
+    expect(result.current.sfxEnabled).toBe(true);
   });
 
-  it('honors the user override even under prefers-reduced-motion: reduce', () => {
-    // The reduced-motion request defaults to OFF, but a user who
-    // explicitly turns sound on (storing "true") should keep it on.
-    setReducedMotion(true);
-    localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, 'true');
+  it('reads stored false on mount when localStorage has the key', () => {
+    localStorage.setItem(SFX_ENABLED_STORAGE_KEY, 'false');
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    expect(result.current.soundEnabled).toBe(true);
+    expect(result.current.sfxEnabled).toBe(false);
+  });
+
+  it('honors the stored override even under prefers-reduced-motion: reduce', () => {
+    setReducedMotion(true);
+    localStorage.setItem(SFX_ENABLED_STORAGE_KEY, 'true');
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(result.current.sfxEnabled).toBe(true);
   });
 
   it('persists to localStorage when the setter is called', () => {
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    act(() => {
-      result.current.setSoundEnabled(true);
-    });
-    expect(result.current.soundEnabled).toBe(true);
-    expect(localStorage.getItem(SOUND_ENABLED_STORAGE_KEY)).toBe('true');
+    act(() => { result.current.setSfxEnabled(false); });
+    expect(result.current.sfxEnabled).toBe(false);
+    expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBe('false');
 
-    act(() => {
-      result.current.setSoundEnabled(false);
-    });
-    expect(result.current.soundEnabled).toBe(false);
-    expect(localStorage.getItem(SOUND_ENABLED_STORAGE_KEY)).toBe('false');
+    act(() => { result.current.setSfxEnabled(true); });
+    expect(result.current.sfxEnabled).toBe(true);
+    expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBe('true');
   });
 
-  it('attempts an audio unlock play when sound transitions from off to on', () => {
-    // The unlock play must happen synchronously inside `setSoundEnabled`
-    // so it is still within the browser's user-gesture activation window
-    // (click → handler → setSoundEnabled → play). If the play is deferred
-    // to a useEffect or setTimeout it arrives outside the activation
-    // window and Chrome/Safari silently reject it — the user hears nothing
-    // even with the toggle ON.
+  it('attempts an audio unlock play when sfxEnabled transitions from off to on', () => {
     const playCalls: string[] = [];
     vi.stubGlobal(
       'Audio',
@@ -108,41 +100,66 @@ describe('useSoundEnabled', () => {
       },
     );
 
+    localStorage.setItem(SFX_ENABLED_STORAGE_KEY, 'false');
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    expect(playCalls).toHaveLength(0); // no play at mount
+    expect(playCalls).toHaveLength(0);
 
-    act(() => {
-      result.current.setSoundEnabled(true);
-    });
-
+    act(() => { result.current.setSfxEnabled(true); });
     expect(playCalls.length).toBeGreaterThan(0);
 
-    // Disabling again should NOT trigger another unlock attempt.
-    act(() => {
-      result.current.setSoundEnabled(false);
-    });
     const countAfterEnable = playCalls.length;
-    act(() => {
-      result.current.setSoundEnabled(false);
-    });
+    act(() => { result.current.setSfxEnabled(false); });
     expect(playCalls.length).toBe(countAfterEnable);
 
     vi.unstubAllGlobals();
   });
+});
 
-  it('returns a silent-OFF stub when used outside of the provider', () => {
-    // Defensive default — sound is opt-in by design, so a missing
-    // provider effectively keeps the game quiet rather than crashing
-    // a unit-test render that doesn't care about sound. In production
-    // the provider is mounted at app/layout.tsx.
+describe('useSoundEnabled — musicEnabled', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setReducedMotion(false);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('defaults OFF when there is no stored preference', () => {
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(result.current.musicEnabled).toBe(false);
+  });
+
+  it('reads stored true on mount when localStorage has the key', () => {
+    localStorage.setItem(MUSIC_ENABLED_STORAGE_KEY, 'true');
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(result.current.musicEnabled).toBe(true);
+  });
+
+  it('persists to localStorage when the setter is called', () => {
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    act(() => { result.current.setMusicEnabled(true); });
+    expect(result.current.musicEnabled).toBe(true);
+    expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBe('true');
+
+    act(() => { result.current.setMusicEnabled(false); });
+    expect(result.current.musicEnabled).toBe(false);
+    expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBe('false');
+  });
+});
+
+describe('useSoundEnabled — outside provider', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('returns a silent-OFF stub for both settings when used without provider', () => {
     const { result } = renderHook(() => useSoundEnabled());
-    expect(result.current.soundEnabled).toBe(false);
-    // Setter is a no-op — calling it doesn't throw and doesn't
-    // touch localStorage.
-    act(() => {
-      result.current.setSoundEnabled(true);
-    });
-    expect(result.current.soundEnabled).toBe(false);
-    expect(localStorage.getItem(SOUND_ENABLED_STORAGE_KEY)).toBeNull();
+    expect(result.current.sfxEnabled).toBe(false);
+    expect(result.current.musicEnabled).toBe(false);
+    act(() => { result.current.setSfxEnabled(true); });
+    act(() => { result.current.setMusicEnabled(true); });
+    expect(result.current.sfxEnabled).toBe(false);
+    expect(result.current.musicEnabled).toBe(false);
+    expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBeNull();
   });
 });

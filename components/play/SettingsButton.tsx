@@ -8,6 +8,41 @@ import {
 } from 'react';
 import { useSoundEnabled } from '@/lib/sound/settings';
 
+function Toggle({
+  checked,
+  label,
+  onChange,
+  testId,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: () => void;
+  testId: string;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      data-action={testId}
+      className={`relative h-6 w-11 overflow-hidden rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination ${
+        checked
+          ? 'border-illumination bg-illumination/70'
+          : 'border-veil/40 bg-ground'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-transform ${
+          checked ? 'translate-x-[1.375rem] bg-ground' : 'translate-x-1 bg-veil'
+        }`}
+      />
+    </button>
+  );
+}
+
 /**
  * SettingsButton — floating cog button + popover for the play surface
  * (#321 — Epic #310 phase 6).
@@ -36,7 +71,7 @@ import { useSoundEnabled } from '@/lib/sound/settings';
  */
 
 export function SettingsButton(): JSX.Element {
-  const { soundEnabled, setSoundEnabled } = useSoundEnabled();
+  const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -155,32 +190,24 @@ export function SettingsButton(): JSX.Element {
             </button>
           </div>
 
-          {/* Sound toggle. role="switch" + aria-checked is the
-              correct pattern for a binary on/off control with
-              persistent state — checkbox would be wrong (suggests a
-              form-submission semantic). */}
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm">Sound</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={soundEnabled}
-              aria-label="Toggle sound"
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              data-action="toggle-sound"
-              className={`relative h-6 w-11 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination ${
-                soundEnabled
-                  ? 'border-illumination bg-illumination/70'
-                  : 'border-veil/40 bg-ground'
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-transform ${
-                  soundEnabled ? 'translate-x-6 bg-ground' : 'translate-x-1 bg-veil'
-                }`}
-              />
-            </button>
+            <span className="text-sm">Sound effects</span>
+            <Toggle
+              checked={sfxEnabled}
+              label="Toggle sound effects"
+              onChange={() => setSfxEnabled(!sfxEnabled)}
+              testId="toggle-sfx"
+            />
+          </div>
+
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm">Music</span>
+            <Toggle
+              checked={musicEnabled}
+              label="Toggle music"
+              onChange={() => setMusicEnabled(!musicEnabled)}
+              testId="toggle-music"
+            />
           </div>
 
           {/* Reduced motion — system-driven, read-only. Surface the

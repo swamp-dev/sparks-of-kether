@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { SoundSettingsProvider, SOUND_ENABLED_STORAGE_KEY, useSoundEnabled } from '@/lib/sound/settings';
+import { SoundSettingsProvider, MUSIC_ENABLED_STORAGE_KEY, useSoundEnabled } from '@/lib/sound/settings';
 import { useMusic } from '../useMusic';
 
 /**
@@ -47,7 +47,7 @@ function installAudioStub(): void {
 function withSound(enabled: boolean) {
   return function Wrapper({ children }: { children: ReactNode }): JSX.Element {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
+      window.localStorage.setItem(MUSIC_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
     }
     return <SoundSettingsProvider>{children}</SoundSettingsProvider>;
   };
@@ -110,9 +110,9 @@ describe('useMusic', () => {
   it('pauses when soundEnabled flips from true to false', () => {
     const { result } = renderHook(
       () => {
-        const { setSoundEnabled } = useSoundEnabled();
+        const { setMusicEnabled } = useSoundEnabled();
         useMusic('play');
-        return { setSoundEnabled };
+        return { setMusicEnabled };
       },
       { wrapper: withSound(true) },
     );
@@ -121,7 +121,7 @@ describe('useMusic', () => {
     expect(instance?.pause).not.toHaveBeenCalled();
 
     act(() => {
-      result.current.setSoundEnabled(false);
+      result.current.setMusicEnabled(false);
     });
     expect(instance?.pause).toHaveBeenCalled();
   });
@@ -129,9 +129,9 @@ describe('useMusic', () => {
   it('resumes when soundEnabled flips from false to true', () => {
     const { result } = renderHook(
       () => {
-        const { setSoundEnabled } = useSoundEnabled();
+        const { setMusicEnabled } = useSoundEnabled();
         useMusic('play');
-        return { setSoundEnabled };
+        return { setMusicEnabled };
       },
       { wrapper: withSound(false) },
     );
@@ -139,7 +139,7 @@ describe('useMusic', () => {
     expect(audioInstances.filter((a) => a.play.mock.calls.length > 0)).toHaveLength(0);
 
     act(() => {
-      result.current.setSoundEnabled(true);
+      result.current.setMusicEnabled(true);
     });
     const played = audioInstances.filter((a) => a.play.mock.calls.length > 0);
     expect(played.length).toBeGreaterThan(0);
