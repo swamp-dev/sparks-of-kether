@@ -75,10 +75,8 @@ describe('a11y — major UI surfaces', () => {
     expectNoViolations(await axe(container));
   });
 
-  it('Hand (collapsed) is axe-clean', async () => {
-    const { container } = render(
-      <Hand hand={[1, 2, 3]} visible={true} defaultOpen={false} />,
-    );
+  it('Hand (empty) is axe-clean', async () => {
+    const { container } = render(<Hand hand={[]} visible={true} />);
     expectNoViolations(await axe(container));
   });
 

@@ -363,8 +363,12 @@ describe('isHandVisible', () => {
   });
 });
 
-describe('Hand — open / close toggle (#132)', () => {
-  it('renders the fan in open state by default', () => {
+describe('Hand — always-open (no close affordance)', () => {
+  // The closed/badge variant was removed: the hand is always rendered
+  // in its open state, with the peek-shelf providing the at-rest
+  // motion. These regression tests ensure no future change reintroduces
+  // a collapsed mode by accident.
+  it('renders the fan in open state', () => {
     const { container } = render(<Hand hand={[1, 2, 3]} visible={true} />);
     expect(
       container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
@@ -372,58 +376,22 @@ describe('Hand — open / close toggle (#132)', () => {
     expect(container.querySelectorAll('[data-card-slot]').length).toBe(3);
   });
 
-  it('renders a compact badge when defaultOpen=false; tap opens the fan', () => {
-    const { container } = render(
-      <Hand hand={[1, 2, 3]} visible={true} defaultOpen={false} />,
-    );
-    expect(
-      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
-    ).toBe('closed');
-    // No card slots visible while collapsed.
-    expect(container.querySelectorAll('[data-card-slot]').length).toBe(0);
-    // The badge advertises the count.
-    const openBtn = container.querySelector(
-      '[data-action="open-hand"]',
-    ) as HTMLButtonElement;
-    expect(openBtn.textContent).toContain('3 cards');
-    fireEvent.click(openBtn);
-    expect(
-      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
-    ).toBe('open');
-    expect(container.querySelectorAll('[data-card-slot]').length).toBe(3);
+  it('never renders a close button', () => {
+    const { container } = render(<Hand hand={[1, 2, 3]} visible={true} />);
+    expect(container.querySelector('[data-action="close-hand"]')).toBeNull();
   });
 
-  it('clicking the close affordance collapses the hand again', () => {
-    const { container } = render(<Hand hand={[1, 2]} visible={true} />);
-    const close = container.querySelector(
-      '[data-action="close-hand"]',
-    ) as HTMLButtonElement;
-    expect(close).not.toBeNull();
-    fireEvent.click(close);
-    expect(
-      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
-    ).toBe('closed');
+  it('never renders an open-hand badge', () => {
+    const { container } = render(<Hand hand={[1, 2, 3]} visible={true} />);
+    expect(container.querySelector('[data-action="open-hand"]')).toBeNull();
   });
 
-  it('round-trips open → close → open via the toggle buttons', () => {
-    const { container } = render(<Hand hand={[1, 2]} visible={true} />);
-    fireEvent.click(
-      container.querySelector('[data-action="close-hand"]') as HTMLButtonElement,
-    );
-    fireEvent.click(
-      container.querySelector('[data-action="open-hand"]') as HTMLButtonElement,
-    );
-    expect(
-      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
-    ).toBe('open');
-    expect(container.querySelectorAll('[data-card-slot]').length).toBe(2);
-  });
-
-  it('still renders the close button on an empty hand (so it can be collapsed)', () => {
-    // Reviewer caught the regression: gating the close button on
-    // `hand.length > 0` left an empty open hand un-collapsible.
+  it('renders an open fan even with an empty hand (no badge fallback)', () => {
     const { container } = render(<Hand hand={[]} visible={true} />);
-    expect(container.querySelector('[data-action="close-hand"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-hand]')?.getAttribute('data-hand-state'),
+    ).toBe('open');
+    expect(container.querySelector('[data-action="close-hand"]')).toBeNull();
   });
 });
 
@@ -440,13 +408,6 @@ describe('Hand — empty state (#208)', () => {
     expect(container.querySelector('[data-hand-empty]')).toBeNull();
   });
 
-  it('the closed badge already shows "0 cards" — no empty-state node there', () => {
-    const { container } = render(
-      <Hand hand={[]} visible={true} defaultOpen={false} />,
-    );
-    expect(container.querySelector('[data-hand-empty]')).toBeNull();
-    expect(container.textContent).toMatch(/0 cards/);
-  });
 });
 
 describe('Hand — full hand at HAND_CAP (#290)', () => {

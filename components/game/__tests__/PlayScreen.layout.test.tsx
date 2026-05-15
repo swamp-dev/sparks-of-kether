@@ -43,8 +43,10 @@ describe('PlayScreen — fit-on-screen layout (#411)', () => {
     expect(cls).toMatch(/lg:aspect-\[400\/620\]/);
     expect(cls).toMatch(/lg:h-\[calc\(100vh-\d+px\)\]/);
     expect(cls).toMatch(/lg:max-h-\[\d+px\]/);
-    // Mobile preserved: max-w-xl stays as the < lg sizing.
-    expect(cls).toMatch(/\bmax-w-xl\b/);
+    // Mobile gets a wider container post-#636 (max-w-2xl) to make the
+    // Tree feel bigger on tablet-class widths; lg+ still derives its
+    // size from the aspect-ratio + viewport-derived height.
+    expect(cls).toMatch(/\bmax-w-2xl\b/);
   });
 
   it('compacts the right-column aside at lg+ while preserving mobile spacing', () => {

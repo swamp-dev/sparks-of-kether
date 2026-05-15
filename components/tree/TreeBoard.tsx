@@ -1,7 +1,7 @@
 import { useId, useMemo, type KeyboardEvent } from 'react';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
 import { TREE_VIEW_H, TREE_VIEW_W, treeNodeLayout, type NodeLayout } from '@/data/tree-layout';
-import { GROUND, TIFERET_GOLD, VEIL } from '@/data/colors';
+import { GROUND, VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 import type { GameState } from '@/engine/types';
 import { contrastTextColour } from './contrast-text-colour';
@@ -232,9 +232,10 @@ export function TreeBoard({
   onSefirahClick,
 }: TreeBoardProps): JSX.Element {
   // Scope IDs per render so two TreeBoards in the same DOM don't fight
-  // over global #treeBackground / gradient references.
+  // over global gradient references (used by the per-path card-lit
+  // gradients below). The background-rect gradient was removed (#636);
+  // the Tree now sits directly on the page-level OrreryBackdrop.
   const reactId = useId();
-  const gradientId = `tree-bg-${reactId}`;
   // #129: respect `movesEnabled`. When the orchestrator's phase has
   // advanced past `'move'`, no path should highlight or accept
   // clicks — even if the player still holds the right card.
@@ -303,10 +304,6 @@ export function TreeBoard({
       >
         <title>Tree of Life — ten Sefirot connected by twenty-two paths</title>
         <defs>
-          <radialGradient id={gradientId} cx="50%" cy="40%" r="70%">
-            <stop offset="0%" stopColor="#1a1542" />
-            <stop offset="100%" stopColor={GROUND} />
-          </radialGradient>
           {/*
             #312 — per-path "card-lit" gradient. A linear gradient
             from the `from` Sefirah's colour to the `to` Sefirah's
@@ -337,8 +334,6 @@ export function TreeBoard({
             );
           })}
         </defs>
-
-        <rect width={TREE_VIEW_W} height={TREE_VIEW_H} fill={`url(#${gradientId})`} />
 
         <Starfield />
 
@@ -372,8 +367,7 @@ export function TreeBoard({
             const isCardLit = cardLitPaths.has(path.number);
             // Prose, not "↔" — screen readers announce the arrow as
             // "left right arrow" which clutters every label.
-            const baseLabel = `Path ${path.number} (${letter.name}) — Arcanum ${path.arcanumNumber}, between ${fromName} and ${toName}`;
-            const label = isValid ? `${baseLabel} (available move)` : baseLabel;
+            const label = `Path ${path.number} (${letter.name}) — Arcanum ${path.arcanumNumber}, between ${fromName} and ${toName}`;
             // `clickable` is true only when `onPathClick` is defined AND
             // the path is currently valid for the active player. Capture
             // the callback in a const so the closures below don't carry
@@ -391,21 +385,15 @@ export function TreeBoard({
                     }
                   }
                 : undefined;
-            // #312: stroke / opacity / width depending on lit state.
-            // Order of precedence: validPath (gold, brightest) >
-            // cardLit (gradient between Sefirot colours) > default
-            // (faint veil). The validPath highlight reads as "you
-            // can travel here right now"; the card-lit highlight as
-            // "this card travels here, even if you can't from where
-            // you stand." Both signals matter; the gold takes
-            // precedence because it's the actionable one.
-            const stroke = isValid
-              ? TIFERET_GOLD
-              : isCardLit
-                ? `url(#card-lit-${path.number}-${reactId})`
-                : VEIL;
-            const strokeOpacity = isValid ? 0.95 : isCardLit ? 0.85 : 0.35;
-            const strokeWidth = isValid ? 3 : isCardLit ? 2.5 : 1.5;
+            // Stroke / opacity / width depend only on whether a card
+            // the player is considering matches this path. The
+            // valid-move (gold) preview was removed — the player must
+            // figure out for themselves whether they hold a path key.
+            // `isValid` is still computed above because it gates
+            // `clickable` (clicks only dispatch on legal moves).
+            const stroke = isCardLit ? `url(#card-lit-${path.number}-${reactId})` : VEIL;
+            const strokeOpacity = isCardLit ? 0.85 : 0.45;
+            const strokeWidth = isCardLit ? 2.5 : 1.5;
             return (
               <g
                 key={path.number}
