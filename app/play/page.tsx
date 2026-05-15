@@ -7,11 +7,13 @@ import { Lobby } from '@/components/setup/Lobby';
 import type { LobbyPlayer } from '@/components/setup/Lobby';
 import { PlayScreen } from '@/components/game/PlayScreen';
 import { ColorBloom } from '@/components/atmosphere/ColorBloom';
+import { SettingsButton } from '@/components/play/SettingsButton';
 import { initializeGame } from '@/engine/setup';
 import type { PlayerSetup } from '@/engine/setup';
 import { seededRng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 import { resolvePlaySeed } from '@/lib/play-seed';
+import { useMusic } from '@/lib/music/useMusic';
 
 /**
  * The actual play surface. Single-page state machine that walks each
@@ -126,7 +128,8 @@ export default function PlayPage(): JSX.Element {
   };
 
   if (phase.kind === 'ritual') {
-    const sign = slots[phase.playerIndex].zodiacSign;
+    const slot = slots[phase.playerIndex];
+    const sign = slot.zodiacSign;
     if (sign === undefined) {
       // The phase machine routes sign-pick before ritual (#255), so
       // this is unreachable through normal flow. Loud error if we
@@ -137,15 +140,13 @@ export default function PlayPage(): JSX.Element {
       );
     }
     return (
-      <main className="min-h-screen p-8 text-veil">
-        <PhaseHeader title={`${slots[phase.playerIndex].name} — Sefirot Blessing`} />
-        <BlessingRitual
-          key={`ritual-${phase.playerIndex}`}
-          rng={ritualRngs[phase.playerIndex]}
-          sign={sign}
-          onComplete={(stats) => finishRitual(phase.playerIndex, stats)}
-        />
-      </main>
+      <RitualScreen
+        key={`ritual-${phase.playerIndex}`}
+        name={slot.name}
+        sign={sign}
+        rng={ritualRngs[phase.playerIndex]}
+        onComplete={(stats) => finishRitual(phase.playerIndex, stats)}
+      />
     );
   }
 
@@ -159,18 +160,11 @@ export default function PlayPage(): JSX.Element {
       if (s.zodiacSign) taken[s.zodiacSign] = s.name;
     }
     return (
-      <main className="min-h-screen p-8 text-veil">
-        {/*
-          PhaseHeader title is intentionally distinct from the
-          picker's own h2 ("Choose your sign") so e2e selectors that
-          match by heading text don't collide.
-        */}
-        <PhaseHeader title={`${slots[phase.playerIndex].name} — Choose Sign`} />
-        <ZodiacSignPicker
-          taken={taken}
-          onPick={(s) => finishSign(phase.playerIndex, s)}
-        />
-      </main>
+      <SignScreen
+        name={slots[phase.playerIndex].name}
+        taken={taken}
+        onPick={(s) => finishSign(phase.playerIndex, s)}
+      />
     );
   }
 
@@ -182,16 +176,7 @@ export default function PlayPage(): JSX.Element {
       // Begin gates on a complete setup: stats + sign.
       ready: s.stats !== undefined && s.zodiacSign !== undefined,
     }));
-    return (
-      <main className="min-h-screen p-8 text-veil">
-        <PhaseHeader title="Lobby — ready to begin" />
-        <Lobby
-          players={lobbyPlayers}
-          isHost
-          onBegin={beginGame}
-        />
-      </main>
-    );
+    return <LobbyScreen players={lobbyPlayers} onBegin={beginGame} />;
   }
 
   // phase.kind === 'play' — render the live game inside a child
@@ -227,5 +212,78 @@ function PhaseHeader({ title }: { title: string }): JSX.Element {
     <header className="mb-8 text-center">
       <h1 className="font-display text-3xl tracking-widest">{title}</h1>
     </header>
+  );
+}
+
+/**
+ * Sign-pick screen. Plays lobby music so there's ambiance from the
+ * very first interaction. The SettingsButton lets players enable
+ * sound before they reach the play surface.
+ */
+function SignScreen({
+  name,
+  taken,
+  onPick,
+}: {
+  readonly name: string;
+  readonly taken: Partial<Record<ZodiacSignKey, string>>;
+  readonly onPick: (s: ZodiacSignKey) => void;
+}): JSX.Element {
+  // No dedicated sign-pick track exists yet; reuse lobby ambiance.
+  useMusic('lobby');
+  return (
+    <main className="min-h-screen p-8 text-veil">
+      {/* PhaseHeader title is intentionally distinct from the picker's
+          own h2 ("Choose your sign") so e2e selectors that match by
+          heading text don't collide. */}
+      <PhaseHeader title={`${name} — Choose Sign`} />
+      <ZodiacSignPicker taken={taken} onPick={onPick} />
+      <SettingsButton />
+    </main>
+  );
+}
+
+/**
+ * Blessing ritual screen. Switches to the blessing track while the
+ * ritual plays out, then hands off to the lobby or next player's sign.
+ */
+function RitualScreen({
+  name,
+  sign,
+  rng,
+  onComplete,
+}: {
+  readonly name: string;
+  readonly sign: ZodiacSignKey;
+  readonly rng: ReturnType<typeof seededRng>;
+  readonly onComplete: (stats: StatSheet) => void;
+}): JSX.Element {
+  useMusic('blessing');
+  return (
+    <main className="min-h-screen p-8 text-veil">
+      <PhaseHeader title={`${name} — Sefirot Blessing`} />
+      <BlessingRitual rng={rng} sign={sign} onComplete={onComplete} />
+      <SettingsButton />
+    </main>
+  );
+}
+
+/**
+ * Lobby screen. Returns to lobby music while players wait to begin.
+ */
+function LobbyScreen({
+  players,
+  onBegin,
+}: {
+  readonly players: readonly LobbyPlayer[];
+  readonly onBegin: () => void;
+}): JSX.Element {
+  useMusic('lobby');
+  return (
+    <main className="min-h-screen p-8 text-veil">
+      <PhaseHeader title="Lobby — ready to begin" />
+      <Lobby players={players} isHost onBegin={onBegin} />
+      <SettingsButton />
+    </main>
   );
 }
