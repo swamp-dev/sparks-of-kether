@@ -300,25 +300,26 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
 });
 
 describe('BlessingRitual — scene polish (#156)', () => {
-  it('renders a Sefirah hero badge keyed to the active Sefirah', () => {
+  it('renders an avatar portrait keyed to the active Sefirah', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
-    const hero = container.querySelector('[data-sefirah-hero]');
-    expect(hero).not.toBeNull();
-    expect(hero?.getAttribute('data-sefirah')).toBe('kether');
-    // Background colour mirrors the data-table colour for Kether.
-    expect((hero as HTMLElement).style.backgroundColor).toBeTruthy();
+    // SefirahHero replaced with AvatarPortrait (stage size) — the full
+    // commissioned portrait is now the visual anchor of each step.
+    const portrait = container.querySelector('[data-avatar-portrait]');
+    expect(portrait).not.toBeNull();
+    expect(portrait?.getAttribute('data-sefirah')).toBe('kether');
+    expect(portrait?.getAttribute('data-avatar-size')).toBe('stage');
   });
 
-  it('hero badge is at least the 80 px ticket threshold (Tailwind h-24 = 96 px)', () => {
+  it('avatar portrait is well above the 80 px ticket threshold (stage: h-60 = 240 px)', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
-    const hero = container.querySelector('[data-sefirah-hero]');
-    const className = hero?.getAttribute('class') ?? '';
-    expect(className).toMatch(/\bh-24\b/);
-    expect(className).toMatch(/\bw-24\b/);
+    // Stage AvatarPortrait renders at h-60 w-44 (240×176 px) — both
+    // dimensions are more than double the 80 px minimum from #156.
+    const portrait = container.querySelector('[data-avatar-portrait]');
+    expect(portrait?.getAttribute('data-avatar-size')).toBe('stage');
   });
 
   it('the running ledger lists all 10 Sefirot with state per row', () => {
@@ -545,28 +546,25 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
 // branch. Unit tests here guard the structural contract.
 
 describe('BlessingRitual — page layout (#413)', () => {
-  it('renders ceremony and ledger inside a single grid container that flips to two columns at md+', () => {
+  it('renders avatar portrait and ledger inside a single grid container that flips to multi-column at md+', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
     const section = container.querySelector('[data-blessing-ritual]');
     expect(section).not.toBeNull();
-    // The section hosts a grid wrapper; both the orb-hero and the
-    // ledger live inside it as direct grid items. Locating by
-    // `div.grid` keeps the assertion scoped to the grid container
-    // and not the unrelated `RitualScene` sibling div.
+    // The section hosts a grid wrapper; the portrait (left), ceremony
+    // (centre), and ledger (right) live inside it as grid items.
     const grid = section?.querySelector('div.grid');
     expect(grid, 'grid wrapper').not.toBeNull();
     const gridClass = grid?.getAttribute('class') ?? '';
     expect(gridClass).toMatch(/\bgrid-cols-1\b/);
     expect(gridClass).toMatch(/md:grid-cols-/);
-    // Both the hero (left column) and the ledger (right column) live
-    // inside the same grid wrapper.
-    expect(grid?.querySelector('[data-sefirah-hero]')).not.toBeNull();
+    // Avatar portrait and ledger both live inside the grid wrapper.
+    expect(grid?.querySelector('[data-avatar-portrait]')).not.toBeNull();
     expect(grid?.querySelector('[data-ritual-ledger]')).not.toBeNull();
   });
 
-  it('drops the standalone "Stat: <name>" line and folds the stat label under the orb (#413)', () => {
+  it('drops the standalone "Stat: <name>" line and keeps the stat label near the portrait', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
@@ -576,7 +574,8 @@ describe('BlessingRitual — page layout (#413)', () => {
         /^Stat:\s/i.test(el.textContent ?? ''),
       ),
     ).toBe(false);
-    // Stat label is folded into the orb chrome with the bare stat name.
+    // Stat label sits below the avatar portrait so the stat reads as
+    // a property of the figure being received.
     const stat = container.querySelector('[data-sefirah-stat-label]');
     expect(stat).not.toBeNull();
     expect(stat?.textContent?.trim()).toBe('unity');
@@ -599,16 +598,16 @@ describe('BlessingRitual — page layout (#413)', () => {
     expect(essence?.contains(invocation as Node)).toBe(true);
   });
 
-  it('mobile layout (single column) is preserved — grid-cols-1 base, md+ flips to two columns', () => {
+  it('mobile layout (single column) is preserved — grid-cols-1 base, md+ flips to three columns', () => {
     // Single-column-on-mobile is the default Tailwind base; the md+
-    // breakpoint adds the two-column override. Asserting both classes
-    // on the same element is the structural contract.
+    // breakpoint adds the three-column (portrait | ceremony | ledger)
+    // layout that uses the full page width at desktop.
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
     );
     const grid = container.querySelector('[data-blessing-ritual] div.grid');
     const cls = grid?.getAttribute('class') ?? '';
     expect(cls).toMatch(/\bgrid-cols-1\b/);
-    expect(cls).toMatch(/md:grid-cols-\[3fr_2fr\]/);
+    expect(cls).toMatch(/md:grid-cols-\[1fr_2fr_1fr\]/);
   });
 });

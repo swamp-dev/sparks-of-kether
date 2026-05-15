@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sefirot } from '@/data';
-import type { Sefirah, SefirahKey, StatKey, ZodiacSignKey } from '@/data';
+import type { StatKey, ZodiacSignKey } from '@/data';
+import type { EncounterAvatarKey } from '@/data/types';
 import type { Rng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 import {
@@ -11,6 +12,8 @@ import {
 } from '@/engine/sefirah-quote';
 import { usePantheon } from '@/lib/settings/pantheon';
 import { StatIcon } from '@/components/icons/StatIcon';
+import { AvatarPortrait } from '@/components/game/encounter/AvatarPortrait';
+import { D6Roll } from '@/components/challenge/D6Roll';
 import { RITUAL_COPY } from './ritual-copy';
 import { RitualScene } from './RitualScene';
 import { RitualLedger } from './RitualLedger';
@@ -22,26 +25,23 @@ import { RitualLedger } from './RitualLedger';
  * cadence matter as much as the math.
  *
  * Flow per step:
- *   1. Sefirah essence line + invocation appear.
- *   2. Player rolls 3d6 (or auto-rolls when entering the step;
- *      configurable later).
+ *   1. Avatar portrait + Sefirah essence line + invocation appear.
+ *   2. Player rolls 3d6. The dice animate (RAF-based cycling) then
+ *      settle on the actual values; the blessing quote + Next appear
+ *      immediately so tests and impatient players aren't blocked.
  *   3. The total reveals; the player clicks **Next** to advance.
  * After Malkuth, a summary screen lists all 10 stats and waits for
  * an explicit "Continue" click before emitting `onComplete(statSheet)`.
- * The Continue gate (#215) ensures the user actually sees the recap
- * — pre-fix `onComplete` fired from a useEffect synchronously when
- * stepIndex crossed sefirot.length, and the parent unmounted us
- * before the Summary committed visibly.
  *
  * State machine per step: `'awaiting' → 'rolled'`. The advance click
- * jumps to the next step's `'awaiting'`. The earlier "Receive this
- * blessing" CTA was dead weight — there is no real alternative once
- * the dice land — so #250 collapsed it to a single Next click.
+ * jumps to the next step's `'awaiting'`. The dice `rolling` boolean
+ * is a separate animation-only flag — it does not gate the Next button.
  *
  * Pure presentation. The component takes a seeded `rng` so tests can
- * assert exact rolls. Production callers wire the engine's session
- * RNG.
+ * assert exact rolls. Production callers wire the engine's session RNG.
  */
+
+const ROLL_ANIMATION_MS = 700;
 
 interface BlessingRitualProps {
   readonly rng: Rng;
@@ -74,10 +74,19 @@ export function BlessingRitual({
   const [stats, setStats] = useState<Partial<Record<StatKey, number>>>({});
   const [stepStatus, setStepStatus] = useState<StepStatus>('awaiting');
   const [lastRoll, setLastRoll] = useState<readonly [number, number, number] | null>(null);
+  const [rolling, setRolling] = useState(false);
+  const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Quote + tier are computed once at roll-time and held in state so
   // they don't re-pick (and consume rng) on every render. Cleared at
   // step advance; never present in the 'awaiting' state.
   const [blessing, setBlessing] = useState<BlessingRender | null>(null);
+
+  // Clear any pending animation timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (rollTimerRef.current !== null) clearTimeout(rollTimerRef.current);
+    };
+  }, []);
 
   const finished = stepIndex >= sefirot.length;
   const currentSefirah = finished ? null : sefirot[stepIndex];
@@ -89,6 +98,12 @@ export function BlessingRitual({
     const c = rng.int(1, 6);
     setLastRoll([a, b, c]);
     setStepStatus('rolled');
+    setRolling(true);
+    if (rollTimerRef.current !== null) clearTimeout(rollTimerRef.current);
+    rollTimerRef.current = setTimeout(() => {
+      setRolling(false);
+      rollTimerRef.current = null;
+    }, ROLL_ANIMATION_MS);
     if (currentSefirah) {
       setStats((prev) => ({ ...prev, [currentSefirah.stat]: a + b + c }));
       // Pick the blessing quote off the same rng — uniform-from-3 per
@@ -108,27 +123,20 @@ export function BlessingRitual({
 
   const handleAdvance = (): void => {
     if (stepStatus !== 'rolled') return;
-    // Reset for the next step. When stepIndex passes sefirot.length
-    // we render the Summary panel; onComplete only fires later when
-    // the user clicks Continue (#215).
+    // Cancel any in-flight animation timer before advancing.
+    if (rollTimerRef.current !== null) {
+      clearTimeout(rollTimerRef.current);
+      rollTimerRef.current = null;
+    }
     setStepIndex((i) => i + 1);
     setStepStatus('awaiting');
     setLastRoll(null);
     setBlessing(null);
+    setRolling(false);
   };
 
   // #133: skip-to-summary — roll all remaining Sefirot in one click,
-  // preserve any stats already rolled, and jump to the summary
-  // screen. Useful on repeat plays where the slow per-Sefirah
-  // ceremony loses its first-time wonder.
-  //
-  // RNG calls live OUTSIDE the `setStats` updater (per code-reviewer)
-  // because React StrictMode double-invokes functional updaters in
-  // dev — that would advance the shared session RNG by 2× the
-  // expected number of rolls and silently desynchronize the engine.
-  // The current-step roll, if any, is already committed to `stats`
-  // at roll-time (line ~61), so the `!== undefined` guard preserves
-  // it without needing to consult `lastRoll` here.
+  // preserve any stats already rolled, and jump to the summary screen.
   const handleSkipCeremony = (): void => {
     const fresh: Partial<Record<StatKey, number>> = {};
     for (let i = stepIndex; i < sefirot.length; i++) {
@@ -142,16 +150,10 @@ export function BlessingRitual({
     setStepStatus('awaiting');
     setLastRoll(null);
     setBlessing(null);
+    setRolling(false);
   };
 
-  // #215: explicit Continue handler. Validates the StatSheet first
-  // (the type system can't prove every stat is present; this throws
-  // loudly if a future regression skips a step instead of silently
-  // passing an incomplete StatSheet downstream), then fires
-  // `onComplete`. Was previously a `useEffect` keyed on `stepIndex`
-  // — that fired synchronously the moment the 10th advance click
-  // committed, and the parent unmounted us before the Summary
-  // screen was visible.
+  // #215: explicit Continue handler. Validates the StatSheet first.
   const handleContinue = (): void => {
     const missing: StatKey[] = [];
     for (const s of sefirot) {
@@ -177,10 +179,16 @@ export function BlessingRitual({
   }
 
   if (!currentSefirah) {
-    // Defensive — `finished` already checks this, but TypeScript wants
-    // the narrow.
     return <p>Ritual complete.</p>;
   }
+
+  // Avatar name for the current Sefirah (kether + malkuth have no
+  // commissioned portrait — AvatarPortrait handles the fallback).
+  const isEncounterSefirah =
+    currentSefirah.key !== 'kether' && currentSefirah.key !== 'malkuth';
+  const avatarName = isEncounterSefirah
+    ? pantheon.avatarNames[currentSefirah.key as EncounterAvatarKey].primary
+    : undefined;
 
   const copy = RITUAL_COPY[currentSefirah.key];
   return (
@@ -190,32 +198,44 @@ export function BlessingRitual({
       data-sefirah={currentSefirah.key}
       data-status={stepStatus}
       // #380: explicit observability of the blessing-state invariant.
-      // `blessing` must be null in every state except 'rolled'. The
-      // attribute lets tests assert the invariant directly instead of
-      // relying on DOM absence (which is also guaranteed by the
-      // conditional render and so doesn't catch state-leak regressions).
       data-blessing-state={blessing === null ? 'null' : 'set'}
       aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
-      className={`mx-auto max-w-3xl ${className ?? ''}`}
+      className={`mx-auto max-w-5xl ${className ?? ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
       {/*
-        #413: two-column layout at md+. Left column is the ceremony
-        (orb / name / quote / Roll / Skip); right column is the
-        running BLESSINGS RECEIVED ledger. On mobile the grid
-        collapses to a single column and the ledger appears beneath
-        the ceremony — preserves the prior single-column rhythm.
+        Three-column layout at md+: avatar portrait (left) | ceremony
+        (centre) | ledger (right). Single column on mobile — avatar,
+        then ceremony text, then ledger — preserving the natural reading
+        order for small screens.
       */}
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-[3fr_2fr] md:items-start md:gap-10">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_2fr_1fr] md:items-start md:gap-8">
+
+        {/* Left: Sefirah avatar portrait */}
+        <div className="flex flex-col items-center gap-2 md:items-end md:pt-8">
+          <AvatarPortrait
+            sefirah={currentSefirah.key}
+            {...(avatarName !== undefined ? { avatarName } : {})}
+            state={stepStatus === 'awaiting' ? 'prep' : 'pass'}
+            size="stage"
+          />
+          <span
+            data-sefirah-stat-label
+            aria-hidden="true"
+            className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70"
+          >
+            {currentSefirah.stat}
+          </span>
+        </div>
+
+        {/* Centre: ceremony — step counter, name, essence, dice, Roll, Skip */}
         <div className="text-center">
           <p className="text-xs uppercase tracking-widest opacity-60">
             Step {stepIndex + 1} of {sefirot.length}
           </p>
 
-          <SefirahHero sefirah={currentSefirah} />
-
-          <h2 className="mt-4 font-display text-3xl tracking-widest" data-sefirah-name>
+          <h2 className="mt-3 font-display text-3xl tracking-widest" data-sefirah-name>
             {currentSefirah.englishName}
           </h2>
           <p
@@ -225,16 +245,9 @@ export function BlessingRitual({
           >
             {currentSefirah.hebrewName}
           </p>
-          {/*
-            #413: essence + invocation merged into one ceremonial
-            paragraph block to tighten vertical text density. Essence
-            stays italic (the Sefirah's own voice); invocation
-            follows on a new line in a smaller register (the rite's
-            instruction). Both retain their data-* hooks for tests
-            and future styling.
-          */}
+
           <p className="mt-4 italic opacity-80" data-essence>
-            “{copy.essence}”
+            &ldquo;{copy.essence}&rdquo;
             <span
               className="mt-2 block not-italic text-sm opacity-90"
               data-invocation
@@ -249,7 +262,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleRoll}
                 data-action="roll"
-                className="rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+                className="rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground"
               >
                 Roll 3d6
               </button>
@@ -261,17 +274,11 @@ export function BlessingRitual({
                 stat={currentSefirah.stat}
                 blessing={blessing}
                 sefirahColor={currentSefirah.color}
+                rolling={rolling}
                 onAdvance={handleAdvance}
               />
             ) : null}
 
-            {/*
-              #133: skip-to-summary affordance. Available at any step
-              so a returning player can bypass the slow per-Sefirah
-              cadence and jump to the summary in one click. Visually
-              de-emphasised so first-time players don't see it as the
-              primary path.
-            */}
             <button
               type="button"
               onClick={handleSkipCeremony}
@@ -283,100 +290,11 @@ export function BlessingRitual({
           </div>
         </div>
 
+        {/* Right: running ledger */}
         <RitualLedger stats={stats} currentIndex={stepIndex} />
       </div>
     </section>
   );
-}
-
-/**
- * Hero badge for the current Sefirah — large circular medallion
- * keyed to the Sefirah's colour with the Hebrew name inscribed.
- * Diameter ≥ 80 px (the ticket's threshold).
- *
- * Glyph colour is picked from the badge's relative luminance so the
- * letter stays legible across all 10 sefirah colours (Kether's white
- * and Tiferet's gold need dark glyphs; Binah's charcoal needs a
- * light one). Robust to future palette tweaks.
- *
- * #408 — the halo is the per-Sefirah `shadow-glow-{key}` token from
- * `tailwind.config.ts § boxShadow` plus `motion-safe:animate-breath`
- * (the 6 s slow-opacity loop from `design/motion.md`). Crown-step
- * thus reads gold-white, Tiferet gold, Binah deep blue-violet, etc.
- * — the same halo recipe the in-game Tree's lit Sefirot use.
- * `prefers-reduced-motion` users see the static halo without the
- * breath animation.
- */
-function SefirahHero({ sefirah }: { sefirah: Sefirah }): JSX.Element {
-  const glyphColor = relativeLuminance(sefirah.color) > 0.4 ? '#1a1542' : '#f8f8ff';
-  return (
-    <div className="mx-auto mt-2 flex flex-col items-center">
-      <div
-        data-sefirah-hero
-        data-sefirah={sefirah.key}
-        aria-hidden="true"
-        className={`flex h-24 w-24 items-center justify-center rounded-full ${HALO_CLASS_BY_KEY[sefirah.key]} motion-safe:animate-breath`}
-        style={{ backgroundColor: sefirah.color }}
-      >
-        <span
-          className="font-hebrew text-4xl"
-          lang="he"
-          style={{
-            color: glyphColor,
-            direction: 'rtl',
-            unicodeBidi: 'isolate',
-          }}
-        >
-          {[...sefirah.hebrewName][0] ?? ''}
-        </span>
-      </div>
-      {/*
-        #413: stat label folded into the orb chrome — replaces the
-        prior standalone "Stat: <name>" line that lived above the
-        Roll button. Sits flush under the orb so the stat reads as
-        a property of the Sefirah being received, not a separate
-        text element competing for vertical space.
-      */}
-      <span
-        data-sefirah-stat-label
-        // The stat name is already communicated to assistive
-        // technology via the section's aria-label and the ledger
-        // (`RitualLedger` rows). The visible orb caption is
-        // decorative — hide it from AT to avoid duplicate readout.
-        aria-hidden="true"
-        className="mt-2 text-[0.65rem] uppercase tracking-[0.25em] opacity-70"
-      >
-        {sefirah.stat}
-      </span>
-    </div>
-  );
-}
-
-/**
- * Per-Sefirah halo class. Tailwind's JIT requires the literal
- * classnames in source — no template-string concat — so the table
- * is the canonical way to thread `key` → `shadow-glow-<key>`.
- * Mirrors the same map in `components/tree/TreeBoard.tsx`.
- */
-const HALO_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
-  kether: 'shadow-glow-kether',
-  chokmah: 'shadow-glow-chokmah',
-  binah: 'shadow-glow-binah',
-  chesed: 'shadow-glow-chesed',
-  gevurah: 'shadow-glow-gevurah',
-  tiferet: 'shadow-glow-tiferet',
-  netzach: 'shadow-glow-netzach',
-  hod: 'shadow-glow-hod',
-  yesod: 'shadow-glow-yesod',
-  malkuth: 'shadow-glow-malkuth',
-};
-
-/** WCAG-style relative luminance for a 6-digit hex colour, in [0, 1]. */
-function relativeLuminance(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 interface RollDisplayProps {
@@ -384,6 +302,7 @@ interface RollDisplayProps {
   readonly stat: StatKey;
   readonly blessing: BlessingRender | null;
   readonly sefirahColor: string;
+  readonly rolling: boolean;
   readonly onAdvance: () => void;
 }
 
@@ -392,6 +311,7 @@ function RollDisplay({
   stat,
   blessing,
   sefirahColor,
+  rolling,
   onAdvance,
 }: RollDisplayProps): JSX.Element {
   const total = roll[0] + roll[1] + roll[2];
@@ -399,20 +319,22 @@ function RollDisplay({
     <div
       role="status"
       aria-live="polite"
-      className="flex flex-col items-center gap-2"
+      className="flex flex-col items-center gap-3"
     >
       <div
         data-roll
         aria-label={`Rolled ${roll[0]} + ${roll[1]} + ${roll[2]} = ${total}`}
-        className="flex gap-2 text-2xl"
+        className="flex gap-3"
       >
         {roll.map((d, i) => (
-          <span
+          <D6Roll
             key={i}
-            className="flex h-10 w-10 items-center justify-center rounded border border-veil/40 font-display tabular-nums"
-          >
-            {d}
-          </span>
+            value={d}
+            rolling={rolling}
+            durationMs={ROLL_ANIMATION_MS}
+            announceToAt={false}
+            className="h-14 w-14"
+          />
         ))}
       </div>
       <p
