@@ -16,6 +16,7 @@ let getUserResult: { data: { user: { id: string } | null }; error: unknown } = {
 };
 let setSessionCalls: { access_token: string; refresh_token: string }[] = [];
 let serviceClientCreated = false;
+let snapshotWriteCount = 0;
 let auditInserts: { table: string; row: unknown }[] = [];
 // Per-table responses for chained fluent reads.
 let roomResponse: { data: unknown; error: unknown } = { data: null, error: null };
@@ -45,7 +46,10 @@ function makeFluent(table: string) {
       return builder;
     },
     update: () => ({
-      eq: async () => ({ data: null, error: null }),
+      eq: async () => {
+        if (table === 'game_states') snapshotWriteCount += 1;
+        return { data: null, error: null };
+      },
     }),
   };
 }
@@ -161,6 +165,19 @@ describe('POST /api/rooms/[code]/events — auth + identity gate', () => {
     const body = (await res.json()) as { error: string };
     expect(body.error).toBe('invalid-action-shape');
   });
+
+  it('does not call setSession (regression: empty refresh_token silently broke auth context on production)', async () => {
+    // On production Supabase, setSession({ refresh_token: '' }) returns an error
+    // and leaves auth.uid() null. The rooms_find_by_code RLS policy
+    // (requires auth.uid() is not null) then blocks the room read, producing
+    // a spurious room-not-found 404. Fix: use serviceClient for reads.
+    setSessionCalls = [];
+    await POST(
+      makeRequest({ kind: 'move', playerId: 'caller-uid', pathNumber: 13 }, { authorization: 'Bearer x' }),
+      { params: { code: 'ABCDEF' } },
+    );
+    expect(setSessionCalls).toHaveLength(0);
+  });
 });
 
 describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
@@ -168,6 +185,7 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     getUserResult = { data: { user: { id: 'p2' } }, error: null };
     setSessionCalls = [];
     serviceClientCreated = false;
+    snapshotWriteCount = 0;
     auditInserts = [];
     roomResponse = {
       data: {
@@ -218,10 +236,8 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     expect(body.reason.kind).toBe('not-active-player');
     expect(body.reason.activePlayerId).toBe('p1');
 
-    // AC #3: rejected events must NEVER mutate state. The
-    // service-role client (the only path to a snapshot UPDATE) must
-    // never have been constructed.
-    expect(serviceClientCreated).toBe(false);
+    // AC #3: rejected events must NEVER mutate state.
+    expect(snapshotWriteCount).toBe(0);
 
     // Audit log: a rejected:<kind> row was inserted to game_events.
     const audit = auditInserts.find(
@@ -302,8 +318,8 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     expect(body.detail.cause.kind).toBe('wrong-phase');
     expect(body.detail.cause.expected).toBe('end');
     expect(body.detail.cause.actual).toBe('move');
-    // Snapshot must NOT have been written through the service client.
-    expect(serviceClientCreated).toBe(false);
+    // Snapshot must NOT have been written.
+    expect(snapshotWriteCount).toBe(0);
     // Pin the route's audit behaviour on the 422 path: unlike the
     // 403 authorization gate (which writes a `rejected:<kind>` row
     // before returning), the dispatcher-rejected path returns
@@ -357,6 +373,6 @@ describe('POST /api/rooms/[code]/events — authorization gate (#35)', () => {
     expect(body.error).toBe('engine-error');
     expect(body.cause).toMatch(/active player/i);
     // Snapshot is never written.
-    expect(serviceClientCreated).toBe(false);
+    expect(snapshotWriteCount).toBe(0);
   });
 });

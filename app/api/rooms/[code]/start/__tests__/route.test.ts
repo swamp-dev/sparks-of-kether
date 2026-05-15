@@ -23,13 +23,25 @@ let snapshotDeleteResult: { error: { message: string } | null } = { error: null 
 let snapshotInserts: unknown[] = [];
 let roomUpdates: unknown[] = [];
 let snapshotDeletes = 0;
+let setSessionCallCount = 0;
 
 function makeServerClient() {
   return {
     auth: {
       getUser: vi.fn(async () => getUserResult),
-      setSession: vi.fn(async () => ({ data: { session: null }, error: null })),
+      setSession: vi.fn(async () => {
+        setSessionCallCount += 1;
+        return { data: { session: null }, error: null };
+      }),
     },
+    from: (table: string) => {
+      throw new Error(`unexpected server-client table: ${table}`);
+    },
+  };
+}
+
+function makeServiceClient() {
+  return {
     from: (table: string) => {
       if (table === 'rooms') {
         return {
@@ -37,6 +49,12 @@ function makeServerClient() {
             eq: () => ({
               maybeSingle: async () => roomResponse,
             }),
+          }),
+          update: (patch: unknown) => ({
+            eq: async () => {
+              roomUpdates.push(patch);
+              return roomUpdateResult;
+            },
           }),
         };
       }
@@ -49,14 +67,6 @@ function makeServerClient() {
           }),
         };
       }
-      throw new Error(`unexpected server-client table: ${table}`);
-    },
-  };
-}
-
-function makeServiceClient() {
-  return {
-    from: (table: string) => {
       if (table === 'game_states') {
         return {
           insert: async (row: unknown) => {
@@ -67,16 +77,6 @@ function makeServiceClient() {
             eq: async () => {
               snapshotDeletes += 1;
               return snapshotDeleteResult;
-            },
-          }),
-        };
-      }
-      if (table === 'rooms') {
-        return {
-          update: (patch: unknown) => ({
-            eq: async () => {
-              roomUpdates.push(patch);
-              return roomUpdateResult;
             },
           }),
         };
@@ -146,6 +146,7 @@ describe('POST /api/rooms/[code]/start', () => {
     snapshotInserts = [];
     roomUpdates = [];
     snapshotDeletes = 0;
+    setSessionCallCount = 0;
   });
 
   it('returns 401 when bearer header is missing', async () => {
@@ -299,5 +300,16 @@ describe('POST /api/rooms/[code]/start', () => {
     expect(res.status).toBe(500);
     const body = (await res.json()) as { recovered: boolean };
     expect(body.recovered).toBe(false);
+  });
+
+  it('does not call setSession (regression: empty refresh_token silently broke auth context on production)', async () => {
+    // On production Supabase, setSession({ refresh_token: '' }) returns an error
+    // and leaves auth.uid() null. The rooms_find_by_code RLS policy
+    // (requires auth.uid() is not null) then blocks the room read, producing
+    // a spurious room-not-found 404. Fix: use serviceClient for reads.
+    await POST(makeRequest({ authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
+    expect(setSessionCallCount).toBe(0);
   });
 });
