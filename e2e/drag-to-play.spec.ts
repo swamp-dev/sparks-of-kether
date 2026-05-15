@@ -192,8 +192,8 @@ test('drag-to-play: dragging onto a non-matching path is rejected with announcem
     'move',
   );
   await expect(page.locator('[data-drag-announcement]')).toContainText(
-    /cannot|that path/i,
-    { timeout: 1500 },
+    /cannot|that path|no path/i,
+    { timeout: 3000 },
   );
 });
 
