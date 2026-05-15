@@ -15,6 +15,9 @@ Thumbs.db
 # to verify the per-PR checklist actually ran for the current HEAD.
 # Never committed.
 .claude/state/
+# Claude Code ephemeral runtime files (lock file + dynamically-loaded skills)
+.claude/scheduled_tasks.lock
+.claude/skills/playtest/
 
 # Node / Next.js
 node_modules/
