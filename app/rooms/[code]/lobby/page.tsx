@@ -149,8 +149,8 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
 
   if (needsSignPick) {
     return (
-      <main className="min-h-screen p-8 text-veil">
-        <header className="mb-6 text-center">
+      <main className="flex h-dvh flex-col p-4 pt-6 text-veil sm:p-8">
+        <header className="mb-6 shrink-0 text-center">
           <h1 className="font-display text-3xl tracking-widest">
             {currentPlayer.nickname} — Choose Sign
           </h1>
@@ -158,7 +158,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
             {code}
           </p>
         </header>
-        <ZodiacSignPicker taken={taken} onPick={handlePick} />
+        <ZodiacSignPicker taken={taken} onPick={handlePick} className="min-h-0 flex-1" />
       </main>
     );
   }

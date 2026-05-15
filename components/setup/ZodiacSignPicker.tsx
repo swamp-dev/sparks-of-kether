@@ -224,9 +224,9 @@ export function ZodiacSignPicker({
     <section
       data-zodiac-sign-picker
       aria-label="Choose your astrological sign class"
-      className={className}
+      className={['flex flex-col', className].filter(Boolean).join(' ')}
     >
-      <header className="mb-6 text-center">
+      <header className="mb-6 shrink-0 text-center">
         <h2 className="font-display text-3xl tracking-widest text-veil">
           Choose your sign
         </h2>
@@ -256,6 +256,7 @@ export function ZodiacSignPicker({
         {focusedSign.name}
       </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto">
       <div
         role="radiogroup"
         aria-label="Zodiac sign carousel"
@@ -353,6 +354,7 @@ export function ZodiacSignPicker({
           })}
         </div>
       </div>
+      </div>
 
       {/* Mobile prev / next. The Confirm CTA below names the focused
           sign and is the primary way to commit; the prev/next chevrons
@@ -361,7 +363,7 @@ export function ZodiacSignPicker({
           buttons land on the same `cycle(-1)` / `cycle(1)` handler,
           so `getAllByRole('button', { name: /Next sign/ })` (or
           `.first()` on Playwright) is stable across viewports. */}
-      <div className="mt-6 flex items-center justify-center gap-3 sm:hidden">
+      <div className="mt-6 flex shrink-0 items-center justify-center gap-3 sm:hidden">
         <button
           type="button"
           aria-label="Previous sign"
@@ -380,7 +382,7 @@ export function ZodiacSignPicker({
         </button>
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex shrink-0 justify-center">
         <button
           type="button"
           onClick={handleConfirm}
