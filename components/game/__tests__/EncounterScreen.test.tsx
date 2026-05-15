@@ -1711,3 +1711,138 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
     }
   });
 });
+
+describe('EncounterScreen — avatar pose transitions (#21)', () => {
+  it('stage portrait has pose="speaking" on initial prep mount (framing not yet complete)', () => {
+    vi.useFakeTimers();
+    try {
+      renderEncounter({ mode: 'hot-seat', initialState: makeChallengeState() });
+      // Initial mount: framing not complete → derivePose('prep', false, null) = 'speaking'
+      const portrait = document.querySelector(
+        '[data-avatar-portrait][data-avatar-size="stage"]',
+      );
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('speaking');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stage portrait switches to pose="idle" once the framing reveal completes', () => {
+    vi.useFakeTimers();
+    try {
+      renderEncounter({ mode: 'hot-seat', initialState: makeChallengeState() });
+      // Advance past the full reveal duration — see framing-complete test above.
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      // derivePose('prep', true, null) = 'idle'
+      const portrait = document.querySelector(
+        '[data-avatar-portrait][data-avatar-size="stage"]',
+      );
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('idle');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('portrait has pose="watching" during the resolve animation', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = seededRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={{ ...baseContext, stat: 18 }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+      // derivePose('resolve', *, null) = 'watching'
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('watching');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('portrait has pose="pass" after a passing roll resolves', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = seededRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          // Stat 18 vs DC 15 — guaranteed pass.
+          context={{ ...baseContext, stat: 18, availableAllies: [] }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+      // derivePose('react', *, { pass: true }) = 'pass'
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('pass');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('portrait has pose="fail" after a failing roll resolves', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makeChallengeState();
+      const rng = seededRng(1);
+      const { result, rerender } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          // Stat 1 vs DC 15 — guaranteed fail.
+          context={{ ...baseContext, stat: 1, availableAllies: [] }}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+        />
+      );
+      const view = render(<Wrapper />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+      // derivePose('react', *, { pass: false }) = 'fail'
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('fail');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

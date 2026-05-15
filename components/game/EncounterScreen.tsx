@@ -37,6 +37,7 @@ import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor } from '@/lib/sound/cues';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
+import { derivePose } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
 import { RevealLine } from './encounter/RevealLine';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
@@ -353,6 +354,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     if (animatingResolve) return 'resolve';
     return 'react';
   })();
+
+  const pose = derivePose(uiSubPhase, framingComplete, resolvedOutcome);
 
   // #321: pass / fail cue. Fire once when the verdict reveals — i.e.
   // when the resolve animation finishes and the react sub-state is
@@ -729,6 +732,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             sefirah={context.sefirah}
             state={avatarState}
             size="small"
+            pose={pose}
+            reducedMotion={reducedMotion}
             {...(avatarNameLabel !== undefined
               ? { avatarName: avatarNameLabel }
               : {})}
@@ -833,6 +838,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
               sefirah={context.sefirah}
               state="prep"
               size="stage"
+              pose={pose}
+              reducedMotion={reducedMotion}
               {...(avatarNameLabel !== undefined
                 ? { avatarName: avatarNameLabel }
                 : {})}
