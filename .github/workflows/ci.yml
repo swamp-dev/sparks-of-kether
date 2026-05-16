@@ -121,6 +121,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Format check
+        run: pnpm format:check
+
       - name: Test + coverage (vitest --coverage)
         # `vitest run --coverage` is a superset of `vitest run` — it
         # executes the full suite AND collects coverage in a single

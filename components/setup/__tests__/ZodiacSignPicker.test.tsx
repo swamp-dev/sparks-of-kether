@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ZodiacSignPicker } from '../ZodiacSignPicker';
-import {
-  zodiacSigns,
-  arcana,
-  pathByArcanum,
-  type ZodiacSignKey,
-} from '@/data';
+import { zodiacSigns, arcana, pathByArcanum, type ZodiacSignKey } from '@/data';
 import { zodiacBonus } from '@/engine/zodiac-bonus';
 
 /**
@@ -75,76 +70,64 @@ describe('ZodiacSignPicker — carousel structure (#314)', () => {
     expect(aries?.getAttribute('aria-checked')).toBe('true');
     expect(aries?.getAttribute('data-stage')).toBe('current');
     // Other signs are NOT current.
-    expect(
-      container.querySelector('[data-sign="leo"]')?.getAttribute('aria-checked'),
-    ).toBe('false');
+    expect(container.querySelector('[data-sign="leo"]')?.getAttribute('aria-checked')).toBe(
+      'false',
+    );
   });
 
   it('renders the prev / current / next stages with correct data-stage labels', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
     // With aries default, prev wraps to pisces and next is taurus.
-    expect(
-      container.querySelector('[data-sign="pisces"]')?.getAttribute('data-stage'),
-    ).toBe('prev');
-    expect(
-      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
-    ).toBe('current');
-    expect(
-      container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage'),
-    ).toBe('next');
+    expect(container.querySelector('[data-sign="pisces"]')?.getAttribute('data-stage')).toBe(
+      'prev',
+    );
+    expect(container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
+    expect(container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage')).toBe(
+      'next',
+    );
   });
 
   it('ArrowRight cycles the focused stage forward', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    const group = container.querySelector(
-      '[role="radiogroup"]',
-    ) as HTMLElement;
+    const group = container.querySelector('[role="radiogroup"]') as HTMLElement;
     fireEvent.keyDown(group, { key: 'ArrowRight' });
-    expect(
-      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
-    ).toBe('prev');
-    expect(
-      container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage'),
-    ).toBe('current');
-    expect(
-      container.querySelector('[data-sign="taurus"]')?.getAttribute('aria-checked'),
-    ).toBe('true');
+    expect(container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage')).toBe('prev');
+    expect(container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
+    expect(container.querySelector('[data-sign="taurus"]')?.getAttribute('aria-checked')).toBe(
+      'true',
+    );
   });
 
   it('ArrowLeft cycles the focused stage backward (wraps to pisces from aries)', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    const group = container.querySelector(
-      '[role="radiogroup"]',
-    ) as HTMLElement;
+    const group = container.querySelector('[role="radiogroup"]') as HTMLElement;
     fireEvent.keyDown(group, { key: 'ArrowLeft' });
-    expect(
-      container.querySelector('[data-sign="pisces"]')?.getAttribute('data-stage'),
-    ).toBe('current');
-    expect(
-      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
-    ).toBe('next');
+    expect(container.querySelector('[data-sign="pisces"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
+    expect(container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage')).toBe('next');
   });
 
   it('Home / End jump to first / last sign', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    const group = container.querySelector(
-      '[role="radiogroup"]',
-    ) as HTMLElement;
+    const group = container.querySelector('[role="radiogroup"]') as HTMLElement;
     fireEvent.keyDown(group, { key: 'End' });
-    expect(
-      container.querySelector('[data-sign="pisces"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="pisces"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
     fireEvent.keyDown(group, { key: 'Home' });
-    expect(
-      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
   });
 
   it('clicking a wing (prev / next) cards moves the carousel to that sign', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    fireEvent.click(
-      container.querySelector('[data-sign="taurus"]') as HTMLElement,
-    );
+    fireEvent.click(container.querySelector('[data-sign="taurus"]') as HTMLElement);
     // Re-query: the keyed remount swaps DOM nodes between renders, so
     // the original element reference no longer carries the live
     // attributes. Query the live tree.
@@ -164,18 +147,18 @@ describe('ZodiacSignPicker — carousel structure (#314)', () => {
     const firstNext = nextButtons[0];
     if (firstNext === undefined) throw new Error('no next-sign button');
     fireEvent.click(firstNext);
-    expect(
-      container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="taurus"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
     const prevButtons = screen.getAllByRole('button', {
       name: /previous sign/i,
     });
     const firstPrev = prevButtons[0];
     if (firstPrev === undefined) throw new Error('no previous-sign button');
     fireEvent.click(firstPrev);
-    expect(
-      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
   });
 });
 
@@ -183,9 +166,7 @@ describe('ZodiacSignPicker — center stage visuals (#314)', () => {
   it('current stage shows constellation SVG marked aria-hidden', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
     // Cycle to taurus to confirm the constellation is per-sign.
-    fireEvent.click(
-      container.querySelector('[data-sign="taurus"]') as HTMLElement,
-    );
+    fireEvent.click(container.querySelector('[data-sign="taurus"]') as HTMLElement);
     const stage = container.querySelector('[data-sign="taurus"]');
     const constellation = stage?.querySelector('[data-constellation]');
     expect(constellation, 'constellation SVG on the current stage').not.toBeNull();
@@ -204,37 +185,23 @@ describe('ZodiacSignPicker — center stage visuals (#314)', () => {
 
   it('Scorpio shows BOTH classical (mars) and modern co-ruler (pluto) orbit elements', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    fireEvent.click(
-      container.querySelector('[data-sign="scorpio"]') as HTMLElement,
-    );
+    fireEvent.click(container.querySelector('[data-sign="scorpio"]') as HTMLElement);
     const scorpio = container.querySelector('[data-sign="scorpio"]');
-    expect(
-      scorpio?.querySelector('[data-ruler-orbit="mars"]'),
-      'classical ruler',
-    ).not.toBeNull();
-    expect(
-      scorpio?.querySelector('[data-ruler-orbit="pluto"]'),
-      'co-ruler',
-    ).not.toBeNull();
+    expect(scorpio?.querySelector('[data-ruler-orbit="mars"]'), 'classical ruler').not.toBeNull();
+    expect(scorpio?.querySelector('[data-ruler-orbit="pluto"]'), 'co-ruler').not.toBeNull();
   });
 
   it('current stage shows element + modality chips', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
     const aries = container.querySelector('[data-sign="aries"]');
-    expect(
-      aries?.querySelector('[data-chip="element"]'),
-      'element chip',
-    ).not.toBeNull();
-    expect(
-      aries?.querySelector('[data-chip="modality"]'),
-      'modality chip',
-    ).not.toBeNull();
-    expect(
-      aries?.querySelector('[data-chip="element"]')?.textContent?.toLowerCase(),
-    ).toContain('fire');
-    expect(
-      aries?.querySelector('[data-chip="modality"]')?.textContent?.toLowerCase(),
-    ).toContain('cardinal');
+    expect(aries?.querySelector('[data-chip="element"]'), 'element chip').not.toBeNull();
+    expect(aries?.querySelector('[data-chip="modality"]'), 'modality chip').not.toBeNull();
+    expect(aries?.querySelector('[data-chip="element"]')?.textContent?.toLowerCase()).toContain(
+      'fire',
+    );
+    expect(aries?.querySelector('[data-chip="modality"]')?.textContent?.toLowerCase()).toContain(
+      'cardinal',
+    );
   });
 
   it('Hebrew letter glyph renders in the current stage with lang=he', () => {
@@ -261,9 +228,7 @@ describe('ZodiacSignPicker — stat tilts as visual weights (#314)', () => {
     const expectedNonZero = Object.entries(aryBonuses).filter(
       ([, d]) => d !== 0 && d !== undefined,
     );
-    expect(weights?.length, 'one weight token per non-zero stat').toBe(
-      expectedNonZero.length,
-    );
+    expect(weights?.length, 'one weight token per non-zero stat').toBe(expectedNonZero.length);
     for (const [stat, delta] of expectedNonZero) {
       const tok = aries?.querySelector(`[data-stat-weight="${stat}"]`);
       expect(tok, `weight token for ${stat}`).not.toBeNull();
@@ -292,9 +257,7 @@ describe('ZodiacSignPicker — stat tilts as visual weights (#314)', () => {
     // Sanity invariant — every classical sign has at least one
     // non-zero dignity entry, so every stage shows visible weights.
     for (const sign of zodiacSigns) {
-      fireEvent.click(
-        container.querySelector(`[data-sign="${sign.key}"]`) as HTMLElement,
-      );
+      fireEvent.click(container.querySelector(`[data-sign="${sign.key}"]`) as HTMLElement);
       const stage = container.querySelector(`[data-sign="${sign.key}"]`);
       expect(
         stage?.querySelectorAll('[data-stat-weight]').length,
@@ -326,9 +289,7 @@ describe('ZodiacSignPicker — Soul Doors render shape (#314, #382)', () => {
 
   it('Pisces shows the singular Soul Door (Netzach) plus the Malkuth footnote', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    fireEvent.click(
-      container.querySelector('[data-sign="pisces"]') as HTMLElement,
-    );
+    fireEvent.click(container.querySelector('[data-sign="pisces"]') as HTMLElement);
     const pisces = container.querySelector('[data-sign="pisces"]');
     const doors = pisces?.querySelectorAll('[data-soul-door]');
     expect(doors?.length).toBe(1);
@@ -342,9 +303,7 @@ describe('ZodiacSignPicker — Soul Doors render shape (#314, #382)', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
     for (const sign of zodiacSigns) {
       // Cycle to each sign so its Soul Doors render as the focused stage.
-      fireEvent.click(
-        container.querySelector(`[data-sign="${sign.key}"]`) as HTMLElement,
-      );
+      fireEvent.click(container.querySelector(`[data-sign="${sign.key}"]`) as HTMLElement);
       const arc = arcana.find(
         (a) => a.attribution.kind === 'sign' && a.attribution.value === sign.key,
       );
@@ -366,9 +325,7 @@ describe('ZodiacSignPicker — confirm + selection (preserved + #314)', () => {
     const onPick = vi.fn();
     const { container } = render(<ZodiacSignPicker onPick={onPick} />);
     // Cycle to leo, then confirm.
-    const group = container.querySelector(
-      '[role="radiogroup"]',
-    ) as HTMLElement;
+    const group = container.querySelector('[role="radiogroup"]') as HTMLElement;
     // 4 right-arrows from aries → taurus → gemini → cancer → leo.
     for (let i = 0; i < 4; i++) {
       fireEvent.keyDown(group, { key: 'ArrowRight' });
@@ -379,16 +336,10 @@ describe('ZodiacSignPicker — confirm + selection (preserved + #314)', () => {
 
   it('Confirm CTA names the focused sign so the player sees what they are committing to', () => {
     const { container } = render(<ZodiacSignPicker onPick={vi.fn()} />);
-    expect(
-      screen.getByRole('button', { name: /^Confirm Aries$/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Confirm Aries$/ })).toBeInTheDocument();
     // Cycle to taurus.
-    fireEvent.click(
-      container.querySelector('[data-sign="taurus"]') as HTMLElement,
-    );
-    expect(
-      screen.getByRole('button', { name: /^Confirm Taurus$/ }),
-    ).toBeInTheDocument();
+    fireEvent.click(container.querySelector('[data-sign="taurus"]') as HTMLElement);
+    expect(screen.getByRole('button', { name: /^Confirm Taurus$/ })).toBeInTheDocument();
   });
 
   it('Confirm is disabled in the pathological all-signs-taken case (#370 fallback)', () => {
@@ -400,9 +351,7 @@ describe('ZodiacSignPicker — confirm + selection (preserved + #314)', () => {
     // ZodiacSignPicker's `initialFocusedIndex` covers. Pin that the
     // fallback (index 0) lands on a disabled Confirm rather than
     // blowing up or somehow enabling pick.
-    const allTaken = Object.fromEntries(
-      zodiacSigns.map((s) => [s.key, 'someone']),
-    );
+    const allTaken = Object.fromEntries(zodiacSigns.map((s) => [s.key, 'someone']));
     render(<ZodiacSignPicker onPick={vi.fn()} taken={allTaken} />);
     const confirm = screen.getByRole('button', { name: /^Confirm/ }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
@@ -412,36 +361,25 @@ describe('ZodiacSignPicker — confirm + selection (preserved + #314)', () => {
 describe('ZodiacSignPicker — taken signs (preserved from #212/#236)', () => {
   it('marks taken signs aria-disabled and shows the taker name', () => {
     const { container } = render(
-      <ZodiacSignPicker
-        onPick={vi.fn()}
-        taken={{ aries: 'Andy', virgo: 'Bea' }}
-      />,
+      <ZodiacSignPicker onPick={vi.fn()} taken={{ aries: 'Andy', virgo: 'Bea' }} />,
     );
     const aries = container.querySelector('[data-sign="aries"]');
     const virgo = container.querySelector('[data-sign="virgo"]');
     expect(aries?.getAttribute('aria-disabled')).toBe('true');
     expect(virgo?.getAttribute('aria-disabled')).toBe('true');
-    expect(aries?.querySelector('[data-taken-by]')?.textContent).toMatch(
-      /Taken by Andy/,
-    );
-    expect(virgo?.querySelector('[data-taken-by]')?.textContent).toMatch(
-      /Taken by Bea/,
-    );
+    expect(aries?.querySelector('[data-taken-by]')?.textContent).toMatch(/Taken by Andy/);
+    expect(virgo?.querySelector('[data-taken-by]')?.textContent).toMatch(/Taken by Bea/);
   });
 
   it('clicking a taken wing card does NOT focus it as the current stage', () => {
-    const { container } = render(
-      <ZodiacSignPicker onPick={vi.fn()} taken={{ taurus: 'Andy' }} />,
-    );
-    const taurus = container.querySelector(
-      '[data-sign="taurus"]',
-    ) as HTMLElement;
+    const { container } = render(<ZodiacSignPicker onPick={vi.fn()} taken={{ taurus: 'Andy' }} />);
+    const taurus = container.querySelector('[data-sign="taurus"]') as HTMLElement;
     fireEvent.click(taurus);
     // Taurus stays disabled and aries remains the current stage.
     expect(taurus.getAttribute('aria-checked')).toBe('false');
-    expect(
-      container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
   });
 
   it('initial focus skips taken signs — opens on the first available (#370)', () => {
@@ -452,9 +390,7 @@ describe('ZodiacSignPicker — taken signs (preserved from #212/#236)', () => {
     // ambiguous "Confirm Aries" CTA P2 saw when aries was taken by
     // P1 — the cycle-skip helper already handled navigation but the
     // initial state was unconditionally aries.
-    const { container } = render(
-      <ZodiacSignPicker onPick={vi.fn()} taken={{ aries: 'Andy' }} />,
-    );
+    const { container } = render(<ZodiacSignPicker onPick={vi.fn()} taken={{ aries: 'Andy' }} />);
     expect(
       container.querySelector('[data-sign="aries"]')?.getAttribute('data-stage'),
       'aries should not be the current stage when taken',
@@ -472,14 +408,11 @@ describe('ZodiacSignPicker — taken signs (preserved from #212/#236)', () => {
     // If aries AND taurus are both taken, the initial focus lands on
     // gemini. The walk uses the same skip-table the cycle helper does.
     const { container } = render(
-      <ZodiacSignPicker
-        onPick={vi.fn()}
-        taken={{ aries: 'Andy', taurus: 'Bea' }}
-      />,
+      <ZodiacSignPicker onPick={vi.fn()} taken={{ aries: 'Andy', taurus: 'Bea' }} />,
     );
-    expect(
-      container.querySelector('[data-sign="gemini"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="gemini"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
   });
 
   it('cycling skips taken signs', () => {
@@ -490,20 +423,16 @@ describe('ZodiacSignPicker — taken signs (preserved from #212/#236)', () => {
         taken={{ taurus: 'Andy' }}
       />,
     );
-    const group = container.querySelector(
-      '[role="radiogroup"]',
-    ) as HTMLElement;
+    const group = container.querySelector('[role="radiogroup"]') as HTMLElement;
     fireEvent.keyDown(group, { key: 'ArrowRight' });
-    expect(
-      container.querySelector('[data-sign="gemini"]')?.getAttribute('data-stage'),
-    ).toBe('current');
+    expect(container.querySelector('[data-sign="gemini"]')?.getAttribute('data-stage')).toBe(
+      'current',
+    );
   });
 
   it('available signs remain selectable via Confirm', () => {
     const onPick = vi.fn();
-    const { container } = render(
-      <ZodiacSignPicker onPick={onPick} taken={{ aries: 'Andy' }} />,
-    );
+    const { container } = render(<ZodiacSignPicker onPick={onPick} taken={{ aries: 'Andy' }} />);
     const leo = container.querySelector('[data-sign="leo"]') as HTMLElement;
     fireEvent.click(leo);
     fireEvent.click(screen.getByRole('button', { name: /^Confirm Leo$/ }));
@@ -517,9 +446,7 @@ describe('ZodiacSignPicker — pantheon seam (#293 future-proof)', () => {
     // future #293 PR adds pluggable variants without re-shaping the
     // ZodiacSignPicker API. We assert the prop is accepted (no
     // type / runtime crash) and the rendered default is unchanged.
-    const { container } = render(
-      <ZodiacSignPicker onPick={vi.fn()} pantheon="classical" />,
-    );
+    const { container } = render(<ZodiacSignPicker onPick={vi.fn()} pantheon="classical" />);
     expect(container.querySelectorAll('[data-sign]').length).toBe(12);
     const aries = container.querySelector('[data-sign="aries"]');
     // Mars + sun exalt = strength + harmony tilts present.

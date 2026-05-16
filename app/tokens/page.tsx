@@ -36,7 +36,13 @@ const sefirot: readonly Swatch[] = [
     textOnDark: true,
   },
   { name: 'Chesed', bgClass: 'bg-chesed', hebrew: 'חסד', quality: 'Mercy', textOnDark: true },
-  { name: 'Gevurah', bgClass: 'bg-gevurah', hebrew: 'גבורה', quality: 'Severity', textOnDark: true },
+  {
+    name: 'Gevurah',
+    bgClass: 'bg-gevurah',
+    hebrew: 'גבורה',
+    quality: 'Severity',
+    textOnDark: true,
+  },
   { name: 'Tiferet', bgClass: 'bg-tiferet', hebrew: 'תפארת', quality: 'Beauty', textOnDark: false },
   {
     name: 'Netzach',
@@ -76,10 +82,7 @@ export default function TokensPage() {
         <h2 id="sefirot-heading" className="mb-4 font-display text-2xl">
           Sefirot colors
         </h2>
-        <div
-          role="list"
-          className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5"
-        >
+        <div role="list" className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {sefirot.map((s) => (
             <div
               key={s.name}
@@ -154,8 +157,8 @@ export default function TokensPage() {
           </div>
           <div>
             <div className="mb-1 text-xs opacity-50">
-              font-hebrew (Frank Ruhl Libre, self-hosted) — the 22 letters, aleph (rightmost) to
-              tav (leftmost)
+              font-hebrew (Frank Ruhl Libre, self-hosted) — the 22 letters, aleph (rightmost) to tav
+              (leftmost)
             </div>
             <div className="font-hebrew text-3xl" dir="rtl" lang="he">
               אבגדהוזחטיכלמנסעפצקרשת

@@ -17,14 +17,35 @@ const PIP_R = 2.2;
 
 const PIPS_BY_VALUE: readonly (readonly [number, number])[][] = [
   /* 1 */ [[0.5, 0.5]],
-  /* 2 */ [[0.75, 0.25], [0.25, 0.75]],
-  /* 3 */ [[0.75, 0.25], [0.5, 0.5], [0.25, 0.75]],
-  /* 4 */ [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]],
-  /* 5 */ [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
+  /* 2 */ [
+    [0.75, 0.25],
+    [0.25, 0.75],
+  ],
+  /* 3 */ [
+    [0.75, 0.25],
+    [0.5, 0.5],
+    [0.25, 0.75],
+  ],
+  /* 4 */ [
+    [0.25, 0.25],
+    [0.75, 0.25],
+    [0.25, 0.75],
+    [0.75, 0.75],
+  ],
+  /* 5 */ [
+    [0.25, 0.25],
+    [0.75, 0.25],
+    [0.5, 0.5],
+    [0.25, 0.75],
+    [0.75, 0.75],
+  ],
   /* 6 */ [
-    [0.25, 0.2], [0.75, 0.2],
-    [0.25, 0.5], [0.75, 0.5],
-    [0.25, 0.8], [0.75, 0.8],
+    [0.25, 0.2],
+    [0.75, 0.2],
+    [0.25, 0.5],
+    [0.75, 0.5],
+    [0.25, 0.8],
+    [0.75, 0.8],
   ],
 ];
 
@@ -43,7 +64,8 @@ interface D6Props {
 }
 
 export function D6({ value, color = VEIL, className, rolled = false }: D6Props): JSX.Element {
-  const pips = value !== undefined && value >= 1 && value <= 6 ? (PIPS_BY_VALUE[value - 1] ?? []) : [];
+  const pips =
+    value !== undefined && value >= 1 && value <= 6 ? (PIPS_BY_VALUE[value - 1] ?? []) : [];
   const label = value !== undefined ? `d6 showing ${value}` : 'd6 die';
   const settleClass = rolled ? 'animate-d20-roll-settle motion-reduce:animate-none' : '';
   const composedClass = [className, settleClass].filter(Boolean).join(' ');

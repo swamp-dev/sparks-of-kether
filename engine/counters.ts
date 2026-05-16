@@ -74,10 +74,7 @@ export interface PillarStreakResult {
  * pillar resets sameCount to 1). The dual-emission case is structurally
  * unreachable today; the dual checks remain as defensive code.
  */
-export function recordPillarMove(
-  streak: PillarStreakState,
-  pillar: Pillar,
-): PillarStreakResult {
+export function recordPillarMove(streak: PillarStreakState, pillar: Pillar): PillarStreakResult {
   if (pillar === 'balance') return { streak, events: [] };
 
   let next: PillarStreakState;

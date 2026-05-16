@@ -21,18 +21,14 @@ describe('AvatarPortrait', () => {
   describe('stage size', () => {
     it('renders the commissioned portrait <img> with the per-character path', () => {
       render(<AvatarPortrait sefirah="hod" state="prep" size="stage" />);
-      const img = document.querySelector(
-        '[data-avatar-portrait-image]',
-      ) as HTMLImageElement | null;
+      const img = document.querySelector('[data-avatar-portrait-image]') as HTMLImageElement | null;
       expect(img).not.toBeNull();
       // `pantheon.avatarNames[hod].primary` → `Hermes` → `hermes` (lowercase).
       // The component renders without a provider, so usePantheon()'s
       // no-provider stub returns the greco-roman default.
       expect(img?.getAttribute('src')).toBe('/portraits/hermes/large.webp');
       // The Hebrew-letter placeholder is hidden while the image renders.
-      expect(
-        document.querySelector('[data-avatar-placeholder-letter]'),
-      ).toBeNull();
+      expect(document.querySelector('[data-avatar-placeholder-letter]')).toBeNull();
     });
 
     it('falls back to AvatarSilhouette when the image fails to load', () => {
@@ -72,9 +68,7 @@ describe('AvatarPortrait', () => {
       // would visually clash with the existing layout.
       render(<AvatarPortrait sefirah="hod" state="pass" size="small" />);
       expect(document.querySelector('[data-avatar-portrait-image]')).toBeNull();
-      const placeholder = document.querySelector(
-        '[data-avatar-placeholder-letter]',
-      );
+      const placeholder = document.querySelector('[data-avatar-placeholder-letter]');
       expect(placeholder).not.toBeNull();
       expect(placeholder?.textContent).toBe('ה');
     });
@@ -123,9 +117,7 @@ describe('AvatarPortrait', () => {
       // Inner frame has breath. The frame is the first child <div>.
       const innerFrame = portrait?.firstElementChild as HTMLElement | null;
       expect(innerFrame?.className).toContain('motion-safe:animate-breath');
-      expect(innerFrame?.className).not.toContain(
-        'motion-safe:animate-avatar-emerge',
-      );
+      expect(innerFrame?.className).not.toContain('motion-safe:animate-avatar-emerge');
     });
   });
 
@@ -204,38 +196,19 @@ describe('AvatarPortrait', () => {
 
   describe('caption + name label', () => {
     it('renders avatarName label when supplied', () => {
-      render(
-        <AvatarPortrait
-          sefirah="hod"
-          state="prep"
-          size="stage"
-          avatarName="Hermes"
-        />,
-      );
+      render(<AvatarPortrait sefirah="hod" state="prep" size="stage" avatarName="Hermes" />);
       const nameLabel = document.querySelector('[data-avatar-name-label]');
       expect(nameLabel?.textContent).toBe('Hermes');
     });
 
     it('flags caption as data-player-response in prep state only', () => {
       const { rerender } = render(
-        <AvatarPortrait
-          sefirah="hod"
-          state="prep"
-          size="small"
-          caption="The road is the road."
-        />,
+        <AvatarPortrait sefirah="hod" state="prep" size="small" caption="The road is the road." />,
       );
       const prepCaption = document.querySelector('[data-avatar-caption]');
       expect(prepCaption?.getAttribute('data-player-response')).toBe('true');
 
-      rerender(
-        <AvatarPortrait
-          sefirah="hod"
-          state="pass"
-          size="small"
-          caption="Speak again."
-        />,
-      );
+      rerender(<AvatarPortrait sefirah="hod" state="pass" size="small" caption="Speak again." />);
       const passCaption = document.querySelector('[data-avatar-caption]');
       // Verdict caption — VerdictReveal owns the `[data-avatar-verdict]`
       // surface, so this slot is intentionally not flagged.

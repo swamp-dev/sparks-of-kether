@@ -13,11 +13,19 @@ function makeLocalStorage(initial: Record<string, string> = {}): Storage {
   const store: Record<string, string> = { ...initial };
   return {
     getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { store[k] = v; },
-    removeItem: (k: string) => { Reflect.deleteProperty(store, k); },
-    clear: () => { Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k)); },
+    setItem: (k: string, v: string) => {
+      store[k] = v;
+    },
+    removeItem: (k: string) => {
+      Reflect.deleteProperty(store, k);
+    },
+    clear: () => {
+      Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k));
+    },
     key: (i: number) => Object.keys(store)[i] ?? null,
-    get length() { return Object.keys(store).length; },
+    get length() {
+      return Object.keys(store).length;
+    },
   };
 }
 

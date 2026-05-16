@@ -3,12 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useTurn } from '../use-turn';
 import type { CheckModifiers, CheckOutcome } from '@/engine/checks';
 import { seededRng } from '@/engine/rng';
-import type {
-  GameState,
-  KetherRitualState,
-  PlayerState,
-  Result,
-} from '@/engine/types';
+import type { GameState, KetherRitualState, PlayerState, Result } from '@/engine/types';
 import { isKetherHeld } from '@/engine/kether';
 import type { KetherRejection } from '@/engine/kether';
 import type { PrepModifier } from '../turn-machine';
@@ -26,9 +21,7 @@ function freshHook() {
       deck: [10, 11, 12, 13, 14, 15, 16, 17],
     },
   );
-  return renderHook(() =>
-    useTurn({ initialState, rng: seededRng(1) }),
-  );
+  return renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
 }
 
 describe('useTurn — phase machine', () => {
@@ -109,9 +102,7 @@ describe('useTurn — phase machine', () => {
         deck: [10, 11, 12, 13, 14, 15, 16, 17],
       },
     );
-    const { result } = renderHook(() =>
-      useTurn({ initialState, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
     expect(result.current.activePlayerIndex).toBe(0);
     expect(result.current.phase).toBe('move');
     let outcome: ReturnType<typeof result.current.move> | undefined;
@@ -169,9 +160,7 @@ describe('useTurn — phase machine', () => {
         deck: [10, 11, 12, 13, 14, 15, 16, 17],
       },
     );
-    const { result } = renderHook(() =>
-      useTurn({ initialState, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
     expect(result.current.activePlayerIndex).toBe(1);
     let outcome: ReturnType<typeof result.current.move> | undefined;
     act(() => {
@@ -261,9 +250,7 @@ describe('useTurn — meditate draw mechanics', () => {
       ...initial,
       deck: [],
       discardPile: [20, 21],
-      players: initial.players.map((p, idx) =>
-        idx === 0 ? { ...p, hand: [0, 1] } : p,
-      ),
+      players: initial.players.map((p, idx) => (idx === 0 ? { ...p, hand: [0, 1] } : p)),
     };
     act(() => {
       result.current.setState(recyclable);
@@ -360,9 +347,7 @@ function hookViaMoveIntoPrep(playerOverrides?: Partial<PlayerState>) {
       activePlayerId: 'p1',
     },
   );
-  const harness = renderHook(() =>
-    useTurn({ initialState, rng: seededRng(1) }),
-  );
+  const harness = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
   // chokmah ↔ binah is path 14 (Heh, lovingkindness pillar). Move
   // p1 along it; the destination is an uncleared check Sefirah,
   // so the reducer enters `challenge / prep`.
@@ -589,11 +574,7 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
       shortcutPenalty: false,
     };
     act(() => {
-      harnessWrapper.result.current.submitChallenge(
-        'binah',
-        modifiers,
-        PASS_OUTCOME,
-      );
+      harnessWrapper.result.current.submitChallenge('binah', modifiers, PASS_OUTCOME);
     });
 
     // Per-step path: stage two card-burns one at a time, then
@@ -623,12 +604,8 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
 
     // Both paths land in the same react sub-state (post-resolve,
     // pre-draw). Compare deep-equal on the published GameState.
-    expect(harnessWrapper.result.current.state).toEqual(
-      harnessPerStep.result.current.state,
-    );
-    expect(harnessWrapper.result.current.phase).toBe(
-      harnessPerStep.result.current.phase,
-    );
+    expect(harnessWrapper.result.current.state).toEqual(harnessPerStep.result.current.state);
+    expect(harnessWrapper.result.current.phase).toBe(harnessPerStep.result.current.phase);
     expect(harnessWrapper.result.current.challengeSubPhase).toBe(
       harnessPerStep.result.current.challengeSubPhase,
     );
@@ -769,9 +746,7 @@ describe('useTurn — submitChallenge shortcutPenalty derivation (#286)', () => 
         challengeSubPhase: 'prep',
       },
     );
-    const { result } = renderHook(() =>
-      useTurn({ initialState, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {
       // The modal still passes `shortcutPenalty: true` in
@@ -977,8 +952,7 @@ function ritualHook(opts?: {
     makePlayer({ id: 'p1', position: 'kether', hand: [3, 4] }),
     makePlayer({ id: 'p2', position: 'kether', hand: [5, 6] }),
   ];
-  const ritual: KetherRitualState =
-    opts?.ritual ?? freshRitual(['p2', 'p1']);
+  const ritual: KetherRitualState = opts?.ritual ?? freshRitual(['p2', 'p1']);
   const initialState: GameState = makeState(
     {},
     {
@@ -994,9 +968,7 @@ function ritualHook(opts?: {
       ? {
           ...baseOpts,
           dispatchClientAction: opts.dispatchClientAction,
-          ...(opts.selfPlayerId !== undefined
-            ? { selfPlayerId: opts.selfPlayerId }
-            : {}),
+          ...(opts.selfPlayerId !== undefined ? { selfPlayerId: opts.selfPlayerId } : {}),
         }
       : baseOpts;
   return renderHook(() => useTurn(fullOpts));
@@ -1040,9 +1012,7 @@ describe('useTurn — ketherWitnessPlay (K4 / #352)', () => {
       { kind: 'played', playerId: 'p2', arcanum: 5 },
     ]);
     expect(result.current.state.ketherRitual?.witnessTurnIndex).toBe(1);
-    expect(
-      result.current.state.players.find((p) => p.id === 'p2')?.hand,
-    ).toEqual([6]);
+    expect(result.current.state.players.find((p) => p.id === 'p2')?.hand).toEqual([6]);
     // Derived field follows the engine.
     expect(result.current.currentWitnessPlayerId).toBe('p1');
   });
@@ -1161,9 +1131,7 @@ describe('useTurn — closure-window methods (K4 / #352)', () => {
     act(() => {
       result.current.ketherCloseUnstageSpark('p1', 'chesed');
     });
-    expect(
-      result.current.state.ketherRitual?.stagedClosureSparks,
-    ).toEqual([]);
+    expect(result.current.state.ketherRitual?.stagedClosureSparks).toEqual([]);
   });
 
   it('multiplayer: ketherCloseUnstageSpark dispatches the K2 ClientAction', () => {
@@ -1263,10 +1231,7 @@ describe('useTurn — hot-seat round-robin rotation (K4 / #352)', () => {
       makePlayer({ id: 'p2', position: 'kether', hand: [20, 21] }),
       makePlayer({ id: 'p3', position: 'kether', hand: [30, 31] }),
     ];
-    const ritual: KetherRitualState = freshRitual(
-      ['p3', 'p1', 'p2'],
-      { p1: 2, p2: 2, p3: 2 },
-    );
+    const ritual: KetherRitualState = freshRitual(['p3', 'p1', 'p2'], { p1: 2, p2: 2, p3: 2 });
     const { result } = ritualHook({ players, ritual });
     expect(result.current.currentWitnessPlayerId).toBe('p3');
     act(() => {

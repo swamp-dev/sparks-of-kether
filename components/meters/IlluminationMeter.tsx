@@ -41,8 +41,7 @@ interface IlluminationMeterProps {
 // Living-light gradient: deep gold floor → bright kether-white peak.
 // Reads as "the light is brighter at the top" — the column has a
 // natural focal point rather than a uniform fill.
-const FILL_GRADIENT =
-  'linear-gradient(to top, #a87c00 0%, #ffd700 60%, #fff5cc 100%)';
+const FILL_GRADIENT = 'linear-gradient(to top, #a87c00 0%, #ffd700 60%, #fff5cc 100%)';
 // Caustic-shimmer overlay — a soft highlight band that sits on top of
 // the base gradient. `mix-blend-mode: screen` brightens midtones; the
 // `animate-breath` keyframe pulses its opacity so the column reads as

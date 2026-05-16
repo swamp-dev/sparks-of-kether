@@ -56,7 +56,9 @@ function readSfxInitial(): boolean {
     const stored = window.localStorage.getItem(SFX_ENABLED_STORAGE_KEY);
     if (stored === 'true') return true;
     if (stored === 'false') return false;
-  } catch { /* localStorage can throw in private-browsing / quota exceeded */ }
+  } catch {
+    /* localStorage can throw in private-browsing / quota exceeded */
+  }
   // No stored preference: defer to reduced-motion heuristic.
   if (hasReducedMotion()) return false;
   return true; // SFX default: ON
@@ -68,7 +70,9 @@ function readMusicInitial(): boolean {
     const stored = window.localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY);
     if (stored === 'true') return true;
     if (stored === 'false') return false;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return false; // Music default: OFF (ambient auto-play is hostile by default)
 }
 
@@ -78,18 +82,20 @@ function unlockAudioContext(): void {
     const unlock = new Audio();
     const p = unlock.play();
     if (p && typeof p.catch === 'function') p.catch(() => undefined);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function persist(key: string, value: boolean): void {
   try {
     window.localStorage.setItem(key, value ? 'true' : 'false');
-  } catch { /* ignore quota / private-browsing errors */ }
+  } catch {
+    /* ignore quota / private-browsing errors */
+  }
 }
 
-export function SoundSettingsProvider({
-  children,
-}: SoundSettingsProviderProps): JSX.Element {
+export function SoundSettingsProvider({ children }: SoundSettingsProviderProps): JSX.Element {
   const [sfxEnabled, setSfxState] = useState<boolean>(readSfxInitial);
   const [musicEnabled, setMusicState] = useState<boolean>(readMusicInitial);
 
@@ -136,11 +142,7 @@ export function SoundSettingsProvider({
     [sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled],
   );
 
-  return (
-    <SoundSettingsContext.Provider value={value}>
-      {children}
-    </SoundSettingsContext.Provider>
-  );
+  return <SoundSettingsContext.Provider value={value}>{children}</SoundSettingsContext.Provider>;
 }
 
 /**

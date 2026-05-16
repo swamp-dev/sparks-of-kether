@@ -43,16 +43,11 @@ export default function NotFound(): JSX.Element {
           the raw string at render time). */}
       <ColorBloom color="#dc143c" position="top" intensity={0.1} />
 
-      <p className="font-display text-sm uppercase tracking-[0.4em] opacity-60">
-        404
-      </p>
-      <h1 className="mt-4 font-display text-4xl tracking-widest sm:text-5xl">
-        Off the Tree
-      </h1>
+      <p className="font-display text-sm uppercase tracking-[0.4em] opacity-60">404</p>
+      <h1 className="mt-4 font-display text-4xl tracking-widest sm:text-5xl">Off the Tree</h1>
       <p className="mt-6 max-w-md text-base leading-relaxed opacity-80">
-        This path does not connect any Sefirah we know. The page may have
-        moved, the link may be stale, or the URL may be a misstep on the
-        ascent.
+        This path does not connect any Sefirah we know. The page may have moved, the link may be
+        stale, or the URL may be a misstep on the ascent.
       </p>
 
       <nav

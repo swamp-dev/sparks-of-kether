@@ -124,9 +124,7 @@ export function ZodiacSignPicker({
   // this picker) for an auto-jump.
   const [focusedIndex, setFocusedIndex] = useState<number>(() => {
     const initial = taken ?? {};
-    const found = zodiacSigns.findIndex(
-      (s) => initial[s.key] === undefined,
-    );
+    const found = zodiacSigns.findIndex((s) => initial[s.key] === undefined);
     return found === -1 ? 0 : found;
   });
 
@@ -143,10 +141,7 @@ export function ZodiacSignPicker({
       const total = zodiacSigns.length;
       let next = (focusedIndex + direction + total) % total;
       let attempts = 0;
-      while (
-        takenMap[signAt(next).key] !== undefined &&
-        attempts < total
-      ) {
+      while (takenMap[signAt(next).key] !== undefined && attempts < total) {
         next = (next + direction + total) % total;
         attempts += 1;
       }
@@ -161,9 +156,7 @@ export function ZodiacSignPicker({
         target === 'first'
           ? zodiacSigns.map((_, i) => i)
           : zodiacSigns.map((_, i) => zodiacSigns.length - 1 - i);
-      const found = candidates.find(
-        (i) => takenMap[signAt(i).key] === undefined,
-      );
+      const found = candidates.find((i) => takenMap[signAt(i).key] === undefined);
       if (found !== undefined) setFocusedIndex(found);
     },
     [takenMap],
@@ -227,12 +220,10 @@ export function ZodiacSignPicker({
       className={['flex flex-col', className].filter(Boolean).join(' ')}
     >
       <header className="mb-6 shrink-0 text-center">
-        <h2 className="font-display text-3xl tracking-widest text-veil">
-          Choose your sign
-        </h2>
+        <h2 className="font-display text-3xl tracking-widest text-veil">Choose your sign</h2>
         <p className="mx-auto mt-2 max-w-xl text-sm opacity-70">
-          Twelve archetypes. Each tilts your starting stats via planetary
-          dignities and opens one or two Soul Doors on the Tree.
+          Twelve archetypes. Each tilts your starting stats via planetary dignities and opens one or
+          two Soul Doors on the Tree.
         </p>
       </header>
 
@@ -257,72 +248,72 @@ export function ZodiacSignPicker({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-      <div
-        role="radiogroup"
-        aria-label="Zodiac sign carousel"
-        onKeyDown={handleKeyDown}
-        className="relative grid w-full items-stretch gap-3 sm:grid-cols-[1fr_2fr_1fr] sm:gap-4"
-      >
-        {/* Prev arrow — desktop chrome left of the carousel. Hidden on
+        <div
+          role="radiogroup"
+          aria-label="Zodiac sign carousel"
+          onKeyDown={handleKeyDown}
+          className="relative grid w-full items-stretch gap-3 sm:grid-cols-[1fr_2fr_1fr] sm:gap-4"
+        >
+          {/* Prev arrow — desktop chrome left of the carousel. Hidden on
             mobile where on-screen + swipe is the input. */}
-        <button
-          type="button"
-          aria-label="Previous sign"
-          data-direction="prev"
-          onClick={() => cycle(-1)}
-          className="absolute left-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-veil/30 bg-ground/70 p-2 text-veil/70 transition-opacity duration-200 ease-flow hover:opacity-100 sm:block sm:opacity-70"
-        >
-          <span aria-hidden="true">◀</span>
-        </button>
+          <button
+            type="button"
+            aria-label="Previous sign"
+            data-direction="prev"
+            onClick={() => cycle(-1)}
+            className="absolute left-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-veil/30 bg-ground/70 p-2 text-veil/70 transition-opacity duration-200 ease-flow hover:opacity-100 sm:block sm:opacity-70"
+          >
+            <span aria-hidden="true">◀</span>
+          </button>
 
-        {/* Wing: prev */}
-        <SignStage
-          key={`prev-${signAt(prevIndex).key}`}
-          sign={signAt(prevIndex)}
-          stage="prev"
-          ariaChecked={false}
-          tabIndex={-1}
-          disabled={takenMap[signAt(prevIndex).key] !== undefined}
-          takenBy={takenMap[signAt(prevIndex).key]}
-          onSelect={() => selectStage(prevIndex)}
-        />
+          {/* Wing: prev */}
+          <SignStage
+            key={`prev-${signAt(prevIndex).key}`}
+            sign={signAt(prevIndex)}
+            stage="prev"
+            ariaChecked={false}
+            tabIndex={-1}
+            disabled={takenMap[signAt(prevIndex).key] !== undefined}
+            takenBy={takenMap[signAt(prevIndex).key]}
+            onSelect={() => selectStage(prevIndex)}
+          />
 
-        {/* Current: the centre stage */}
-        <SignStage
-          key={`current-${focusedSign.key}`}
-          sign={focusedSign}
-          stage="current"
-          ariaChecked={true}
-          tabIndex={0}
-          disabled={focusedDisabled}
-          takenBy={takenMap[focusedSign.key]}
-          onSelect={() => selectStage(focusedIndex)}
-        />
+          {/* Current: the centre stage */}
+          <SignStage
+            key={`current-${focusedSign.key}`}
+            sign={focusedSign}
+            stage="current"
+            ariaChecked={true}
+            tabIndex={0}
+            disabled={focusedDisabled}
+            takenBy={takenMap[focusedSign.key]}
+            onSelect={() => selectStage(focusedIndex)}
+          />
 
-        {/* Wing: next */}
-        <SignStage
-          key={`next-${signAt(nextIndex).key}`}
-          sign={signAt(nextIndex)}
-          stage="next"
-          ariaChecked={false}
-          tabIndex={-1}
-          disabled={takenMap[signAt(nextIndex).key] !== undefined}
-          takenBy={takenMap[signAt(nextIndex).key]}
-          onSelect={() => selectStage(nextIndex)}
-        />
+          {/* Wing: next */}
+          <SignStage
+            key={`next-${signAt(nextIndex).key}`}
+            sign={signAt(nextIndex)}
+            stage="next"
+            ariaChecked={false}
+            tabIndex={-1}
+            disabled={takenMap[signAt(nextIndex).key] !== undefined}
+            takenBy={takenMap[signAt(nextIndex).key]}
+            onSelect={() => selectStage(nextIndex)}
+          />
 
-        {/* Next arrow — symmetric to prev. */}
-        <button
-          type="button"
-          aria-label="Next sign"
-          data-direction="next"
-          onClick={() => cycle(1)}
-          className="absolute right-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-veil/30 bg-ground/70 p-2 text-veil/70 transition-opacity duration-200 ease-flow hover:opacity-100 sm:block sm:opacity-70"
-        >
-          <span aria-hidden="true">▶</span>
-        </button>
+          {/* Next arrow — symmetric to prev. */}
+          <button
+            type="button"
+            aria-label="Next sign"
+            data-direction="next"
+            onClick={() => cycle(1)}
+            className="absolute right-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-veil/30 bg-ground/70 p-2 text-veil/70 transition-opacity duration-200 ease-flow hover:opacity-100 sm:block sm:opacity-70"
+          >
+            <span aria-hidden="true">▶</span>
+          </button>
 
-        {/* Off-stage signs: kept in DOM so [data-sign] selectors find
+          {/* Off-stage signs: kept in DOM so [data-sign] selectors find
             them (unit tests assert "all 12 sign cards are present" and
             integration tests query for the taken-by banner on
             arbitrary signs). The wrapper is `display: none` via the
@@ -331,29 +322,29 @@ export function ZodiacSignPicker({
             to screen readers — the e2e specs cycle the carousel via
             keyboard / on-screen arrows to navigate to a non-default
             sign rather than synthetically clicking a hidden card. */}
-        <div aria-hidden="true" className="hidden">
-          {offStageIndices.map((i) => {
-            const sign = signAt(i);
-            const disabled = takenMap[sign.key] !== undefined;
-            return (
-              <SignStage
-                key={`off-${sign.key}`}
-                sign={sign}
-                // Off-stage gets a `prev`/`next` stage variant rather
-                // than `current` so the heavier decoration (constellation,
-                // ruler orbit) is suppressed for cards no one's looking
-                // at — performance hand-off for #265 multiplayer.
-                stage={i < focusedIndex ? 'prev' : 'next'}
-                ariaChecked={false}
-                tabIndex={-1}
-                disabled={disabled}
-                takenBy={takenMap[sign.key]}
-                onSelect={() => selectStage(i)}
-              />
-            );
-          })}
+          <div aria-hidden="true" className="hidden">
+            {offStageIndices.map((i) => {
+              const sign = signAt(i);
+              const disabled = takenMap[sign.key] !== undefined;
+              return (
+                <SignStage
+                  key={`off-${sign.key}`}
+                  sign={sign}
+                  // Off-stage gets a `prev`/`next` stage variant rather
+                  // than `current` so the heavier decoration (constellation,
+                  // ruler orbit) is suppressed for cards no one's looking
+                  // at — performance hand-off for #265 multiplayer.
+                  stage={i < focusedIndex ? 'prev' : 'next'}
+                  ariaChecked={false}
+                  tabIndex={-1}
+                  disabled={disabled}
+                  takenBy={takenMap[sign.key]}
+                  onSelect={() => selectStage(i)}
+                />
+              );
+            })}
+          </div>
         </div>
-      </div>
       </div>
 
       {/* Mobile prev / next. The Confirm CTA below names the focused

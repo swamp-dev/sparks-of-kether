@@ -69,10 +69,7 @@ export default function PlayPage(): JSX.Element {
   // Per-player ritual RNGs — independent sequences so adding a roll
   // in one player's ritual doesn't shift the other player's stats.
   // Hot-seat for now; Phase 5 will move RNG seeding server-side.
-  const ritualRngs = useMemo(
-    () => [seededRng(seed), seededRng(seed + 1)] as const,
-    [seed],
-  );
+  const ritualRngs = useMemo(() => [seededRng(seed), seededRng(seed + 1)] as const, [seed]);
   const playRng = useMemo(() => seededRng(seed + 2), [seed]);
 
   const finishSign = (idx: 0 | 1, sign: ZodiacSignKey): void => {

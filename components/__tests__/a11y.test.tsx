@@ -64,9 +64,7 @@ describe('a11y — major UI surfaces', () => {
   it('TreeBoard (interactive, with player tokens) is axe-clean', async () => {
     const player = makePlayer({ id: 'p1', position: 'tiferet', hand: [2] });
     const state = makeState({}, { players: [player] });
-    const { container } = render(
-      <TreeBoard state={state} activePlayerId="p1" />,
-    );
+    const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
     expectNoViolations(await axe(container));
   });
 
@@ -102,9 +100,7 @@ describe('a11y — major UI surfaces', () => {
   });
 
   it('TeamMeters is axe-clean', async () => {
-    const { container } = render(
-      <TeamMeters illumination={5} separation={2} />,
-    );
+    const { container } = render(<TeamMeters illumination={5} separation={2} />);
     expectNoViolations(await axe(container));
   });
 
@@ -119,9 +115,7 @@ describe('a11y — major UI surfaces', () => {
     // real-game `/play` flow. Tested at the prep sub-state — the
     // most-rendered shape — with the same axe-clean bar.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? { ...p, position: 'gevurah' as const, hand: [0, 1, 2] }
@@ -183,9 +177,7 @@ describe('a11y — major UI surfaces', () => {
   describe('EncounterScreen (resolve + react sub-states, #283)', () => {
     function buildPrepState(): ReturnType<typeof makeFullGame> {
       const base = makeFullGame({ playerCount: 2, seed: 1 });
-      const activeIdx = base.players.findIndex(
-        (p) => p.id === base.activePlayerId,
-      );
+      const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
       const players = base.players.map((p, idx) =>
         idx === activeIdx
           ? { ...p, position: 'gevurah' as const, hand: [0, 1, 2] }
@@ -213,10 +205,9 @@ describe('a11y — major UI surfaces', () => {
      * rather than auto-cleaning so the caller can pin the sub-state
      * before the scan.
      */
-    function setupAndRoll(opts: {
-      readonly stat: number;
-      readonly advanceMs: number;
-    }): { readonly view: ReturnType<typeof render> } {
+    function setupAndRoll(opts: { readonly stat: number; readonly advanceMs: number }): {
+      readonly view: ReturnType<typeof render>;
+    } {
       const state = buildPrepState();
       const rng = seededRng(1);
       const { result, rerender: rerenderHook } = renderHook(() =>
@@ -340,9 +331,7 @@ describe('a11y — major UI surfaces', () => {
           view.container.querySelector('[data-fail-choice="retry"]') === null ||
           view.container.querySelector('[data-fail-choice="accept"]') === null
         ) {
-          throw new Error(
-            'expected both Retry and Accept setback buttons in the fail react panel',
-          );
+          throw new Error('expected both Retry and Accept setback buttons in the fail react panel');
         }
         vi.useRealTimers();
         try {
@@ -385,10 +374,7 @@ describe('a11y — major UI surfaces', () => {
 
   it('ZodiacSignPicker (with one taken sign) is axe-clean', async () => {
     const { container } = render(
-      <ZodiacSignPicker
-        taken={{ aries: 'Andy' }}
-        onPick={() => undefined}
-      />,
+      <ZodiacSignPicker taken={{ aries: 'Andy' }} onPick={() => undefined} />,
     );
     expectNoViolations(await axe(container));
   });
@@ -469,20 +455,10 @@ describe('a11y — major UI surfaces', () => {
         hand: [4, 5, 6],
         zodiacSign: 'leo',
       });
-      const state = makeState(
-        {},
-        { players: [held, climbing], activePlayerId: 'p1' },
-      );
-      const { result } = renderHook(() =>
-        useTurn({ initialState: state, rng: seededRng(1) }),
-      );
+      const state = makeState({}, { players: [held, climbing], activePlayerId: 'p1' });
+      const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
       const { container } = render(
-        <FinalThresholdScreen
-          state={state}
-          player={held}
-          turn={result.current}
-          mode="hot-seat"
-        />,
+        <FinalThresholdScreen state={state} player={held} turn={result.current} mode="hot-seat" />,
       );
       expectNoViolations(await axe(container));
     });
@@ -493,10 +469,7 @@ describe('a11y — major UI surfaces', () => {
       // surface — distinct from the read-only view.
       const p1 = makeKetherPlayer({ id: 'p1', name: 'Alex' });
       const p2 = makeKetherPlayer({ id: 'p2', name: 'Bea' });
-      const base = makeState(
-        {},
-        { players: [p1, p2], activePlayerId: 'p1' },
-      );
+      const base = makeState({}, { players: [p1, p2], activePlayerId: 'p1' });
       const initResult = initKetherRitual(base, { p1: 100, p2: 200 });
       if (!initResult.ok) {
         throw new Error(
@@ -506,9 +479,7 @@ describe('a11y — major UI surfaces', () => {
       const state = initResult.value;
       const witnessPlayer = state.players.find((p) => p.id === 'p2');
       if (!witnessPlayer) throw new Error('witnessPlayer missing');
-      const { result } = renderHook(() =>
-        useTurn({ initialState: state, rng: seededRng(1) }),
-      );
+      const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
       const { container } = render(
         <FinalThresholdScreen
           state={state}
@@ -542,15 +513,10 @@ describe('a11y — major UI surfaces', () => {
         zodiacSign: 'leo',
         sparksHeld: p2Sparks,
       });
-      const base = makeState(
-        {},
-        { players: [p1, p2], activePlayerId: 'p1' },
-      );
+      const base = makeState({}, { players: [p1, p2], activePlayerId: 'p1' });
       const initResult = initKetherRitual(base, { p1: 100, p2: 200 });
       if (!initResult.ok) {
-        throw new Error(
-          `a11y close setup: initKetherRitual rejected — ${initResult.reason.kind}`,
-        );
+        throw new Error(`a11y close setup: initKetherRitual rejected — ${initResult.reason.kind}`);
       }
       const witnessState = initResult.value;
       const baseRitual = witnessState.ketherRitual;
@@ -562,24 +528,14 @@ describe('a11y — major UI surfaces', () => {
         ketherRitual: {
           ...baseRitual,
           subPhase: 'close' as const,
-          stagedClosureSparks: [
-            { playerId: 'p1', sefirah: 'gevurah' as const },
-          ],
+          stagedClosureSparks: [{ playerId: 'p1', sefirah: 'gevurah' as const }],
         },
       };
-      const { result } = renderHook(() =>
-        useTurn({ initialState: state, rng: seededRng(1) }),
-      );
+      const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
       const { container } = render(
-        <FinalThresholdScreen
-          state={state}
-          player={p1}
-          turn={result.current}
-          mode="hot-seat"
-        />,
+        <FinalThresholdScreen state={state} player={p1} turn={result.current} mode="hot-seat" />,
       );
       expectNoViolations(await axe(container));
     });
   });
 });
-

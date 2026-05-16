@@ -28,12 +28,7 @@ import type { Rng } from './rng';
  * `DignityRelationship` is the derived 5-tier tone bucket the blessing
  * surface speaks in.
  */
-export type DignityRelationship =
-  | 'ruler'
-  | 'exaltation'
-  | 'neutral'
-  | 'detriment'
-  | 'fall';
+export type DignityRelationship = 'ruler' | 'exaltation' | 'neutral' | 'detriment' | 'fall';
 
 /**
  * Pure: resolve the dignity tier for a given Sefirah's planet in a
@@ -71,10 +66,7 @@ export type DignityRelationship =
  * co-ruler), `exaltation`, then `fall` (worse than detriment, so
  * checked first), `detriment`, falling through to `neutral`.
  */
-export function dignityRelationship(
-  sefirah: SefirahKey,
-  sign: ZodiacSignKey,
-): DignityRelationship {
+export function dignityRelationship(sefirah: SefirahKey, sign: ZodiacSignKey): DignityRelationship {
   // Special voices: Kether (collective) and Malkuth (Hestia) are
   // dignity-agnostic by design. Both the design doc and the T1
   // authoring author all of their cells in `neutral` tone; the

@@ -70,7 +70,7 @@ export const encounterGevurah = buildEncounterTrack({
 
   reverb: {
     tailSec: 0.6, // essentially dry
-    wet: 0.10,
+    wet: 0.1,
   },
 
   qaGates: {

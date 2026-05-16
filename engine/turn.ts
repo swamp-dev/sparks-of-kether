@@ -42,13 +42,9 @@ import type { GameState } from './types';
  * its purity for unit tests that don't care about hand contents.
  */
 export function endTurn(state: GameState): GameState {
-  const currentIdx = state.players.findIndex(
-    (p) => p.id === state.activePlayerId,
-  );
+  const currentIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
   if (currentIdx === -1) {
-    throw new Error(
-      `endTurn: active player "${state.activePlayerId}" is not in player list`,
-    );
+    throw new Error(`endTurn: active player "${state.activePlayerId}" is not in player list`);
   }
   if (state.pendingDiscard !== undefined && state.pendingDiscard.count > 0) {
     return state;
@@ -138,11 +134,7 @@ export function endTurn(state: GameState): GameState {
  * trim. The reducer is generic enough that a future ticket could fire
  * it for a non-Meditate over-cap path without changing this signature.
  */
-export function discard(
-  state: GameState,
-  playerId: string,
-  arcanum: number,
-): GameState {
+export function discard(state: GameState, playerId: string, arcanum: number): GameState {
   if (state.pendingDiscard === undefined || state.pendingDiscard.count <= 0) {
     return state;
   }
@@ -151,10 +143,7 @@ export function discard(
   const player = state.players[pIndex]!;
   const cardIdx = player.hand.findIndex((n) => n === arcanum);
   if (cardIdx === -1) return state;
-  const nextHand = [
-    ...player.hand.slice(0, cardIdx),
-    ...player.hand.slice(cardIdx + 1),
-  ];
+  const nextHand = [...player.hand.slice(0, cardIdx), ...player.hand.slice(cardIdx + 1)];
   const nextDiscardPile = [...state.discardPile, arcanum];
   // Decrement pendingDiscard.count; clear when it hits 0 so the
   // subsequent end-turn isn't blocked.
@@ -165,9 +154,7 @@ export function discard(
       : undefined;
   return {
     ...state,
-    players: state.players.map((p, idx) =>
-      idx === pIndex ? { ...player, hand: nextHand } : p,
-    ),
+    players: state.players.map((p, idx) => (idx === pIndex ? { ...player, hand: nextHand } : p)),
     discardPile: nextDiscardPile,
     pendingDiscard: nextPendingDiscard,
   };
@@ -193,15 +180,10 @@ export function encounterBurnDiscard(
   const player = state.players[pIndex]!;
   const cardIdx = player.hand.findIndex((n) => n === arcanum);
   if (cardIdx === -1) return state;
-  const nextHand = [
-    ...player.hand.slice(0, cardIdx),
-    ...player.hand.slice(cardIdx + 1),
-  ];
+  const nextHand = [...player.hand.slice(0, cardIdx), ...player.hand.slice(cardIdx + 1)];
   return {
     ...state,
-    players: state.players.map((p, idx) =>
-      idx === pIndex ? { ...player, hand: nextHand } : p,
-    ),
+    players: state.players.map((p, idx) => (idx === pIndex ? { ...player, hand: nextHand } : p)),
     discardPile: [...state.discardPile, arcanum],
   };
 }

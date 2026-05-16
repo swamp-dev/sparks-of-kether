@@ -1,8 +1,5 @@
 import { sefirahBlessings } from './blessings';
-import {
-  sefirahFraming,
-  sefirahFramingPlaceholder,
-} from './framing';
+import { sefirahFraming, sefirahFramingPlaceholder } from './framing';
 import { sefirahPlayerResponses } from '../greco-roman/verdicts';
 import type { Pantheon } from '../types';
 import { avatarNames } from './avatar-names';

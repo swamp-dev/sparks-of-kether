@@ -5,25 +5,22 @@ import { arcana, letterByKey } from '@/data';
 import { ARCANUM_GLYPHS } from '../glyph-mapping';
 
 describe('ArcanumCard — renders all 22 cards', () => {
-  it.each(arcana.map((a) => [a.number, a.name] as const))(
-    'arcanum %i (%s)',
-    (number, name) => {
-      const { container } = render(<ArcanumCard number={number} />);
-      const svg = container.querySelector('svg');
-      expect(svg, `card ${number}`).not.toBeNull();
-      expect(svg?.getAttribute('data-arcanum')).toBe(String(number));
-      // aria-label includes name + Hebrew letter name + number per
-      // ticket acceptance criteria.
-      const arcanum = arcana.find((a) => a.number === number);
-      expect(arcanum, `arcanum data for ${number}`).toBeDefined();
-      if (!arcanum) return;
-      const letter = letterByKey(arcanum.letterKey);
-      const aria = svg?.getAttribute('aria-label') ?? '';
-      expect(aria).toContain(name);
-      expect(aria).toContain(`Arcanum ${number}`);
-      expect(aria).toContain(letter.name);
-    },
-  );
+  it.each(arcana.map((a) => [a.number, a.name] as const))('arcanum %i (%s)', (number, name) => {
+    const { container } = render(<ArcanumCard number={number} />);
+    const svg = container.querySelector('svg');
+    expect(svg, `card ${number}`).not.toBeNull();
+    expect(svg?.getAttribute('data-arcanum')).toBe(String(number));
+    // aria-label includes name + Hebrew letter name + number per
+    // ticket acceptance criteria.
+    const arcanum = arcana.find((a) => a.number === number);
+    expect(arcanum, `arcanum data for ${number}`).toBeDefined();
+    if (!arcanum) return;
+    const letter = letterByKey(arcanum.letterKey);
+    const aria = svg?.getAttribute('aria-label') ?? '';
+    expect(aria).toContain(name);
+    expect(aria).toContain(`Arcanum ${number}`);
+    expect(aria).toContain(letter.name);
+  });
 });
 
 describe('ArcanumCard — structural invariants', () => {

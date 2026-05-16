@@ -74,8 +74,7 @@ interface SeparationMeterProps {
 // Descending-shadow gradient: top = darker, bottom = soft purple-grey
 // fade. Reads as ink falling into the indigo void rather than a red
 // bar growing.
-const FILL_GRADIENT =
-  'linear-gradient(to bottom, #1a1a2e 0%, #2c1f3d 60%, #4a3a5e 100%)';
+const FILL_GRADIENT = 'linear-gradient(to bottom, #1a1a2e 0%, #2c1f3d 60%, #4a3a5e 100%)';
 // Smoke overlay: a lower-contrast tinted highlight that pulses slowly
 // via the breath keyframe (used through arbitrary-value animation
 // duration: ~10s instead of the default 6s named animation, per the

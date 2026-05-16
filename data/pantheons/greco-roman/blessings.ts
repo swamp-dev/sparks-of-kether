@@ -708,9 +708,7 @@ export function pickBlessing(
 ): string {
   const variants = matrix[sefirah][sign];
   if (variants.length === 0) {
-    throw new Error(
-      `pickBlessing: no variants for sefirah=${sefirah} sign=${sign}`,
-    );
+    throw new Error(`pickBlessing: no variants for sefirah=${sefirah} sign=${sign}`);
   }
   const idx = rng.int(0, variants.length - 1);
   // Non-null assertion safe: idx is in [0, length-1] and arrays of

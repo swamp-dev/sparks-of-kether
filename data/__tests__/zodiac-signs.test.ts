@@ -66,9 +66,7 @@ describe('zodiacSigns', () => {
     expect(withCoRuler.scorpio).toBe('pluto');
     expect(withCoRuler.pisces).toBe('neptune');
     // No other sign carries a co-ruler.
-    const others = zodiacSigns.filter(
-      (s) => s.key !== 'scorpio' && s.key !== 'pisces',
-    );
+    const others = zodiacSigns.filter((s) => s.key !== 'scorpio' && s.key !== 'pisces');
     for (const sign of others) {
       expect(sign.coRuler, `${sign.key} should not have a co-ruler`).toBeUndefined();
     }
@@ -105,9 +103,7 @@ describe('zodiacSigns', () => {
   });
 
   it('zodiacSignByKey throws on an unknown key', () => {
-    expect(() => zodiacSignByKey('ghost' as ZodiacSignKey)).toThrow(
-      /Unknown zodiac sign key/,
-    );
+    expect(() => zodiacSignByKey('ghost' as ZodiacSignKey)).toThrow(/Unknown zodiac sign key/);
   });
 });
 
@@ -152,8 +148,6 @@ describe('statForPlanet', () => {
   });
 
   it('throws on an unknown planet key', () => {
-    expect(() => statForPlanet('chronos' as Planet)).toThrow(
-      /No stat for planet/,
-    );
+    expect(() => statForPlanet('chronos' as Planet)).toThrow(/No stat for planet/);
   });
 });

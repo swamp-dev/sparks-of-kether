@@ -14,12 +14,7 @@ describe('Hand — drag-to-play (#412)', () => {
   it('drag-start fires onCardDragStart with the dragged arcanum', async () => {
     const onCardDragStart = vi.fn();
     const { container } = render(
-      <Hand
-        hand={[5]}
-        visible={true}
-        onCardSelect={vi.fn()}
-        onCardDragStart={onCardDragStart}
-      />,
+      <Hand hand={[5]} visible={true} onCardSelect={vi.fn()} onCardDragStart={onCardDragStart} />,
     );
     const card = container.querySelector('[data-arcanum="5"]') as HTMLElement;
     fireEvent.pointerDown(card, { pointerId: 1, clientX: 100, clientY: 200 });
@@ -32,12 +27,7 @@ describe('Hand — drag-to-play (#412)', () => {
   it('drop fires onCardDragEnd with arcanum and pointer-up coordinates', async () => {
     const onCardDragEnd = vi.fn();
     const { container } = render(
-      <Hand
-        hand={[5]}
-        visible={true}
-        onCardSelect={vi.fn()}
-        onCardDragEnd={onCardDragEnd}
-      />,
+      <Hand hand={[5]} visible={true} onCardSelect={vi.fn()} onCardDragEnd={onCardDragEnd} />,
     );
     const card = container.querySelector('[data-arcanum="5"]') as HTMLElement;
     fireEvent.pointerDown(card, { pointerId: 1, clientX: 100, clientY: 200 });
@@ -79,12 +69,7 @@ describe('Hand — drag-to-play (#412)', () => {
     const onCardSelect = vi.fn();
     const onCardDragEnd = vi.fn();
     const { container } = render(
-      <Hand
-        hand={[5]}
-        visible={true}
-        onCardSelect={onCardSelect}
-        onCardDragEnd={onCardDragEnd}
-      />,
+      <Hand hand={[5]} visible={true} onCardSelect={onCardSelect} onCardDragEnd={onCardDragEnd} />,
     );
     const card = container.querySelector('[data-arcanum="5"]') as HTMLElement;
     fireEvent.pointerDown(card, { pointerId: 1, clientX: 100, clientY: 200 });
@@ -169,9 +154,7 @@ describe('Hand — drag-to-play (#412)', () => {
   });
 
   it('marks the dragged card with data-dragging="true" while the gesture is live', async () => {
-    const { container } = render(
-      <Hand hand={[5, 9]} visible={true} onCardSelect={vi.fn()} />,
-    );
+    const { container } = render(<Hand hand={[5, 9]} visible={true} onCardSelect={vi.fn()} />);
     const card5 = container.querySelector('[data-arcanum="5"]') as HTMLElement;
     expect(card5.getAttribute('data-dragging')).toBe('false');
     // Wrap each fireEvent + microtask flush in `act` so React

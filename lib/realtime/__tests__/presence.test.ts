@@ -98,13 +98,7 @@ describe('parseCursorEvent', () => {
       email: 'leak@example.com',
     });
     expect(parsed).not.toBeNull();
-    expect(parsed && Object.keys(parsed).sort()).toEqual([
-      'playerId',
-      'ts',
-      'viewport',
-      'x',
-      'y',
-    ]);
+    expect(parsed && Object.keys(parsed).sort()).toEqual(['playerId', 'ts', 'viewport', 'x', 'y']);
   });
 });
 
@@ -124,9 +118,7 @@ describe('parseTargetEvent', () => {
   });
 
   it('rejects non-Sefirah node ids', () => {
-    expect(
-      parseTargetEvent({ playerId: 'p1', nodeId: 'not-a-sefirah', ts: 0 }),
-    ).toBeNull();
+    expect(parseTargetEvent({ playerId: 'p1', nodeId: 'not-a-sefirah', ts: 0 })).toBeNull();
   });
 
   it('strips PII fields beyond the documented shape', () => {
@@ -137,11 +129,7 @@ describe('parseTargetEvent', () => {
       sessionToken: 'sneaky-secret',
     });
     expect(parsed).not.toBeNull();
-    expect(parsed && Object.keys(parsed).sort()).toEqual([
-      'nodeId',
-      'playerId',
-      'ts',
-    ]);
+    expect(parsed && Object.keys(parsed).sort()).toEqual(['nodeId', 'playerId', 'ts']);
   });
 });
 
@@ -161,9 +149,7 @@ describe('parseActionEvent', () => {
   });
 
   it('rejects unknown action kinds', () => {
-    expect(
-      parseActionEvent({ playerId: 'p1', kind: 'unrelated-string', ts: 0 }),
-    ).toBeNull();
+    expect(parseActionEvent({ playerId: 'p1', kind: 'unrelated-string', ts: 0 })).toBeNull();
   });
 });
 
@@ -195,10 +181,7 @@ function makeFakeClient(): SupabaseClient {
       if (filter.event) handlers.set(filter.event, handler);
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb: (status: string) => void) {
       statusHandler = cb;
       return this;
     }),
@@ -329,9 +312,7 @@ describe('peerPresenceSubscription', () => {
       onAction: vi.fn(),
       onStatus: vi.fn(),
     });
-    expect(() =>
-      channel.fireBroadcast('cursor', { payload: { x: 'bad' } }),
-    ).not.toThrow();
+    expect(() => channel.fireBroadcast('cursor', { payload: { x: 'bad' } })).not.toThrow();
     expect(onCursor).not.toHaveBeenCalled();
   });
 

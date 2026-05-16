@@ -61,13 +61,7 @@ export function InvertedTriangle(props: GlyphProps): JSX.Element {
 export function Square(props: GlyphProps): JSX.Element {
   const { cx, cy, size } = props;
   return (
-    <rect
-      x={cx - size / 2}
-      y={cy - size / 2}
-      width={size}
-      height={size}
-      {...strokeProps(props)}
-    />
+    <rect x={cx - size / 2} y={cy - size / 2} width={size} height={size} {...strokeProps(props)} />
   );
 }
 
@@ -223,9 +217,7 @@ export function Lightning(props: GlyphProps): JSX.Element {
  * `rotation` is in degrees; default 0 places the first point at 12
  * o'clock. Pass `rotation={180}` to invert (e.g., a Devil pentagram).
  */
-export function Star(
-  props: GlyphProps & { points?: number; rotation?: number },
-): JSX.Element {
+export function Star(props: GlyphProps & { points?: number; rotation?: number }): JSX.Element {
   const { cx, cy, size, points = 8, rotation = 0 } = props;
   const outer = size / 2;
   const inner = outer * 0.4;
@@ -293,8 +285,20 @@ export function Scales(props: GlyphProps): JSX.Element {
       {/* Horizontal beam */}
       <line x1={cx - beam / 2} y1={cy} x2={cx + beam / 2} y2={cy} {...strokeProps(props)} />
       {/* Suspension lines + pans */}
-      <line x1={cx - beam / 2} y1={cy} x2={cx - beam / 2} y2={panY - panR} {...strokeProps(props)} />
-      <line x1={cx + beam / 2} y1={cy} x2={cx + beam / 2} y2={panY - panR} {...strokeProps(props)} />
+      <line
+        x1={cx - beam / 2}
+        y1={cy}
+        x2={cx - beam / 2}
+        y2={panY - panR}
+        {...strokeProps(props)}
+      />
+      <line
+        x1={cx + beam / 2}
+        y1={cy}
+        x2={cx + beam / 2}
+        y2={panY - panR}
+        {...strokeProps(props)}
+      />
       <path
         d={`M ${cx - beam / 2 - panR},${panY - panR} A ${panR},${panR * 0.7} 0 0 1 ${cx - beam / 2 + panR},${panY - panR}`}
         {...strokeProps(props)}
@@ -332,12 +336,7 @@ export function Crown(props: GlyphProps): JSX.Element {
     L ${cx + w / 2},${cy + h / 2}
     Z
   `;
-  return (
-    <path
-      d={path}
-      {...strokeProps(props)}
-    />
-  );
+  return <path d={path} {...strokeProps(props)} />;
 }
 
 /**
@@ -362,9 +361,7 @@ export type GlyphName =
   | 'hexagram'
   | 'crown';
 
-type GlyphComponent = (
-  props: GlyphProps & { points?: number; rotation?: number },
-) => JSX.Element;
+type GlyphComponent = (props: GlyphProps & { points?: number; rotation?: number }) => JSX.Element;
 
 export const GLYPHS: Readonly<Record<GlyphName, GlyphComponent>> = {
   triangle: Triangle,

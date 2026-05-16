@@ -83,9 +83,7 @@ function resolvePantheon(id: string): Pantheon {
   return found ?? pantheons[DEFAULT_PANTHEON_ID];
 }
 
-export function PantheonSettingsProvider({
-  children,
-}: PantheonSettingsProviderProps): JSX.Element {
+export function PantheonSettingsProvider({ children }: PantheonSettingsProviderProps): JSX.Element {
   const [pantheonId, setPantheonIdState] = useState<string>(readInitialId);
 
   // Re-sync on mount in case the SSR-rendered initial (default) is
@@ -121,9 +119,7 @@ export function PantheonSettingsProvider({
   );
 
   return (
-    <PantheonSettingsContext.Provider value={value}>
-      {children}
-    </PantheonSettingsContext.Provider>
+    <PantheonSettingsContext.Provider value={value}>{children}</PantheonSettingsContext.Provider>
   );
 }
 

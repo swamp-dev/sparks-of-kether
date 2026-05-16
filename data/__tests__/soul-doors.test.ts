@@ -16,9 +16,18 @@ import {
  */
 describe('soulDoorsBySign', () => {
   const allSigns: readonly ZodiacSignKey[] = [
-    'aries',       'taurus',      'gemini',      'cancer',
-    'leo',         'virgo',       'libra',       'scorpio',
-    'sagittarius', 'capricorn',   'aquarius',    'pisces',
+    'aries',
+    'taurus',
+    'gemini',
+    'cancer',
+    'leo',
+    'virgo',
+    'libra',
+    'scorpio',
+    'sagittarius',
+    'capricorn',
+    'aquarius',
+    'pisces',
   ];
 
   it('keys all 12 zodiac signs, with no extras', () => {
@@ -33,18 +42,18 @@ describe('soulDoorsBySign', () => {
    * in path order (lower path-number Sefirah first).
    */
   const expected: Readonly<Record<ZodiacSignKey, readonly SefirahKey[]>> = {
-    aries:       ['chokmah', 'tiferet'],
-    taurus:      ['chokmah', 'chesed'],
-    gemini:      ['binah',   'tiferet'],
-    cancer:      ['binah',   'gevurah'],
-    leo:         ['chesed',  'gevurah'],
-    virgo:       ['chesed',  'tiferet'],
-    libra:       ['gevurah', 'tiferet'],
-    scorpio:     ['tiferet', 'netzach'],
+    aries: ['chokmah', 'tiferet'],
+    taurus: ['chokmah', 'chesed'],
+    gemini: ['binah', 'tiferet'],
+    cancer: ['binah', 'gevurah'],
+    leo: ['chesed', 'gevurah'],
+    virgo: ['chesed', 'tiferet'],
+    libra: ['gevurah', 'tiferet'],
+    scorpio: ['tiferet', 'netzach'],
     sagittarius: ['tiferet', 'yesod'],
-    capricorn:   ['tiferet', 'hod'],
-    aquarius:    ['netzach', 'yesod'],
-    pisces:      ['netzach'], // Malkuth has no challenge — single Door
+    capricorn: ['tiferet', 'hod'],
+    aquarius: ['netzach', 'yesod'],
+    pisces: ['netzach'], // Malkuth has no challenge — single Door
   };
 
   it.each(allSigns)('%s Doors match the design doc § 3', (sign) => {
@@ -72,10 +81,7 @@ describe('soulDoorsBySign', () => {
   });
 
   it('totals exactly 23 open Doors across all classes (11×2 + 1×1)', () => {
-    const total = allSigns.reduce(
-      (acc, sign) => acc + soulDoorsForSign(sign).length,
-      0,
-    );
+    const total = allSigns.reduce((acc, sign) => acc + soulDoorsForSign(sign).length, 0);
     expect(total).toBe(23);
   });
 
@@ -100,9 +106,7 @@ describe('soulDoorsBySign', () => {
       expect(soulCard, `no soul card for ${sign}`).toBeDefined();
       const path = pathByArcanum(soulCard!.number);
       const pathEndpoints: SefirahKey[] = [path.from, path.to];
-      const challengeEndpoints = pathEndpoints.filter(
-        (s) => s !== 'malkuth' && s !== 'kether',
-      );
+      const challengeEndpoints = pathEndpoints.filter((s) => s !== 'malkuth' && s !== 'kether');
       expect(
         [...soulDoorsForSign(sign)].sort(),
         `${sign} via ${soulCard!.name} (path ${path.number})`,

@@ -53,13 +53,14 @@ const ZODIAC_SIGNS: readonly ZodiacSignKey[] = [
 const OUTCOMES: readonly ChallengeOutcome[] = ['pass', 'fail'];
 
 const wordCount = (s: string): number =>
-  s.trim().split(/\s+/).filter((w) => w.length > 0).length;
+  s
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length > 0).length;
 
 describe('Egyptian verdict matrix — fully Egyptian-authored (#553)', () => {
   it('covers every encounter avatar', () => {
-    expect(Object.keys(sefirahVerdicts).sort()).toEqual(
-      [...ENCOUNTER_AVATARS].sort(),
-    );
+    expect(Object.keys(sefirahVerdicts).sort()).toEqual([...ENCOUNTER_AVATARS].sort());
   });
 
   describe('structural completeness — every cell has 3 variants', () => {
@@ -87,10 +88,9 @@ describe('Egyptian verdict matrix — fully Egyptian-authored (#553)', () => {
           for (const outcome of OUTCOMES) {
             for (const v of sefirahVerdicts[avatar][sign][outcome]) {
               const wc = wordCount(v);
-              expect(
-                wc,
-                `${avatar}/${sign}/${outcome} (${wc} words): ${v}`,
-              ).toBeLessThanOrEqual(25);
+              expect(wc, `${avatar}/${sign}/${outcome} (${wc} words): ${v}`).toBeLessThanOrEqual(
+                25,
+              );
             }
           }
         }
@@ -105,10 +105,7 @@ describe('Egyptian verdict matrix — fully Egyptian-authored (#553)', () => {
           for (const outcome of OUTCOMES) {
             const variants = sefirahVerdicts[avatar][sign][outcome];
             const unique = new Set(variants);
-            expect(
-              unique.size,
-              `${avatar}/${sign}/${outcome}`,
-            ).toBe(variants.length);
+            expect(unique.size, `${avatar}/${sign}/${outcome}`).toBe(variants.length);
           }
         }
       });
@@ -142,16 +139,12 @@ describe('Egyptian verdict matrix — fully Egyptian-authored (#553)', () => {
 
     it('Horus (gevurah) — falcon/legal-claim imagery present', () => {
       const all = collectAllLines('gevurah').join(' ');
-      expect(all).toMatch(
-        /falcon|line|claim|wrong|case|court|verdict|inheritance|trial/,
-      );
+      expect(all).toMatch(/falcon|line|claim|wrong|case|court|verdict|inheritance|trial/);
     });
 
     it('Osiris (tiferet) — Weighing-of-the-Heart imagery present', () => {
       const all = collectAllLines('tiferet').join(' ');
-      expect(all).toMatch(
-        /feather|scale|heart|weigh|underworld|throne of the dead|dead/,
-      );
+      expect(all).toMatch(/feather|scale|heart|weigh|underworld|throne of the dead|dead/);
     });
 
     it('Hathor (netzach) — embodied-want imagery present', () => {
@@ -166,9 +159,7 @@ describe('Egyptian verdict matrix — fully Egyptian-authored (#553)', () => {
 
     it('Isis (binah) — threshold/knot/carry imagery present', () => {
       const all = collectAllLines('binah').join(' ');
-      expect(all).toMatch(
-        /threshold|knot|carry|river|cosmic mother|loss|sorrow|bear/,
-      );
+      expect(all).toMatch(/threshold|knot|carry|river|cosmic mother|loss|sorrow|bear/);
     });
 
     it('Thoth (hod) — ink/reed/page imagery present', () => {

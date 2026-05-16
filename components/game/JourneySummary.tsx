@@ -62,11 +62,7 @@ export function JourneySummary({
       </p>
 
       {/* Sefirot decoration strip — 10 Hebrew glyphs with Sefirah colors */}
-      <div
-        aria-hidden="true"
-        data-sefirot-strip
-        className="mt-6 flex justify-center gap-2"
-      >
+      <div aria-hidden="true" data-sefirot-strip className="mt-6 flex justify-center gap-2">
         {sefirot.map((s) => (
           <span
             key={s.key}
@@ -113,7 +109,8 @@ export function JourneySummary({
                 : 'radial-gradient(ellipse at center, rgba(100,100,140,0.07) 0%, transparent 70%)',
           }}
         />
-        <div className="relative grid gap-6"
+        <div
+          className="relative grid gap-6"
           style={{ gridTemplateColumns: `repeat(${state.players.length}, 1fr)` }}
         >
           {state.players.map((player) => {
@@ -127,9 +124,7 @@ export function JourneySummary({
                       {sign.glyph}
                     </span>
                   )}
-                  <p className="text-xs uppercase tracking-widest opacity-60">
-                    {player.name}
-                  </p>
+                  <p className="text-xs uppercase tracking-widest opacity-60">{player.name}</p>
                 </div>
                 {/* Stat rows */}
                 <dl className="space-y-1 text-left text-xs">
@@ -156,9 +151,7 @@ export function JourneySummary({
       </div>
 
       {/* Reflections */}
-      <h3 className="mt-8 font-display text-lg tracking-widest opacity-90">
-        Reflections
-      </h3>
+      <h3 className="mt-8 font-display text-lg tracking-widest opacity-90">Reflections</h3>
       <ul role="list" className="mt-3 space-y-2 text-left">
         {state.players.map((player) => {
           const text = reflections[player.id]?.trim() ?? '';
@@ -173,9 +166,7 @@ export function JourneySummary({
                 {sign && <span aria-hidden="true">{sign.glyph}</span>}
                 {player.name}
               </p>
-              <p className="mt-1 italic opacity-90">
-                {text === '' ? '(silent)' : `"${text}"`}
-              </p>
+              <p className="mt-1 italic opacity-90">{text === '' ? '(silent)' : `"${text}"`}</p>
             </li>
           );
         })}

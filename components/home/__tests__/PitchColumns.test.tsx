@@ -11,24 +11,16 @@ import { PitchColumns } from '../PitchColumns';
 describe('PitchColumns', () => {
   it('renders all three columns: cooperative, symbolic, short', () => {
     const { container } = render(<PitchColumns />);
-    expect(
-      container.querySelector('[data-pitch-column="cooperative"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[data-pitch-column="symbolic"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[data-pitch-column="short"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-pitch-column="cooperative"]')).not.toBeNull();
+    expect(container.querySelector('[data-pitch-column="symbolic"]')).not.toBeNull();
+    expect(container.querySelector('[data-pitch-column="short"]')).not.toBeNull();
   });
 
   it('exposes a programmatic section heading for AT users', () => {
     const { container } = render(<PitchColumns />);
     const section = container.querySelector('[data-home-pitch]');
     expect(section).not.toBeNull();
-    expect(section?.getAttribute('aria-labelledby')).toBe(
-      'home-pitch-heading',
-    );
+    expect(section?.getAttribute('aria-labelledby')).toBe('home-pitch-heading');
     const heading = container.querySelector('#home-pitch-heading');
     expect(heading).not.toBeNull();
     // The heading is `sr-only` — present in the DOM for AT, hidden

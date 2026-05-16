@@ -23,9 +23,9 @@ describe('ShellPanel — content', () => {
       gevurah: 'banished' as const,
     };
     const { container } = render(<ShellPanel shells={shells} />);
-    expect(
-      container.querySelector('[data-shell-slot="kether"]')?.getAttribute('data-status'),
-    ).toBe('active');
+    expect(container.querySelector('[data-shell-slot="kether"]')?.getAttribute('data-status')).toBe(
+      'active',
+    );
     expect(
       container.querySelector('[data-shell-slot="gevurah"]')?.getAttribute('data-status'),
     ).toBe('banished');
@@ -67,9 +67,7 @@ describe('ShellPanel — content', () => {
   });
 
   it('headingLevel prop drives the heading element so callers slot into their own hierarchy', () => {
-    const { container, rerender } = render(
-      <ShellPanel shells={EMPTY_SHELL_STATE} />,
-    );
+    const { container, rerender } = render(<ShellPanel shells={EMPTY_SHELL_STATE} />);
     // Default is h3.
     expect(container.querySelector('h3')?.textContent).toBe('Shells');
     rerender(<ShellPanel shells={EMPTY_SHELL_STATE} headingLevel={2} />);

@@ -36,10 +36,7 @@ test.skip(
   'Set PLAYWRIGHT_RUN_REVIEW=1 to run the multi-viewport review captures (use `pnpm screenshots`)',
 );
 
-const BASELINES_DIR = resolve(
-  process.cwd(),
-  'e2e/__screenshots__/baselines',
-);
+const BASELINES_DIR = resolve(process.cwd(), 'e2e/__screenshots__/baselines');
 
 test.beforeAll(async () => {
   await mkdir(BASELINES_DIR, { recursive: true });
@@ -267,10 +264,9 @@ for (const viewport of VIEWPORTS) {
           `expected a 2xx response from ${route.path} (${viewport.name})`,
         ).toBeLessThan(400);
         const expectedPath = route.path.split('?')[0];
-        expect(
-          page.url(),
-          `expected to remain on ${expectedPath}, was redirected`,
-        ).toContain(expectedPath);
+        expect(page.url(), `expected to remain on ${expectedPath}, was redirected`).toContain(
+          expectedPath,
+        );
 
         if (route.setup) {
           await route.setup(page);
@@ -278,10 +274,7 @@ for (const viewport of VIEWPORTS) {
           await page.waitForLoadState('networkidle').catch(() => {});
         }
 
-        const outputPath = resolve(
-          BASELINES_DIR,
-          `${route.slug}-${viewport.name}.png`,
-        );
+        const outputPath = resolve(BASELINES_DIR, `${route.slug}-${viewport.name}.png`);
 
         if (route.captureLocator !== undefined) {
           // Wait for the locator to be visible before screenshotting —

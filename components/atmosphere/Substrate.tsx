@@ -76,10 +76,7 @@ export function Substrate({ className }: SubstrateProps): JSX.Element {
           (see app/globals.css), but rendering it explicitly inside
           the substrate keeps the layer self-describing for tests
           and for routes that want to suppress / replace it. */}
-      <div
-        data-substrate-layer="void"
-        className="absolute inset-0 bg-void"
-      />
+      <div data-substrate-layer="void" className="absolute inset-0 bg-void" />
 
       {/* Layer 2: Tiferet-gold radial bloom. */}
       <div

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  loopSeamCorrelation,
-  measurePeakDbfs,
-  silenceRegions,
-} from '../lib/qa';
+import { loopSeamCorrelation, measurePeakDbfs, silenceRegions } from '../lib/qa';
 
 const SR = 44100;
 
@@ -96,10 +92,7 @@ describe('loopSeamCorrelation', () => {
       left[total - crossfade + i] = left[i]!;
       right[total - crossfade + i] = right[i]!;
     }
-    const corr = loopSeamCorrelation(
-      { left, right, sampleRate: SR },
-      { crossfadeSec: 1 },
-    );
+    const corr = loopSeamCorrelation({ left, right, sampleRate: SR }, { crossfadeSec: 1 });
     expect(corr).toBeGreaterThan(0.99);
   });
 
@@ -119,10 +112,7 @@ describe('loopSeamCorrelation', () => {
       left[i] = n;
       right[i] = n;
     }
-    const corr = loopSeamCorrelation(
-      { left, right, sampleRate: SR },
-      { crossfadeSec: 1 },
-    );
+    const corr = loopSeamCorrelation({ left, right, sampleRate: SR }, { crossfadeSec: 1 });
     expect(corr).toBeLessThan(0.5);
   });
 });

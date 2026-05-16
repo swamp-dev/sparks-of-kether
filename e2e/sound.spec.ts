@@ -39,35 +39,25 @@ test('settings cog opens, toggles SFX + Music independently, persists to localSt
 
   // #255: sign-pick now runs BEFORE the blessing ritual.
   for (let player = 1; player <= 2; player++) {
-    await expect(
-      page.getByRole('heading', { name: /Choose your sign/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
     if (player === 2) {
       // #370: picker auto-skips taken aries and opens on taurus, so
       // P2 needs 3 next-clicks to reach leo (taurus → gemini →
       // cancer → leo), not 4.
-      const nextArrow = page
-        .getByRole('button', { name: /^Next sign$/ })
-        .first();
+      const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
       for (let i = 0; i < 3; i++) {
         await nextArrow.click();
       }
     }
     const signLabel = player === 1 ? 'Aries' : 'Leo';
-    await page
-      .getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) })
-      .click();
+    await page.getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) }).click();
 
-    await expect(
-      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
-    ).toBeVisible();
+    await expect(page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`))).toBeVisible();
     for (let step = 0; step < 10; step++) {
       await page.getByRole('button', { name: /Roll 3d6/i }).click();
       await page.getByRole('button', { name: /^Next$/i }).click();
     }
-    await expect(
-      page.getByRole('heading', { name: /The Tree has spoken/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /The Tree has spoken/i })).toBeVisible();
     await page.getByRole('button', { name: /^Continue$/ }).click();
   }
 
@@ -109,9 +99,7 @@ test('settings cog opens, toggles SFX + Music independently, persists to localSt
   // present either way). Match the heading exactly so we don't
   // strict-mode-collide with the descriptive paragraph below it
   // ("Reduced motion follows your system setting.").
-  await expect(
-    dialog.getByText(/^reduced motion$/i),
-  ).toBeVisible();
+  await expect(dialog.getByText(/^reduced motion$/i)).toBeVisible();
 
   // Esc closes the popover.
   await page.keyboard.press('Escape');

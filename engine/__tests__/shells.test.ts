@@ -88,10 +88,7 @@ describe('pickNextShellTarget', () => {
   it('respects already-decided Shells when picking the next target', () => {
     // Malkuth is banished; the next-lowest dormant Sefirah with 0 Sparks
     // is Yesod (number 9).
-    const state = makeState(
-      {},
-      { shells: { ...EMPTY_SHELL_STATE, malkuth: 'banished' } },
-    );
+    const state = makeState({}, { shells: { ...EMPTY_SHELL_STATE, malkuth: 'banished' } });
     expect(pickNextShellTarget(state)).toBe('yesod');
   });
 });
@@ -128,9 +125,7 @@ describe('maybeActivateShell — threshold crossings', () => {
 
   it('caps at 4 activations even at very high separation (game ends at 15)', () => {
     const next = maybeActivateShell(makeState({}, { separation: 30 }));
-    expect(
-      countShellsBy(next.shells, 'active') + countShellsBy(next.shells, 'banished'),
-    ).toBe(4);
+    expect(countShellsBy(next.shells, 'active') + countShellsBy(next.shells, 'banished')).toBe(4);
   });
 
   it('a single call activates exactly the shells the input separation demands (cascade across calls)', () => {
@@ -198,8 +193,7 @@ describe('maybeActivateShell — Gevurah cancellations', () => {
     const state = makeState({}, { separation: 9, shellCancellationsAvailable: 1 });
     const next = maybeActivateShell(state);
     // 3 thresholds crossed; 1 deflected (cancellation); 2 real activations.
-    const real =
-      countShellsBy(next.shells, 'active') + countShellsBy(next.shells, 'banished');
+    const real = countShellsBy(next.shells, 'active') + countShellsBy(next.shells, 'banished');
     expect(real).toBe(2);
     expect(next.shellsDeflected).toBe(1);
     expect(next.shellCancellationsAvailable).toBe(0);
@@ -272,10 +266,7 @@ describe('Shell awakening — wired via acceptSetback', () => {
   it('activates a Shell after 3 accepted failures raise Separation to 3', () => {
     // Each non-shortcut check-failed-accepted adds +1 Separation.
     // At Separation 3 the first Shell should wake.
-    const base = makeState(
-      { position: 'gevurah' },
-      { separation: 0 },
-    );
+    const base = makeState({ position: 'gevurah' }, { separation: 0 });
     let state = acceptSetback(base, { playerId: 'p1', sefirah: 'gevurah', shortcut: false });
     state = acceptSetback(state, { playerId: 'p1', sefirah: 'gevurah', shortcut: false });
     state = acceptSetback(state, { playerId: 'p1', sefirah: 'gevurah', shortcut: false });
@@ -327,10 +318,7 @@ describe('Shell banishment — wired via resolveChallenge', () => {
     // Direct unit test: build a state with an active Yesod Shell, then
     // manually trigger the Sefirah-clear path to confirm banishShell fires.
     // The resolveChallenge integration is covered in checks.test.ts.
-    const withActiveShell = makeState(
-      {},
-      { shells: { ...EMPTY_SHELL_STATE, yesod: 'active' } },
-    );
+    const withActiveShell = makeState({}, { shells: { ...EMPTY_SHELL_STATE, yesod: 'active' } });
     const banished = banishShell(withActiveShell, 'yesod');
     expect(banished.shells.yesod).toBe('banished');
     // Once banished it cannot go back to active or dormant
@@ -347,8 +335,16 @@ describe('Shell stillborn — wired via resolveChallenge', () => {
     const state = makeState(
       {
         clearedSefirot: new Set([
-          'kether', 'chokmah', 'binah', 'chesed', 'gevurah',
-          'tiferet', 'netzach', 'hod', 'yesod', 'malkuth',
+          'kether',
+          'chokmah',
+          'binah',
+          'chesed',
+          'gevurah',
+          'tiferet',
+          'netzach',
+          'hod',
+          'yesod',
+          'malkuth',
         ]),
       },
       { separation: 3 },
@@ -405,7 +401,12 @@ describe('Shell of Chesed — Hoarding', () => {
         shells: { ...EMPTY_SHELL_STATE, chesed: 'active' },
       },
     );
-    const result = useSpark(state, 'p1', { kind: 'chesed-grace', toPlayerId: 'p2', arcanumNumber: 7 }, seededRng(1));
+    const result = useSpark(
+      state,
+      'p1',
+      { kind: 'chesed-grace', toPlayerId: 'p2', arcanumNumber: 7 },
+      seededRng(1),
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('hoarding-gifts-blocked');
@@ -460,9 +461,7 @@ describe('Shell of Gevurah — Cruelty', () => {
     expect(withCruelty.value.outcome.statContribution).toBe(
       baseline.value.outcome.statContribution - 1,
     );
-    expect(withCruelty.value.outcome.effectiveDC).toBe(
-      baseline.value.outcome.effectiveDC + 2,
-    );
+    expect(withCruelty.value.outcome.effectiveDC).toBe(baseline.value.outcome.effectiveDC + 2);
   });
 });
 
@@ -702,15 +701,30 @@ describe('Shell of Binah — Despair', () => {
       state: makeState({ position: 'gevurah' }, { shells: EMPTY_SHELL_STATE }),
       playerId: 'p1',
       sefirah: 'gevurah',
-      modifiers: { assistStats: [10], cardBurns: 0, sparkBurns: 0, shortcutPenalty: false, soulDoorDelta: 0 },
+      modifiers: {
+        assistStats: [10],
+        cardBurns: 0,
+        sparkBurns: 0,
+        shortcutPenalty: false,
+        soulDoorDelta: 0,
+      },
       outcome: passOutcome,
       rng: seededRng(1),
     });
     const withDespair = resolveChallenge({
-      state: makeState({ position: 'gevurah' }, { shells: { ...EMPTY_SHELL_STATE, binah: 'active' } }),
+      state: makeState(
+        { position: 'gevurah' },
+        { shells: { ...EMPTY_SHELL_STATE, binah: 'active' } },
+      ),
       playerId: 'p1',
       sefirah: 'gevurah',
-      modifiers: { assistStats: [10], cardBurns: 0, sparkBurns: 0, shortcutPenalty: false, soulDoorDelta: 0 },
+      modifiers: {
+        assistStats: [10],
+        cardBurns: 0,
+        sparkBurns: 0,
+        shortcutPenalty: false,
+        soulDoorDelta: 0,
+      },
       outcome: passOutcome,
       rng: seededRng(1),
     });

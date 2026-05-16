@@ -52,18 +52,10 @@ export function PresenceIndicator({
         const isActive = p.id === activePlayerId;
         const isSelf = p.id === viewerPlayerId;
         const showCountdown = isActive && grace.phase === 'grace';
-        const showKick =
-          isActive &&
-          grace.phase === 'expired' &&
-          viewerIsHost &&
-          !isSelf;
+        const showKick = isActive && grace.phase === 'expired' && viewerIsHost && !isSelf;
 
         return (
-          <li
-            key={p.id}
-            data-testid={`presence-row-${p.id}`}
-            className="flex items-center gap-2"
-          >
+          <li key={p.id} data-testid={`presence-row-${p.id}`} className="flex items-center gap-2">
             <span
               role="img"
               aria-label={isOnline ? 'online' : 'offline'}
@@ -84,10 +76,7 @@ export function PresenceIndicator({
               <span className="text-xs text-zinc-500">(disconnected)</span>
             )}
             {showCountdown && (
-              <span
-                className="text-xs text-amber-600"
-                data-testid={`grace-countdown-${p.id}`}
-              >
+              <span className="text-xs text-amber-600" data-testid={`grace-countdown-${p.id}`}>
                 disconnected — {Math.ceil(grace.remainingMs / 1000)}s left
               </span>
             )}

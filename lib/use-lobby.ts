@@ -53,13 +53,9 @@ export interface UseLobbyReturn {
    * Update the current player's `zodiac_sign`. Returns `{ ok: false }`
    * if the caller is not signed in (no `currentPlayerId`).
    */
-  readonly setZodiacSign: (
-    sign: ZodiacSignKey,
-  ) => Promise<{ readonly ok: boolean }>;
+  readonly setZodiacSign: (sign: ZodiacSignKey) => Promise<{ readonly ok: boolean }>;
   /** Update the current player's `ready` flag. */
-  readonly setReady: (
-    ready: boolean,
-  ) => Promise<{ readonly ok: boolean }>;
+  readonly setReady: (ready: boolean) => Promise<{ readonly ok: boolean }>;
 }
 
 export function useLobby(code: string): UseLobbyReturn {
@@ -184,9 +180,7 @@ export function useLobby(code: string): UseLobbyReturn {
         // stop the silence.
         if (status === 'CHANNEL_ERROR') {
           // eslint-disable-next-line no-console
-          console.error(
-            `[useLobby] Realtime channel error on lobby_players:${roomId}`,
-          );
+          console.error(`[useLobby] Realtime channel error on lobby_players:${roomId}`);
           setError('Realtime sync error. Refresh to retry.');
         }
       });
@@ -276,9 +270,7 @@ export function useLobby(code: string): UseLobbyReturn {
           reason?: { kind?: string };
         };
         setError(
-          `Could not start game: ${
-            body.reason?.kind ?? body.error ?? `HTTP ${res.status}`
-          }`,
+          `Could not start game: ${body.reason?.kind ?? body.error ?? `HTTP ${res.status}`}`,
         );
       } finally {
         beginningRef.current = false;
@@ -309,9 +301,7 @@ export function useLobby(code: string): UseLobbyReturn {
       // The remote tab still gets it from the channel; this just
       // closes the visible delay on the picker's own UI.
       setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === currentPlayerId ? { ...p, zodiac_sign: sign } : p,
-        ),
+        prev.map((p) => (p.id === currentPlayerId ? { ...p, zodiac_sign: sign } : p)),
       );
       return { ok: true };
     },
@@ -333,11 +323,7 @@ export function useLobby(code: string): UseLobbyReturn {
         setError(`Could not toggle ready: ${result.error.cause}`);
         return { ok: false };
       }
-      setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === currentPlayerId ? { ...p, ready } : p,
-        ),
-      );
+      setPlayers((prev) => prev.map((p) => (p.id === currentPlayerId ? { ...p, ready } : p)));
       return { ok: true };
     },
     [currentPlayerId],

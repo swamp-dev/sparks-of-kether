@@ -20,10 +20,7 @@ describe('checkEndgame — ongoing', () => {
 
   it('returns ongoing for a mid-game state with separation under threshold and players still ascending', () => {
     // Card 2 = High Priestess = path 13 (Tiferet ↔ Kether).
-    const state = makeState(
-      { position: 'tiferet', hand: [2] },
-      { illumination: 3, separation: 5 },
-    );
+    const state = makeState({ position: 'tiferet', hand: [2] }, { illumination: 3, separation: 5 });
     expect(checkEndgame(state).status).toBe('ongoing');
   });
 });
@@ -110,13 +107,11 @@ describe('canReachKether', () => {
     //   arcanum 14 (Temperance) → path 25 → Tiferet ↔ Yesod
     //   arcanum 2 (High Priestess) → path 13 → Kether ↔ Tiferet
     // BFS should find the chain Malkuth → Yesod → Tiferet → Kether.
-    const state = makeState(
-      { position: 'malkuth', hand: [21, 14, 2] },
-    );
+    const state = makeState({ position: 'malkuth', hand: [21, 14, 2] });
     expect(canReachKether(state, 'malkuth')).toBe(true);
   });
 
-  it('returns true when a needed card is in another player\'s hand', () => {
+  it("returns true when a needed card is in another player's hand", () => {
     // Cards are pooled team-wide for reachability — gifting fills any gap.
     const p1 = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
     const p2 = makePlayer({ id: 'p2', position: 'kether', hand: [14, 2] });
@@ -165,7 +160,10 @@ describe('resolveFinalThreshold', () => {
     // a state that checkEndgame considers lost (overflow precedes win).
     const state = makeState(
       { position: 'kether' },
-      { illumination: REQUIRED_ILLUMINATION_MARGIN + SEPARATION_LOSS_THRESHOLD, separation: SEPARATION_LOSS_THRESHOLD },
+      {
+        illumination: REQUIRED_ILLUMINATION_MARGIN + SEPARATION_LOSS_THRESHOLD,
+        separation: SEPARATION_LOSS_THRESHOLD,
+      },
     );
     const result = resolveFinalThreshold({ state, cardPlays: [], sparkBurns: [] });
     expect(result.ok).toBe(false);

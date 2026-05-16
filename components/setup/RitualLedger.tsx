@@ -26,16 +26,9 @@ interface RitualLedgerProps {
   readonly currentIndex: number;
 }
 
-export function RitualLedger({
-  stats,
-  currentIndex,
-}: RitualLedgerProps): JSX.Element {
+export function RitualLedger({ stats, currentIndex }: RitualLedgerProps): JSX.Element {
   return (
-    <div
-      data-ritual-ledger
-      aria-label="Sefirot blessed so far"
-      className="w-full"
-    >
+    <div data-ritual-ledger aria-label="Sefirot blessed so far" className="w-full">
       <h3 className="mb-3 text-center text-xs uppercase tracking-widest opacity-60 md:text-left">
         Blessings received
       </h3>
@@ -60,19 +53,14 @@ export function RitualLedger({
                 className="h-2.5 w-2.5 rounded-full"
                 style={{
                   backgroundColor: s.color,
-                  boxShadow: active
-                    ? `0 0 6px ${s.color}, 0 0 12px ${s.color}`
-                    : undefined,
+                  boxShadow: active ? `0 0 6px ${s.color}, 0 0 12px ${s.color}` : undefined,
                 }}
               />
               <span className="text-veil opacity-70">
                 <StatIcon stat={s.stat} className="h-4 w-4" />
               </span>
               <span className="flex-1 capitalize">{s.stat}</span>
-              <span
-                data-ledger-value={s.stat}
-                className="font-display tabular-nums"
-              >
+              <span data-ledger-value={s.stat} className="font-display tabular-nums">
                 {blessed ? value : '—'}
               </span>
             </li>

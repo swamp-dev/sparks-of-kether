@@ -61,15 +61,9 @@ export function usePeerPresence(
   options: { readonly reduceMotion?: boolean } = {},
 ): UsePeerPresenceReturn {
   const [status, setStatus] = useState<PeerPresenceStatus | 'idle'>('idle');
-  const [cursors, setCursors] = useState<ReadonlyMap<string, PeerCursorSnapshot>>(
-    () => new Map(),
-  );
-  const [targets, setTargets] = useState<ReadonlyMap<string, PeerTargetSnapshot>>(
-    () => new Map(),
-  );
-  const [actions, setActions] = useState<ReadonlyMap<string, PeerActionSnapshot>>(
-    () => new Map(),
-  );
+  const [cursors, setCursors] = useState<ReadonlyMap<string, PeerCursorSnapshot>>(() => new Map());
+  const [targets, setTargets] = useState<ReadonlyMap<string, PeerTargetSnapshot>>(() => new Map());
+  const [actions, setActions] = useState<ReadonlyMap<string, PeerActionSnapshot>>(() => new Map());
 
   // Keep an imperative handle on the live subscription so the send-*
   // callbacks fire directly (no stale closure on a stale subscription).

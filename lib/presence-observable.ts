@@ -64,10 +64,7 @@ export function presenceSubscription(
 
       channel.on('presence', { event: 'sync' }, () => {
         if (unsubscribed) return;
-        const presenceState = channel.presenceState() as Record<
-          string,
-          readonly PresenceMeta[]
-        >;
+        const presenceState = channel.presenceState() as Record<string, readonly PresenceMeta[]>;
         const ids = new Set<string>();
         for (const metas of Object.values(presenceState)) {
           for (const meta of metas) {

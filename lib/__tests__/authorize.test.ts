@@ -3,10 +3,7 @@ import { authorize } from '../authorize';
 import type { ClientAction } from '../room-actions';
 import { makePlayer, makeState } from '@/test/fixtures';
 
-const players = [
-  makePlayer({ id: 'p1' }),
-  makePlayer({ id: 'p2' }),
-];
+const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })];
 const state = makeState({}, { players, activePlayerId: 'p1' });
 
 const actions: { kind: ClientAction['kind']; build: (id: string) => ClientAction }[] = [
@@ -77,11 +74,7 @@ describe('authorize — identity binding', () => {
     // The route already runs an identity check before calling
     // authorize, but authorize is a defense-in-depth pure function
     // that callers can invoke without the route's auth gate.
-    const result = authorize(
-      { kind: 'move', playerId: 'p1', pathNumber: 13 },
-      state,
-      'p2',
-    );
+    const result = authorize({ kind: 'move', playerId: 'p1', pathNumber: 13 }, state, 'p2');
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('identity-mismatch');
@@ -142,11 +135,7 @@ describe('authorize — Kether ritual gates (#350)', () => {
 
     it('rejects a non-witness with not-witness-turn', () => {
       const k = ketherFixture();
-      const result = authorize(
-        { kind: 'kether-witness-pass', playerId: 'p1' },
-        k,
-        'p1',
-      );
+      const result = authorize({ kind: 'kether-witness-pass', playerId: 'p1' }, k, 'p1');
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.reason.kind).toBe('not-witness-turn');

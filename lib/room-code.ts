@@ -17,9 +17,7 @@ export const ROOM_CODE_LENGTH = 6;
  * `rng` defaults to `Math.random` for production. Tests pass a
  * deterministic source.
  */
-export function generateRoomCode(
-  rng: () => number = Math.random,
-): string {
+export function generateRoomCode(rng: () => number = Math.random): string {
   let code = '';
   for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
     const idx = Math.floor(rng() * ALPHABET.length);

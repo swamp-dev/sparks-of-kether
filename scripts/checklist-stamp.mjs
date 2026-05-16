@@ -134,7 +134,9 @@ function listWorktrees(sessionCwd) {
     }
   }
   if (current) records.push(current);
-  return records.filter((w) => !w.detached && w.branch && w.branch !== 'main' && w.branch !== 'master');
+  return records.filter(
+    (w) => !w.detached && w.branch && w.branch !== 'main' && w.branch !== 'master',
+  );
 }
 
 /**

@@ -121,10 +121,7 @@ function handLengthOf(state: GameState, playerId: string): number {
  * tick, just rotate past. When no non-empty queue exists, the
  * witness sub-phase is over.
  */
-function advanceWitness(
-  state: GameState,
-  ritual: KetherRitualState,
-): KetherRitualState {
+function advanceWitness(state: GameState, ritual: KetherRitualState): KetherRitualState {
   const order = ritual.witnessOrder;
   const n = order.length;
   if (n === 0) {
@@ -310,16 +307,11 @@ export function ketherPlayCard(
       reason: { kind: 'kether-card-not-in-hand', arcanum: args.arcanum },
     };
   }
-  const newHand = [
-    ...player.hand.slice(0, cardIdx),
-    ...player.hand.slice(cardIdx + 1),
-  ];
+  const newHand = [...player.hand.slice(0, cardIdx), ...player.hand.slice(cardIdx + 1)];
   const newPlayer: PlayerState = { ...player, hand: newHand };
   const stateWithCard: GameState = {
     ...state,
-    players: state.players.map((p) =>
-      p.id === newPlayer.id ? newPlayer : p,
-    ),
+    players: state.players.map((p) => (p.id === newPlayer.id ? newPlayer : p)),
     discardPile: [...state.discardPile, args.arcanum],
   };
   const logEntry: KetherWitnessLogEntry = {
@@ -623,9 +615,7 @@ export function ketherConfirmClosure(
     const newPlayer: PlayerState = { ...player, sparksHeld: newSparksHeld };
     workingState = {
       ...workingState,
-      players: workingState.players.map((p) =>
-        p.id === newPlayer.id ? newPlayer : p,
-      ),
+      players: workingState.players.map((p) => (p.id === newPlayer.id ? newPlayer : p)),
       spentSparks: [
         ...workingState.spentSparks,
         { playerId: burn.playerId, sefirah: burn.sefirah },

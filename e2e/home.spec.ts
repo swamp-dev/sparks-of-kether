@@ -19,9 +19,7 @@ test('home page renders the title', async ({ page }) => {
   // `/sparks of kether/i` — the visible h1 and the sr-only h2 that
   // names the PitchColumns section ("What is Sparks of Kether?").
   // Pin the level explicitly so the assertion remains unambiguous.
-  await expect(
-    page.getByRole('heading', { level: 1, name: /sparks of kether/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /sparks of kether/i })).toBeVisible();
 });
 
 test('PrimaryCTA: Escape and Close return focus to the trigger', async ({ page }) => {

@@ -88,14 +88,8 @@ const athena: StingManifest = {
   render(): StereoBuffer {
     const N = nSamples(1.4);
     const { left, right } = emptyBuffers(N);
-    const bell = fmBell(
-      { carrierHz: 1760, modHz: 2640, modIndex: 3, decaySec: 0.4 },
-      SR,
-    );
-    const ping = fmBell(
-      { carrierHz: 2637, modHz: 3956, modIndex: 1.5, decaySec: 0.3 },
-      SR,
-    );
+    const bell = fmBell({ carrierHz: 1760, modHz: 2640, modIndex: 3, decaySec: 0.4 }, SR);
+    const ping = fmBell({ carrierHz: 2637, modHz: 3956, modIndex: 1.5, decaySec: 0.3 }, SR);
     const pingDelay = Math.floor(SR * 0.08);
     const gain = 0.35;
     for (let i = 0; i < N; i++) {
@@ -105,7 +99,7 @@ const athena: StingManifest = {
       left[i] = l;
       right[i] = r;
     }
-    return { ...applyReverb(left, right, 1.5, 0.30), sampleRate: SR };
+    return { ...applyReverb(left, right, 1.5, 0.3), sampleRate: SR };
   },
 };
 
@@ -142,7 +136,7 @@ const demeter: StingManifest = {
       left[i] = s;
       right[i] = s;
     }
-    return { ...applyReverb(left, right, 2.5, 0.40), sampleRate: SR };
+    return { ...applyReverb(left, right, 2.5, 0.4), sampleRate: SR };
   },
 };
 
@@ -191,14 +185,8 @@ const ares: StingManifest = {
     const { left, right } = emptyBuffers(N);
     const gain = 0.32;
     // F#3 + C3 (tritone). FM strikes.
-    const fSharp = fmBell(
-      { carrierHz: 185.0, modHz: 555.0, modIndex: 4, decaySec: 0.4 },
-      SR,
-    );
-    const c = fmBell(
-      { carrierHz: 130.81, modHz: 392.43, modIndex: 4, decaySec: 0.4 },
-      SR,
-    );
+    const fSharp = fmBell({ carrierHz: 185.0, modHz: 555.0, modIndex: 4, decaySec: 0.4 }, SR);
+    const c = fmBell({ carrierHz: 130.81, modHz: 392.43, modIndex: 4, decaySec: 0.4 }, SR);
     const cDelay = Math.floor(SR * 0.04);
     for (let i = 0; i < N; i++) {
       const a = fSharp();
@@ -225,17 +213,13 @@ const apollo: StingManifest = {
     const arp = [659.25, 830.61, 987.77, 1318.51];
     const noteSpacingSec = 0.12;
     const sustain = sineOsc(659.25, SR);
-    const sustainGain = 0.10;
-    const arpGain = 0.20;
+    const sustainGain = 0.1;
+    const arpGain = 0.2;
 
     // Sustained sine throughout.
     for (let i = 0; i < N; i++) {
       const env =
-        i < SR * 0.1
-          ? i / (SR * 0.1)
-          : i > N - SR * 0.3
-            ? Math.max(0, (N - i) / (SR * 0.3))
-            : 1;
+        i < SR * 0.1 ? i / (SR * 0.1) : i > N - SR * 0.3 ? Math.max(0, (N - i) / (SR * 0.3)) : 1;
       const s = sustain() * sustainGain * env;
       left[i] = s * 0.6;
       right[i] = s * 0.6;
@@ -255,7 +239,7 @@ const apollo: StingManifest = {
         right[startSample + i]! += r;
       }
     }
-    return { ...applyReverb(left, right, 2.0, 0.40), sampleRate: SR };
+    return { ...applyReverb(left, right, 2.0, 0.4), sampleRate: SR };
   },
 };
 
@@ -270,8 +254,8 @@ const aphrodite: StingManifest = {
     const { left, right } = emptyBuffers(N);
     // G major arpeggio: G4, B4, D5, G5, D5, B4.
     const cascade = [392.0, 493.88, 587.33, 783.99, 587.33, 493.88];
-    const noteSpacingSec = 0.10;
-    const gain = 0.20;
+    const noteSpacingSec = 0.1;
+    const gain = 0.2;
     for (let n = 0; n < cascade.length; n++) {
       const startSample = Math.floor(n * noteSpacingSec * SR);
       const ks = ksPluck(cascade[n] ?? 392, SR, makePrng(0xaf01100 + n), 0.998);
@@ -303,10 +287,7 @@ const hermes: StingManifest = {
     const noteSpacingSec = 0.07;
     const gain = 0.28;
     // Initial strike.
-    const strike = fmBell(
-      { carrierHz: 1760, modHz: 3520, modIndex: 5, decaySec: 0.15 },
-      SR,
-    );
+    const strike = fmBell({ carrierHz: 1760, modHz: 3520, modIndex: 5, decaySec: 0.15 }, SR);
     const strikeLen = Math.floor(SR * 0.3);
     for (let i = 0; i < strikeLen; i++) {
       const s = strike() * gain;
@@ -317,7 +298,12 @@ const hermes: StingManifest = {
     for (let n = 0; n < desc.length; n++) {
       const startSample = Math.floor(SR * 0.08) + Math.floor(n * noteSpacingSec * SR);
       const bell = fmBell(
-        { carrierHz: desc[n] ?? 1760, modHz: (desc[n] ?? 1760) * 1.5, modIndex: 1.2, decaySec: 0.2 },
+        {
+          carrierHz: desc[n] ?? 1760,
+          modHz: (desc[n] ?? 1760) * 1.5,
+          modIndex: 1.2,
+          decaySec: 0.2,
+        },
         SR,
       );
       const renderLen = Math.min(N - startSample, Math.floor(SR * 0.4));
@@ -329,7 +315,7 @@ const hermes: StingManifest = {
         right[startSample + i]! += r;
       }
     }
-    return { ...applyReverb(left, right, 0.8, 0.20), sampleRate: SR };
+    return { ...applyReverb(left, right, 0.8, 0.2), sampleRate: SR };
   },
 };
 
@@ -360,7 +346,7 @@ const selene: StingManifest = {
       left[i]! += lA + lB;
       right[i]! += rA + rB;
     }
-    return { ...applyReverb(left, right, 3.0, 0.50), sampleRate: SR };
+    return { ...applyReverb(left, right, 3.0, 0.5), sampleRate: SR };
   },
 };
 
@@ -374,11 +360,7 @@ const hestia: StingManifest = {
     const N = nSamples(1.5);
     const { left, right } = emptyBuffers(N);
     // C major triad — C4, E4, G4 — slow swell.
-    const oscs = [
-      sineOsc(261.63, SR),
-      sineOsc(329.63, SR),
-      sineOsc(392.0, SR),
-    ];
+    const oscs = [sineOsc(261.63, SR), sineOsc(329.63, SR), sineOsc(392.0, SR)];
     const gain = 0.18;
     const attackSamples = SR * 0.35;
     const releaseStart = N - SR * 0.4;

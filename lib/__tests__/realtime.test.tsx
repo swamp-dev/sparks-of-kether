@@ -1,10 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useRoomState } from '../realtime';
-import {
-  __resetSupabaseClientForTests,
-  serializeGameState,
-} from '../supabase';
+import { __resetSupabaseClientForTests, serializeGameState } from '../supabase';
 import type * as SupabaseModule from '../supabase';
 import { makeState } from '@/test/fixtures';
 
@@ -38,10 +35,7 @@ function makeFakeChannel(): FakeChannel {
       onHandler = handler;
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb: (status: string) => void) {
       // Defer the status callback so the React effect can settle.
       setTimeout(() => cb(subscribeStatus), 0);
       return this;

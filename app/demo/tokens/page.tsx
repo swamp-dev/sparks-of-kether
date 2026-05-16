@@ -23,46 +23,46 @@ export default function TokensDemoPage(): JSX.Element {
       </p>
 
       <div data-demo-canvas>
-      <Section title="Player tokens (variants 1–4)">
-        <div className="flex gap-4">
-          {([1, 2, 3, 4] as const).map((v) => (
-            <PlayerToken key={v} variant={v} initial={`P${v}`} className="h-12 w-12" />
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Sparks (one per Sefirah)">
-        <div className="flex flex-wrap gap-3">
-          {sefirot.map((s) => (
-            <div key={s.key} className="flex flex-col items-center gap-1">
-              <SparkIcon sefirah={s.key} className="h-10 w-10" />
-              <span className="text-xs opacity-60">{s.englishName}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Shells (active / dormant / banished)">
-        {(['active', 'dormant', 'banished'] as const).map((status) => (
-          <div key={status} className="mb-4">
-            <h3 className="mb-2 text-xs uppercase tracking-widest opacity-50">{status}</h3>
-            <div className="flex flex-wrap gap-3">
-              {sefirot.map((s) => (
-                <ShellIcon key={s.key} sefirah={s.key} status={status} className="h-10 w-10" />
-              ))}
-            </div>
+        <Section title="Player tokens (variants 1–4)">
+          <div className="flex gap-4">
+            {([1, 2, 3, 4] as const).map((v) => (
+              <PlayerToken key={v} variant={v} initial={`P${v}`} className="h-12 w-12" />
+            ))}
           </div>
-        ))}
-      </Section>
+        </Section>
 
-      <Section title="d20">
-        <div className="flex items-center gap-4">
-          <D20 className="h-14 w-14" />
-          <D20 value={1} className="h-14 w-14" />
-          <D20 value={11} className="h-14 w-14" />
-          <D20 value={20} className="h-14 w-14" />
-        </div>
-      </Section>
+        <Section title="Sparks (one per Sefirah)">
+          <div className="flex flex-wrap gap-3">
+            {sefirot.map((s) => (
+              <div key={s.key} className="flex flex-col items-center gap-1">
+                <SparkIcon sefirah={s.key} className="h-10 w-10" />
+                <span className="text-xs opacity-60">{s.englishName}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Shells (active / dormant / banished)">
+          {(['active', 'dormant', 'banished'] as const).map((status) => (
+            <div key={status} className="mb-4">
+              <h3 className="mb-2 text-xs uppercase tracking-widest opacity-50">{status}</h3>
+              <div className="flex flex-wrap gap-3">
+                {sefirot.map((s) => (
+                  <ShellIcon key={s.key} sefirah={s.key} status={status} className="h-10 w-10" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="d20">
+          <div className="flex items-center gap-4">
+            <D20 className="h-14 w-14" />
+            <D20 value={1} className="h-14 w-14" />
+            <D20 value={11} className="h-14 w-14" />
+            <D20 value={20} className="h-14 w-14" />
+          </div>
+        </Section>
       </div>
     </main>
   );

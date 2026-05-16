@@ -21,12 +21,8 @@ describe('PresenceIndicator', () => {
         viewerPlayerId="p1"
       />,
     );
-    const p1Dot = screen
-      .getByTestId('presence-row-p1')
-      .querySelector('[aria-label="online"]');
-    const p2Dot = screen
-      .getByTestId('presence-row-p2')
-      .querySelector('[aria-label="offline"]');
+    const p1Dot = screen.getByTestId('presence-row-p1').querySelector('[aria-label="online"]');
+    const p2Dot = screen.getByTestId('presence-row-p2').querySelector('[aria-label="offline"]');
     expect(p1Dot).not.toBeNull();
     expect(p2Dot).not.toBeNull();
   });
@@ -66,9 +62,7 @@ describe('PresenceIndicator', () => {
     // ...but they DO see "(disconnected)" so they understand why
     // the game has stalled. Reviewer flagged: without this label
     // a non-host viewer sees only a grey dot with no explanation.
-    expect(screen.getByTestId('presence-row-p1').textContent).toMatch(
-      /disconnected/,
-    );
+    expect(screen.getByTestId('presence-row-p1').textContent).toMatch(/disconnected/);
 
     // Same situation, viewer is host: button appears.
     rerender(

@@ -150,9 +150,7 @@ describe('useSound', () => {
       vi.advanceTimersByTime(REPEAT_WINDOW_MS + 50);
       result.current.playSound('card-drawn');
     });
-    played = audioCalls.filter(
-      (c) => c.src.includes('card-drawn') && c.play.mock.calls.length > 0,
-    );
+    played = audioCalls.filter((c) => c.src.includes('card-drawn') && c.play.mock.calls.length > 0);
     expect(played).toHaveLength(MAX_REPEATS_PER_WINDOW + 1);
   });
 

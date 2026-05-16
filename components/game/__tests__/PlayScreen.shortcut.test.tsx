@@ -32,9 +32,7 @@ function makePrepState(opts: {
   readonly destination: 'yesod';
 }): GameState {
   const base = makeFullGame({ playerCount: 2, seed: 1 });
-  const activeIdx = base.players.findIndex(
-    (p) => p.id === base.activePlayerId,
-  );
+  const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
   const players = base.players.map((p, idx) =>
     idx === activeIdx
       ? {
@@ -93,9 +91,7 @@ describe('PlayScreen — shortcut flag drives EncounterScreen DC penalty', () =>
     // freshly-initialised player who somehow lands in challenge phase
     // without a recorded arrival path falls through to non-shortcut.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? {
@@ -154,9 +150,7 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
       // happened to pass against a stat-1 vs DC-15 setup, the test
       // setup is wrong and we should bail loudly rather than silently
       // pass on the wrong branch.
-      const acceptBtn = document.querySelector(
-        '[data-fail-choice="accept"]',
-      );
+      const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
       if (!acceptBtn) {
         throw new Error(
           'test setup (seed 1, stat=1, DC 12+3=15 shortcut): the ' +
@@ -322,9 +316,7 @@ describe('PlayScreen — shortcut accept-setback applies +2 Separation', () => {
         vi.advanceTimersByTime(800);
       });
 
-      const acceptBtn = document.querySelector(
-        '[data-fail-choice="accept"]',
-      );
+      const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
       if (!acceptBtn) {
         throw new Error(
           'test setup (seed 13, stat=1, DC 12 non-shortcut): the ' +

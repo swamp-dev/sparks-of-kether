@@ -97,9 +97,7 @@ const EXPECTED_PAIRINGS: Record<string, '#0e1320' | '#f8f8ff'> = {
 describe('contrastTextColour: per-Sefirah pinning (#289)', () => {
   for (const sefirah of sefirot) {
     it(`pairs ${sefirah.englishName} (${sefirah.color}) with the expected text colour`, () => {
-      expect(contrastTextColour(sefirah.color)).toBe(
-        EXPECTED_PAIRINGS[sefirah.key],
-      );
+      expect(contrastTextColour(sefirah.color)).toBe(EXPECTED_PAIRINGS[sefirah.key]);
     });
   }
 });
@@ -133,8 +131,7 @@ function relLuminance(hex: string): number {
   const r = parseInt(expanded.slice(0, 2), 16) / 255;
   const g = parseInt(expanded.slice(2, 4), 16) / 255;
   const b = parseInt(expanded.slice(4, 6), 16) / 255;
-  const lin = (c: number): number =>
-    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  const lin = (c: number): number => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 

@@ -25,9 +25,7 @@ async function main(): Promise<void> {
   const outputDir = publicAudioDir(repoRoot);
 
   const requested =
-    arg === undefined
-      ? STINGS
-      : STINGS.filter((s) => s.name === arg || s.name.endsWith(`-${arg}`));
+    arg === undefined ? STINGS : STINGS.filter((s) => s.name === arg || s.name.endsWith(`-${arg}`));
 
   if (requested.length === 0) {
     console.error(`Unknown sting: ${arg}`);
@@ -37,9 +35,7 @@ async function main(): Promise<void> {
 
   let anyFail = false;
   for (const sting of requested) {
-    console.log(
-      `▶ Rendering "${sting.name}" — ${sting.durationSec}s @ ${sting.sampleRate}Hz`,
-    );
+    console.log(`▶ Rendering "${sting.name}" — ${sting.durationSec}s @ ${sting.sampleRate}Hz`);
     const t0 = Date.now();
     const buffer = sting.render();
     console.log(`  synth: ${Date.now() - t0} ms`);
@@ -68,9 +64,7 @@ async function main(): Promise<void> {
     // gives reasonable headroom for the ones with longer reverb.
     const STING_MAX_BYTES = 60 * 1024;
     if (result.mp3Bytes > STING_MAX_BYTES || result.oggBytes > STING_MAX_BYTES) {
-      console.error(
-        `  ✘ size ceiling exceeded (max ${STING_MAX_BYTES / 1024} KB)`,
-      );
+      console.error(`  ✘ size ceiling exceeded (max ${STING_MAX_BYTES / 1024} KB)`);
       anyFail = true;
     }
   }

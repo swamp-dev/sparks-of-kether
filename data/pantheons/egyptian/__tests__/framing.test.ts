@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  sefirahFraming,
-  sefirahFramingPlaceholder,
-} from '../framing';
+import { sefirahFraming, sefirahFramingPlaceholder } from '../framing';
 import { pickFraming } from '../../greco-roman/framing';
 import { avatarNames } from '../avatar-names';
 import { seededRng } from '@/engine/rng';
@@ -68,9 +65,7 @@ describe('Egyptian framing matrix (#555)', () => {
         for (const sign of SIGN_KEYS) {
           expect(sefirahFraming[avatar][sign]).toBeDefined();
         }
-        expect(Object.keys(sefirahFraming[avatar]).sort()).toEqual(
-          [...SIGN_KEYS].sort(),
-        );
+        expect(Object.keys(sefirahFraming[avatar]).sort()).toEqual([...SIGN_KEYS].sort());
       }
     });
 
@@ -102,10 +97,9 @@ describe('Egyptian framing matrix (#555)', () => {
         for (const sign of SIGN_KEYS) {
           const variants = sefirahFraming[avatar][sign];
           const unique = new Set(variants);
-          expect(
-            unique.size,
-            `cell ${avatar}/${sign} has duplicate variants`,
-          ).toBe(variants.length);
+          expect(unique.size, `cell ${avatar}/${sign} has duplicate variants`).toBe(
+            variants.length,
+          );
         }
       }
     });
@@ -183,10 +177,9 @@ describe('Egyptian framing matrix (#555)', () => {
       for (const avatar of AVATAR_KEYS) {
         const placeholder = sefirahFramingPlaceholder[avatar];
         const expectedName = avatarNames[avatar].primary;
-        expect(
-          placeholder,
-          `placeholder for ${avatar} should mention "${expectedName}"`,
-        ).toContain(expectedName);
+        expect(placeholder, `placeholder for ${avatar} should mention "${expectedName}"`).toContain(
+          expectedName,
+        );
       }
     });
   });

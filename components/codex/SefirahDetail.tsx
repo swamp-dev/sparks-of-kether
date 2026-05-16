@@ -1,11 +1,5 @@
 import Link from 'next/link';
-import {
-  arcanumByNumber,
-  letterByKey,
-  paths,
-  sefirahByKey,
-  type SefirahKey,
-} from '@/data';
+import { arcanumByNumber, letterByKey, paths, sefirahByKey, type SefirahKey } from '@/data';
 import { sefirahCodex } from '@/data/codex-content';
 import { pantheons } from '@/data/pantheons';
 
@@ -67,19 +61,11 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
         <div className="text-xs uppercase tracking-widest opacity-70">
           Sefirah {sefirah.number} of 10 · Pillar of {sefirah.pillar}
         </div>
-        <h1 className="font-display text-5xl tracking-widest">
-          {sefirah.englishName}
-        </h1>
-        <p
-          lang="he"
-          dir="rtl"
-          className="font-hebrew text-3xl"
-        >
+        <h1 className="font-display text-5xl tracking-widest">{sefirah.englishName}</h1>
+        <p lang="he" dir="rtl" className="font-hebrew text-3xl">
           {sefirah.hebrewName}
         </p>
-        <p className="mt-2 max-w-xl text-base italic text-veil/80">
-          &ldquo;{codex.quote}&rdquo;
-        </p>
+        <p className="mt-2 max-w-xl text-base italic text-veil/80">&ldquo;{codex.quote}&rdquo;</p>
       </header>
 
       {/* Two-pane scholarly layout: English (left) + Hebrew /
@@ -88,10 +74,7 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
       <div className="grid grid-cols-1 gap-10 md:grid-cols-[3fr_2fr]">
         {/* English content pane */}
         <section aria-labelledby="english-pane-heading" className="space-y-6">
-          <h2
-            id="english-pane-heading"
-            className="font-display text-2xl tracking-widest"
-          >
+          <h2 id="english-pane-heading" className="font-display text-2xl tracking-widest">
             Meaning &amp; role
           </h2>
           <p className="leading-relaxed">{codex.quality}.</p>
@@ -138,20 +121,14 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
           </dl>
 
           <section aria-labelledby="stat-heading" className="space-y-2">
-            <h3
-              id="stat-heading"
-              className="font-display text-lg tracking-widest"
-            >
+            <h3 id="stat-heading" className="font-display text-lg tracking-widest">
               Stat — {sefirah.stat}
             </h3>
             <p className="text-sm leading-relaxed">{codex.statDescription}</p>
           </section>
 
           <section aria-labelledby="shell-heading" className="space-y-2">
-            <h3
-              id="shell-heading"
-              className="font-display text-lg tracking-widest"
-            >
+            <h3 id="shell-heading" className="font-display text-lg tracking-widest">
               Shell of {sefirah.englishName} — {sefirah.shellKeyword}
             </h3>
             <p className="text-sm leading-relaxed">{codex.shellRule}</p>
@@ -168,18 +145,14 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
               Hebrew
             </h2>
             <div className="text-center">
-              <span
-                lang="he"
-                dir="rtl"
-                className="font-hebrew text-5xl"
-              >
+              <span lang="he" dir="rtl" className="font-hebrew text-5xl">
                 {sefirah.hebrewName}
               </span>
             </div>
             <p className="text-xs leading-relaxed opacity-70">
-              The Hebrew name is the canonical form. The English gloss
-              (e.g. &ldquo;{sefirah.englishName}&rdquo;) is one of many
-              translations and varies across traditions.
+              The Hebrew name is the canonical form. The English gloss (e.g. &ldquo;
+              {sefirah.englishName}&rdquo;) is one of many translations and varies across
+              traditions.
             </p>
           </section>
 
@@ -200,10 +173,7 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
                 const arc = arcanumByNumber(path.arcanumNumber);
                 const letter = letterByKey(path.letterKey);
                 return (
-                  <li
-                    key={path.number}
-                    className="flex items-baseline gap-2 leading-relaxed"
-                  >
+                  <li key={path.number} className="flex items-baseline gap-2 leading-relaxed">
                     <Link
                       href={`/path/${path.number}`}
                       className="font-display tracking-widest underline-offset-4 hover:underline"
@@ -242,8 +212,7 @@ export function SefirahDetail({ sefirahKey }: SefirahDetailProps): JSX.Element {
           ← Back to Codex
         </Link>
         <span className="mx-3 opacity-40">·</span>
-        From{' '}
-        <code className="rounded bg-white/5 px-1">reference/sefirot.md</code>,{' '}
+        From <code className="rounded bg-white/5 px-1">reference/sefirot.md</code>,{' '}
         <code className="rounded bg-white/5 px-1">data/codex-content.ts</code>, and{' '}
         <code className="rounded bg-white/5 px-1">data/pantheons/</code>.
       </footer>

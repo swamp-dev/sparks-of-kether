@@ -25,11 +25,7 @@ const PLAYER_COLORS: Readonly<Record<1 | 2 | 3 | 4, string>> = {
   4: '#e07b00', // orange — Hod
 };
 
-export function PlayerToken({
-  variant,
-  initial,
-  className,
-}: PlayerTokenProps): JSX.Element {
+export function PlayerToken({ variant, initial, className }: PlayerTokenProps): JSX.Element {
   const color = PLAYER_COLORS[variant];
   const glyph = (initial?.charAt(0) ?? String(variant)).toUpperCase();
   const label = `Player token ${variant}${initial ? ` (${initial})` : ''}`;

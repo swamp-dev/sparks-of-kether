@@ -56,19 +56,17 @@ export interface GameEventRow {
 // the `from(...).insert(...)` call site.
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
-interface RoomInsert
-  extends Omit<
-    Mutable<RoomRow>,
-    'id' | 'created_at' | 'started_at' | 'finished_at' | 'paused_at' | 'state'
-  > {
+interface RoomInsert extends Omit<
+  Mutable<RoomRow>,
+  'id' | 'created_at' | 'started_at' | 'finished_at' | 'paused_at' | 'state'
+> {
   id?: string;
   state?: RoomRow['state'];
 }
 
 type PlayerInsert = Omit<Mutable<PlayerRow>, 'joined_at'>;
 
-interface GameStateInsert
-  extends Omit<Mutable<GameStateRow>, 'id' | 'updated_at'> {
+interface GameStateInsert extends Omit<Mutable<GameStateRow>, 'id' | 'updated_at'> {
   id?: string;
 }
 
@@ -135,17 +133,15 @@ export interface Database {
  * `JSON.stringify`. `serializeGameState` / `deserializeGameState`
  * convert to/from arrays at the persistence boundary.
  */
-export interface SerializedGameState
-  extends Omit<GameState, 'players' | 'revealedCards'> {
+export interface SerializedGameState extends Omit<GameState, 'players' | 'revealedCards'> {
   readonly players: readonly SerializedPlayerState[];
   readonly revealedCards: readonly number[];
 }
 
-export interface SerializedPlayerState
-  extends Omit<
-    GameState['players'][number],
-    'clearedSefirot' | 'sparksHeld'
-  > {
+export interface SerializedPlayerState extends Omit<
+  GameState['players'][number],
+  'clearedSefirot' | 'sparksHeld'
+> {
   readonly clearedSefirot: readonly string[];
   readonly sparksHeld: readonly string[];
 }
@@ -166,9 +162,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
  * Inverse of `serializeGameState`. Restores Set instances. Trusts the
  * caller (the row came from the engine's own `serializeGameState`).
  */
-export function deserializeGameState(
-  serialized: SerializedGameState,
-): GameState {
+export function deserializeGameState(serialized: SerializedGameState): GameState {
   return {
     ...serialized,
     revealedCards: new Set(serialized.revealedCards),

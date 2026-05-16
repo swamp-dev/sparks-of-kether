@@ -31,16 +31,12 @@ describe('tailwind config (#311 atmosphere & motion)', () => {
 
   describe('motion language', () => {
     it('exposes the `emerge` easing (out-expo) for things appearing', () => {
-      const easings = extend.transitionTimingFunction as
-        | Record<string, string>
-        | undefined;
+      const easings = extend.transitionTimingFunction as Record<string, string> | undefined;
       expect(easings?.emerge).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
     });
 
     it('exposes the `flow` easing (in-out-quart) for state transitions', () => {
-      const easings = extend.transitionTimingFunction as
-        | Record<string, string>
-        | undefined;
+      const easings = extend.transitionTimingFunction as Record<string, string> | undefined;
       expect(easings?.flow).toBe('cubic-bezier(0.65, 0, 0.35, 1)');
     });
 
@@ -49,14 +45,10 @@ describe('tailwind config (#311 atmosphere & motion)', () => {
       // utilities only affect `transition-duration`. For animation
       // durations we ship a named `animate-breath` animation instead;
       // see `docs/motion.md`.
-      const transitions = extend.transitionDuration as
-        | Record<string, string>
-        | undefined;
+      const transitions = extend.transitionDuration as Record<string, string> | undefined;
       const animations = extend.animation as Record<string, string> | undefined;
       expect(transitions?.breath).toBe('6000ms');
-      expect(animations?.breath).toBe(
-        'breath 6000ms cubic-bezier(0.65, 0, 0.35, 1) infinite',
-      );
+      expect(animations?.breath).toBe('breath 6000ms cubic-bezier(0.65, 0, 0.35, 1) infinite');
     });
   });
 

@@ -78,9 +78,7 @@ interface FinalThresholdScreenProps {
   readonly className?: string;
 }
 
-export function FinalThresholdScreen(
-  props: FinalThresholdScreenProps,
-): JSX.Element {
+export function FinalThresholdScreen(props: FinalThresholdScreenProps): JSX.Element {
   const { state, player, turn, mode, className } = props;
 
   // Pre-ritual hold view: player at Kether, ritual hasn't started.
@@ -130,12 +128,8 @@ export function FinalThresholdScreen(
       className={`relative mx-auto max-w-3xl rounded-lg border border-illumination/40 bg-ground/80 p-6 text-veil shadow-glow-kether ${className ?? ''}`}
     >
       <header className="mb-6 text-center">
-        <h2 className="font-display text-3xl tracking-widest">
-          The Final Threshold
-        </h2>
-        <p className="mt-2 italic opacity-80">
-          The team becomes the avatar. The chorus begins.
-        </p>
+        <h2 className="font-display text-3xl tracking-widest">The Final Threshold</h2>
+        <p className="mt-2 italic opacity-80">The team becomes the avatar. The chorus begins.</p>
       </header>
 
       {subPhase === 'witness' ? (
@@ -172,14 +166,8 @@ function PreRitualHoldView(props: PreRitualHoldViewProps): JSX.Element {
       className={`relative mx-auto max-w-3xl rounded-lg border border-illumination/30 bg-ground/80 p-6 text-veil shadow-glow-kether ${className ?? ''}`}
     >
       <header className="mb-4 text-center">
-        <h2 className="font-display text-3xl tracking-widest">
-          You stand at the Crown
-        </h2>
-        <p
-          role="status"
-          aria-live="polite"
-          className="mt-2 italic opacity-80"
-        >
+        <h2 className="font-display text-3xl tracking-widest">You stand at the Crown</h2>
+        <p role="status" aria-live="polite" className="mt-2 italic opacity-80">
           Waiting for the rest of the team to arrive.
         </p>
       </header>
@@ -209,10 +197,7 @@ function PreRitualHoldView(props: PreRitualHoldViewProps): JSX.Element {
             ))}
           </ul>
         </div>
-        <div
-          data-roster="climbing"
-          className="rounded border border-veil/30 bg-ground/40 p-3"
-        >
+        <div data-roster="climbing" className="rounded border border-veil/30 bg-ground/40 p-3">
           <h3 className="text-xs uppercase tracking-widest opacity-60">
             Still climbing ({stillClimbing.length})
           </h3>
@@ -231,9 +216,7 @@ function PreRitualHoldView(props: PreRitualHoldViewProps): JSX.Element {
                 >
                   <PlayerGlyph player={p} />
                   <span className="font-display tracking-widest">{p.name}</span>
-                  <span className="text-xs opacity-60">
-                    {sefirahByKey(p.position).englishName}
-                  </span>
+                  <span className="text-xs opacity-60">{sefirahByKey(p.position).englishName}</span>
                 </li>
               ))}
             </ul>
@@ -242,8 +225,8 @@ function PreRitualHoldView(props: PreRitualHoldViewProps): JSX.Element {
       </div>
 
       <p className="mt-6 text-center text-xs italic opacity-60">
-        Your hand is held; you cannot move, draw, or meditate. The
-        ritual begins when the last player arrives.
+        Your hand is held; you cannot move, draw, or meditate. The ritual begins when the last
+        player arrives.
       </p>
     </section>
   );
@@ -315,15 +298,11 @@ function WitnessPanel(props: WitnessPanelProps): JSX.Element {
               data-witness-seat={id}
               data-witness-active={isCurrent ? 'true' : 'false'}
               className={`flex items-center gap-2 rounded-full border px-3 py-1 ${
-                isCurrent
-                  ? 'border-illumination shadow-glow-kether'
-                  : 'border-veil/30'
+                isCurrent ? 'border-illumination shadow-glow-kether' : 'border-veil/30'
               }`}
             >
               <PlayerGlyph player={p} />
-              <span className="font-display text-sm tracking-widest">
-                {p.name}
-              </span>
+              <span className="font-display text-sm tracking-widest">{p.name}</span>
               <span className="text-xs opacity-60">
                 {queueLen} card{queueLen === 1 ? '' : 's'}
               </span>
@@ -359,10 +338,7 @@ function WitnessPanel(props: WitnessPanelProps): JSX.Element {
         scope leaves the multi-hand reveal to the renderer; we surface
         own-hand fully and leave others' counts visible without arcana.)
       */}
-      <div
-        data-witness-queue
-        className="rounded border border-illumination/30 bg-ground/40 p-4"
-      >
+      <div data-witness-queue className="rounded border border-illumination/30 bg-ground/40 p-4">
         <header className="mb-3 flex items-baseline justify-between">
           <h3 className="font-display tracking-widest">Your witness queue</h3>
           <span className="text-xs uppercase tracking-widest opacity-60">
@@ -428,9 +404,7 @@ function WitnessPanel(props: WitnessPanelProps): JSX.Element {
         aria-label="Witness ritual log"
         className="rounded border border-veil/20 bg-ground/40 p-4"
       >
-        <h3 className="text-xs uppercase tracking-widest opacity-60">
-          The chorus so far
-        </h3>
+        <h3 className="text-xs uppercase tracking-widest opacity-60">The chorus so far</h3>
         {witnessLog.length === 0 ? (
           <p className="mt-2 text-xs italic opacity-50">
             No voices yet. The first witness opens the ritual.
@@ -451,14 +425,10 @@ function WitnessPanel(props: WitnessPanelProps): JSX.Element {
                   {entry.kind === 'played' ? (
                     <>
                       <span className="opacity-60">spoke through</span>
-                      <span className="font-display">
-                        {arcanumByNumber(entry.arcanum).name}
-                      </span>
+                      <span className="font-display">{arcanumByNumber(entry.arcanum).name}</span>
                     </>
                   ) : (
-                    <span className="opacity-60 italic">
-                      passed (+1 Separation)
-                    </span>
+                    <span className="italic opacity-60">passed (+1 Separation)</span>
                   )}
                 </li>
               );
@@ -502,12 +472,7 @@ function ClosurePanel(props: ClosurePanelProps): JSX.Element {
 
   // Derive: which of MY sparks are staged?
   const myStaged = useMemo(
-    () =>
-      new Set(
-        stagedSparks
-          .filter((s) => s.playerId === player.id)
-          .map((s) => s.sefirah),
-      ),
+    () => new Set(stagedSparks.filter((s) => s.playerId === player.id).map((s) => s.sefirah)),
     [stagedSparks, player.id],
   );
 
@@ -528,28 +493,17 @@ function ClosurePanel(props: ClosurePanelProps): JSX.Element {
           <span data-closure-target>{target}</span>
         </p>
         <p className="mt-1 text-xs opacity-70">
-          Illumination after staged Sparks vs. target (Separation +
-          {' '}
-          {REQUIRED_ILLUMINATION_MARGIN}).
-          {' '}
+          Illumination after staged Sparks vs. target (Separation + {REQUIRED_ILLUMINATION_MARGIN}).{' '}
           {wouldClear ? (
-            <span
-              data-closure-gap-status="closed"
-              className="text-illumination"
-            >
+            <span data-closure-gap-status="closed" className="text-illumination">
               Threshold cleared.
             </span>
           ) : (
-            <span data-closure-gap-status="open">
-              {projectedGap} more needed.
-            </span>
+            <span data-closure-gap-status="open">{projectedGap} more needed.</span>
           )}
         </p>
         {stagedCount > 0 ? (
-          <p
-            data-closure-staged-count
-            className="mt-1 text-xs italic opacity-60"
-          >
+          <p data-closure-staged-count className="mt-1 text-xs italic opacity-60">
             {stagedCount} Spark{stagedCount === 1 ? '' : 's'} staged.
           </p>
         ) : null}
@@ -583,19 +537,14 @@ function ClosurePanel(props: ClosurePanelProps): JSX.Element {
                 </span>
               </header>
               {sparks.length === 0 ? (
-                <p className="mt-2 text-xs italic opacity-50">
-                  No Sparks held.
-                </p>
+                <p className="mt-2 text-xs italic opacity-50">No Sparks held.</p>
               ) : (
                 <ul role="list" className="mt-2 flex flex-wrap gap-2">
                   {sparks.map((sefirah) => {
                     const staged =
                       isMe && myStaged.has(sefirah)
                         ? true
-                        : stagedSparks.some(
-                            (s) =>
-                              s.playerId === p.id && s.sefirah === sefirah,
-                          );
+                        : stagedSparks.some((s) => s.playerId === p.id && s.sefirah === sefirah);
                     const sefirahData = sefirahByKey(sefirah);
                     return (
                       <li key={sefirah}>
@@ -612,9 +561,7 @@ function ClosurePanel(props: ClosurePanelProps): JSX.Element {
                           disabled={closureLocked || (!isMe && !staged)}
                           aria-pressed={staged}
                           data-action={
-                            staged
-                              ? 'kether-close-unstage-spark'
-                              : 'kether-close-stage-spark'
+                            staged ? 'kether-close-unstage-spark' : 'kether-close-stage-spark'
                           }
                           data-spark-player={p.id}
                           data-spark-sefirah={sefirah}
@@ -626,9 +573,7 @@ function ClosurePanel(props: ClosurePanelProps): JSX.Element {
                           }`}
                         >
                           {staged ? 'Staged: ' : 'Stage '}
-                          {sefirahData.englishName}
-                          {' '}
-                          {staged ? '(+1)' : ''}
+                          {sefirahData.englishName} {staged ? '(+1)' : ''}
                         </button>
                       </li>
                     );

@@ -175,8 +175,7 @@ export const lobby: TrackManifest = {
     // region drone-only (matches the head exactly), forbid bells
     // whose audible tail reaches into [W+N-M, W+N).
     const BELL_TAIL_SEC = 5 * 3 + 4;
-    const latestBellSec =
-      WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - BELL_TAIL_SEC; // = 105 s
+    const latestBellSec = WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - BELL_TAIL_SEC; // = 105 s
 
     type BellEvent = {
       startSample: number;
@@ -215,10 +214,7 @@ export const lobby: TrackManifest = {
         sr,
       );
       // Render until the envelope is inaudible (~ 5 time constants).
-      const bellSamples = Math.min(
-        totalSamples - ev.startSample,
-        Math.floor(sr * ev.decaySec * 5),
-      );
+      const bellSamples = Math.min(totalSamples - ev.startSample, Math.floor(sr * ev.decaySec * 5));
       for (let i = 0; i < bellSamples; i++) {
         const s = bell() * bellGain;
         const { left: l, right: r } = pan(s, ev.panPos);
@@ -271,14 +267,10 @@ export const lobby: TrackManifest = {
         const harm = sineOsc(noteFreq * 3, sr);
         const shimmer = sineOsc(noteFreq * 1.001, sr);
         const env = expDecay(melodyDecaySec, sr);
-        const renderLen = Math.min(
-          totalSamples - cursor,
-          Math.floor(sr * melodyDecaySec * 5),
-        );
+        const renderLen = Math.min(totalSamples - cursor, Math.floor(sr * melodyDecaySec * 5));
         for (let i = 0; i < renderLen; i++) {
           const e = env();
-          const v =
-            (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melodyGain;
+          const v = (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melodyGain;
           bellLeft[cursor + i]! += v * 0.85;
           bellRight[cursor + i]! += v * 0.85;
         }

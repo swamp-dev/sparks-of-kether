@@ -24,18 +24,14 @@ test('Codex: index links to Tiferet detail page with expected content', async ({
 
   // Land on the Sefirah detail page.
   await page.waitForURL('**/sefirah/tiferet');
-  await expect(
-    page.getByRole('heading', { level: 1, name: /^beauty$/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /^beauty$/i })).toBeVisible();
 
   // Spot-check expected symbolic content.
   await expect(page.getByText(/know yourself/i)).toBeVisible();
   await expect(page.getByText(/sun/i).first()).toBeVisible();
   // Strict-mode-safe: match the heading specifically (the descriptive
   // paragraph below it ALSO contains "Vanity — the Tiferet Soul …").
-  await expect(
-    page.getByRole('heading', { name: /shell of beauty — vanity/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /shell of beauty — vanity/i })).toBeVisible();
 
   // Hebrew element with proper lang/dir.
   const hebrew = page.locator('[lang="he"][dir="rtl"]').first();
@@ -46,9 +42,7 @@ test('Codex: Path 22 detail links back to Justice arcanum and both endpoint Sefi
   page,
 }) => {
   await page.goto('/path/22');
-  await expect(
-    page.getByRole('heading', { level: 1, name: /path 22/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /path 22/i })).toBeVisible();
 
   // Path 22 (Lamed) walks Justice (arcanum 11), connecting Gevurah
   // and Tiferet.

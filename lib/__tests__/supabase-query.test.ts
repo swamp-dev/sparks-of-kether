@@ -43,8 +43,6 @@ describe('query', () => {
     for (const t of tableNames) query(client, t);
     expect(fromSpy).toHaveBeenCalledTimes(tableNames.length);
     // Spot-check first + last to confirm passthrough, not order.
-    expect(fromSpy.mock.calls.flat()).toEqual(
-      expect.arrayContaining(tableNames),
-    );
+    expect(fromSpy.mock.calls.flat()).toEqual(expect.arrayContaining(tableNames));
   });
 });

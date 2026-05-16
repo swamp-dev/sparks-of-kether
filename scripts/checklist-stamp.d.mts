@@ -53,9 +53,7 @@ export interface HookPayload {
   };
 }
 
-export type VerifyResult =
-  | { ok: true }
-  | { ok: false; reason: string };
+export type VerifyResult = { ok: true } | { ok: false; reason: string };
 
 /**
  * Sanity-check the payload looks like a real harness hook fire.

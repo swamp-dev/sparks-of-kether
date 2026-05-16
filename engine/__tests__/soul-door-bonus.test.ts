@@ -1,19 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import {
-  soulDoorDcDelta,
-  SOUL_DOOR_DC_DELTA,
-} from '../soul-door-bonus';
+import { soulDoorDcDelta, SOUL_DOOR_DC_DELTA } from '../soul-door-bonus';
 import { soulDoorsForSign, type SefirahKey, type ZodiacSignKey } from '@/data';
 
 const ALL_SIGNS: readonly ZodiacSignKey[] = [
-  'aries',       'taurus',      'gemini',      'cancer',
-  'leo',         'virgo',       'libra',       'scorpio',
-  'sagittarius', 'capricorn',   'aquarius',    'pisces',
+  'aries',
+  'taurus',
+  'gemini',
+  'cancer',
+  'leo',
+  'virgo',
+  'libra',
+  'scorpio',
+  'sagittarius',
+  'capricorn',
+  'aquarius',
+  'pisces',
 ];
 
 const ALL_SEFIROT: readonly SefirahKey[] = [
-  'kether', 'chokmah', 'binah', 'chesed', 'gevurah',
-  'tiferet', 'netzach', 'hod', 'yesod', 'malkuth',
+  'kether',
+  'chokmah',
+  'binah',
+  'chesed',
+  'gevurah',
+  'tiferet',
+  'netzach',
+  'hod',
+  'yesod',
+  'malkuth',
 ];
 
 describe('SOUL_DOOR_DC_DELTA', () => {
@@ -27,7 +41,7 @@ describe('SOUL_DOOR_DC_DELTA', () => {
 });
 
 describe('soulDoorDcDelta', () => {
-  it('returns -2 when the Sefirah is one of the class\'s Doors', () => {
+  it("returns -2 when the Sefirah is one of the class's Doors", () => {
     // Spot checks across a range of signs and Door pairs.
     expect(soulDoorDcDelta('aries', 'chokmah')).toBe(-2);
     expect(soulDoorDcDelta('aries', 'tiferet')).toBe(-2);
@@ -38,7 +52,7 @@ describe('soulDoorDcDelta', () => {
     expect(soulDoorDcDelta('pisces', 'netzach')).toBe(-2);
   });
 
-  it('returns 0 when the Sefirah is not one of the class\'s Doors', () => {
+  it("returns 0 when the Sefirah is not one of the class's Doors", () => {
     expect(soulDoorDcDelta('aries', 'hod')).toBe(0);
     expect(soulDoorDcDelta('aries', 'yesod')).toBe(0);
     expect(soulDoorDcDelta('libra', 'binah')).toBe(0);
@@ -49,9 +63,7 @@ describe('soulDoorDcDelta', () => {
   // The Moon's other endpoint is Malkuth and Malkuth has no Challenge.
   // Verify exhaustively that Pisces gets -2 only at Netzach.
   it.each(ALL_SEFIROT)('Pisces at %s — only Netzach is a Door', (sefirah) => {
-    expect(soulDoorDcDelta('pisces', sefirah)).toBe(
-      sefirah === 'netzach' ? -2 : 0,
-    );
+    expect(soulDoorDcDelta('pisces', sefirah)).toBe(sefirah === 'netzach' ? -2 : 0);
   });
 
   // Tiferet is the busiest Door — 7 of the 12 classes have it (Aries,
@@ -65,9 +77,7 @@ describe('soulDoorDcDelta', () => {
   // Hod is the loneliest Door — only Capricorn (via The Devil, path 26)
   // has it. Inverse of Tiferet's check.
   it.each(ALL_SIGNS)('%s at Hod — only Capricorn is a Door', (sign) => {
-    expect(soulDoorDcDelta(sign, 'hod')).toBe(
-      sign === 'capricorn' ? -2 : 0,
-    );
+    expect(soulDoorDcDelta(sign, 'hod')).toBe(sign === 'capricorn' ? -2 : 0);
   });
 
   // Malkuth has no Challenge; no class has it as a Door (per Door
@@ -90,10 +100,7 @@ describe('soulDoorDcDelta', () => {
     const doors = soulDoorsForSign(sign);
     for (const sefirah of ALL_SEFIROT) {
       const expected = doors.includes(sefirah) ? -2 : 0;
-      expect(
-        soulDoorDcDelta(sign, sefirah),
-        `${sign} at ${sefirah}`,
-      ).toBe(expected);
+      expect(soulDoorDcDelta(sign, sefirah), `${sign} at ${sefirah}`).toBe(expected);
     }
   });
 

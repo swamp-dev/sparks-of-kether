@@ -16,15 +16,11 @@ describe('GlyphWash', () => {
 
   it('renders multiple copies of the letter at decreasing opacities', () => {
     const { container } = render(<GlyphWash letter="ב" />);
-    const glyphs = container.querySelectorAll(
-      '[data-atmosphere="glyph-wash"] > span',
-    );
+    const glyphs = container.querySelectorAll('[data-atmosphere="glyph-wash"] > span');
     expect(glyphs.length).toBeGreaterThanOrEqual(5);
     for (const glyph of glyphs) {
       expect(glyph.textContent).toBe('ב');
-      const op = parseFloat(
-        (glyph as HTMLElement).style.opacity || '1',
-      );
+      const op = parseFloat((glyph as HTMLElement).style.opacity || '1');
       // Decorative; every glyph must read as texture, not text.
       expect(op).toBeLessThanOrEqual(0.1);
       expect(op).toBeGreaterThan(0);

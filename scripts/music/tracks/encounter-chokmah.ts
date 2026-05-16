@@ -48,7 +48,7 @@ export const encounterChokmah = buildEncounterTrack({
     jitterSec: 1.5,
     panRange: 0.7, // wide
     decaySec: 0.4, // very short — strike, not bell
-    gain: 0.30,
+    gain: 0.3,
     tailSafetySec: 4,
     fmModRatio: 2,
     fmModIndex: 4,

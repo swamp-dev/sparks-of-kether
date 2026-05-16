@@ -53,15 +53,9 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
     expect(result.ok).toBe(true);
 
     const svc = getServiceClient();
-    const players = await svc
-      .from('players')
-      .select('id, zodiac_sign')
-      .eq('id', playerId)
-      .single();
+    const players = await svc.from('players').select('id, zodiac_sign').eq('id', playerId).single();
     expect(players.error).toBeNull();
-    expect((players.data as { zodiac_sign: string | null }).zodiac_sign).toBe(
-      'aries',
-    );
+    expect((players.data as { zodiac_sign: string | null }).zodiac_sign).toBe('aries');
   });
 
   it('lets the caller toggle their own ready flag', async () => {
@@ -78,11 +72,7 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
     expect(r1.ok).toBe(true);
 
     const svc = getServiceClient();
-    const after = await svc
-      .from('players')
-      .select('ready')
-      .eq('id', playerId)
-      .single();
+    const after = await svc.from('players').select('ready').eq('id', playerId).single();
     expect((after.data as { ready: boolean }).ready).toBe(true);
   });
 
@@ -131,9 +121,7 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
       .eq('id', guest.userId)
       .single();
     // Original pick survives.
-    expect((guestRow.data as { zodiac_sign: string | null }).zodiac_sign).toBe(
-      'leo',
-    );
+    expect((guestRow.data as { zodiac_sign: string | null }).zodiac_sign).toBe('leo');
   });
 
   it('the supabase_realtime publication includes `players`', async () => {
@@ -170,9 +158,7 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
         `publication_tables RPC missing — add the helper in a follow-up migration. error: ${pub.error.message}`,
       );
     }
-    const tables = (pub.data as { tablename: string }[]).map(
-      (r) => r.tablename,
-    );
+    const tables = (pub.data as { tablename: string }[]).map((r) => r.tablename);
     expect(tables).toContain('players');
     expect(tables).toContain('game_states');
   });

@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { SoundSettingsProvider, MUSIC_ENABLED_STORAGE_KEY, useSoundEnabled } from '@/lib/sound/settings';
+import {
+  SoundSettingsProvider,
+  MUSIC_ENABLED_STORAGE_KEY,
+  useSoundEnabled,
+} from '@/lib/sound/settings';
 import { useMusic } from '../useMusic';
 
 /**
@@ -146,11 +150,13 @@ describe('useMusic', () => {
   });
 
   it('pauses the old track and starts the new one when the track changes', () => {
-    interface Props { track: Parameters<typeof useMusic>[0] }
-    const { rerender } = renderHook(
-      ({ track }: Props) => useMusic(track),
-      { wrapper: withSound(true), initialProps: { track: 'lobby' } as Props },
-    );
+    interface Props {
+      track: Parameters<typeof useMusic>[0];
+    }
+    const { rerender } = renderHook(({ track }: Props) => useMusic(track), {
+      wrapper: withSound(true),
+      initialProps: { track: 'lobby' } as Props,
+    });
 
     const lobbyInstance = audioInstances.find((a) => a.src.includes('lobby'));
     expect(lobbyInstance?.play).toHaveBeenCalled();

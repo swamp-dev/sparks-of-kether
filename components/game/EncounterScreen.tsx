@@ -12,10 +12,7 @@ import { usePantheon } from '@/lib/settings/pantheon';
 // imports. B3 (#553) ships Egyptian verdicts and B5 (#555) ships
 // Egyptian framing — those tickets are the natural moment to revisit
 // where the picker functions live.
-import {
-  pickPlayerResponse,
-  pickVerdict,
-} from '@/data/pantheons/greco-roman/verdicts';
+import { pickPlayerResponse, pickVerdict } from '@/data/pantheons/greco-roman/verdicts';
 import { pickFraming } from '@/data/pantheons/greco-roman/framing';
 import { sefirahTwist } from '@/data/sefirah-twists';
 import {
@@ -29,10 +26,7 @@ import {
 import type { Rng } from '@/engine/rng';
 import type { PlayerState } from '@/engine/types';
 import { StatSheet } from '@/components/player/StatSheet';
-import type {
-  ChallengeContext,
-  ChallengeResolution,
-} from '@/lib/challenge-types';
+import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
@@ -143,9 +137,7 @@ interface EncounterScreenMultiplayerProps extends EncounterScreenCommonProps {
   readonly player: PlayerState;
 }
 
-export type EncounterScreenProps =
-  | EncounterScreenHotSeatProps
-  | EncounterScreenMultiplayerProps;
+export type EncounterScreenProps = EncounterScreenHotSeatProps | EncounterScreenMultiplayerProps;
 
 /**
  * Local UI sub-phase. Lags the engine's `challengeSubPhase` by one
@@ -170,15 +162,7 @@ const REDUCED_MOTION_RESOLVE_MS = 50;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
-  const {
-    context,
-    rng,
-    mode,
-    turn,
-    onResolved,
-    onCancel,
-    className,
-  } = props;
+  const { context, rng, mode, turn, onResolved, onCancel, className } = props;
   // `player` is optional in hot-seat, required in multiplayer. After
   // narrowing on `mode` TS would track this — but the consumers below
   // (card-burn / spark-burn synthesisers; embedded StatSheet render)
@@ -187,10 +171,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // undefined.
   const player: PlayerState | undefined = props.player;
   const { pantheon } = usePantheon();
-  const sefirahData = useMemo(
-    () => sefirahByKey(context.sefirah),
-    [context.sefirah],
-  );
+  const sefirahData = useMemo(() => sefirahByKey(context.sefirah), [context.sefirah]);
   // Malkuth (no-check) and Kether (collective) don't run a standard
   // d20 challenge. Mirrors the loud-fail in `ChallengeModal` rather
   // than silently rendering DC 0.
@@ -205,19 +186,14 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // committed outcome we're animating, and a one-tick `animatingResolve`
   // flag that lags the engine's instant `prep → react` jump just long
   // enough for the d20 spin to play.
-  const [stagedAssistIds, setStagedAssistIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
+  const [stagedAssistIds, setStagedAssistIds] = useState<ReadonlySet<string>>(() => new Set());
   const [stagedCardBurns, setStagedCardBurns] = useState(0);
   const [stagedSparkBurns, setStagedSparkBurns] = useState(0);
   // Shaped exactly like ChallengeModal's `outcome`/`committedModifiers`
   // pair so the resolve / react sub-states have both the d20 face and
   // the modifier breakdown.
-  const [resolvedOutcome, setResolvedOutcome] = useState<CheckOutcome | null>(
-    null,
-  );
-  const [committedModifiers, setCommittedModifiers] =
-    useState<CheckModifiers | null>(null);
+  const [resolvedOutcome, setResolvedOutcome] = useState<CheckOutcome | null>(null);
+  const [committedModifiers, setCommittedModifiers] = useState<CheckModifiers | null>(null);
   /**
    * Animation lag flag. The engine sets `challengeSubPhase: 'react'`
    * synchronously inside `prep-confirm`, but visually we want the
@@ -257,12 +233,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // re-pick the player line — see the useEffect below.)
   const [playerResponse] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
-    return pickPlayerResponse(
-      pantheon.sefirahPlayerResponses,
-      avatarKey,
-      context.playerSign,
-      rng,
-    );
+    return pickPlayerResponse(pantheon.sefirahPlayerResponses, avatarKey, context.playerSign, rng);
   });
   // Trial-framing line for the prep stage (#478). Picked ONCE per
   // encounter via the same lazy-initializer pattern as
@@ -281,12 +252,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // rebase the seeds in that file too.
   const [pickedFraming] = useState<string | undefined>(() => {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
-    return pickFraming(
-      pantheon.sefirahFraming,
-      avatarKey,
-      context.playerSign,
-      rng,
-    );
+    return pickFraming(pantheon.sefirahFraming, avatarKey, context.playerSign, rng);
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
   // #482 framing-complete signal. Flips to `true` when `RevealLine`
@@ -308,9 +274,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // Using `useEffect` keyed on `challengeSubPhase` avoids the bug
   // where a stale-prop transition (`challengeSubPhase: 'prep'` while
   // we're animating resolve) trampled the in-flight uiPhase.
-  const prevSubPhaseRef = useRef<typeof turn.challengeSubPhase>(
-    turn.challengeSubPhase,
-  );
+  const prevSubPhaseRef = useRef<typeof turn.challengeSubPhase>(turn.challengeSubPhase);
   useEffect(() => {
     const prev = prevSubPhaseRef.current;
     prevSubPhaseRef.current = turn.challengeSubPhase;
@@ -398,17 +362,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;
-    return (
-      baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta
-    );
+    return baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta;
   }, [baseDC, context.shortcut, context.soulDoorDelta]);
   const soulDoorDelta = context.soulDoorDelta ?? 0;
   const showSoulDoor = soulDoorDelta < 0;
 
-  const allies = useMemo(
-    () => context.availableAllies ?? [],
-    [context.availableAllies],
-  );
+  const allies = useMemo(() => context.availableAllies ?? [], [context.availableAllies]);
   const maxCardBurns = context.availableCardBurns ?? 0;
   const maxSparkBurns = context.availableSparkBurns ?? 0;
 
@@ -417,10 +376,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // Surfaces "X cards burned, +Y modifier" so the player sees they're
   // stacking. On the initial encounter the engine's pending is empty
   // and this is just `stagedCardBurns`.
-  const cumulativeCardBurns =
-    (turn.pendingModifiers?.cardBurns.length ?? 0) + stagedCardBurns;
-  const cumulativeSparkBurns =
-    (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
+  const cumulativeCardBurns = (turn.pendingModifiers?.cardBurns.length ?? 0) + stagedCardBurns;
+  const cumulativeSparkBurns = (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
   const isRetry = (turn.pendingModifiers?.cardBurns.length ?? 0) > 0;
 
   const assistTotal = useMemo(() => {
@@ -536,9 +493,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
 
   const doRoll = (): void => {
     const modifiers: CheckModifiers = {
-      assistStats: allies
-        .filter((a) => stagedAssistIds.has(a.id))
-        .map((a) => a.stat),
+      assistStats: allies.filter((a) => stagedAssistIds.has(a.id)).map((a) => a.stat),
       // Use cumulative counts so a retry stacks. Engine validates at
       // confirm time and drops anything that no longer applies.
       cardBurns: cumulativeCardBurns,
@@ -591,11 +546,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // they aren't stuck on a static "Rolling…" screen with no visible
     // animation. Mirrors `D20Roll`'s no-animation branch.
     const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.(REDUCED_MOTION_QUERY).matches === true;
-    const delayMs = reduceMotion
-      ? REDUCED_MOTION_RESOLVE_MS
-      : RESOLVE_ANIMATION_MS;
+      typeof window !== 'undefined' && window.matchMedia?.(REDUCED_MOTION_QUERY).matches === true;
+    const delayMs = reduceMotion ? REDUCED_MOTION_RESOLVE_MS : RESOLVE_ANIMATION_MS;
     if (resolveTimerRef.current !== null) {
       clearTimeout(resolveTimerRef.current);
     }
@@ -649,9 +601,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const handleContinue = (): void => {
     if (resolvedOutcome === null || committedModifiers === null) return;
     if (!resolvedOutcome.pass) {
-      throw new Error(
-        'EncounterScreen.handleContinue: invoked on a failed outcome',
-      );
+      throw new Error('EncounterScreen.handleContinue: invoked on a failed outcome');
     }
     onResolvedRef.current({
       pass: true,
@@ -711,11 +661,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
         ? verdictLine
         : undefined;
   const avatarState: 'prep' | 'pass' | 'fail' =
-    uiSubPhase === 'prep'
-      ? 'prep'
-      : resolvedOutcome?.pass === true
-        ? 'pass'
-        : 'fail';
+    uiSubPhase === 'prep' ? 'prep' : resolvedOutcome?.pass === true ? 'pass' : 'fail';
   const avatarNameLabel =
     avatarHasCopy && avatarKey in pantheon.avatarNames
       ? pantheon.avatarNames[avatarKey].primary
@@ -728,8 +674,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // tests). Kether/Malkuth are already ruled out by the
   // `challenge.kind === 'check'` guard at mount time, so the
   // narrowed `avatarKey` lookup is total.
-  const framingLine =
-    pickedFraming ?? pantheon.sefirahFramingPlaceholder[avatarKey];
+  const framingLine = pickedFraming ?? pantheon.sefirahFramingPlaceholder[avatarKey];
 
   // "Twist" banner — only Sefirot with shipped per-Sefirah mechanics
   // (#353 Hod Word-Match, #354 Yesod Dream-Peek) get a banner today.
@@ -776,9 +721,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             size="small"
             pose={pose}
             reducedMotion={reducedMotion}
-            {...(avatarNameLabel !== undefined
-              ? { avatarName: avatarNameLabel }
-              : {})}
+            {...(avatarNameLabel !== undefined ? { avatarName: avatarNameLabel } : {})}
             {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
           />
         ) : null}
@@ -833,11 +776,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
 
       {player ? (
         <div className="mt-3 rounded border border-veil/15 bg-ground/60 p-2">
-          <StatSheet
-            player={player}
-            mode="compact"
-            activeStat={sefirahData.stat}
-          />
+          <StatSheet player={player} mode="compact" activeStat={sefirahData.stat} />
         </div>
       ) : null}
 
@@ -882,12 +821,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
               size="stage"
               pose={pose}
               reducedMotion={reducedMotion}
-              {...(avatarNameLabel !== undefined
-                ? { avatarName: avatarNameLabel }
-                : {})}
-              {...(avatarCaption !== undefined
-                ? { caption: avatarCaption }
-                : {})}
+              {...(avatarNameLabel !== undefined ? { avatarName: avatarNameLabel } : {})}
+              {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
             />
             <p
               data-encounter-framing
@@ -904,9 +839,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
                 data-encounter-twist
                 className={`rounded border px-3 py-1 text-center text-sm ${frameTokens.frameBorder}`}
               >
-                <span className="mr-2 uppercase tracking-widest opacity-60">
-                  Twist
-                </span>
+                <span className="mr-2 uppercase tracking-widest opacity-60">Twist</span>
                 {twistLine}
               </p>
             ) : null}
@@ -964,10 +897,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       ) : null}
 
       {uiSubPhase === 'resolve' && resolvedOutcome !== null ? (
-        <ResolvePanel
-          outcome={resolvedOutcome}
-          glowClass={frameTokens.buttonGlow}
-        />
+        <ResolvePanel outcome={resolvedOutcome} glowClass={frameTokens.buttonGlow} />
       ) : null}
 
       {uiSubPhase === 'react' && resolvedOutcome !== null ? (
@@ -978,9 +908,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           onAccept={handleAccept}
           reducedMotion={reducedMotion}
           glowClass={frameTokens.buttonGlow}
-          {...(avatarHasCopy
-            ? { avatarName: pantheon.avatarNames[avatarKey].primary }
-            : {})}
+          {...(avatarHasCopy ? { avatarName: pantheon.avatarNames[avatarKey].primary } : {})}
           {...(verdictLine !== undefined ? { verdictLine } : {})}
         />
       ) : null}
@@ -1054,8 +982,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
           className="rounded border border-veil/20 bg-veil/5 px-3 py-1 text-xs opacity-80"
         >
           {cumulativeCardBurns} cards burned, +
-          {cumulativeCardBurns * CARD_BURN_BONUS +
-            cumulativeSparkBurns * SPARK_BURN_BONUS}
+          {cumulativeCardBurns * CARD_BURN_BONUS + cumulativeSparkBurns * SPARK_BURN_BONUS}
           {' modifier'}
         </p>
       ) : null}
@@ -1076,11 +1003,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
                     checked ? 'ring-illumination' : 'ring-veil/20'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleAssist(ally.id)}
-                  />
+                  <input type="checkbox" checked={checked} onChange={() => toggleAssist(ally.id)} />
                   {ally.name} (+{Math.floor(ally.stat / 2)})
                   {mode === 'multiplayer' && checked ? (
                     // Multiplayer: surface the offering state so allies
@@ -1146,13 +1069,7 @@ interface StepperProps {
   readonly onChange: (n: number) => void;
 }
 
-function Stepper({
-  kind,
-  label,
-  value,
-  max,
-  onChange,
-}: StepperProps): JSX.Element {
+function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Element {
   const dec = (): void => onChange(Math.max(0, value - 1));
   const inc = (): void => onChange(Math.min(max, value + 1));
   return (
@@ -1168,10 +1085,7 @@ function Stepper({
         >
           −
         </button>
-        <span
-          data-stepper-value={kind}
-          className="w-6 text-center font-display tabular-nums"
-        >
+        <span data-stepper-value={kind} className="w-6 text-center font-display tabular-nums">
           {value}
         </span>
         <button
@@ -1196,10 +1110,7 @@ interface ResolvePanelProps {
 
 function ResolvePanel({ outcome, glowClass }: ResolvePanelProps): JSX.Element {
   return (
-    <div
-      className="mt-6 flex flex-col items-center gap-3"
-      data-encounter-resolve
-    >
+    <div className="mt-6 flex flex-col items-center gap-3" data-encounter-resolve>
       <D20Button
         state="rolling"
         value={outcome.rolled}
@@ -1227,20 +1138,13 @@ function ResolvePanel({ outcome, glowClass }: ResolvePanelProps): JSX.Element {
 
 function ModifierStack({ outcome }: { outcome: CheckOutcome }): JSX.Element {
   return (
-    <ul
-      data-modifier-stack
-      className="mt-1 flex flex-wrap justify-center gap-2 text-xs opacity-80"
-    >
+    <ul data-modifier-stack className="mt-1 flex flex-wrap justify-center gap-2 text-xs opacity-80">
       <li data-stack-item="stat">+{outcome.statContribution} stat</li>
       {outcome.modifierBreakdown.cardBurn > 0 ? (
-        <li data-stack-item="card-burn">
-          +{outcome.modifierBreakdown.cardBurn} cards
-        </li>
+        <li data-stack-item="card-burn">+{outcome.modifierBreakdown.cardBurn} cards</li>
       ) : null}
       {outcome.modifierBreakdown.sparkBurn > 0 ? (
-        <li data-stack-item="spark-burn">
-          +{outcome.modifierBreakdown.sparkBurn} spark
-        </li>
+        <li data-stack-item="spark-burn">+{outcome.modifierBreakdown.sparkBurn} spark</li>
       ) : null}
       {outcome.modifierBreakdown.assist > 0 ? (
         <li data-stack-item="assist">+{outcome.modifierBreakdown.assist} ally</li>
@@ -1284,10 +1188,7 @@ function ReactPanel({
   verdictLine,
 }: ReactPanelProps): JSX.Element {
   return (
-    <div
-      className="mt-6 flex flex-col items-center gap-3"
-      data-encounter-react
-    >
+    <div className="mt-6 flex flex-col items-center gap-3" data-encounter-react>
       <D20Button
         state="settled"
         value={outcome.rolled}
@@ -1309,9 +1210,7 @@ function ReactPanel({
             outcome.modifierBreakdown.sparkBurn}{' '}
           = <span data-total>{outcome.total}</span> vs {outcome.effectiveDC}
         </span>
-        <p className="mt-1 text-sm opacity-80">
-          {outcome.pass ? 'Pass' : 'Fail'}
-        </p>
+        <p className="mt-1 text-sm opacity-80">{outcome.pass ? 'Pass' : 'Fail'}</p>
       </div>
       <VerdictReveal
         outcome={outcome}

@@ -54,9 +54,8 @@ const channelHandlers = new Map<
 >();
 // Legacy alias: `channelHandler` points to the players channel handler for
 // backward-compatible test assertions.
-let channelHandler:
-  | ((payload: { eventType: string; new: unknown; old: unknown }) => void)
-  | null = null;
+let channelHandler: ((payload: { eventType: string; new: unknown; old: unknown }) => void) | null =
+  null;
 let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 
 function makeFakeChannel(channelName: string): FakeChannel {
@@ -65,11 +64,7 @@ function makeFakeChannel(channelName: string): FakeChannel {
       this: FakeChannel,
       _event: string,
       _filter: unknown,
-      handler: (payload: {
-        eventType: string;
-        new: unknown;
-        old: unknown;
-      }) => void,
+      handler: (payload: { eventType: string; new: unknown; old: unknown }) => void,
     ) {
       channelHandlers.set(channelName, handler);
       // Keep legacy alias pointed at the players channel.
@@ -78,10 +73,7 @@ function makeFakeChannel(channelName: string): FakeChannel {
       }
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb?: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb?: (status: string) => void) {
       if (cb !== undefined) {
         setTimeout(() => cb(channelSubscribeStatus), 0);
       }
@@ -426,11 +418,9 @@ describe('useLobby', () => {
     // The lobby_room CHANNEL_ERROR also clears room so the play page
     // renders the error UI rather than a ghost state with stale room.state.
     channelSubscribeStatus = 'CHANNEL_ERROR';
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* swallow during this test */
-      });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* swallow during this test */
+    });
     const { result } = renderHook(() => useLobby('ABCDEF'));
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);

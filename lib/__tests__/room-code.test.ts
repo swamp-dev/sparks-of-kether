@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ROOM_CODE_LENGTH,
-  generateRoomCode,
-  normalizeRoomCode,
-} from '../room-code';
+import { ROOM_CODE_LENGTH, generateRoomCode, normalizeRoomCode } from '../room-code';
 
 describe('generateRoomCode', () => {
   it('returns a 6-character string', () => {
