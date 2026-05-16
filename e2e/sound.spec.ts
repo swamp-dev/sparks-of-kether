@@ -1,14 +1,16 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * e2e for the sound design system (#321).
+ * e2e for the sound design system (#321, #76).
  *
  * Pins the structural contract:
  *   - The settings cog button is reachable on `/play`.
- *   - The popover opens, exposes the Sound switch + reduced-motion
- *     status, and closes via Esc.
- *   - The Sound toggle persists to `localStorage` under the agreed
- *     key so a reload preserves the user's choice.
+ *   - The popover opens, exposes two separate switches — "Sound
+ *     effects" (default ON) and "Music" (default OFF) — plus the
+ *     reduced-motion status row, and closes via Esc.
+ *   - Both toggles persist to `localStorage` under the agreed keys
+ *     (`sok.sfxEnabled` / `sok.musicEnabled`) so a reload preserves
+ *     the user's choice.
  *
  * Driving an actual audio playback through Playwright is brittle —
  * autoplay policy, decoded-buffer state, browser-specific timing —
@@ -23,7 +25,7 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
-test('settings cog opens, toggles sound, persists to localStorage, closes via Esc', async ({
+test('settings cog opens, toggles SFX + Music independently, persists to localStorage, closes via Esc', async ({
   page,
 }) => {
   // Walk the standard hot-seat onboarding so we land on the play
@@ -78,21 +80,28 @@ test('settings cog opens, toggles sound, persists to localStorage, closes via Es
   await expect(cog).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // Open. Switch is OFF (the design default — auto-playing audio is
-  // a UX trap; opt-in only).
+  // Open. SFX is ON by default (gesture-gated audio); Music is OFF
+  // (ambient auto-play is hostile by default).
   await cog.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  const soundSwitch = dialog.getByRole('switch', { name: /toggle sound/i });
-  await expect(soundSwitch).toHaveAttribute('aria-checked', 'false');
 
-  // Toggle ON.
-  await soundSwitch.click();
-  await expect(soundSwitch).toHaveAttribute('aria-checked', 'true');
+  const sfxSwitch = dialog.getByRole('switch', { name: /sound effects/i });
+  const musicSwitch = dialog.getByRole('switch', { name: /music/i });
+  await expect(sfxSwitch).toHaveAttribute('aria-checked', 'true');
+  await expect(musicSwitch).toHaveAttribute('aria-checked', 'false');
 
-  // localStorage persisted under the agreed key.
-  const stored = await page.evaluate(() => window.localStorage.getItem('sok.soundEnabled'));
-  expect(stored).toBe('true');
+  // Toggle SFX OFF, Music ON.
+  await sfxSwitch.click();
+  await expect(sfxSwitch).toHaveAttribute('aria-checked', 'false');
+  await musicSwitch.click();
+  await expect(musicSwitch).toHaveAttribute('aria-checked', 'true');
+
+  // Both persist to localStorage under the new keys (#76).
+  const sfxStored = await page.evaluate(() => window.localStorage.getItem('sok.sfxEnabled'));
+  const musicStored = await page.evaluate(() => window.localStorage.getItem('sok.musicEnabled'));
+  expect(sfxStored).toBe('false');
+  expect(musicStored).toBe('true');
 
   // Reduced motion is read-only and reflects the system setting
   // (Playwright's default browser reports prefers-reduced-motion:

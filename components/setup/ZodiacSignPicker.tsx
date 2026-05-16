@@ -382,7 +382,7 @@ export function ZodiacSignPicker({
         </button>
       </div>
 
-      <div className="mt-6 flex shrink-0 justify-center">
+      <div className="sticky bottom-0 z-10 mt-6 flex shrink-0 justify-center bg-ground/90 py-4 backdrop-blur-sm">
         <button
           type="button"
           onClick={handleConfirm}
