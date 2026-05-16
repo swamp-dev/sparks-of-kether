@@ -122,9 +122,9 @@ export function AvatarPortrait({
   // settles before idle motion begins (#22 AC: entrance plays first).
   const contentIdleClass =
     idleMotion === 'jitter'
-      ? 'motion-safe:animate-idle-jitter [animation-delay:600ms]'
+      ? 'motion-safe:animate-idle-jitter motion-safe:[animation-delay:600ms]'
       : idleMotion === 'drift'
-        ? 'motion-safe:animate-idle-drift [animation-delay:600ms]'
+        ? 'motion-safe:animate-idle-drift motion-safe:[animation-delay:600ms]'
         : '';
 
   // Frame size: small disc vs stage oval. The stage oval is taller
