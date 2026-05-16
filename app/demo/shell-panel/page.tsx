@@ -39,10 +39,9 @@ export default function ShellPanelDemoPage(): JSX.Element {
     <main className="min-h-screen p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Shell Panel</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
-        Per-Sefirah Shell pressure. Dormant seals carry a faded ring in the
-        Sefirah&rsquo;s colour with a hairline letter; active seals fill in
-        full colour with a halo and effect copy; banished seals are sealed
-        shut with a gold engraved hairline and a wax-stamp binding line.
+        Per-Sefirah Shell pressure. Dormant seals carry a faded ring in the Sefirah&rsquo;s colour
+        with a hairline letter; active seals fill in full colour with a halo and effect copy;
+        banished seals are sealed shut with a gold engraved hairline and a wax-stamp binding line.
       </p>
 
       <div data-demo-canvas>
@@ -66,18 +65,10 @@ export default function ShellPanelDemoPage(): JSX.Element {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): JSX.Element {
+function Section({ title, children }: { title: string; children: React.ReactNode }): JSX.Element {
   return (
     <section className="mt-10 rounded-lg border border-veil/20 bg-ground/50 p-4">
-      <h2 className="mb-4 font-display text-sm uppercase tracking-widest opacity-60">
-        {title}
-      </h2>
+      <h2 className="mb-4 font-display text-sm uppercase tracking-widest opacity-60">{title}</h2>
       {children}
     </section>
   );

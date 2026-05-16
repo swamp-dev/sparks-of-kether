@@ -39,7 +39,7 @@ const EXCLUDED_DIR_NAMES = new Set([
   'playwright-report',
   'test-results',
   'dist', // proactive — no `dist/` today, but if a build step ever
-          // emits markdown there it shouldn't be scanned
+  // emits markdown there it shouldn't be scanned
 ]);
 
 function isExcludedDir(name: string): boolean {

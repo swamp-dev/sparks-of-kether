@@ -28,9 +28,7 @@ export function ContinueGame(): JSX.Element | null {
 
   const handleResume = (): void => {
     const path =
-      entry.roomState === 'lobby'
-        ? `/rooms/${entry.code}/lobby`
-        : `/rooms/${entry.code}/play`;
+      entry.roomState === 'lobby' ? `/rooms/${entry.code}/lobby` : `/rooms/${entry.code}/play`;
     router.push(path);
   };
 
@@ -42,17 +40,13 @@ export function ContinueGame(): JSX.Element | null {
   return (
     <div
       data-continue-game
-      className="
-        mx-auto mt-6 w-full max-w-sm rounded border border-veil/20
-        bg-ground/60 px-5 py-4 backdrop-blur-sm
-      "
+      className="mx-auto mt-6 w-full max-w-sm rounded border border-veil/20 bg-ground/60 px-5 py-4 backdrop-blur-sm"
     >
       <p className="text-xs uppercase tracking-widest opacity-50">
         {entry.roomState === 'lobby' ? 'In lobby' : 'Game in progress'}
       </p>
       <p className="mt-1 font-display text-sm tracking-wider text-veil">
-        Continue as{' '}
-        <span className="text-illumination">{entry.nickname}</span>
+        Continue as <span className="text-illumination">{entry.nickname}</span>
         {' — room '}
         <span className="font-mono tracking-widest">{entry.code}</span>
       </p>
@@ -61,10 +55,7 @@ export function ContinueGame(): JSX.Element | null {
           type="button"
           onClick={handleResume}
           aria-label="Resume game"
-          className="
-            flex-1 rounded bg-illumination px-4 py-2 text-xs
-            font-display uppercase tracking-widest text-ground
-          "
+          className="flex-1 rounded bg-illumination px-4 py-2 font-display text-xs uppercase tracking-widest text-ground"
         >
           Resume →
         </button>
@@ -72,10 +63,7 @@ export function ContinueGame(): JSX.Element | null {
           type="button"
           onClick={handleLeave}
           aria-label="Leave game"
-          className="
-            rounded border border-veil/30 px-4 py-2 text-xs
-            uppercase tracking-widest text-veil/60
-          "
+          className="rounded border border-veil/30 px-4 py-2 text-xs uppercase tracking-widest text-veil/60"
         >
           Leave ×
         </button>

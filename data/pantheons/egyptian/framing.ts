@@ -291,7 +291,7 @@ const horus = {
     'Cold at the line. The verdict the falcon draws is the kind that endures.',
   ],
   aquarius: [
-    'Aquarius. Argue from outside the court\'s procedure — pay anyway.',
+    "Aquarius. Argue from outside the court's procedure — pay anyway.",
     'Fund the unprecedented claim before the court hears it. The falcon honours the cost that opens new law.',
     'Pay the case nobody has filed before. The falcon accepts the burn that sets the precedent.',
   ],
@@ -593,17 +593,12 @@ export const sefirahFraming: FramingMatrix = {
 export const sefirahFramingPlaceholder: FramingPlaceholderMap = {
   chokmah:
     'Amun breathes the answer before the question. Strike, and the hidden god is already with you.',
-  binah:
-    'Isis holds the threshold. The cosmic mother carries what the racing body would lose.',
-  chesed:
-    'Ra opens the noon-light. Match the offering, and the kingdom widens for you.',
-  gevurah:
-    'Horus draws the line. Pay the cost of the case, and the falcon honours the claim.',
+  binah: 'Isis holds the threshold. The cosmic mother carries what the racing body would lose.',
+  chesed: 'Ra opens the noon-light. Match the offering, and the kingdom widens for you.',
+  gevurah: 'Horus draws the line. Pay the cost of the case, and the falcon honours the claim.',
   tiferet:
     'Osiris waits at the scale. Bring the heart that matches the feather; the throne weighs true.',
-  netzach:
-    'Hathor lifts the cup. Name the body\'s want, and the cow leaves the drink that fits.',
+  netzach: "Hathor lifts the cup. Name the body's want, and the cow leaves the drink that fits.",
   hod: 'Thoth dips the reed. Speak the arcanum the page is waiting to record.',
-  yesod:
-    'Khonsu lights the crossing. Walk the dream-path; the moon honours the patient step.',
+  yesod: 'Khonsu lights the crossing. Walk the dream-path; the moon honours the patient step.',
 } as const;

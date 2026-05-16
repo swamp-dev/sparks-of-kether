@@ -25,9 +25,7 @@ export function partitionByCutoff(
   cutoffYmd: string,
 ): { older: Entry[]; recent: Entry[] };
 
-export function groupEntriesByMonth(
-  entries: Entry[],
-): Record<string, Entry[]>;
+export function groupEntriesByMonth(entries: Entry[]): Record<string, Entry[]>;
 
 export function buildArchiveLinkSection(months: string[]): string;
 

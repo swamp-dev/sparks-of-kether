@@ -77,8 +77,7 @@ describe('parseEntries', () => {
     // misidentified as entries. The header section above already
     // contains an `## Entries` heading; this test is the explicit
     // pin against false matches.
-    const text = `# Title\n\n## Some other heading\n\nBody.\n\n## Entries\n\n` +
-      ENTRY_OLD;
+    const text = `# Title\n\n## Some other heading\n\nBody.\n\n## Entries\n\n` + ENTRY_OLD;
     const { entries } = parseEntries(text);
     expect(entries).toHaveLength(1);
     expect(entries[0]?.date).toBe('2026-02-15');
@@ -108,11 +107,7 @@ End of body.
 
 describe('partitionByCutoff', () => {
   it('puts entries strictly before the cutoff into `older`', () => {
-    const entries: Entry[] = [
-      mkEntry('2026-02-15'),
-      mkEntry('2026-03-31'),
-      mkEntry('2026-04-29'),
-    ];
+    const entries: Entry[] = [mkEntry('2026-02-15'), mkEntry('2026-03-31'), mkEntry('2026-04-29')];
     const { older, recent } = partitionByCutoff(entries, '2026-04-01');
     expect(older.map((e) => e.date)).toEqual(['2026-02-15', '2026-03-31']);
     expect(recent.map((e) => e.date)).toEqual(['2026-04-29']);
@@ -135,11 +130,7 @@ describe('partitionByCutoff', () => {
 
 describe('groupEntriesByMonth', () => {
   it('groups entries by `YYYY-MM` and preserves intra-month order', () => {
-    const entries: Entry[] = [
-      mkEntry('2026-02-15'),
-      mkEntry('2026-02-28'),
-      mkEntry('2026-03-01'),
-    ];
+    const entries: Entry[] = [mkEntry('2026-02-15'), mkEntry('2026-02-28'), mkEntry('2026-03-01')];
     const groups = groupEntriesByMonth(entries);
     expect(Object.keys(groups).sort()).toEqual(['2026-02', '2026-03']);
     expect(groups['2026-02']).toHaveLength(2);
@@ -206,8 +197,7 @@ Body C line.
     expect(first.journalText).toContain(recentC);
     // No spurious blank-line inflation between entries: count of
     // entry headings stays at 3.
-    const entryHeadingCount = (first.journalText.match(/^## \d{4}-/gm) ?? [])
-      .length;
+    const entryHeadingCount = (first.journalText.match(/^## \d{4}-/gm) ?? []).length;
     expect(entryHeadingCount).toBe(3);
   });
 
@@ -245,11 +235,7 @@ describe('buildArchiveLinkSection', () => {
     const section = buildArchiveLinkSection(months);
     // Most recent first: 2026-03, 2026-02, 2026-01.
     const order = section.match(/journal-(\d{4}-\d{2})\.md/g);
-    expect(order).toEqual([
-      'journal-2026-03.md',
-      'journal-2026-02.md',
-      'journal-2026-01.md',
-    ]);
+    expect(order).toEqual(['journal-2026-03.md', 'journal-2026-02.md', 'journal-2026-01.md']);
     expect(section).toContain('## Archived entries');
     expect(section).toContain('docs/journal-archive/journal-2026-03.md');
   });

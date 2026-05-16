@@ -27,9 +27,7 @@ describe('Starfield', () => {
   });
 
   it('twinkle is off by default; `data-twinkle` reflects the prop', () => {
-    const off = render(<Starfield />).container.querySelector(
-      '[data-atmosphere="starfield"]',
-    );
+    const off = render(<Starfield />).container.querySelector('[data-atmosphere="starfield"]');
     expect(off?.getAttribute('data-twinkle')).toBe('false');
     const on = render(<Starfield twinkle />).container.querySelector(
       '[data-atmosphere="starfield"]',
@@ -45,9 +43,7 @@ describe('Starfield', () => {
     const stars = container.querySelectorAll('[data-atmosphere="starfield"] > *');
     expect(stars.length).toBeGreaterThan(0);
     for (const star of stars) {
-      expect(star.getAttribute('class') ?? '').toMatch(
-        /motion-safe:animate-atmosphere-twinkle/,
-      );
+      expect(star.getAttribute('class') ?? '').toMatch(/motion-safe:animate-atmosphere-twinkle/);
     }
   });
 
@@ -55,9 +51,7 @@ describe('Starfield', () => {
     const { container } = render(<Starfield />);
     const stars = container.querySelectorAll('[data-atmosphere="starfield"] > *');
     for (const star of stars) {
-      expect(star.getAttribute('class') ?? '').not.toMatch(
-        /animate-atmosphere-twinkle/,
-      );
+      expect(star.getAttribute('class') ?? '').not.toMatch(/animate-atmosphere-twinkle/);
     }
   });
 });

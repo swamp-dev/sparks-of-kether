@@ -85,30 +85,46 @@ export function AvatarSilhouette({
 
         {/* Left arm */}
         <line
-          x1="43" y1="58"
+          x1="43"
+          y1="58"
           x2={pose === 'fail' ? '28' : '30'}
           y2={pose === 'fail' ? '78' : '72'}
-          stroke="currentColor" strokeWidth="7" strokeLinecap="round"
+          stroke="currentColor"
+          strokeWidth="7"
+          strokeLinecap="round"
         />
 
         {/* Right arm — raised on speaking/pass */}
         <line
-          x1="57" y1="58"
+          x1="57"
+          y1="58"
           x2={showRaisedArm ? (pose === 'pass' ? '74' : '70') : '70'}
-          y2={showRaisedArm ? (pose === 'pass' ? '38' : '42') : (pose === 'fail' ? '78' : '72')}
-          stroke="currentColor" strokeWidth="7" strokeLinecap="round"
+          y2={showRaisedArm ? (pose === 'pass' ? '38' : '42') : pose === 'fail' ? '78' : '72'}
+          stroke="currentColor"
+          strokeWidth="7"
+          strokeLinecap="round"
         />
 
         {/* Left leg */}
         <line
-          x1="47" y1="88" x2="40" y2="118"
-          stroke="currentColor" strokeWidth="8" strokeLinecap="round"
+          x1="47"
+          y1="88"
+          x2="40"
+          y2="118"
+          stroke="currentColor"
+          strokeWidth="8"
+          strokeLinecap="round"
         />
 
         {/* Right leg */}
         <line
-          x1="53" y1="88" x2="60" y2="118"
-          stroke="currentColor" strokeWidth="8" strokeLinecap="round"
+          x1="53"
+          y1="88"
+          x2="60"
+          y2="118"
+          stroke="currentColor"
+          strokeWidth="8"
+          strokeLinecap="round"
         />
       </g>
 
@@ -124,8 +140,12 @@ export function AvatarSilhouette({
       {/* Fail accent: shadow below */}
       {pose === 'fail' && (
         <ellipse
-          cx="50" cy="132" rx="20" ry="5"
-          fill="currentColor" opacity={0.18}
+          cx="50"
+          cy="132"
+          rx="20"
+          ry="5"
+          fill="currentColor"
+          opacity={0.18}
           data-pose-accent
         />
       )}

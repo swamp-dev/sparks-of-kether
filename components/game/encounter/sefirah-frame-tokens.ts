@@ -36,9 +36,7 @@ interface SefirahFrameTokens {
   readonly buttonGlow: string;
 }
 
-export const SEFIRAH_FRAME_TOKENS: Readonly<
-  Record<SefirahKey, SefirahFrameTokens>
-> = {
+export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameTokens>> = {
   kether: {
     frameShadow: 'shadow-glow-kether',
     frameBorder: 'border-kether/40',

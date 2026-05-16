@@ -63,7 +63,7 @@ export function VerdictReveal({
   const verdictBody =
     avatarName !== undefined && verdictLine !== undefined ? (
       <>
-        <span data-avatar-name className="not-italic font-semibold">
+        <span data-avatar-name className="font-semibold not-italic">
           {avatarName}:
         </span>{' '}
         <RevealLine text={verdictLine} reducedMotionOverride={reducedMotion} />

@@ -40,18 +40,14 @@ const baseContext: ChallengeContext = {
  */
 function makeChallengeState(): GameState {
   const base = makeFullGame({ playerCount: 2, seed: 1 });
-  const activeIdx = base.players.findIndex(
-    (p) => p.id === base.activePlayerId,
-  );
+  const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
   const players = base.players.map((p, idx) =>
     idx === activeIdx
       ? {
           ...p,
           position: 'gevurah' as const,
           hand: [0, 1, 2] as readonly number[],
-          sparksHeld: new Set(['chesed', 'tiferet']) as ReadonlySet<
-            'chesed' | 'tiferet'
-          >,
+          sparksHeld: new Set(['chesed', 'tiferet']) as ReadonlySet<'chesed' | 'tiferet'>,
           // Override the stat so `baseContext.stat` (12) lines up.
           stats: { ...p.stats, strength: 12 },
         }
@@ -83,21 +79,15 @@ function renderEncounter(opts: {
   readonly rerender: () => void;
 } {
   const rng = seededRng(opts.seed ?? 1);
-  const { result, rerender } = renderHook(() =>
-    useTurn({ initialState: opts.initialState, rng }),
-  );
-  const player = opts.initialState.players.find(
-    (p) => p.id === opts.initialState.activePlayerId,
-  );
+  const { result, rerender } = renderHook(() => useTurn({ initialState: opts.initialState, rng }));
+  const player = opts.initialState.players.find((p) => p.id === opts.initialState.activePlayerId);
   // EncounterScreenProps is a discriminated union on `mode` —
   // multiplayer requires `player`, hot-seat treats it as optional.
   // Branch the JSX so TS narrows correctly without us asserting.
   const Wrapper = (): JSX.Element => {
     if (opts.mode === 'multiplayer') {
       if (!player) {
-        throw new Error(
-          'renderEncounter (multiplayer): initialState must have an active player',
-        );
+        throw new Error('renderEncounter (multiplayer): initialState must have an active player');
       }
       return (
         <EncounterScreen
@@ -167,9 +157,7 @@ describe('EncounterScreen — multiplayer staging', () => {
   it('clicking "Add card-burn" stepper dispatches prepAddModifier', () => {
     const state = makeChallengeState();
     const rng = seededRng(1);
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
     const player = state.players.find((p) => p.id === state.activePlayerId);
     if (!player) throw new Error('test setup: active player missing');
     const view = render(
@@ -197,9 +185,7 @@ describe('EncounterScreen — multiplayer staging', () => {
   it('toggling an ally checkbox dispatches assist-request in multiplayer mode', () => {
     const state = makeChallengeState();
     const rng = seededRng(1);
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
     const player = state.players.find((p) => p.id === state.activePlayerId);
     if (!player) throw new Error('test setup: active player missing');
     render(
@@ -212,9 +198,7 @@ describe('EncounterScreen — multiplayer staging', () => {
         player={player}
       />,
     );
-    const ally1 = document.querySelector(
-      '[data-ally="ally1"] input',
-    ) as HTMLInputElement;
+    const ally1 = document.querySelector('[data-ally="ally1"] input') as HTMLInputElement;
     act(() => {
       fireEvent.click(ally1);
     });
@@ -224,9 +208,7 @@ describe('EncounterScreen — multiplayer staging', () => {
   it('shows the "ally is offering" indicator only in multiplayer mode', () => {
     const state = makeChallengeState();
     const rng = seededRng(1);
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
     const player = state.players.find((p) => p.id === state.activePlayerId);
     if (!player) throw new Error('test setup: active player missing');
     render(
@@ -239,9 +221,7 @@ describe('EncounterScreen — multiplayer staging', () => {
         player={player}
       />,
     );
-    const ally1 = document.querySelector(
-      '[data-ally="ally1"] input',
-    ) as HTMLInputElement;
+    const ally1 = document.querySelector('[data-ally="ally1"] input') as HTMLInputElement;
     act(() => {
       fireEvent.click(ally1);
     });
@@ -253,9 +233,7 @@ describe('EncounterScreen — multiplayer staging', () => {
       mode: 'hot-seat',
       initialState: makeChallengeState(),
     });
-    const ally1 = document.querySelector(
-      '[data-ally="ally1"] input',
-    ) as HTMLInputElement;
+    const ally1 = document.querySelector('[data-ally="ally1"] input') as HTMLInputElement;
     act(() => {
       fireEvent.click(ally1);
     });
@@ -269,9 +247,7 @@ describe('EncounterScreen — resolve sub-state', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18 }}
@@ -288,12 +264,8 @@ describe('EncounterScreen — resolve sub-state', () => {
       rerender();
       view.rerender(<Wrapper />);
       const screenEl = document.querySelector('[data-encounter-screen]');
-      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe(
-        'resolve',
-      );
-      const status = document.querySelector(
-        '[data-encounter-resolve-status]',
-      );
+      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe('resolve');
+      const status = document.querySelector('[data-encounter-resolve-status]');
       expect(status?.getAttribute('aria-live')).toBe('polite');
     } finally {
       vi.useRealTimers();
@@ -307,9 +279,7 @@ describe('EncounterScreen — react sub-state (pass)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 18 against DC 15 — even d20=1 passes.
@@ -329,9 +299,7 @@ describe('EncounterScreen — react sub-state (pass)', () => {
       });
       rerender();
       view.rerender(<Wrapper />);
-      expect(
-        screen.getByRole('button', { name: /^Continue$/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Continue$/ })).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -343,9 +311,7 @@ describe('EncounterScreen — react sub-state (pass)', () => {
       const state = makeChallengeState();
       const rng = seededRng(1);
       const onResolved = vi.fn();
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18, availableAllies: [] }}
@@ -382,9 +348,7 @@ describe('EncounterScreen — react sub-state (fail)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 1 vs DC 15 — guaranteed fail.
@@ -404,12 +368,8 @@ describe('EncounterScreen — react sub-state (fail)', () => {
       });
       rerender();
       view.rerender(<Wrapper />);
-      expect(
-        document.querySelector('[data-fail-choice="retry"]'),
-      ).not.toBeNull();
-      expect(
-        document.querySelector('[data-fail-choice="accept"]'),
-      ).not.toBeNull();
+      expect(document.querySelector('[data-fail-choice="retry"]')).not.toBeNull();
+      expect(document.querySelector('[data-fail-choice="accept"]')).not.toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -421,12 +381,8 @@ describe('EncounterScreen — react sub-state (fail)', () => {
       const state = makeChallengeState();
       const rng = seededRng(1);
       const onResolved = vi.fn();
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
-      const player = state.players.find(
-        (p) => p.id === state.activePlayerId,
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
+      const player = state.players.find((p) => p.id === state.activePlayerId);
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 1, availableAllies: [] }}
@@ -447,11 +403,7 @@ describe('EncounterScreen — react sub-state (fail)', () => {
       rerender();
       view.rerender(<Wrapper />);
       act(() => {
-        fireEvent.click(
-          document.querySelector(
-            '[data-fail-choice="retry"]',
-          ) as HTMLButtonElement,
-        );
+        fireEvent.click(document.querySelector('[data-fail-choice="retry"]') as HTMLButtonElement);
       });
       // After retry, engine sub-phase loops back to 'prep'.
       expect(result.current.challengeSubPhase).toBe('prep');
@@ -472,9 +424,7 @@ describe('EncounterScreen — react sub-state (fail)', () => {
       const state = makeChallengeState();
       const rng = seededRng(1);
       const onResolved = vi.fn();
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 1, availableAllies: [] }}
@@ -494,11 +444,7 @@ describe('EncounterScreen — react sub-state (fail)', () => {
       rerender();
       view.rerender(<Wrapper />);
       act(() => {
-        fireEvent.click(
-          document.querySelector(
-            '[data-fail-choice="accept"]',
-          ) as HTMLButtonElement,
-        );
+        fireEvent.click(document.querySelector('[data-fail-choice="accept"]') as HTMLButtonElement);
       });
       expect(onResolved).toHaveBeenCalledTimes(1);
       const arg = onResolved.mock.calls[0]?.[0];
@@ -577,9 +523,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
       mode: 'hot-seat',
       initialState: makeChallengeState(),
     });
-    const screenEl = document.querySelector(
-      '[data-encounter-screen]',
-    ) as HTMLElement | null;
+    const screenEl = document.querySelector('[data-encounter-screen]') as HTMLElement | null;
     expect(screenEl).not.toBeNull();
     if (screenEl === null) return;
     const order = getInteractiveOrder(screenEl);
@@ -604,9 +548,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 18 vs DC 15 — guaranteed pass so we land on the
@@ -633,9 +575,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
       if (ti !== null) {
         expect(Number(ti)).toBeGreaterThanOrEqual(0);
       }
-      const screenEl = document.querySelector(
-        '[data-encounter-screen]',
-      ) as HTMLElement | null;
+      const screenEl = document.querySelector('[data-encounter-screen]') as HTMLElement | null;
       expect(screenEl).not.toBeNull();
       if (screenEl === null) return;
       const order = getInteractiveOrder(screenEl);
@@ -650,9 +590,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 1 vs DC 15 — guaranteed fail so we land on Retry /
@@ -692,9 +630,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
           expect(Number(ti)).toBeGreaterThanOrEqual(0);
         }
       }
-      const screenEl = document.querySelector(
-        '[data-encounter-screen]',
-      ) as HTMLElement | null;
+      const screenEl = document.querySelector('[data-encounter-screen]') as HTMLElement | null;
       expect(screenEl).not.toBeNull();
       if (screenEl === null) return;
       const order = getInteractiveOrder(screenEl);
@@ -716,9 +652,7 @@ describe('EncounterScreen — keyboard tab order (#283)', () => {
       const state = makeChallengeState();
       const rng = seededRng(1);
       const onResolved = vi.fn();
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18, availableAllies: [] }}
@@ -768,9 +702,7 @@ describe('EncounterScreen — non-check Sefirot (Malkuth, Kether)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result } = renderHook(() => useTurn({ initialState: state, rng }));
       expect(() =>
         render(
           <EncounterScreen
@@ -792,9 +724,7 @@ describe('EncounterScreen — embedded stat sheet', () => {
   it('renders compact stat sheet when player is supplied', () => {
     const state = makeChallengeState();
     const rng = seededRng(1);
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
     const player = makePlayer({
       id: state.activePlayerId,
       name: 'Andy',
@@ -818,9 +748,7 @@ describe('EncounterScreen — embedded stat sheet', () => {
   it('omits stat sheet when player is not supplied', () => {
     const state = makeChallengeState();
     const rng = seededRng(1);
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
     render(
       <EncounterScreen
         context={baseContext}
@@ -838,9 +766,7 @@ describe('EncounterScreen — Soul Door callout', () => {
   it('renders verbatim callout when soulDoorDelta is -2', () => {
     const state = makeChallengeState();
     const rng = seededRng(1);
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
     render(
       <EncounterScreen
         context={{ ...baseContext, soulDoorDelta: -2 }}
@@ -869,9 +795,7 @@ describe('EncounterScreen — cumulative card-burn display', () => {
         pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [0, 1] },
       };
       const rng = seededRng(1);
-      const { result } = renderHook(() =>
-        useTurn({ initialState: stateWithPending, rng }),
-      );
+      const { result } = renderHook(() => useTurn({ initialState: stateWithPending, rng }));
       render(
         <EncounterScreen
           context={baseContext}
@@ -927,9 +851,7 @@ describe('EncounterScreen — prefers-reduced-motion respect', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18 }}
@@ -952,9 +874,7 @@ describe('EncounterScreen — prefers-reduced-motion respect', () => {
       rerender();
       view.rerender(<Wrapper />);
       const screenEl = document.querySelector('[data-encounter-screen]');
-      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe(
-        'react',
-      );
+      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe('react');
     } finally {
       vi.useRealTimers();
       restore();
@@ -970,9 +890,7 @@ describe('EncounterScreen — prefers-reduced-motion respect', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18 }}
@@ -995,9 +913,7 @@ describe('EncounterScreen — prefers-reduced-motion respect', () => {
       // Engine moved to react synchronously inside prep-confirm, but
       // the UI lag flag keeps uiSubPhase at 'resolve' during the
       // animation window.
-      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe(
-        'resolve',
-      );
+      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe('resolve');
     } finally {
       vi.useRealTimers();
       restore();
@@ -1038,9 +954,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
     try {
       const state = makeChallengeState();
       const rng = makePinningRng(20);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{
@@ -1061,9 +975,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       const view = render(<Wrapper />);
       // Player-response renders in prep, picked from variant 0.
       const prepResponse = document.querySelector('[data-player-response]');
-      expect(prepResponse?.textContent).toContain(
-        "Just say what you mean, messenger.",
-      );
+      expect(prepResponse?.textContent).toContain('Just say what you mean, messenger.');
 
       // Roll → resolve animation → react reveal.
       act(() => {
@@ -1078,9 +990,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       const verdict = document.querySelector('[data-avatar-verdict]');
       const avatarName = document.querySelector('[data-avatar-name]');
       expect(avatarName?.textContent).toBe('Hermes:');
-      expect(verdict?.textContent).toContain(
-        "You charged the answer like a ram",
-      );
+      expect(verdict?.textContent).toContain('You charged the answer like a ram');
     } finally {
       vi.useRealTimers();
     }
@@ -1090,9 +1000,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
     vi.useFakeTimers();
     try {
       const base = makeFullGame({ playerCount: 2, seed: 1 });
-      const activeIdx = base.players.findIndex(
-        (p) => p.id === base.activePlayerId,
-      );
+      const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
       const players = base.players.map((p, idx) =>
         idx === activeIdx
           ? { ...p, position: 'netzach' as const, stats: { ...p.stats, passion: 18 } }
@@ -1107,9 +1015,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         lastOutcome: undefined,
       };
       const rng = makePinningRng(20);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{
@@ -1129,9 +1035,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       );
       const view = render(<Wrapper />);
       const prepResponse = document.querySelector('[data-player-response]');
-      expect(prepResponse?.textContent).toContain(
-        "I'm in the want already, Aphrodite.",
-      );
+      expect(prepResponse?.textContent).toContain("I'm in the want already, Aphrodite.");
 
       act(() => {
         fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
@@ -1145,9 +1049,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       const verdict = document.querySelector('[data-avatar-verdict]');
       const avatarName = document.querySelector('[data-avatar-name]');
       expect(avatarName?.textContent).toBe('Aphrodite:');
-      expect(verdict?.textContent).toContain(
-        "You let the want come through you",
-      );
+      expect(verdict?.textContent).toContain('You let the want come through you');
     } finally {
       vi.useRealTimers();
     }
@@ -1158,9 +1060,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
     try {
       const state = makeChallengeState();
       const rng = makePinningRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 1 vs DC 15 — guaranteed fail.
@@ -1181,9 +1081,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       );
       const view = render(<Wrapper />);
       const prepResponse = document.querySelector('[data-player-response]');
-      expect(prepResponse?.textContent).toContain(
-        "Give me the spec, Ares.",
-      );
+      expect(prepResponse?.textContent).toContain('Give me the spec, Ares.');
 
       act(() => {
         fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
@@ -1197,9 +1095,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       const verdict = document.querySelector('[data-avatar-verdict]');
       const avatarName = document.querySelector('[data-avatar-name]');
       expect(avatarName?.textContent).toBe('Ares:');
-      expect(verdict?.textContent).toContain(
-        "You planned the discipline.",
-      );
+      expect(verdict?.textContent).toContain('You planned the discipline.');
     } finally {
       vi.useRealTimers();
     }
@@ -1215,9 +1111,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
     try {
       const state = makeChallengeState();
       const rng = makePinningRng(1); // d20=1 → fail
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{
@@ -1236,9 +1130,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         />
       );
       const view = render(<Wrapper />);
-      const responseBefore = document
-        .querySelector('[data-player-response]')
-        ?.textContent?.trim();
+      const responseBefore = document.querySelector('[data-player-response]')?.textContent?.trim();
       expect(responseBefore).toBeTruthy();
 
       // Roll → fail → react sub-state.
@@ -1262,9 +1154,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       rerender();
       view.rerender(<Wrapper />);
 
-      const responseAfter = document
-        .querySelector('[data-player-response]')
-        ?.textContent?.trim();
+      const responseAfter = document.querySelector('[data-player-response]')?.textContent?.trim();
       expect(responseAfter).toBe(responseBefore);
     } finally {
       vi.useRealTimers();
@@ -1276,9 +1166,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // No playerSign — demo / test harness path.
@@ -1384,9 +1272,7 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
     // prep so the stage portrait is the sole `[data-avatar-portrait]`.
     expect(portrait?.getAttribute('data-sefirah')).toBe('gevurah');
     expect(portrait?.getAttribute('data-avatar-size')).toBe('stage');
-    expect(
-      portrait?.querySelector('[data-avatar-portrait-image]'),
-    ).not.toBeNull();
+    expect(portrait?.querySelector('[data-avatar-portrait-image]')).not.toBeNull();
   });
 
   it('renders d20 roll button (not a rectangular Roll) in prep', () => {
@@ -1426,20 +1312,14 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
       mode: 'hot-seat',
       initialState: state,
     });
-    const before = document
-      .querySelector('[data-projected-total]')
-      ?.textContent?.trim();
+    const before = document.querySelector('[data-projected-total]')?.textContent?.trim();
     expect(before).toMatch(/12 vs DC 15/);
     // Toggle ally1 (stat 10 → assist +5). Projected total should rise to 17.
-    const ally1 = document.querySelector(
-      '[data-ally="ally1"] input',
-    ) as HTMLInputElement;
+    const ally1 = document.querySelector('[data-ally="ally1"] input') as HTMLInputElement;
     act(() => {
       fireEvent.click(ally1);
     });
-    const after = document
-      .querySelector('[data-projected-total]')
-      ?.textContent?.trim();
+    const after = document.querySelector('[data-projected-total]')?.textContent?.trim();
     expect(after).toMatch(/17 vs DC 15/);
   });
 
@@ -1448,9 +1328,7 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       // Stat 18 + Gevurah DC 15 — most rolls pass.
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
@@ -1526,9 +1404,7 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18 }}
@@ -1552,9 +1428,7 @@ describe('EncounterScreen — Sefirah-themed dramatic frame (#315)', () => {
       rerender();
       view.rerender(<Wrapper />);
       const screenEl = document.querySelector('[data-encounter-screen]');
-      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe(
-        'react',
-      );
+      expect(screenEl?.getAttribute('data-encounter-sub-phase')).toBe('react');
       // The verdict reveal in react sub-state should be flagged for
       // reduced-motion via a stable attribute that CSS reads.
       const reveal = document.querySelector('[data-verdict-reveal]');
@@ -1615,9 +1489,7 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
 
   it('renders Twist banner for Hod (Word-Match shipped via #353)', () => {
     const state = makeChallengeState();
-    const activeIdx = state.players.findIndex(
-      (p) => p.id === state.activePlayerId,
-    );
+    const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const players = state.players.map((p, idx) =>
       idx === activeIdx ? { ...p, position: 'hod' as const } : p,
     );
@@ -1633,9 +1505,7 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
 
   it('renders Twist banner for Yesod (Dream-Peek shipped via #354)', () => {
     const state = makeChallengeState();
-    const activeIdx = state.players.findIndex(
-      (p) => p.id === state.activePlayerId,
-    );
+    const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const players = state.players.map((p, idx) =>
       idx === activeIdx ? { ...p, position: 'yesod' as const } : p,
     );
@@ -1702,9 +1572,7 @@ describe('EncounterScreen — re-skinned prep stage (#479)', () => {
       act(() => {
         vi.advanceTimersByTime(2000);
       });
-      const stageAfter = document.querySelector(
-        '[data-encounter-prep-stage]',
-      );
+      const stageAfter = document.querySelector('[data-encounter-prep-stage]');
       expect(stageAfter?.getAttribute('data-framing-complete')).toBe('true');
     } finally {
       vi.useRealTimers();
@@ -1718,9 +1586,7 @@ describe('EncounterScreen — avatar pose transitions (#21)', () => {
     try {
       renderEncounter({ mode: 'hot-seat', initialState: makeChallengeState() });
       // Initial mount: framing not complete → derivePose('prep', false, null) = 'speaking'
-      const portrait = document.querySelector(
-        '[data-avatar-portrait][data-avatar-size="stage"]',
-      );
+      const portrait = document.querySelector('[data-avatar-portrait][data-avatar-size="stage"]');
       expect(portrait?.getAttribute('data-avatar-pose')).toBe('speaking');
     } finally {
       vi.useRealTimers();
@@ -1736,9 +1602,7 @@ describe('EncounterScreen — avatar pose transitions (#21)', () => {
         vi.advanceTimersByTime(2000);
       });
       // derivePose('prep', true, null) = 'idle'
-      const portrait = document.querySelector(
-        '[data-avatar-portrait][data-avatar-size="stage"]',
-      );
+      const portrait = document.querySelector('[data-avatar-portrait][data-avatar-size="stage"]');
       expect(portrait?.getAttribute('data-avatar-pose')).toBe('idle');
     } finally {
       vi.useRealTimers();
@@ -1750,9 +1614,7 @@ describe('EncounterScreen — avatar pose transitions (#21)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           context={{ ...baseContext, stat: 18 }}
@@ -1781,9 +1643,7 @@ describe('EncounterScreen — avatar pose transitions (#21)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 18 vs DC 15 — guaranteed pass.
@@ -1816,9 +1676,7 @@ describe('EncounterScreen — avatar pose transitions (#21)', () => {
     try {
       const state = makeChallengeState();
       const rng = seededRng(1);
-      const { result, rerender } = renderHook(() =>
-        useTurn({ initialState: state, rng }),
-      );
+      const { result, rerender } = renderHook(() => useTurn({ initialState: state, rng }));
       const Wrapper = (): JSX.Element => (
         <EncounterScreen
           // Stat 1 vs DC 15 — guaranteed fail.

@@ -4,21 +4,13 @@ import { makePlayer, makeState } from '@/test/fixtures';
 
 describe('endTurn', () => {
   it('advances the active player to the next seat', () => {
-    const players = [
-      makePlayer({ id: 'p1' }),
-      makePlayer({ id: 'p2' }),
-      makePlayer({ id: 'p3' }),
-    ];
+    const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' }), makePlayer({ id: 'p3' })];
     const state = makeState({}, { players, activePlayerId: 'p1' });
     expect(endTurn(state).activePlayerId).toBe('p2');
   });
 
   it('wraps from the last seat back to the first', () => {
-    const players = [
-      makePlayer({ id: 'p1' }),
-      makePlayer({ id: 'p2' }),
-      makePlayer({ id: 'p3' }),
-    ];
+    const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' }), makePlayer({ id: 'p3' })];
     const state = makeState({}, { players, activePlayerId: 'p3' });
     expect(endTurn(state).activePlayerId).toBe('p1');
   });
@@ -108,10 +100,7 @@ describe('endTurn', () => {
       makePlayer({ id: 'p2', position: 'kether' }), // held
       makePlayer({ id: 'p3', position: 'tiferet' }),
     ];
-    const state = makeState(
-      {},
-      { players, activePlayerId: 'p1', phase: 'move' },
-    );
+    const state = makeState({}, { players, activePlayerId: 'p1', phase: 'move' });
     // p1 → skip p2 (held) → p3.
     expect(endTurn(state).activePlayerId).toBe('p3');
   });
@@ -123,17 +112,11 @@ describe('endTurn', () => {
       makePlayer({ id: 'p3', position: 'kether' }), // held
       makePlayer({ id: 'p4', position: 'malkuth' }),
     ];
-    const state = makeState(
-      {},
-      { players, activePlayerId: 'p1', phase: 'move' },
-    );
+    const state = makeState({}, { players, activePlayerId: 'p1', phase: 'move' });
     // p1 → skip p2, p3 → p4.
     expect(endTurn(state).activePlayerId).toBe('p4');
     // From p4 → wrap → p1 (p2/p3 still held).
-    const fromP4 = makeState(
-      {},
-      { players, activePlayerId: 'p4', phase: 'move' },
-    );
+    const fromP4 = makeState({}, { players, activePlayerId: 'p4', phase: 'move' });
     expect(endTurn(fromP4).activePlayerId).toBe('p1');
   });
 
@@ -147,10 +130,7 @@ describe('endTurn', () => {
       makePlayer({ id: 'p1', position: 'kether' }),
       makePlayer({ id: 'p2', position: 'kether' }),
     ];
-    const state = makeState(
-      {},
-      { players, activePlayerId: 'p1', phase: 'kether' },
-    );
+    const state = makeState({}, { players, activePlayerId: 'p1', phase: 'kether' });
     expect(endTurn(state).activePlayerId).toBe('p2');
   });
 
@@ -218,9 +198,7 @@ describe('discard', () => {
   // discard pile (so it's eligible for Yesod-Spark recovery and for
   // the ordinary discard recycle).
   it('removes the named card from hand, decrements count, pushes to discard pile', () => {
-    const players = [
-      makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6, 10, 11] }),
-    ];
+    const players = [makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6, 10, 11] })];
     const state = makeState(
       {},
       {

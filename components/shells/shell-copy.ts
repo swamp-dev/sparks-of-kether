@@ -51,7 +51,8 @@ export const SHELL_COPY: Readonly<Record<SefirahKey, ShellCopy>> = {
   },
   hod: {
     title: 'Shell of Hod — Deception',
-    effect: 'The top of the draw pile speaks a false name; only the blind drawer hears the true one.',
+    effect:
+      'The top of the draw pile speaks a false name; only the blind drawer hears the true one.',
   },
   yesod: {
     title: 'Shell of Yesod — Illusion',

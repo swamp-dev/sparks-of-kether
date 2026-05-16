@@ -87,8 +87,7 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Upper-left gate. Challenges reward accepted loss — sitting with what cannot be undone.',
     statDescription:
       'Understanding — lore and reflection checks; the stat of carrying weight without flinching.',
-    shellRule:
-      'Despair — reflection-based Sparks produce no effect. Banished by clearing Binah.',
+    shellRule: 'Despair — reflection-based Sparks produce no effect. Banished by clearing Binah.',
   },
   chesed: {
     quote: 'What you pour out returns sevenfold.',
@@ -97,16 +96,13 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Generosity sphere. Its challenge can never fail — only unfold. Spending more pours more back.',
     statDescription:
       'Lovingkindness — used when giving or assisting; the gravity that draws the team together.',
-    shellRule:
-      'Hoarding — no cards may be gifted for one full round. Banished by clearing Chesed.',
+    shellRule: 'Hoarding — no cards may be gifted for one full round. Banished by clearing Chesed.',
   },
   gevurah: {
     quote: 'I say no so that yes means something.',
     quality: 'Discipline, judgment, boundaries, sacred No',
-    gameRole:
-      'Sacrifice sphere. Discard to pass — the boundary is the cost, not the obstacle.',
-    statDescription:
-      'Strength — boundary and willpower checks; the stat of holding the line.',
+    gameRole: 'Sacrifice sphere. Discard to pass — the boundary is the cost, not the obstacle.',
+    statDescription: 'Strength — boundary and willpower checks; the stat of holding the line.',
     shellRule:
       'Cruelty — every player loses 1 point of Strength until banished. Banished by clearing Gevurah.',
   },
@@ -125,8 +121,7 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
     quality: 'Passion, desire, art, nature, endurance',
     gameRole:
       'Lower-right gate. Emotion / desire challenges — the answer that the body already knew.',
-    statDescription:
-      'Passion — instinctive and artistic checks; the stat of sustained want.',
+    statDescription: 'Passion — instinctive and artistic checks; the stat of sustained want.',
     shellRule:
       'Obsession — cards played on desire-themed paths have no effect. Banished by clearing Netzach.',
   },
@@ -137,8 +132,7 @@ export const sefirahCodex: Readonly<Record<SefirahKey, SefirahCodexContent>> = {
       'Lower-left gate. Logic / language challenges — the right name binds the right power.',
     statDescription:
       'Intellect — analysis, sequencing, word puzzles; the stat of finding the seam.',
-    shellRule:
-      'Deception — the top card of the deck is misreported. Banished by clearing Hod.',
+    shellRule: 'Deception — the top card of the deck is misreported. Banished by clearing Hod.',
   },
   yesod: {
     quote: 'Nothing is solid here.',
@@ -175,12 +169,10 @@ export const arcanumCodex: Readonly<Record<number, ArcanumCodexContent>> = {
   },
   1: {
     meaning: 'Focused will bringing form to the formless. One hand up, one down.',
-    gameRole:
-      'Opens Binah; thematic match for challenges requiring concentration.',
+    gameRole: 'Opens Binah; thematic match for challenges requiring concentration.',
   },
   2: {
-    meaning:
-      'The longest single span on the Tree — Crown to Heart. Intuition without explanation.',
+    meaning: 'The longest single span on the Tree — Crown to Heart. Intuition without explanation.',
     gameRole: 'The direct path up the central pillar; scarce and valuable.',
   },
   3: {
@@ -205,13 +197,11 @@ export const arcanumCodex: Readonly<Record<number, ArcanumCodexContent>> = {
   },
   8: {
     meaning: 'Gentling the lion. True power is tenderness.',
-    gameRole:
-      "Horizontal bridge over the Abyss's lower arc; essential for balance-seekers.",
+    gameRole: "Horizontal bridge over the Abyss's lower arc; essential for balance-seekers.",
   },
   9: {
     meaning: 'Inner light; the teacher within.',
-    gameRole:
-      'Right-pillar descent into the heart; the Hermit illuminates solo challenges.',
+    gameRole: 'Right-pillar descent into the heart; the Hermit illuminates solo challenges.',
   },
   10: {
     meaning: 'Change you cannot stop, only ride.',
@@ -219,8 +209,7 @@ export const arcanumCodex: Readonly<Record<number, ArcanumCodexContent>> = {
   },
   11: {
     meaning: 'Cause and effect made visible.',
-    gameRole:
-      'Left-pillar descent; paired often with The Hermit to cross Tiferet balanced.',
+    gameRole: 'Left-pillar descent; paired often with The Hermit to cross Tiferet balanced.',
   },
   12: {
     meaning: 'Surrender as insight.',
@@ -236,13 +225,11 @@ export const arcanumCodex: Readonly<Record<number, ArcanumCodexContent>> = {
   },
   15: {
     meaning: 'Attachment; the chains we forget we can remove.',
-    gameRole:
-      'Heart-to-mercury; dangerous ground but unavoidable for some routes.',
+    gameRole: 'Heart-to-mercury; dangerous ground but unavoidable for some routes.',
   },
   16: {
     meaning: 'Lightning on false structure.',
-    gameRole:
-      'The only horizontal path in the lower Tree; shake-up card.',
+    gameRole: 'The only horizontal path in the lower Tree; shake-up card.',
   },
   17: {
     meaning: "Hope that isn't naïve.",
@@ -262,8 +249,7 @@ export const arcanumCodex: Readonly<Record<number, ArcanumCodexContent>> = {
   },
   21: {
     meaning: 'Completion that is also beginning.',
-    gameRole:
-      'The default path out of Malkuth; the most common opening move.',
+    gameRole: 'The default path out of Malkuth; the most common opening move.',
   },
 };
 

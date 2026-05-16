@@ -8,9 +8,7 @@ import { PathDetail } from '../PathDetail';
 describe('PathDetail', () => {
   it('renders the path number, Hebrew letter, and connecting Sefirot for Path 22 (Justice)', () => {
     const { container, getByRole } = render(<PathDetail pathNumber={22} />);
-    expect(
-      getByRole('heading', { level: 1, name: /path 22/i }),
-    ).toBeInTheDocument();
+    expect(getByRole('heading', { level: 1, name: /path 22/i })).toBeInTheDocument();
     const text = container.textContent ?? '';
     // Path 22 = Lamed = Justice = Gevurah ↔ Tiferet
     expect(text).toMatch(/Lamed|ל/);
@@ -46,9 +44,7 @@ describe('PathDetail', () => {
   it('shows the structural-role badge for abyss-crossing paths', () => {
     // Path 14 = abyss-crossing (Empress)
     const { container } = render(<PathDetail pathNumber={14} />);
-    const badge = container.querySelector(
-      '[data-structural-role="abyss-crossing"]',
-    );
+    const badge = container.querySelector('[data-structural-role="abyss-crossing"]');
     expect(badge).not.toBeNull();
     expect(badge?.textContent?.toLowerCase()).toContain('abyss');
   });
@@ -66,9 +62,7 @@ describe('PathDetail', () => {
     // tagged central-pillar (precedence rule), so 29 and 31 are the
     // only paths that should surface the "Path out of Malkuth" badge.
     const { container } = render(<PathDetail pathNumber={29} />);
-    const badge = container.querySelector(
-      '[data-structural-role="out-of-malkuth"]',
-    );
+    const badge = container.querySelector('[data-structural-role="out-of-malkuth"]');
     expect(badge).not.toBeNull();
     expect(badge?.textContent?.toLowerCase()).toContain('out of malkuth');
   });

@@ -38,14 +38,7 @@
  * content, so the head/tail Pearson rises close to 1.
  */
 
-import {
-  expDecay,
-  ksPluck,
-  makePrng,
-  pan,
-  schroederReverb,
-  sineOsc,
-} from '../lib/synth';
+import { expDecay, ksPluck, makePrng, pan, schroederReverb, sineOsc } from '../lib/synth';
 import type { StereoBuffer } from '../lib/wav';
 import type { TrackManifest } from './lobby';
 
@@ -180,8 +173,7 @@ export const encounterYesod: TrackManifest = {
     // Bell tail = ~0.5 s of pluck + 6 s reverb = 6.5 s. Forbid drops
     // whose audible tail crosses into the tail crossfade region.
     const DROP_TAIL_SEC = 7;
-    const latestDropSec =
-      WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - DROP_TAIL_SEC;
+    const latestDropSec = WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - DROP_TAIL_SEC;
 
     const rng = makePrng(SEED);
     type Drop = { startSample: number; pitchHz: number; panPos: number };
@@ -238,7 +230,7 @@ export const encounterYesod: TrackManifest = {
       { pitchHz: D5, durationSec: 2.6 },
     ];
     const melodyDecaySec = 1.2;
-    const melodyGain = 0.20;
+    const melodyGain = 0.2;
     // Loop-time offsets — keep tail clear: motif total = 9 s; each
     // note has audible decay of melodyDecaySec × 5 + reverb (~12 s).
     // The pass starting at loop-time 5 s ends at 14 s + 12 s = 26 s,
@@ -254,14 +246,10 @@ export const encounterYesod: TrackManifest = {
         const harm = sineOsc(note.pitchHz * 3, sr);
         const shimmer = sineOsc(note.pitchHz * 1.001, sr);
         const env = expDecay(melodyDecaySec, sr);
-        const renderLen = Math.min(
-          totalSamples - cursor,
-          Math.floor(sr * melodyDecaySec * 5),
-        );
+        const renderLen = Math.min(totalSamples - cursor, Math.floor(sr * melodyDecaySec * 5));
         for (let i = 0; i < renderLen; i++) {
           const e = env();
-          const v =
-            (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melodyGain;
+          const v = (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melodyGain;
           const { left: l, right: r } = pan(v, -0.05);
           melodyLeft[cursor + i]! += l;
           melodyRight[cursor + i]! += r;
@@ -277,10 +265,7 @@ export const encounterYesod: TrackManifest = {
     const wetRight = new Float32Array(totalSamples);
     for (let i = 0; i < totalSamples; i++) {
       const dryL =
-        (droneBuffer[i] ?? 0) +
-        (shimmerLeft[i] ?? 0) +
-        (dropLeft[i] ?? 0) +
-        (melodyLeft[i] ?? 0);
+        (droneBuffer[i] ?? 0) + (shimmerLeft[i] ?? 0) + (dropLeft[i] ?? 0) + (melodyLeft[i] ?? 0);
       const dryR =
         (droneBuffer[i] ?? 0) +
         (shimmerRight[i] ?? 0) +

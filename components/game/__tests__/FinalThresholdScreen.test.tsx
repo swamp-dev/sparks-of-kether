@@ -46,10 +46,7 @@ function buildPreRitualState(): {
     hand: [4, 5, 6],
     zodiacSign: 'leo',
   });
-  const state = makeState(
-    {},
-    { players: [heldPlayer, climbingPlayer], activePlayerId: 'p1' },
-  );
+  const state = makeState({}, { players: [heldPlayer, climbingPlayer], activePlayerId: 'p1' });
   return {
     state,
     heldPlayerId: heldPlayer.id,
@@ -88,12 +85,8 @@ function buildWitnessState(opts?: {
     {
       players: [player1, player2],
       activePlayerId: 'p1',
-      ...(opts?.illumination !== undefined
-        ? { illumination: opts.illumination }
-        : {}),
-      ...(opts?.separation !== undefined
-        ? { separation: opts.separation }
-        : {}),
+      ...(opts?.illumination !== undefined ? { illumination: opts.illumination } : {}),
+      ...(opts?.separation !== undefined ? { separation: opts.separation } : {}),
     },
   );
   // Initialise the ritual via the engine helper so we get the same
@@ -101,9 +94,7 @@ function buildWitnessState(opts?: {
   // (descending timestamp → p2 first in witness order).
   const initResult = initKetherRitual(baseState, { p1: 100, p2: 200 });
   if (!initResult.ok) {
-    throw new Error(
-      `buildWitnessState: initKetherRitual rejected — ${initResult.reason.kind}`,
-    );
+    throw new Error(`buildWitnessState: initKetherRitual rejected — ${initResult.reason.kind}`);
   }
   return initResult.value;
 }
@@ -122,12 +113,8 @@ function buildCloseState(opts?: {
   const base = buildWitnessState({
     hand1: [],
     hand2: [],
-    ...(opts?.illumination !== undefined
-      ? { illumination: opts.illumination }
-      : {}),
-    ...(opts?.separation !== undefined
-      ? { separation: opts.separation }
-      : {}),
+    ...(opts?.illumination !== undefined ? { illumination: opts.illumination } : {}),
+    ...(opts?.separation !== undefined ? { separation: opts.separation } : {}),
     ...(opts?.sparksHeld1 ? { sparksHeld1: opts.sparksHeld1 } : {}),
     ...(opts?.sparksHeld2 ? { sparksHeld2: opts.sparksHeld2 } : {}),
   });
@@ -148,9 +135,7 @@ describe('FinalThresholdScreen — pre-ritual hold view (§ 2.1)', () => {
     const { state, heldPlayerId } = buildPreRitualState();
     const heldPlayer = state.players.find((p) => p.id === heldPlayerId);
     if (!heldPlayer) throw new Error('heldPlayer missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={state}
@@ -168,9 +153,7 @@ describe('FinalThresholdScreen — pre-ritual hold view (§ 2.1)', () => {
     const { state, heldPlayerId } = buildPreRitualState();
     const heldPlayer = state.players.find((p) => p.id === heldPlayerId);
     if (!heldPlayer) throw new Error('heldPlayer missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={state}
@@ -195,13 +178,9 @@ describe('FinalThresholdScreen — pre-ritual hold view (§ 2.1)', () => {
     // held seats — but for safety, isKetherHeld returns false for
     // them, so the witness/close path would fire. We test that here.
     const { state, climbingPlayerId } = buildPreRitualState();
-    const climbingPlayer = state.players.find(
-      (p) => p.id === climbingPlayerId,
-    );
+    const climbingPlayer = state.players.find((p) => p.id === climbingPlayerId);
     if (!climbingPlayer) throw new Error('climbingPlayer missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={state}
@@ -223,16 +202,9 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     const state = buildWitnessState();
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     const screen = container.querySelector('[data-final-threshold-screen]');
     expect(screen?.getAttribute('data-sub-phase')).toBe('witness');
@@ -246,9 +218,7 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     const state = buildWitnessState();
     const witnessPlayer = state.players.find((p) => p.id === 'p2');
     if (!witnessPlayer) throw new Error('witnessPlayer missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={state}
@@ -257,13 +227,9 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
         mode="hot-seat"
       />,
     );
-    const playButtons = container.querySelectorAll(
-      '[data-action="kether-witness-play"]',
-    );
+    const playButtons = container.querySelectorAll('[data-action="kether-witness-play"]');
     expect(playButtons.length).toBe(2); // p2 has 2 cards in queue
-    const passButton = container.querySelector(
-      '[data-action="kether-witness-pass"]',
-    );
+    const passButton = container.querySelector('[data-action="kether-witness-pass"]');
     expect(passButton).not.toBeNull();
   });
 
@@ -273,9 +239,7 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     const state = buildWitnessState();
     const inactivePlayer = state.players.find((p) => p.id === 'p1');
     if (!inactivePlayer) throw new Error('inactivePlayer missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={state}
@@ -284,13 +248,9 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
         mode="hot-seat"
       />,
     );
-    const playButtons = container.querySelectorAll(
-      '[data-action="kether-witness-play"]',
-    );
+    const playButtons = container.querySelectorAll('[data-action="kether-witness-play"]');
     expect(playButtons.length).toBe(0);
-    const passButton = container.querySelector(
-      '[data-action="kether-witness-pass"]',
-    );
+    const passButton = container.querySelector('[data-action="kether-witness-pass"]');
     expect(passButton).toBeNull();
     const status = container.querySelector('[data-witness-status]');
     expect(status?.textContent).toMatch(/Waiting for Bea/);
@@ -309,10 +269,7 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     const Wrapper = (): JSX.Element => (
       <FinalThresholdScreen
         state={result.current.state}
-        player={
-          result.current.state.players.find((p) => p.id === 'p2') ??
-          witnessPlayer
-        }
+        player={result.current.state.players.find((p) => p.id === 'p2') ?? witnessPlayer}
         turn={result.current}
         mode="hot-seat"
       />
@@ -352,10 +309,7 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     const Wrapper = (): JSX.Element => (
       <FinalThresholdScreen
         state={result.current.state}
-        player={
-          result.current.state.players.find((p) => p.id === 'p2') ??
-          witnessPlayer
-        }
+        player={result.current.state.players.find((p) => p.id === 'p2') ?? witnessPlayer}
         turn={result.current}
         mode="hot-seat"
       />
@@ -377,9 +331,7 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     const finalState = result.current.state;
     expect(finalState.separation).toBe(1);
     expect(finalState.ketherRitual?.passCounts.p2).toBe(1);
-    expect(finalState.ketherRitual?.witnessLog).toEqual([
-      { kind: 'passed', playerId: 'p2' },
-    ]);
+    expect(finalState.ketherRitual?.witnessLog).toEqual([{ kind: 'passed', playerId: 'p2' }]);
   });
 
   it('renders the witness log with player names and arcana', () => {
@@ -399,9 +351,7 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
     };
     const player = stateWithLog.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: stateWithLog, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: stateWithLog, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={stateWithLog}
@@ -424,16 +374,9 @@ describe('FinalThresholdScreen — close sub-state (§ 2.4)', () => {
     const state = buildCloseState();
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     const screen = container.querySelector('[data-final-threshold-screen]');
     expect(screen?.getAttribute('data-sub-phase')).toBe('close');
@@ -447,28 +390,15 @@ describe('FinalThresholdScreen — close sub-state (§ 2.4)', () => {
     });
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
-    expect(
-      container.querySelector('[data-closure-projected]')?.textContent,
-    ).toBe('5');
+    expect(container.querySelector('[data-closure-projected]')?.textContent).toBe('5');
     // target = separation(2) + REQUIRED_ILLUMINATION_MARGIN(5) = 7
-    expect(container.querySelector('[data-closure-target]')?.textContent).toBe(
-      '7',
-    );
+    expect(container.querySelector('[data-closure-target]')?.textContent).toBe('7');
     expect(
-      container
-        .querySelector('[data-closure-gap-status]')
-        ?.getAttribute('data-closure-gap-status'),
+      container.querySelector('[data-closure-gap-status]')?.getAttribute('data-closure-gap-status'),
     ).toBe('open');
   });
 
@@ -484,8 +414,7 @@ describe('FinalThresholdScreen — close sub-state (§ 2.4)', () => {
       useTurn({ initialState: state, rng: seededRng(1) }),
     );
     const Wrapper = (): JSX.Element => {
-      const me =
-        result.current.state.players.find((p) => p.id === 'p1') ?? player;
+      const me = result.current.state.players.find((p) => p.id === 'p1') ?? player;
       return (
         <FinalThresholdScreen
           state={result.current.state}
@@ -514,9 +443,7 @@ describe('FinalThresholdScreen — close sub-state (§ 2.4)', () => {
     expect(result.current.state.ketherRitual?.stagedClosureSparks).toEqual([
       { playerId: 'p1', sefirah: 'yesod' },
     ]);
-    expect(
-      view.container.querySelector('[data-closure-projected]')?.textContent,
-    ).toBe('5'); // 4 + 1 staged
+    expect(view.container.querySelector('[data-closure-projected]')?.textContent).toBe('5'); // 4 + 1 staged
   });
 
   it('clicking Confirm dispatches thresholdConfirm and locks the closure', () => {
@@ -530,8 +457,7 @@ describe('FinalThresholdScreen — close sub-state (§ 2.4)', () => {
       useTurn({ initialState: state, rng: seededRng(1) }),
     );
     const Wrapper = (): JSX.Element => {
-      const me =
-        result.current.state.players.find((p) => p.id === 'p1') ?? player;
+      const me = result.current.state.players.find((p) => p.id === 'p1') ?? player;
       return (
         <FinalThresholdScreen
           state={result.current.state}
@@ -660,21 +586,12 @@ describe('FinalThresholdScreen — mode flag', () => {
     const state = buildWitnessState();
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
-    const { result } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     expect(
-      container
-        .querySelector('[data-final-threshold-screen]')
-        ?.getAttribute('data-mode'),
+      container.querySelector('[data-final-threshold-screen]')?.getAttribute('data-mode'),
     ).toBe('hot-seat');
   });
 
@@ -699,9 +616,7 @@ describe('FinalThresholdScreen — mode flag', () => {
       />,
     );
     expect(
-      container
-        .querySelector('[data-final-threshold-screen]')
-        ?.getAttribute('data-mode'),
+      container.querySelector('[data-final-threshold-screen]')?.getAttribute('data-mode'),
     ).toBe('multiplayer');
   });
 });

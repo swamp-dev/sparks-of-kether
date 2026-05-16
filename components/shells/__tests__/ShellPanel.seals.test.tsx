@@ -35,9 +35,7 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
       // for backwards compat; data-shell-state is the canonical one.)
       const ketherSlot = container.querySelector('[data-shell-slot="kether"]');
       expect(ketherSlot?.getAttribute('data-shell-state')).toBe('active');
-      const gevurahSlot = container.querySelector(
-        '[data-shell-slot="gevurah"]',
-      );
+      const gevurahSlot = container.querySelector('[data-shell-slot="gevurah"]');
       expect(gevurahSlot?.getAttribute('data-shell-state')).toBe('banished');
       const hodSlot = container.querySelector('[data-shell-slot="hod"]');
       expect(hodSlot?.getAttribute('data-shell-state')).toBe('dormant');
@@ -50,15 +48,12 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
         chesed: 'banished' as const,
       };
       const { container } = render(<ShellPanel shells={shells} />);
-      const dormant = container
-        .querySelector('[data-shell-slot="kether"]')
-        ?.getAttribute('aria-label') ?? '';
-      const active = container
-        .querySelector('[data-shell-slot="gevurah"]')
-        ?.getAttribute('aria-label') ?? '';
-      const banished = container
-        .querySelector('[data-shell-slot="chesed"]')
-        ?.getAttribute('aria-label') ?? '';
+      const dormant =
+        container.querySelector('[data-shell-slot="kether"]')?.getAttribute('aria-label') ?? '';
+      const active =
+        container.querySelector('[data-shell-slot="gevurah"]')?.getAttribute('aria-label') ?? '';
+      const banished =
+        container.querySelector('[data-shell-slot="chesed"]')?.getAttribute('aria-label') ?? '';
       expect(dormant.toLowerCase()).toContain('dormant');
       expect(active.toLowerCase()).toContain('active');
       expect(banished.toLowerCase()).toContain('banished');
@@ -94,14 +89,10 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
       };
       const { container } = render(<ShellPanel shells={shells} />);
       expect(
-        container.querySelector(
-          '[data-shell-slot="chesed"] [data-shell-banished-caption]',
-        ),
+        container.querySelector('[data-shell-slot="chesed"] [data-shell-banished-caption]'),
       ).toBeNull();
       expect(
-        container.querySelector(
-          '[data-shell-slot="kether"] [data-shell-banished-caption]',
-        ),
+        container.querySelector('[data-shell-slot="kether"] [data-shell-banished-caption]'),
       ).toBeNull();
     });
   });
@@ -156,9 +147,7 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
     });
 
     it('compact mode applies a strip layout (single row) rather than the panel grid', () => {
-      const { container } = render(
-        <ShellPanel shells={EMPTY_SHELL_STATE} compact />,
-      );
+      const { container } = render(<ShellPanel shells={EMPTY_SHELL_STATE} compact />);
       const list = container.querySelector('ul');
       expect(list?.getAttribute('data-shell-layout')).toBe('compact');
     });
@@ -294,9 +283,7 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
       const start = { ...EMPTY_SHELL_STATE };
       const { rerender } = render(<ShellPanel shells={start} />);
       const after = { ...start, chesed: 'active' as const };
-      expect(() =>
-        rerender(<ShellPanel shells={after} />),
-      ).not.toThrow();
+      expect(() => rerender(<ShellPanel shells={after} />)).not.toThrow();
     });
   });
 
@@ -304,9 +291,7 @@ describe('ShellPanel — sigil aesthetic (#317)', () => {
     it('still renders a slot for every Sefirah', () => {
       const { container } = render(<ShellPanel shells={EMPTY_SHELL_STATE} />);
       for (const s of sefirot) {
-        expect(
-          container.querySelector(`[data-shell-slot="${s.key}"]`),
-        ).not.toBeNull();
+        expect(container.querySelector(`[data-shell-slot="${s.key}"]`)).not.toBeNull();
       }
     });
 

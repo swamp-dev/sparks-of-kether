@@ -7,8 +7,16 @@ import { encounterTrackFor } from './manifest';
 export type AmbientTrack = 'lobby' | 'play' | 'blessing' | SefirahKey;
 
 const SEFIRAH_KEYS: ReadonlySet<string> = new Set([
-  'kether', 'chokmah', 'binah', 'chesed', 'gevurah',
-  'tiferet', 'netzach', 'hod', 'yesod', 'malkuth',
+  'kether',
+  'chokmah',
+  'binah',
+  'chesed',
+  'gevurah',
+  'tiferet',
+  'netzach',
+  'hod',
+  'yesod',
+  'malkuth',
 ]);
 
 const MUSIC_VOLUME = 0.35;

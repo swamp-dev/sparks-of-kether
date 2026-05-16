@@ -39,26 +39,17 @@ const SUBTITLE = 'The lightning descends. The serpent ascends.';
 
 export default function HomePage(): JSX.Element {
   return (
-    <main
-      data-home-page
-      className="relative flex min-h-screen flex-col text-veil"
-    >
+    <main data-home-page className="relative flex min-h-screen flex-col text-veil">
       {/* Hero band. Title + subtitle stack above the Tree silhouette;
           the portal CTA sits beneath. The substrate from
           `app/layout.tsx` provides the warm bloom underneath — no
           per-route atmosphere needed here. */}
       <section
         data-home-hero-band
-        className="
-          relative flex w-full flex-col items-center justify-start
-          px-6 pt-12 sm:pt-16
-        "
+        className="relative flex w-full flex-col items-center justify-start px-6 pt-12 sm:pt-16"
       >
         <h1
-          className="
-            text-center font-display text-5xl tracking-widest text-veil
-            sm:text-6xl md:text-7xl
-          "
+          className="text-center font-display text-5xl tracking-widest text-veil sm:text-6xl md:text-7xl"
           // Fraunces ships with the `opsz` axis enabled (see
           // `docs/typography.md`); the browser picks a higher-contrast
           // optical size automatically at this rendered size, so no
@@ -68,11 +59,7 @@ export default function HomePage(): JSX.Element {
         </h1>
         <p
           data-home-subtitle
-          className="
-            mt-4 max-w-xl text-center font-display
-            text-base italic tracking-wide text-veil/80
-            sm:text-lg
-          "
+          className="mt-4 max-w-xl text-center font-display text-base italic tracking-wide text-veil/80 sm:text-lg"
         >
           {SUBTITLE}
         </p>
@@ -106,7 +93,7 @@ export default function HomePage(): JSX.Element {
       <CodexTeaser className="mt-20 px-6 sm:mt-24 md:mt-28" />
 
       {/* Footer micro-block — Read the rules / View source / Codex. */}
-      <Footer className="mt-20 mb-10 px-6 sm:mt-24" />
+      <Footer className="mb-10 mt-20 px-6 sm:mt-24" />
     </main>
   );
 }

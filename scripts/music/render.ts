@@ -54,8 +54,7 @@ async function main(): Promise<void> {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const outputDir = publicAudioDir(repoRoot);
 
-  const requested =
-    arg === undefined ? TRACKS : TRACKS.filter((t) => t.name === arg);
+  const requested = arg === undefined ? TRACKS : TRACKS.filter((t) => t.name === arg);
   if (requested.length === 0) {
     console.error(`Unknown track: ${arg}`);
     console.error(`Available: ${TRACKS.map((t) => t.name).join(', ')}`);
@@ -67,7 +66,7 @@ async function main(): Promise<void> {
     console.log(`▶ Rendering "${track.name}" — ${track.durationSec}s @ ${track.sampleRate}Hz`);
     const t0 = Date.now();
     const buffer = track.render();
-    console.log(`  synth: ${(Date.now() - t0)} ms`);
+    console.log(`  synth: ${Date.now() - t0} ms`);
 
     console.log('  running QA…');
     const qa = await runQa(buffer, track.qaGates);
@@ -97,10 +96,7 @@ async function main(): Promise<void> {
     console.log(`  ✓ ${result.mp3Path} (${mp3Kb} KB)`);
     console.log(`  ✓ ${result.oggPath} (${oggKb} KB)`);
 
-    if (
-      result.mp3Bytes > track.qaGates.maxBytes ||
-      result.oggBytes > track.qaGates.maxBytes
-    ) {
+    if (result.mp3Bytes > track.qaGates.maxBytes || result.oggBytes > track.qaGates.maxBytes) {
       console.error(
         `  ✘ size ceiling exceeded (max ${(track.qaGates.maxBytes / 1024).toFixed(0)} KB)`,
       );

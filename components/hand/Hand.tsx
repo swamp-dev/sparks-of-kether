@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { arcanumByNumber } from '@/data';
 import { ArcanumCard } from '@/components/cards/ArcanumCard';
 import { useCardDrag } from '@/lib/hooks/useCardDrag';
@@ -160,8 +154,7 @@ const NEIGHBOUR_NUDGE_REM = 0.8;
 const NEAR_NEIGHBOUR_NUDGE_REM = 0.25;
 const MAGNIFY_TRANSITION =
   'transform 240ms ease-out, opacity 200ms ease-out, box-shadow 240ms ease-out';
-const MAGNIFY_BOX_SHADOW =
-  '0 18px 60px rgba(0, 0, 0, 0.55), 0 0 36px rgba(255, 215, 0, 0.28)';
+const MAGNIFY_BOX_SHADOW = '0 18px 60px rgba(0, 0, 0, 0.55), 0 0 36px rgba(255, 215, 0, 0.28)';
 
 export function Hand({
   hand,
@@ -190,9 +183,7 @@ export function Hand({
   // gesture is still live (the pointer leaves the card on the way
   // to the Tree, but we don't want the path-light to drop until the
   // drop fires).
-  const [draggingArcanum, setDraggingArcanum] = useState<number | undefined>(
-    undefined,
-  );
+  const [draggingArcanum, setDraggingArcanum] = useState<number | undefined>(undefined);
   // #412: when a drag completes (drop or cancel), the browser still
   // dispatches the synthesized `click` event on the originating
   // button. Without suppression, that click would call
@@ -218,8 +209,7 @@ export function Hand({
         case 'drop':
           suppressNextClickRef.current = true;
           setDraggingArcanum(undefined);
-          if (onCardDragEnd)
-            onCardDragEnd(effect.arcanum, { x: effect.x, y: effect.y });
+          if (onCardDragEnd) onCardDragEnd(effect.arcanum, { x: effect.x, y: effect.y });
           break;
         case 'click':
           // No-op here. React onClick handles the click-to-select
@@ -257,16 +247,10 @@ export function Hand({
   // actually changes — keeping `focusIndex` out of the deps prevents
   // a spurious re-evaluation on every keypress.
   useEffect(() => {
-    setFocusIndex((prev) =>
-      prev >= hand.length && hand.length > 0 ? hand.length - 1 : prev,
-    );
+    setFocusIndex((prev) => (prev >= hand.length && hand.length > 0 ? hand.length - 1 : prev));
   }, [hand.length]);
 
-  const handleKey = (
-    e: KeyboardEvent<HTMLButtonElement>,
-    index: number,
-    arcanum: number,
-  ): void => {
+  const handleKey = (e: KeyboardEvent<HTMLButtonElement>, index: number, arcanum: number): void => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
       const next = Math.min(index + 1, hand.length - 1);
@@ -277,18 +261,13 @@ export function Hand({
       const prev = Math.max(index - 1, 0);
       setFocusIndex(prev);
       cardRefs.current[prev]?.focus();
-    } else if (
-      onCardSelect &&
-      visible &&
-      (e.key === 'Enter' || e.key === ' ')
-    ) {
+    } else if (onCardSelect && visible && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       onCardSelect(arcanum);
     }
   };
 
-  const computedLabel =
-    ariaLabel ?? `Hand of ${hand.length} card${hand.length === 1 ? '' : 's'}`;
+  const computedLabel = ariaLabel ?? `Hand of ${hand.length} card${hand.length === 1 ? '' : 's'}`;
 
   // #463: derive the active (magnified) slot once per render. The value
   // doesn't depend on the per-card index, so hoisting avoids
@@ -300,9 +279,7 @@ export function Hand({
   // without it we'd magnify a slot that no longer exists.
   const rawActive = hoveredIndex ?? focusedIndex;
   const activeIndex =
-    visible && rawActive !== undefined && rawActive < hand.length
-      ? rawActive
-      : undefined;
+    visible && rawActive !== undefined && rawActive < hand.length ? rawActive : undefined;
   // #463: track the previous-render `activeIndex` so the magnify
   // transition persists for one render after the user moves off the
   // active card. CSS transitions only fire when the `transition`
@@ -316,8 +293,7 @@ export function Hand({
     prevActiveIndexRef.current = activeIndex;
   });
   const prevActiveIndex =
-    prevActiveIndexRef.current !== undefined &&
-    prevActiveIndexRef.current < hand.length
+    prevActiveIndexRef.current !== undefined && prevActiveIndexRef.current < hand.length
       ? prevActiveIndexRef.current
       : undefined;
 
@@ -342,7 +318,9 @@ export function Hand({
   // on an already-unmounted component (React 18 no-ops it, but it still
   // produces a dev-mode warning and is a resource leak).
   useEffect(() => {
-    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
   }, []);
 
   // Keep the hand open for the full duration of a drag so the player
@@ -402,321 +380,313 @@ export function Hand({
             : {}),
         }}
       >
-      {hand.length === 0 ? (
-        // #208: explicit empty-state copy. Without it, an empty hand
-        // would render nothing — no signal that the absence is
-        // intentional state ("you've played all your cards") rather
-        // than a UI miss.
-        <p
-          data-hand-empty
-          className="px-8 py-12 text-center text-sm opacity-60"
-        >
-          Hand is empty.
-        </p>
-      ) : null}
-      {hand.map((arcanum, i) => {
-        const offsetFromCenter = i - (hand.length - 1) / 2;
-        const fanDeg =
-          hand.length > 1
-            ? (offsetFromCenter / Math.max(hand.length - 1, 1)) * MAX_FAN_DEG
-            : 0;
-        const interactive = visible && onCardSelect !== undefined && !discardMode;
-        // Drag is allowed in normal interactive mode OR in discardMode
-        // (drag-to-discard-pile is an alternative to clicking the icon).
-        const draggable = interactive || (visible && discardMode);
-        const isSelected = selectedArcanum !== undefined && selectedArcanum === arcanum;
-        // #412: dragging the card visually lifts it. The same magnify
-        // primitive used for hover/focus drives the lift — keeping
-        // one transform path means the dock-magnify and drag-lift
-        // never fight for the transform property.
-        const isDragging = draggingArcanum !== undefined && draggingArcanum === arcanum;
-        const isMagnified = activeIndex === i || isDragging;
-        const handleClick = interactive
-          ? (): void => {
-              // #412 suppression: a drop or cancel just fired; skip
-              // the synthesized click that the browser still
-              // dispatches after pointer-up. The flag is cleared on
-              // every click attempt regardless of whether it was
-              // suppressed, so a subsequent legitimate tap is
-              // unaffected.
-              if (suppressNextClickRef.current) {
-                suppressNextClickRef.current = false;
-                return;
+        {hand.length === 0 ? (
+          // #208: explicit empty-state copy. Without it, an empty hand
+          // would render nothing — no signal that the absence is
+          // intentional state ("you've played all your cards") rather
+          // than a UI miss.
+          <p data-hand-empty className="px-8 py-12 text-center text-sm opacity-60">
+            Hand is empty.
+          </p>
+        ) : null}
+        {hand.map((arcanum, i) => {
+          const offsetFromCenter = i - (hand.length - 1) / 2;
+          const fanDeg =
+            hand.length > 1 ? (offsetFromCenter / Math.max(hand.length - 1, 1)) * MAX_FAN_DEG : 0;
+          const interactive = visible && onCardSelect !== undefined && !discardMode;
+          // Drag is allowed in normal interactive mode OR in discardMode
+          // (drag-to-discard-pile is an alternative to clicking the icon).
+          const draggable = interactive || (visible && discardMode);
+          const isSelected = selectedArcanum !== undefined && selectedArcanum === arcanum;
+          // #412: dragging the card visually lifts it. The same magnify
+          // primitive used for hover/focus drives the lift — keeping
+          // one transform path means the dock-magnify and drag-lift
+          // never fight for the transform property.
+          const isDragging = draggingArcanum !== undefined && draggingArcanum === arcanum;
+          const isMagnified = activeIndex === i || isDragging;
+          const handleClick = interactive
+            ? (): void => {
+                // #412 suppression: a drop or cancel just fired; skip
+                // the synthesized click that the browser still
+                // dispatches after pointer-up. The flag is cleared on
+                // every click attempt regardless of whether it was
+                // suppressed, so a subsequent legitimate tap is
+                // unaffected.
+                if (suppressNextClickRef.current) {
+                  suppressNextClickRef.current = false;
+                  return;
+                }
+                onCardSelect(arcanum);
               }
-              onCardSelect(arcanum);
-            }
-          : undefined;
-        const offsetFromActive =
-          activeIndex !== undefined ? i - activeIndex : null;
-        const isImmediateNeighbour =
-          offsetFromActive !== null && Math.abs(offsetFromActive) === 1;
-        const isNearNeighbour =
-          offsetFromActive !== null && Math.abs(offsetFromActive) === 2;
-        // #463: magnify-set membership — only these cards participate in
-        // the dock motion (active + the two flanking pairs). Used below
-        // to scope `transition` so unrelated state changes (focusIndex,
-        // open toggle, selection) don't animate the base fan transform.
-        const inMagnifySet = isMagnified || isImmediateNeighbour || isNearNeighbour;
-        // #463: same membership against the previous render's active
-        // slot. A card that *was* in the magnify set but isn't anymore
-        // keeps `transition` for exactly one render, so the exit
-        // transform change (scale 1.3 → 1.0, translateX(0.8rem) → 0)
-        // animates instead of snapping. After commit, the ref updates
-        // via the useEffect above and `prevInMagnifySet` becomes false
-        // on the following render, so the transition is removed once
-        // the exit animation has had its render to take effect.
-        const offsetFromPrevActive =
-          prevActiveIndex !== undefined ? i - prevActiveIndex : null;
-        const prevInMagnifySet =
-          offsetFromPrevActive !== null && Math.abs(offsetFromPrevActive) <= 2;
-        // #405: hover/focus → fire onCardHover so the consumer can
-        // light corresponding paths on the Tree. Disabled or
-        // face-down cards don't fire (visible gates the entire hover
-        // contract). Mouse leave / blur clears with undefined.
-        // #463: same handlers also drive local hover/focus state for
-        // the dock-magnify lift. State updates run regardless of
-        // whether onCardHover is set; the callback is opt-in.
-        const handleHoverEnter = visible
-          ? (): void => {
-              setHoveredIndex(i);
-              if (onCardHover) onCardHover(arcanum);
-            }
-          : undefined;
-        const handleHoverLeave = visible
-          ? (): void => {
-              setHoveredIndex((prev) => (prev === i ? undefined : prev));
-              if (onCardHover) onCardHover(undefined);
-            }
-          : undefined;
-        const handleFocusIn = visible
-          ? (): void => {
-              expandHand();
-              setFocusedIndex(i);
-              if (onCardHover) onCardHover(arcanum);
-            }
-          : undefined;
-        const handleFocusOut = visible
-          ? (): void => {
-              scheduleHide();
-              setFocusedIndex((prev) => (prev === i ? undefined : prev));
-              if (onCardHover) onCardHover(undefined);
-            }
-          : undefined;
-        // Major Arcana are unique within a single deck; the project's
-        // 3–4-player rule allows two decks, so a future hand might
-        // contain duplicates. Keying on arcanum + slot keeps DOM
-        // identity stable across re-renders even then. When card
-        // identity (deal-time UUIDs) is added to PlayerState.hand,
-        // switch to that.
-        // For visible read-only hands (no `onCardSelect`), use
-        // aria-disabled rather than `disabled` so the card stays in
-        // the AT tree as a readable element. `disabled` removes the
-        // node from the accessibility tree — fine for face-down
-        // cards (nothing to read), wrong for face-up cards.
-        // In discard mode the card button is not selectable, but the sibling
-        // discard icon IS the active affordance — aria-disabled should be
-        // false so screen readers don't announce the card as "dimmed" when
-        // the icon is the thing to interact with.
-        const ariaDisabled = !visible || (!interactive && !discardMode);
-        const htmlDisabled = !visible;
-        // #463: zIndex tiers — magnified > selected > unselected stack
-        // (left over right). With HAND_CAP=6 the magnified ceiling is
-        // `hand.length + 2` = 8; the over-cap Meditate path (#291,
-        // hand size up to 8) raises it to 10.
-        let zIndex: number;
-        if (isMagnified) {
-          zIndex = hand.length + 2;
-        } else if (isSelected) {
-          zIndex = hand.length + 1;
-        } else {
-          zIndex = hand.length - i;
-        }
-        // #463: build the transform from base + magnify pieces. The
-        // base (`rotate` + `translateY`) is the existing fan layout;
-        // magnify adds `scale` on the active card and `translateX` on
-        // its neighbours so they slide outward. `prefers-reduced-motion`
-        // strips both magnify pieces — the focus indicator (CSS ring,
-        // below) carries the keyboard-focus signal in that mode.
-        const baseTransform = `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`;
-        let magnifyTransform = '';
-        if (!reduceMotion) {
+            : undefined;
+          const offsetFromActive = activeIndex !== undefined ? i - activeIndex : null;
+          const isImmediateNeighbour =
+            offsetFromActive !== null && Math.abs(offsetFromActive) === 1;
+          const isNearNeighbour = offsetFromActive !== null && Math.abs(offsetFromActive) === 2;
+          // #463: magnify-set membership — only these cards participate in
+          // the dock motion (active + the two flanking pairs). Used below
+          // to scope `transition` so unrelated state changes (focusIndex,
+          // open toggle, selection) don't animate the base fan transform.
+          const inMagnifySet = isMagnified || isImmediateNeighbour || isNearNeighbour;
+          // #463: same membership against the previous render's active
+          // slot. A card that *was* in the magnify set but isn't anymore
+          // keeps `transition` for exactly one render, so the exit
+          // transform change (scale 1.3 → 1.0, translateX(0.8rem) → 0)
+          // animates instead of snapping. After commit, the ref updates
+          // via the useEffect above and `prevInMagnifySet` becomes false
+          // on the following render, so the transition is removed once
+          // the exit animation has had its render to take effect.
+          const offsetFromPrevActive = prevActiveIndex !== undefined ? i - prevActiveIndex : null;
+          const prevInMagnifySet =
+            offsetFromPrevActive !== null && Math.abs(offsetFromPrevActive) <= 2;
+          // #405: hover/focus → fire onCardHover so the consumer can
+          // light corresponding paths on the Tree. Disabled or
+          // face-down cards don't fire (visible gates the entire hover
+          // contract). Mouse leave / blur clears with undefined.
+          // #463: same handlers also drive local hover/focus state for
+          // the dock-magnify lift. State updates run regardless of
+          // whether onCardHover is set; the callback is opt-in.
+          const handleHoverEnter = visible
+            ? (): void => {
+                setHoveredIndex(i);
+                if (onCardHover) onCardHover(arcanum);
+              }
+            : undefined;
+          const handleHoverLeave = visible
+            ? (): void => {
+                setHoveredIndex((prev) => (prev === i ? undefined : prev));
+                if (onCardHover) onCardHover(undefined);
+              }
+            : undefined;
+          const handleFocusIn = visible
+            ? (): void => {
+                expandHand();
+                setFocusedIndex(i);
+                if (onCardHover) onCardHover(arcanum);
+              }
+            : undefined;
+          const handleFocusOut = visible
+            ? (): void => {
+                scheduleHide();
+                setFocusedIndex((prev) => (prev === i ? undefined : prev));
+                if (onCardHover) onCardHover(undefined);
+              }
+            : undefined;
+          // Major Arcana are unique within a single deck; the project's
+          // 3–4-player rule allows two decks, so a future hand might
+          // contain duplicates. Keying on arcanum + slot keeps DOM
+          // identity stable across re-renders even then. When card
+          // identity (deal-time UUIDs) is added to PlayerState.hand,
+          // switch to that.
+          // For visible read-only hands (no `onCardSelect`), use
+          // aria-disabled rather than `disabled` so the card stays in
+          // the AT tree as a readable element. `disabled` removes the
+          // node from the accessibility tree — fine for face-down
+          // cards (nothing to read), wrong for face-up cards.
+          // In discard mode the card button is not selectable, but the sibling
+          // discard icon IS the active affordance — aria-disabled should be
+          // false so screen readers don't announce the card as "dimmed" when
+          // the icon is the thing to interact with.
+          const ariaDisabled = !visible || (!interactive && !discardMode);
+          const htmlDisabled = !visible;
+          // #463: zIndex tiers — magnified > selected > unselected stack
+          // (left over right). With HAND_CAP=6 the magnified ceiling is
+          // `hand.length + 2` = 8; the over-cap Meditate path (#291,
+          // hand size up to 8) raises it to 10.
+          let zIndex: number;
           if (isMagnified) {
-            magnifyTransform = ` translateY(-${MAGNIFY_LIFT_PX}px) scale(${MAGNIFY_SCALE})`;
-          } else if (isImmediateNeighbour && offsetFromActive !== null) {
-            const sign = offsetFromActive > 0 ? 1 : -1;
-            magnifyTransform = ` translateX(${(sign * NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
-          } else if (isNearNeighbour && offsetFromActive !== null) {
-            const sign = offsetFromActive > 0 ? 1 : -1;
-            magnifyTransform = ` translateX(${(sign * NEAR_NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
+            zIndex = hand.length + 2;
+          } else if (isSelected) {
+            zIndex = hand.length + 1;
+          } else {
+            zIndex = hand.length - i;
           }
-        }
-        // #90: wrap each card slot in a <div> so the discard icon can be
-        // a sibling <button> (HTML disallows nested interactive elements).
-        // Layout transforms, zIndex, and hover handlers live on the wrapper;
-        // the inner card button retains focus/keyboard handlers.
-        // The `group` class enables group-hover:opacity-100 on the icon.
-        return (
-          <div
-            key={`${i}-${arcanum}`}
-            onMouseEnter={handleHoverEnter}
-            onMouseLeave={handleHoverLeave}
-            style={{
-              // #340: `position: relative` on every card so `zIndex`
-              // takes effect predictably (without it, the property is
-              // ignored on a static element and the selected card stays
-              // buried under its right-hand neighbour in DOM order).
-              //
-              // #368: stack the fan so left cards paint over right cards.
-              position: 'relative',
-              zIndex,
-              transform: baseTransform + magnifyTransform,
-              // Magnified cards scale from center so the lift is symmetric;
-              // non-magnified cards anchor at bottom-center to keep the
-              // fan's curve on a horizontal baseline.
-              transformOrigin: isMagnified ? 'center' : 'bottom center',
-              // Transition is scoped to cards participating in the magnify
-              // *now or on the previous render*. The `inMagnifySet` half
-              // covers entry; the `prevInMagnifySet` half covers exit
-              // (a card leaving the magnify set keeps its transition for
-              // one render so the snap-back is animated instead of
-              // instant). Applying the transition unconditionally would
-              // animate the base `rotate`/`translateY` on unrelated
-              // re-renders (focus-index nav, selection change, open
-              // toggle) — visually low-impact but a needless write to
-              // every card's compositor layer on every state change.
-              // #579 review fix: restore the `!reduceMotion` gate on
-              // the transition. Pre-fix the gate was dropped when
-              // opacity was added to MAGNIFY_TRANSITION; the result was
-              // that reduced-motion users still saw the box-shadow
-              // flash + opacity fade on hover, which violates the
-              // spirit of `prefers-reduced-motion` even though the
-              // opacity *value* was correctly preserved. Now the
-              // transition fires only for motion-safe users; reduced-
-              // motion users get the opacity 0.75 value snapped on
-              // (instant, no fade) — the path-through-card visual
-              // still works for them, just without animation.
-              transition:
-                !reduceMotion && (inMagnifySet || prevInMagnifySet)
-                  ? MAGNIFY_TRANSITION
-                  : undefined,
-              boxShadow: isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
-              // #579: 75% opacity while magnified so the matching Tree
-              // path's per-Sefirah glow shows THROUGH the card. The
-              // opacity is preserved under `prefers-reduced-motion`
-              // because the path-through-card visual is the connective
-              // signal between hand and Tree — not just decoration —
-              // and reduced-motion users still need it.
-              opacity: isMagnified ? MAGNIFY_OPACITY : undefined,
-              // #290: marginLeft is set in card-relative rem units so
-              // the overlap tracks the card's intrinsic width rather
-              // than the parent. The first card anchors the fan with
-              // no marginLeft set at all (omitted from the style
-              // object); every subsequent card overlaps by 55% of
-              // card width via the responsive base/sm pair below.
-              ...(i === 0 ? {} : { marginLeft: CARD_OVERLAP_REM_BASE }),
-            }}
-            // sm: breakpoint widens the card from w-24 (6 rem) to
-            // w-36 (9 rem). The overlap must scale with it; the
-            // responsive utility class (with `!important`) swaps to
-            // the larger negative margin from `sm:` upward and
-            // overrides the rem base set inline above — without an
-            // additional inline-style branch that would require a
-            // matchMedia subscription. Tailwind's JIT needs the class
-            // to be a literal string; `-4.32rem` is 9rem × 0.48 (see
-            // overlap doc above the constant).
-            className={`group${i === 0 ? '' : ' sm:!ml-[-4.32rem]'}`.trim()}
-          >
-            <button
-              ref={(el) => {
-                cardRefs.current[i] = el;
-              }}
-              type="button"
-              data-card-slot={i}
-              data-arcanum={visible ? arcanum : undefined}
-              data-selected={isSelected ? 'true' : 'false'}
-              data-magnified={isMagnified ? 'true' : 'false'}
-              data-dragging={isDragging ? 'true' : 'false'}
-              disabled={htmlDisabled}
-              aria-disabled={ariaDisabled}
-              // #412 — pointer events drive drag-to-play. The native
-              // click event still fires after pointer-up (one of the
-              // browser's mouse-event compatibility layers), and is
-              // routed through React's onClick to onCardSelect — same
-              // path the keyboard Enter / Space activation uses, so
-              // tap and keyboard share one click site. Drag completion
-              // sets `suppressNextClickRef`; the onClick handler skips
-              // the post-drop synthesized click on its first
-              // invocation, then resets.
-              onClick={handleClick}
-              onPointerDown={(e) => {
-                if (draggable) cardDrag.handlers.onPointerDown(e, arcanum);
-              }}
-              onPointerMove={cardDrag.handlers.onPointerMove}
-              onPointerUp={cardDrag.handlers.onPointerUp}
-              onPointerCancel={cardDrag.handlers.onPointerCancel}
-              onFocus={handleFocusIn}
-              onBlur={handleFocusOut}
-              onKeyDown={(e) => handleKey(e, i, arcanum)}
-              tabIndex={i === focusIndex ? 0 : -1}
+          // #463: build the transform from base + magnify pieces. The
+          // base (`rotate` + `translateY`) is the existing fan layout;
+          // magnify adds `scale` on the active card and `translateX` on
+          // its neighbours so they slide outward. `prefers-reduced-motion`
+          // strips both magnify pieces — the focus indicator (CSS ring,
+          // below) carries the keyboard-focus signal in that mode.
+          const baseTransform = `rotate(${fanDeg.toFixed(2)}deg) translateY(${Math.abs(offsetFromCenter) * 4}px)`;
+          let magnifyTransform = '';
+          if (!reduceMotion) {
+            if (isMagnified) {
+              magnifyTransform = ` translateY(-${MAGNIFY_LIFT_PX}px) scale(${MAGNIFY_SCALE})`;
+            } else if (isImmediateNeighbour && offsetFromActive !== null) {
+              const sign = offsetFromActive > 0 ? 1 : -1;
+              magnifyTransform = ` translateX(${(sign * NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
+            } else if (isNearNeighbour && offsetFromActive !== null) {
+              const sign = offsetFromActive > 0 ? 1 : -1;
+              magnifyTransform = ` translateX(${(sign * NEAR_NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
+            }
+          }
+          // #90: wrap each card slot in a <div> so the discard icon can be
+          // a sibling <button> (HTML disallows nested interactive elements).
+          // Layout transforms, zIndex, and hover handlers live on the wrapper;
+          // the inner card button retains focus/keyboard handlers.
+          // The `group` class enables group-hover:opacity-100 on the icon.
+          return (
+            <div
+              key={`${i}-${arcanum}`}
+              onMouseEnter={handleHoverEnter}
+              onMouseLeave={handleHoverLeave}
               style={{
-                padding: 0,
-                border: isSelected ? '2px solid #d4af37' : 'none',
-                borderRadius: 12,
-                background: 'transparent',
-                cursor: interactive ? 'pointer' : 'default',
-                display: 'block',
+                // #340: `position: relative` on every card so `zIndex`
+                // takes effect predictably (without it, the property is
+                // ignored on a static element and the selected card stays
+                // buried under its right-hand neighbour in DOM order).
+                //
+                // #368: stack the fan so left cards paint over right cards.
+                position: 'relative',
+                zIndex,
+                transform: baseTransform + magnifyTransform,
+                // Magnified cards scale from center so the lift is symmetric;
+                // non-magnified cards anchor at bottom-center to keep the
+                // fan's curve on a horizontal baseline.
+                transformOrigin: isMagnified ? 'center' : 'bottom center',
+                // Transition is scoped to cards participating in the magnify
+                // *now or on the previous render*. The `inMagnifySet` half
+                // covers entry; the `prevInMagnifySet` half covers exit
+                // (a card leaving the magnify set keeps its transition for
+                // one render so the snap-back is animated instead of
+                // instant). Applying the transition unconditionally would
+                // animate the base `rotate`/`translateY` on unrelated
+                // re-renders (focus-index nav, selection change, open
+                // toggle) — visually low-impact but a needless write to
+                // every card's compositor layer on every state change.
+                // #579 review fix: restore the `!reduceMotion` gate on
+                // the transition. Pre-fix the gate was dropped when
+                // opacity was added to MAGNIFY_TRANSITION; the result was
+                // that reduced-motion users still saw the box-shadow
+                // flash + opacity fade on hover, which violates the
+                // spirit of `prefers-reduced-motion` even though the
+                // opacity *value* was correctly preserved. Now the
+                // transition fires only for motion-safe users; reduced-
+                // motion users get the opacity 0.75 value snapped on
+                // (instant, no fade) — the path-through-card visual
+                // still works for them, just without animation.
+                transition:
+                  !reduceMotion && (inMagnifySet || prevInMagnifySet)
+                    ? MAGNIFY_TRANSITION
+                    : undefined,
+                boxShadow: isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
+                // #579: 75% opacity while magnified so the matching Tree
+                // path's per-Sefirah glow shows THROUGH the card. The
+                // opacity is preserved under `prefers-reduced-motion`
+                // because the path-through-card visual is the connective
+                // signal between hand and Tree — not just decoration —
+                // and reduced-motion users still need it.
+                opacity: isMagnified ? MAGNIFY_OPACITY : undefined,
+                // #290: marginLeft is set in card-relative rem units so
+                // the overlap tracks the card's intrinsic width rather
+                // than the parent. The first card anchors the fan with
+                // no marginLeft set at all (omitted from the style
+                // object); every subsequent card overlaps by 55% of
+                // card width via the responsive base/sm pair below.
+                ...(i === 0 ? {} : { marginLeft: CARD_OVERLAP_REM_BASE }),
               }}
-              // #463: focus-visible ring is the load-bearing keyboard
-              // focus indicator, applied independently of the scale
-              // transform — it remains visible under
-              // `prefers-reduced-motion` even when the magnify is off.
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              // sm: breakpoint widens the card from w-24 (6 rem) to
+              // w-36 (9 rem). The overlap must scale with it; the
+              // responsive utility class (with `!important`) swaps to
+              // the larger negative margin from `sm:` upward and
+              // overrides the rem base set inline above — without an
+              // additional inline-style branch that would require a
+              // matchMedia subscription. Tailwind's JIT needs the class
+              // to be a literal string; `-4.32rem` is 9rem × 0.48 (see
+              // overlap doc above the constant).
+              className={i === 0 ? 'group' : 'group sm:!ml-[-4.32rem]'}
             >
-              {visible ? (
-                // #38: responsive width — `w-24` on narrow (96 px),
-                // `w-36` on `sm:` and up (144 px). Combined with the
-                // `-2.88rem` / `sm:-4.32rem` overlap (#290), a 6-card
-                // fan sits inside the desktop `max-w-xl` container and
-                // overflows a 320 px mobile viewport by ~26 px (clipped
-                // at viewport edge — see CARD_OVERLAP doc above).
-                <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
-              ) : (
-                <CardBack className="w-24 sm:w-36" />
-              )}
-            </button>
-            {discardMode && onDiscard && visible ? (
-              // #90: Translucent discard icon overlay. Appears on
-              // group-hover so hovering anywhere in the card area
-              // reveals it. Positioned absolute over the card; the
-              // wrapper <div> is `position: relative`.
-              // HTML requires this to be a sibling, not a child of
-              // the card <button> — nested interactive elements are
-              // invalid HTML and cause accessibility issues.
               <button
+                ref={(el) => {
+                  cardRefs.current[i] = el;
+                }}
                 type="button"
-                data-discard-icon={arcanum}
-                aria-label={`Discard ${arcanumByNumber(arcanum).name}`}
-                tabIndex={0}
-                onClick={() => onDiscard(arcanum)}
-                className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-ground/60 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-veil/80"
+                data-card-slot={i}
+                data-arcanum={visible ? arcanum : undefined}
+                data-selected={isSelected ? 'true' : 'false'}
+                data-magnified={isMagnified ? 'true' : 'false'}
+                data-dragging={isDragging ? 'true' : 'false'}
+                disabled={htmlDisabled}
+                aria-disabled={ariaDisabled}
+                // #412 — pointer events drive drag-to-play. The native
+                // click event still fires after pointer-up (one of the
+                // browser's mouse-event compatibility layers), and is
+                // routed through React's onClick to onCardSelect — same
+                // path the keyboard Enter / Space activation uses, so
+                // tap and keyboard share one click site. Drag completion
+                // sets `suppressNextClickRef`; the onClick handler skips
+                // the post-drop synthesized click on its first
+                // invocation, then resets.
+                onClick={handleClick}
+                onPointerDown={(e) => {
+                  if (draggable) cardDrag.handlers.onPointerDown(e, arcanum);
+                }}
+                onPointerMove={cardDrag.handlers.onPointerMove}
+                onPointerUp={cardDrag.handlers.onPointerUp}
+                onPointerCancel={cardDrag.handlers.onPointerCancel}
+                onFocus={handleFocusIn}
+                onBlur={handleFocusOut}
+                onKeyDown={(e) => handleKey(e, i, arcanum)}
+                tabIndex={i === focusIndex ? 0 : -1}
+                style={{
+                  padding: 0,
+                  border: isSelected ? '2px solid #d4af37' : 'none',
+                  borderRadius: 12,
+                  background: 'transparent',
+                  cursor: interactive ? 'pointer' : 'default',
+                  display: 'block',
+                }}
+                // #463: focus-visible ring is the load-bearing keyboard
+                // focus indicator, applied independently of the scale
+                // transform — it remains visible under
+                // `prefers-reduced-motion` even when the magnify is off.
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  aria-hidden
-                  className="h-8 w-8 text-veil/90"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <polyline points="3,6 5,6 21,6" />
-                  <path d="M19 6l-1 14H6L5 6" />
-                  <path d="M10 11v6M14 11v6" />
-                </svg>
+                {visible ? (
+                  // #38: responsive width — `w-24` on narrow (96 px),
+                  // `w-36` on `sm:` and up (144 px). Combined with the
+                  // `-2.88rem` / `sm:-4.32rem` overlap (#290), a 6-card
+                  // fan sits inside the desktop `max-w-xl` container and
+                  // overflows a 320 px mobile viewport by ~26 px (clipped
+                  // at viewport edge — see CARD_OVERLAP doc above).
+                  <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
+                ) : (
+                  <CardBack className="w-24 sm:w-36" />
+                )}
               </button>
-            ) : null}
-          </div>
-        );
-      })}
+              {discardMode && onDiscard && visible ? (
+                // #90: Translucent discard icon overlay. Appears on
+                // group-hover so hovering anywhere in the card area
+                // reveals it. Positioned absolute over the card; the
+                // wrapper <div> is `position: relative`.
+                // HTML requires this to be a sibling, not a child of
+                // the card <button> — nested interactive elements are
+                // invalid HTML and cause accessibility issues.
+                <button
+                  type="button"
+                  data-discard-icon={arcanum}
+                  aria-label={`Discard ${arcanumByNumber(arcanum).name}`}
+                  tabIndex={0}
+                  onClick={() => onDiscard(arcanum)}
+                  className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-ground/60 opacity-0 transition-opacity duration-150 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-veil/80 group-hover:opacity-100"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                    className="h-8 w-8 text-veil/90"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <polyline points="3,6 5,6 21,6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

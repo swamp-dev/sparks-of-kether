@@ -52,9 +52,7 @@ describe('PlayScreen — #384 in-game Sefirah click opens popover', () => {
 
     // The "Read more in Codex" link is the only escape hatch to the
     // full Codex page; it opens in a new tab so game state survives.
-    const codexLink = popover?.querySelector<HTMLAnchorElement>(
-      '[data-popover-codex-link]',
-    );
+    const codexLink = popover?.querySelector<HTMLAnchorElement>('[data-popover-codex-link]');
     expect(codexLink?.getAttribute('href')).toBe('/sefirah/tiferet');
     expect(codexLink?.getAttribute('target')).toBe('_blank');
     expect(codexLink?.getAttribute('rel')).toBe('noopener noreferrer');
@@ -94,9 +92,7 @@ describe('PlayScreen — #384 in-game Sefirah click opens popover', () => {
     act(() => {
       fireEvent.click(tiferet);
     });
-    const backdrop = document.querySelector<HTMLDivElement>(
-      '[data-sefirah-popover-backdrop]',
-    );
+    const backdrop = document.querySelector<HTMLDivElement>('[data-sefirah-popover-backdrop]');
     expect(backdrop).not.toBeNull();
     if (backdrop === null) return;
     act(() => {
@@ -116,9 +112,7 @@ describe('PlayScreen — #384 in-game Sefirah click opens popover', () => {
       fireEvent.click(tiferet);
     });
     expect(document.querySelector('[data-sefirah-popover="tiferet"]')).not.toBeNull();
-    const yesod = document.querySelector<HTMLButtonElement>(
-      'button[data-sefirah-link="yesod"]',
-    );
+    const yesod = document.querySelector<HTMLButtonElement>('button[data-sefirah-link="yesod"]');
     expect(yesod).not.toBeNull();
     if (yesod === null) return;
     act(() => {
@@ -130,9 +124,7 @@ describe('PlayScreen — #384 in-game Sefirah click opens popover', () => {
 
   it('popover surfaces basic Sefirah info (English name, Hebrew, stat, sparks count)', () => {
     renderPlay();
-    const yesod = document.querySelector<HTMLButtonElement>(
-      'button[data-sefirah-link="yesod"]',
-    );
+    const yesod = document.querySelector<HTMLButtonElement>('button[data-sefirah-link="yesod"]');
     expect(yesod).not.toBeNull();
     if (yesod === null) return;
     act(() => {
@@ -140,17 +132,9 @@ describe('PlayScreen — #384 in-game Sefirah click opens popover', () => {
     });
     const popover = document.querySelector('[data-sefirah-popover="yesod"]');
     expect(popover).not.toBeNull();
-    expect(popover?.querySelector('[data-popover-name]')?.textContent).toContain(
-      'Foundation',
-    );
-    expect(
-      popover?.querySelector('[data-popover-hebrew]')?.getAttribute('lang'),
-    ).toBe('he');
-    expect(popover?.querySelector('[data-popover-stat]')?.textContent).toMatch(
-      /Stat: intuition/i,
-    );
-    expect(popover?.querySelector('[data-popover-sparks]')?.textContent).toMatch(
-      /spark/i,
-    );
+    expect(popover?.querySelector('[data-popover-name]')?.textContent).toContain('Foundation');
+    expect(popover?.querySelector('[data-popover-hebrew]')?.getAttribute('lang')).toBe('he');
+    expect(popover?.querySelector('[data-popover-stat]')?.textContent).toMatch(/Stat: intuition/i);
+    expect(popover?.querySelector('[data-popover-sparks]')?.textContent).toMatch(/spark/i);
   });
 });

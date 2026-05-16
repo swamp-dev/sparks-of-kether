@@ -53,9 +53,7 @@ export function DiscardPile({
   // #462: when a drag is live, append a "drop a card here to discard"
   // prompt to the AT label so screen-reader users hear the affordance
   // without needing to navigate to a separate aria-live region.
-  const ariaLabel = dragActive
-    ? `${label} Drop a card here to discard.`
-    : label;
+  const ariaLabel = dragActive ? `${label} Drop a card here to discard.` : label;
 
   return (
     <div

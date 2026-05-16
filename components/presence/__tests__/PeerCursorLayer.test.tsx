@@ -67,14 +67,13 @@ describe('<PeerCursorLayer>', () => {
 
   it('falls back to the trimmed playerId when no name is supplied', () => {
     const cursors = new Map<string, PeerCursorSnapshot>([
-      ['unknown-player-abc', snap({ playerId: 'unknown-player-abc', viewport: { w: 1280, h: 800 } })],
+      [
+        'unknown-player-abc',
+        snap({ playerId: 'unknown-player-abc', viewport: { w: 1280, h: 800 } }),
+      ],
     ]);
     render(
-      <PeerCursorLayer
-        cursors={cursors}
-        nameByPlayerId={new Map()}
-        colorByPlayerId={new Map()}
-      />,
+      <PeerCursorLayer cursors={cursors} nameByPlayerId={new Map()} colorByPlayerId={new Map()} />,
     );
     // The label uses the first 6 chars of the playerId on miss.
     expect(screen.getByText('unknow')).toBeInTheDocument();

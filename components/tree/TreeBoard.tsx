@@ -735,7 +735,7 @@ export function TreeBoard({
                 <div
                   data-tooltip-position={tooltipFlip ? 'above' : 'below'}
                   className={`absolute left-1/2 top-1/2 z-10 -translate-x-1/2 opacity-0 transition-opacity duration-200 ease-emerge peer-hover:opacity-100 peer-focus-visible:opacity-100 ${
-                    tooltipFlip ? '-translate-y-full -mt-6' : 'translate-y-6'
+                    tooltipFlip ? '-mt-6 -translate-y-full' : 'translate-y-6'
                   }`}
                 >
                   <SefirahTooltip

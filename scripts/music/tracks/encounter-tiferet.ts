@@ -46,7 +46,7 @@ export const encounterTiferet = buildEncounterTrack({
     pitchesHz: [C4, E4, G4, C5],
     chorusCents: 4,
     amCycles: 3,
-    gain: 0.060,
+    gain: 0.06,
     pans: [-0.3, 0.3, -0.15, 0.15],
   },
 

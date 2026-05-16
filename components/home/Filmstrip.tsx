@@ -41,13 +41,14 @@ const FRAMES: readonly Frame[] = [
     key: 'ritual',
     src: ritualShot,
     alt: 'The Blessing Ritual mid-flow — the active Sefirah named in display type, a 3d6 stat roll prompted, the ledger filling up below.',
-    caption: "The opening rite. Walk Kether to Malkuth, rolling 3d6 for each Sefirah’s stat.",
+    caption: 'The opening rite. Walk Kether to Malkuth, rolling 3d6 for each Sefirah’s stat.',
   },
   {
     key: 'class',
     src: signPickerShot,
     alt: 'The zodiac sign picker — twelve classical signs, each with planetary dignities and Soul Doors.',
-    caption: 'Your class. Twelve signs; planetary dignities tilt your starting stats and open Soul Doors on the Tree.',
+    caption:
+      'Your class. Twelve signs; planetary dignities tilt your starting stats and open Soul Doors on the Tree.',
   },
   {
     key: 'mid-game',
@@ -59,7 +60,7 @@ const FRAMES: readonly Frame[] = [
     key: 'encounter',
     src: encounterShot,
     alt: 'A challenge modal mid-resolution, with a Soul Door bonus called out — stat plus d20 plus cards versus DC.',
-    caption: "An encounter unfolds. Stat + d20 + cards versus the Sefirah’s difficulty.",
+    caption: 'An encounter unfolds. Stat + d20 + cards versus the Sefirah’s difficulty.',
   },
 ];
 
@@ -81,11 +82,9 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
     if (e.target === e.currentTarget) handleClose();
   };
 
-  const handlePrev = () =>
-    setOpenIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+  const handlePrev = () => setOpenIndex((i) => (i !== null && i > 0 ? i - 1 : i));
 
-  const handleNext = () =>
-    setOpenIndex((i) => (i !== null && i < FRAMES.length - 1 ? i + 1 : i));
+  const handleNext = () => setOpenIndex((i) => (i !== null && i < FRAMES.length - 1 ? i + 1 : i));
 
   useEffect(() => {
     if (openIndex !== null) closeButtonRef.current?.focus();
@@ -94,7 +93,10 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
   useEffect(() => {
     if (openIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { handleClose(); return; }
+      if (e.key === 'Escape') {
+        handleClose();
+        return;
+      }
       if (e.key === 'ArrowLeft') handlePrev();
       if (e.key === 'ArrowRight') handleNext();
     };
@@ -106,11 +108,7 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
 
   return (
     <>
-      <section
-        data-home-filmstrip
-        aria-labelledby="home-filmstrip-heading"
-        className={className}
-      >
+      <section data-home-filmstrip aria-labelledby="home-filmstrip-heading" className={className}>
         <div className="mb-6 text-center">
           <h2
             id="home-filmstrip-heading"
@@ -135,23 +133,12 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
           rather than dictating the LI's width. The grid layout at sm
           and up overrides flex entirely — same children, no DOM branch.
         */}
-        <ul
-          className="
-            flex w-full max-w-6xl mx-auto snap-x snap-mandatory gap-4
-            overflow-x-auto px-4 pb-4
-            sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0
-            md:grid-cols-4
-          "
-        >
+        <ul className="mx-auto flex w-full max-w-6xl snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 md:grid-cols-4">
           {FRAMES.map((frame, i) => (
             <li
               key={frame.key}
               data-filmstrip-frame={frame.key}
-              className="
-                flex basis-[85vw] shrink-0 grow-0 flex-col gap-3
-                snap-start
-                sm:basis-auto sm:shrink sm:grow
-              "
+              className="flex shrink-0 grow-0 basis-[85vw] snap-start flex-col gap-3 sm:shrink sm:grow sm:basis-auto"
             >
               <figure className="m-0">
                 <button
@@ -170,11 +157,7 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
                     height={frame.src.height}
                     alt={frame.alt}
                     loading="lazy"
-                    className="
-                      h-auto w-full max-w-full cursor-zoom-in rounded-lg
-                      border border-veil/15 shadow-md
-                      transition-[border-color] group-hover:border-veil/35
-                    "
+                    className="h-auto w-full max-w-full cursor-zoom-in rounded-lg border border-veil/15 shadow-md transition-[border-color] group-hover:border-veil/35"
                   />
                 </button>
                 <figcaption className="mt-3 text-sm leading-relaxed text-veil/75">
@@ -195,7 +178,7 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
           role="dialog"
           aria-modal="true"
           aria-label={`Screenshot: ${activeFrame.caption}`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-void/92"
+          className="bg-void/92 fixed inset-0 z-50 flex items-center justify-center"
           onClick={handleBackdropClick}
         >
           {/* Close button */}
@@ -204,13 +187,7 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
             type="button"
             aria-label="Close lightbox"
             onClick={handleClose}
-            className="
-              absolute right-5 top-5 flex h-10 w-10 items-center justify-center
-              rounded-full border border-veil/20 text-2xl leading-none text-veil/55
-              hover:border-veil/50 hover:text-veil
-              focus-visible:outline-none focus-visible:ring-1
-              focus-visible:ring-veil/60
-            "
+            className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-veil/20 text-2xl leading-none text-veil/55 hover:border-veil/50 hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60"
           >
             &times;
           </button>
@@ -221,13 +198,7 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
               type="button"
               aria-label="Previous screenshot"
               onClick={handlePrev}
-              className="
-                absolute left-3 top-1/2 flex h-14 w-10 -translate-y-1/2
-                items-center justify-center text-4xl leading-none text-veil/45
-                hover:text-veil
-                focus-visible:outline-none focus-visible:ring-1
-                focus-visible:ring-veil/60
-              "
+              className="absolute left-3 top-1/2 flex h-14 w-10 -translate-y-1/2 items-center justify-center text-4xl leading-none text-veil/45 hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60"
             >
               &#x2039;
             </button>
@@ -254,13 +225,7 @@ export function Filmstrip({ className }: FilmstripProps): JSX.Element {
               type="button"
               aria-label="Next screenshot"
               onClick={handleNext}
-              className="
-                absolute right-3 top-1/2 flex h-14 w-10 -translate-y-1/2
-                items-center justify-center text-4xl leading-none text-veil/45
-                hover:text-veil
-                focus-visible:outline-none focus-visible:ring-1
-                focus-visible:ring-veil/60
-              "
+              className="absolute right-3 top-1/2 flex h-14 w-10 -translate-y-1/2 items-center justify-center text-4xl leading-none text-veil/45 hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60"
             >
               &#x203a;
             </button>

@@ -22,9 +22,15 @@ interface ColorBloomProps {
    */
   readonly color: string;
   readonly position?:
-    | 'top-left' | 'top' | 'top-right'
-    | 'left' | 'center' | 'right'
-    | 'bottom-left' | 'bottom' | 'bottom-right';
+    | 'top-left'
+    | 'top'
+    | 'top-right'
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'bottom-left'
+    | 'bottom'
+    | 'bottom-right';
   /** Bloom radius as % of the viewport. Defaults to 60. */
   readonly radius?: number;
   /** Opacity of the inner stop. Defaults to 0.18 — restrained. */
@@ -34,13 +40,13 @@ interface ColorBloomProps {
 
 const POSITION_MAP: Record<NonNullable<ColorBloomProps['position']>, string> = {
   'top-left': '15% 15%',
-  'top': '50% 10%',
+  top: '50% 10%',
   'top-right': '85% 15%',
-  'left': '15% 50%',
-  'center': '50% 50%',
-  'right': '85% 50%',
+  left: '15% 50%',
+  center: '50% 50%',
+  right: '85% 50%',
   'bottom-left': '15% 85%',
-  'bottom': '50% 90%',
+  bottom: '50% 90%',
   'bottom-right': '85% 85%',
 };
 

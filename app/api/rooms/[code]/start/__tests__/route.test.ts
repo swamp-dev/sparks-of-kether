@@ -189,10 +189,7 @@ describe('POST /api/rooms/[code]/start', () => {
 
   it('returns 422 when a player has no zodiac_sign', async () => {
     playersResponse = {
-      data: [
-        validPlayers[0],
-        { ...validPlayers[1], zodiac_sign: null },
-      ],
+      data: [validPlayers[0], { ...validPlayers[1], zodiac_sign: null }],
       error: null,
     };
     const res = await POST(makeRequest({ authorization: 'Bearer x' }), {

@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  signDignities,
-  dignitiesBySign,
-  type Planet,
-  type ZodiacSignKey,
-} from '@/data';
+import { signDignities, dignitiesBySign, type Planet, type ZodiacSignKey } from '@/data';
 
 /**
  * The dignity table is the load-bearing data for the astrological-class
@@ -27,18 +22,18 @@ describe('signDignities', () => {
     fall: Planet | null;
   };
   const expected: Readonly<Record<ZodiacSignKey, Row>> = {
-    aries:       { rulership: 'mars',    exaltation: 'sun',     detriment: 'venus',   fall: 'saturn'  },
-    taurus:      { rulership: 'venus',   exaltation: 'moon',    detriment: 'mars',    fall: null      },
-    gemini:      { rulership: 'mercury', exaltation: null,      detriment: 'jupiter', fall: null      },
-    cancer:      { rulership: 'moon',    exaltation: 'jupiter', detriment: 'saturn',  fall: 'mars'    },
-    leo:         { rulership: 'sun',     exaltation: null,      detriment: 'saturn',  fall: null      },
-    virgo:       { rulership: 'mercury', exaltation: 'mercury', detriment: 'jupiter', fall: 'venus'   },
-    libra:       { rulership: 'venus',   exaltation: 'saturn',  detriment: 'mars',    fall: 'sun'     },
-    scorpio:     { rulership: 'mars',    exaltation: null,      detriment: 'venus',   fall: 'moon'    },
-    sagittarius: { rulership: 'jupiter', exaltation: null,      detriment: 'mercury', fall: null      },
-    capricorn:   { rulership: 'saturn',  exaltation: 'mars',    detriment: 'moon',    fall: 'jupiter' },
-    aquarius:    { rulership: 'saturn',  exaltation: null,      detriment: 'sun',     fall: null      },
-    pisces:      { rulership: 'jupiter', exaltation: 'venus',   detriment: 'mercury', fall: 'mercury' },
+    aries: { rulership: 'mars', exaltation: 'sun', detriment: 'venus', fall: 'saturn' },
+    taurus: { rulership: 'venus', exaltation: 'moon', detriment: 'mars', fall: null },
+    gemini: { rulership: 'mercury', exaltation: null, detriment: 'jupiter', fall: null },
+    cancer: { rulership: 'moon', exaltation: 'jupiter', detriment: 'saturn', fall: 'mars' },
+    leo: { rulership: 'sun', exaltation: null, detriment: 'saturn', fall: null },
+    virgo: { rulership: 'mercury', exaltation: 'mercury', detriment: 'jupiter', fall: 'venus' },
+    libra: { rulership: 'venus', exaltation: 'saturn', detriment: 'mars', fall: 'sun' },
+    scorpio: { rulership: 'mars', exaltation: null, detriment: 'venus', fall: 'moon' },
+    sagittarius: { rulership: 'jupiter', exaltation: null, detriment: 'mercury', fall: null },
+    capricorn: { rulership: 'saturn', exaltation: 'mars', detriment: 'moon', fall: 'jupiter' },
+    aquarius: { rulership: 'saturn', exaltation: null, detriment: 'sun', fall: null },
+    pisces: { rulership: 'jupiter', exaltation: 'venus', detriment: 'mercury', fall: 'mercury' },
   };
 
   // Explicit ordering doubles as a completeness assertion: if a sign
@@ -46,22 +41,28 @@ describe('signDignities', () => {
   // TypeScript catches it at the definition site; if a sign is dropped
   // from THIS list, the omission is visible at a glance.
   const allSigns: readonly ZodiacSignKey[] = [
-    'aries',       'taurus',      'gemini',      'cancer',
-    'leo',         'virgo',       'libra',       'scorpio',
-    'sagittarius', 'capricorn',   'aquarius',    'pisces',
+    'aries',
+    'taurus',
+    'gemini',
+    'cancer',
+    'leo',
+    'virgo',
+    'libra',
+    'scorpio',
+    'sagittarius',
+    'capricorn',
+    'aquarius',
+    'pisces',
   ];
 
-  it.each(allSigns)(
-    '%s dignities match the design doc § 3',
-    (sign) => {
-      const dig = dignitiesBySign(sign);
-      const row = expected[sign];
-      expect(dig.rulership, `${sign} ruler`).toBe(row.rulership);
-      expect(dig.exaltation, `${sign} exaltation`).toBe(row.exaltation);
-      expect(dig.detriment, `${sign} detriment`).toBe(row.detriment);
-      expect(dig.fall, `${sign} fall`).toBe(row.fall);
-    },
-  );
+  it.each(allSigns)('%s dignities match the design doc § 3', (sign) => {
+    const dig = dignitiesBySign(sign);
+    const row = expected[sign];
+    expect(dig.rulership, `${sign} ruler`).toBe(row.rulership);
+    expect(dig.exaltation, `${sign} exaltation`).toBe(row.exaltation);
+    expect(dig.detriment, `${sign} detriment`).toBe(row.detriment);
+    expect(dig.fall, `${sign} fall`).toBe(row.fall);
+  });
 
   // Two classical anomalies the engine must propagate as cumulative
   // bonuses — call them out explicitly so a regression in either is a
@@ -110,9 +111,7 @@ describe('signDignities', () => {
   });
 
   it('dignitiesBySign throws on an unknown key', () => {
-    expect(() => dignitiesBySign('ghost' as ZodiacSignKey)).toThrow(
-      /No dignities for zodiac sign/,
-    );
+    expect(() => dignitiesBySign('ghost' as ZodiacSignKey)).toThrow(/No dignities for zodiac sign/);
   });
 
   // Population-level accounting from `design/astrological-classes.md`
@@ -136,7 +135,7 @@ describe('signDignities', () => {
       bump(d.fall, -2);
     }
     // Modern co-rulerships from zodiacSigns add another +1 each.
-    bump('pluto', +1);   // Scorpio co-ruler
+    bump('pluto', +1); // Scorpio co-ruler
     bump('neptune', +1); // Pisces co-ruler
 
     expect(score.mercury).toBe(0);

@@ -48,9 +48,7 @@ const OUTCOMES: readonly ChallengeOutcome[] = ['pass', 'fail'];
 
 describe('sefirahVerdicts', () => {
   it('covers exactly the 8 challenge Sefirot (Hermes through Selene)', () => {
-    expect(Object.keys(sefirahVerdicts).sort()).toEqual(
-      [...ENCOUNTER_SEFIROT].sort(),
-    );
+    expect(Object.keys(sefirahVerdicts).sort()).toEqual([...ENCOUNTER_SEFIROT].sort());
   });
 
   it('does not include Kether (collective Final Threshold, deferred to #285)', () => {
@@ -66,12 +64,8 @@ describe('sefirahVerdicts', () => {
       for (const sign of ZODIAC_SIGNS) {
         const cell = sefirahVerdicts[sefirah][sign];
         expect(cell, `${sefirah} / ${sign}`).toBeDefined();
-        expect(Array.isArray(cell.pass), `${sefirah} / ${sign} / pass`).toBe(
-          true,
-        );
-        expect(Array.isArray(cell.fail), `${sefirah} / ${sign} / fail`).toBe(
-          true,
-        );
+        expect(Array.isArray(cell.pass), `${sefirah} / ${sign} / pass`).toBe(true);
+        expect(Array.isArray(cell.fail), `${sefirah} / ${sign} / fail`).toBe(true);
       }
     }
   });
@@ -81,10 +75,7 @@ describe('sefirahVerdicts', () => {
       for (const sign of ZODIAC_SIGNS) {
         for (const outcome of OUTCOMES) {
           const variants = sefirahVerdicts[sefirah][sign][outcome];
-          expect(
-            variants.length,
-            `${sefirah} / ${sign} / ${outcome}`,
-          ).toBe(3);
+          expect(variants.length, `${sefirah} / ${sign} / ${outcome}`).toBe(3);
         }
       }
     }
@@ -96,14 +87,8 @@ describe('sefirahVerdicts', () => {
         for (const outcome of OUTCOMES) {
           const variants = sefirahVerdicts[sefirah][sign][outcome];
           for (const variant of variants) {
-            expect(
-              typeof variant,
-              `${sefirah} / ${sign} / ${outcome}`,
-            ).toBe('string');
-            expect(
-              variant.length,
-              `${sefirah} / ${sign} / ${outcome}`,
-            ).toBeGreaterThan(0);
+            expect(typeof variant, `${sefirah} / ${sign} / ${outcome}`).toBe('string');
+            expect(variant.length, `${sefirah} / ${sign} / ${outcome}`).toBeGreaterThan(0);
           }
         }
       }
@@ -113,9 +98,7 @@ describe('sefirahVerdicts', () => {
 
 describe('sefirahPlayerResponses', () => {
   it('covers exactly the 8 challenge Sefirot', () => {
-    expect(Object.keys(sefirahPlayerResponses).sort()).toEqual(
-      [...ENCOUNTER_SEFIROT].sort(),
-    );
+    expect(Object.keys(sefirahPlayerResponses).sort()).toEqual([...ENCOUNTER_SEFIROT].sort());
   });
 
   it('every (sefirah, sign) cell has 3 variants', () => {
@@ -142,9 +125,7 @@ describe('sefirahPlayerResponses', () => {
 
 describe('avatarNames', () => {
   it('covers exactly the 8 challenge Sefirot', () => {
-    expect(Object.keys(avatarNames).sort()).toEqual(
-      [...ENCOUNTER_SEFIROT].sort(),
-    );
+    expect(Object.keys(avatarNames).sort()).toEqual([...ENCOUNTER_SEFIROT].sort());
   });
 
   it('each entry has a non-empty primary name and (Greco-Roman) secondary name', () => {

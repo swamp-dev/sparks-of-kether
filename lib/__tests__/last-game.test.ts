@@ -12,11 +12,19 @@ function makeLocalStorage(): Storage {
   const store: Record<string, string> = {};
   return {
     getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { store[k] = v; },
-    removeItem: (k: string) => { Reflect.deleteProperty(store, k); },
-    clear: () => { Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k)); },
+    setItem: (k: string, v: string) => {
+      store[k] = v;
+    },
+    removeItem: (k: string) => {
+      Reflect.deleteProperty(store, k);
+    },
+    clear: () => {
+      Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k));
+    },
     key: (i: number) => Object.keys(store)[i] ?? null,
-    get length() { return Object.keys(store).length; },
+    get length() {
+      return Object.keys(store).length;
+    },
   };
 }
 
@@ -80,7 +88,9 @@ describe('last-game localStorage utilities', () => {
     it('returns null when localStorage throws', () => {
       const throwing = {
         ...makeLocalStorage(),
-        getItem: () => { throw new Error('quota exceeded'); },
+        getItem: () => {
+          throw new Error('quota exceeded');
+        },
       };
       vi.stubGlobal('localStorage', throwing);
       expect(readLastGame()).toBeNull();
@@ -102,21 +112,30 @@ describe('last-game localStorage utilities', () => {
     it('silently ignores localStorage write errors', () => {
       const throwing = {
         ...makeLocalStorage(),
-        setItem: () => { throw new Error('quota exceeded'); },
+        setItem: () => {
+          throw new Error('quota exceeded');
+        },
       };
       vi.stubGlobal('localStorage', throwing);
-      expect(() => writeLastGame({
-        code: 'ERR123',
-        nickname: 'Test',
-        roomState: 'playing',
-        writtenAt: Date.now(),
-      })).not.toThrow();
+      expect(() =>
+        writeLastGame({
+          code: 'ERR123',
+          nickname: 'Test',
+          roomState: 'playing',
+          writtenAt: Date.now(),
+        }),
+      ).not.toThrow();
     });
   });
 
   describe('clearLastGame', () => {
     it('removes the stored entry', () => {
-      writeLastGame({ code: 'CLEAR1', nickname: 'Sam', roomState: 'playing', writtenAt: Date.now() });
+      writeLastGame({
+        code: 'CLEAR1',
+        nickname: 'Sam',
+        roomState: 'playing',
+        writtenAt: Date.now(),
+      });
       clearLastGame();
       expect(readLastGame()).toBeNull();
     });
@@ -129,7 +148,9 @@ describe('last-game localStorage utilities', () => {
     it('silently ignores localStorage errors', () => {
       const throwing = {
         ...makeLocalStorage(),
-        removeItem: () => { throw new Error('private mode'); },
+        removeItem: () => {
+          throw new Error('private mode');
+        },
       };
       vi.stubGlobal('localStorage', throwing);
       expect(() => clearLastGame()).not.toThrow();

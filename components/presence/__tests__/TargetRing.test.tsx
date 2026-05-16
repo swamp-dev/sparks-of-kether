@@ -64,9 +64,7 @@ describe('<TargetRing>', () => {
         nodePositions={NODE_POSITIONS}
       />,
     );
-    expect(screen.getByTestId('target-ring-p2').getAttribute('stroke')).toBe(
-      '#dc143c',
-    );
+    expect(screen.getByTestId('target-ring-p2').getAttribute('stroke')).toBe('#dc143c');
   });
 
   it('stacks multiple peers on the same node with progressively-larger radii', () => {
@@ -80,15 +78,9 @@ describe('<TargetRing>', () => {
         nodePositions={NODE_POSITIONS}
       />,
     );
-    const r2 = parseFloat(
-      screen.getByTestId('target-ring-p2').getAttribute('r') ?? '0',
-    );
-    const r3 = parseFloat(
-      screen.getByTestId('target-ring-p3').getAttribute('r') ?? '0',
-    );
-    const r4 = parseFloat(
-      screen.getByTestId('target-ring-p4').getAttribute('r') ?? '0',
-    );
+    const r2 = parseFloat(screen.getByTestId('target-ring-p2').getAttribute('r') ?? '0');
+    const r3 = parseFloat(screen.getByTestId('target-ring-p3').getAttribute('r') ?? '0');
+    const r4 = parseFloat(screen.getByTestId('target-ring-p4').getAttribute('r') ?? '0');
     // Strictly increasing — the offsets keep concentric rings visible.
     expect(r2).toBeLessThan(r3);
     expect(r3).toBeLessThan(r4);
@@ -111,13 +103,7 @@ describe('<TargetRing>', () => {
   });
 
   it('strips data-breath when reduceMotion is set (rings stay static)', () => {
-    render(
-      <TargetRing
-        targets={[target()]}
-        nodePositions={NODE_POSITIONS}
-        reduceMotion
-      />,
-    );
+    render(<TargetRing targets={[target()]} nodePositions={NODE_POSITIONS} reduceMotion />);
     const ring = screen.getByTestId('target-ring-p2');
     expect(ring.getAttribute('data-breath')).toBe('false');
   });

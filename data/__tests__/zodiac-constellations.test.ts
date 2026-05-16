@@ -16,10 +16,7 @@ import { zodiacSigns } from '../zodiac-signs';
 describe('ZODIAC_CONSTELLATIONS', () => {
   it('has an entry for every zodiac sign', () => {
     for (const sign of zodiacSigns) {
-      expect(
-        ZODIAC_CONSTELLATIONS[sign.key],
-        `entry for ${sign.key}`,
-      ).toBeDefined();
+      expect(ZODIAC_CONSTELLATIONS[sign.key], `entry for ${sign.key}`).toBeDefined();
     }
   });
 
@@ -39,20 +36,10 @@ describe('ZODIAC_CONSTELLATIONS', () => {
     for (const sign of zodiacSigns) {
       const entry = ZODIAC_CONSTELLATIONS[sign.key];
       for (const [from, to] of entry.edges) {
-        expect(
-          from,
-          `${sign.key} edge from-index in range`,
-        ).toBeGreaterThanOrEqual(0);
-        expect(from, `${sign.key} edge from-index < starCount`).toBeLessThan(
-          entry.stars.length,
-        );
-        expect(
-          to,
-          `${sign.key} edge to-index in range`,
-        ).toBeGreaterThanOrEqual(0);
-        expect(to, `${sign.key} edge to-index < starCount`).toBeLessThan(
-          entry.stars.length,
-        );
+        expect(from, `${sign.key} edge from-index in range`).toBeGreaterThanOrEqual(0);
+        expect(from, `${sign.key} edge from-index < starCount`).toBeLessThan(entry.stars.length);
+        expect(to, `${sign.key} edge to-index in range`).toBeGreaterThanOrEqual(0);
+        expect(to, `${sign.key} edge to-index < starCount`).toBeLessThan(entry.stars.length);
         expect(from, `${sign.key} edge no self-loop`).not.toBe(to);
       }
     }

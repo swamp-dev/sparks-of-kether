@@ -34,16 +34,10 @@ interface RouteParams {
   readonly params: { readonly code: string };
 }
 
-export async function POST(
-  request: Request,
-  { params }: RouteParams,
-): Promise<NextResponse> {
+export async function POST(request: Request, { params }: RouteParams): Promise<NextResponse> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
-    return NextResponse.json(
-      { error: 'missing-bearer-token' },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: 'missing-bearer-token' }, { status: 401 });
   }
   const token = authHeader.slice('bearer '.length).trim();
 
@@ -86,15 +80,8 @@ export async function POST(
   const validated = validateAndBuildSetup({ room, players, callerId });
   if (!validated.ok) {
     const status =
-      validated.error.kind === 'not-host'
-        ? 403
-        : validated.error.kind === 'not-lobby'
-          ? 409
-          : 422;
-    return NextResponse.json(
-      { error: 'start-rejected', reason: validated.error },
-      { status },
-    );
+      validated.error.kind === 'not-host' ? 403 : validated.error.kind === 'not-lobby' ? 409 : 422;
+    return NextResponse.json({ error: 'start-rejected', reason: validated.error }, { status });
   }
 
   // Build the initial GameState. Errors here would be programmer
@@ -135,10 +122,7 @@ export async function POST(
     // caller knows nothing changed on this call.
     const code = (snapshotInsert.error as { code?: string }).code;
     if (code === '23505') {
-      return NextResponse.json(
-        { error: 'already-started' },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: 'already-started' }, { status: 409 });
     }
     return NextResponse.json(
       {
@@ -165,9 +149,7 @@ export async function POST(
     // if THIS delete also fails the host hits the dead-end, but
     // we surface that distinction so future ops tooling can see
     // the partial state.
-    const cleanup = await query(serviceClient, 'game_states')
-      .delete()
-      .eq('room_id', room.id);
+    const cleanup = await query(serviceClient, 'game_states').delete().eq('room_id', room.id);
     return NextResponse.json(
       {
         error: 'room-state-update-failed',

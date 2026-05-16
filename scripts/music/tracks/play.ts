@@ -69,9 +69,7 @@ function freqWithIntegerCycles(targetHz: number, durationSec: number): number {
   return Math.round(targetHz * durationSec) / durationSec;
 }
 
-const padFreqs = [C3, EB3, G3, BB3, D4, C4].map((f) =>
-  freqWithIntegerCycles(f, LOOP_SPAN_SEC),
-);
+const padFreqs = [C3, EB3, G3, BB3, D4, C4].map((f) => freqWithIntegerCycles(f, LOOP_SPAN_SEC));
 
 export const play: TrackManifest = {
   name: 'play',
@@ -108,7 +106,7 @@ export const play: TrackManifest = {
 
     const padOscs = padFreqs.map((f) => sawtoothPolyBlep(f, sr));
     const padLp = onePoleLowpass(600, sr);
-    const padGain = 0.030;
+    const padGain = 0.03;
 
     const padBuffer = new Float32Array(totalSamples);
     for (let i = 0; i < totalSamples; i++) {
@@ -126,8 +124,7 @@ export const play: TrackManifest = {
     // Pluck audible tail ≈ 1.5 s (KS) + 6 s reverb = 7.5 s. Forbid
     // plucks whose tail crosses into the tail crossfade region.
     const PLUCK_TAIL_SEC = 8;
-    const latestPluckSec =
-      WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - PLUCK_TAIL_SEC;
+    const latestPluckSec = WARMUP_SEC + DURATION_SEC - CROSSFADE_SEC - PLUCK_TAIL_SEC;
 
     const rng = makePrng(SEED);
     type Pluck = { startSample: number; pitchHz: number; panPos: number };
@@ -138,8 +135,7 @@ export const play: TrackManifest = {
       const interval = 21.5 + (rng() * 2 - 1) * 3.5;
       nextPluckSec += interval;
       if (nextPluckSec >= latestPluckSec) break;
-      const pitchHz =
-        pluckPitches[Math.floor(rng() * pluckPitches.length)] ?? C5;
+      const pitchHz = pluckPitches[Math.floor(rng() * pluckPitches.length)] ?? C5;
       const panPos = (rng() * 2 - 1) * 0.5;
       plucks.push({
         startSample: Math.floor(nextPluckSec * sr),
@@ -153,10 +149,7 @@ export const play: TrackManifest = {
     for (const ev of plucks) {
       const ks = ksPluck(ev.pitchHz, sr, makePrng(SEED ^ ev.startSample), KS_DECAY_COEF);
       const env = expDecay(0.8, sr);
-      const renderLen = Math.min(
-        totalSamples - ev.startSample,
-        Math.floor(sr * 1.5),
-      );
+      const renderLen = Math.min(totalSamples - ev.startSample, Math.floor(sr * 1.5));
       for (let i = 0; i < renderLen; i++) {
         const s = ks() * env() * KS_GAIN;
         const { left: l, right: r } = pan(s, ev.panPos);
@@ -185,7 +178,7 @@ export const play: TrackManifest = {
       { pitchHz: G4, durationSec: 3.5 },
     ];
     const melodyDecaySec = 1.6;
-    const melodyGain = 0.20;
+    const melodyGain = 0.2;
     // Three passes across 120 s. Each motif = 15 s; tail per note =
     // decay × 5 + reverb tailSec = 1.6 × 5 + 6 = 14 s. Latest safe
     // loop-time start = 120 − 6 (xfade) − 15 (motif) − 14 (tail) =
@@ -207,14 +200,10 @@ export const play: TrackManifest = {
         const harm = sineOsc(note.pitchHz * 3, sr);
         const shimmer = sineOsc(note.pitchHz * 1.001, sr);
         const env = expDecay(melodyDecaySec, sr);
-        const renderLen = Math.min(
-          totalSamples - cursor,
-          Math.floor(sr * melodyDecaySec * 5),
-        );
+        const renderLen = Math.min(totalSamples - cursor, Math.floor(sr * melodyDecaySec * 5));
         for (let i = 0; i < renderLen; i++) {
           const e = env();
-          const v =
-            (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melodyGain;
+          const v = (fund() * 0.55 + harm() * 0.15 + shimmer() * 0.25) * e * melodyGain;
           const { left: l, right: r } = pan(v, panPos);
           melodyLeft[cursor + i]! += l;
           melodyRight[cursor + i]! += r;
@@ -225,18 +214,12 @@ export const play: TrackManifest = {
 
     /* ----- Mix + reverb (cathedral) ------------------------------ */
 
-    const verb = schroederReverb({ tailSec: 6, wet: 0.40, sampleRate: sr });
+    const verb = schroederReverb({ tailSec: 6, wet: 0.4, sampleRate: sr });
     const wetLeft = new Float32Array(totalSamples);
     const wetRight = new Float32Array(totalSamples);
     for (let i = 0; i < totalSamples; i++) {
-      const dryL =
-        (padBuffer[i] ?? 0) +
-        (pluckLeft[i] ?? 0) +
-        (melodyLeft[i] ?? 0);
-      const dryR =
-        (padBuffer[i] ?? 0) +
-        (pluckRight[i] ?? 0) +
-        (melodyRight[i] ?? 0);
+      const dryL = (padBuffer[i] ?? 0) + (pluckLeft[i] ?? 0) + (melodyLeft[i] ?? 0);
+      const dryR = (padBuffer[i] ?? 0) + (pluckRight[i] ?? 0) + (melodyRight[i] ?? 0);
       const [l, r] = verb.process(dryL, dryR);
       wetLeft[i] = l;
       wetRight[i] = r;

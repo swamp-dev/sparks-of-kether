@@ -45,21 +45,21 @@ export interface UseLobbyReturn {
   readonly loading: boolean;
   /** True between `beginGame()` invocation and the response landing. */
   readonly beginning: boolean;
+  /** True between `resetGame()` invocation and the response landing. */
+  readonly resetting: boolean;
   /** Trigger a re-fetch of room + players. */
   readonly refresh: () => void;
   /** POST `/api/rooms/[code]/start`. Idempotent re-entry: returns early if `beginning`. */
   readonly beginGame: () => void;
+  /** POST `/api/rooms/[code]/reset`. Returns room to lobby, clears game state. Host-only. */
+  readonly resetGame: () => void;
   /**
    * Update the current player's `zodiac_sign`. Returns `{ ok: false }`
    * if the caller is not signed in (no `currentPlayerId`).
    */
-  readonly setZodiacSign: (
-    sign: ZodiacSignKey,
-  ) => Promise<{ readonly ok: boolean }>;
+  readonly setZodiacSign: (sign: ZodiacSignKey) => Promise<{ readonly ok: boolean }>;
   /** Update the current player's `ready` flag. */
-  readonly setReady: (
-    ready: boolean,
-  ) => Promise<{ readonly ok: boolean }>;
+  readonly setReady: (ready: boolean) => Promise<{ readonly ok: boolean }>;
 }
 
 export function useLobby(code: string): UseLobbyReturn {
@@ -69,15 +69,16 @@ export function useLobby(code: string): UseLobbyReturn {
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [beginning, setBeginning] = useState(false);
+  const [resetting, setResetting] = useState(false);
   // True until the first fetch resolves. Stays true on subsequent
   // refreshes (the page already has data; "loading" framing would
   // be misleading) — only the *initial* read sets it false.
   const [loading, setLoading] = useState(true);
-  // Guard against re-entrancy within a single render. `beginning`
-  // is React state — synchronous double-clicks both see the
-  // pre-update value via the useCallback closure. The ref flips
-  // immediately on the first call so the second call returns early.
+  // Guards against re-entrancy within a single render. React state
+  // double-clicks both see the pre-update value via the useCallback
+  // closure; the refs flip immediately on the first call.
   const beginningRef = useRef(false);
+  const resettingRef = useRef(false);
   // Stable ref to the current player's nickname — avoids adding
   // `players` and `currentPlayerId` as deps to `beginGame` (which
   // would recreate the callback on every player-list change).
@@ -184,9 +185,7 @@ export function useLobby(code: string): UseLobbyReturn {
         // stop the silence.
         if (status === 'CHANNEL_ERROR') {
           // eslint-disable-next-line no-console
-          console.error(
-            `[useLobby] Realtime channel error on lobby_players:${roomId}`,
-          );
+          console.error(`[useLobby] Realtime channel error on lobby_players:${roomId}`);
           setError('Realtime sync error. Refresh to retry.');
         }
       });
@@ -276,13 +275,43 @@ export function useLobby(code: string): UseLobbyReturn {
           reason?: { kind?: string };
         };
         setError(
-          `Could not start game: ${
-            body.reason?.kind ?? body.error ?? `HTTP ${res.status}`
-          }`,
+          `Could not start game: ${body.reason?.kind ?? body.error ?? `HTTP ${res.status}`}`,
         );
       } finally {
         beginningRef.current = false;
         setBeginning(false);
+      }
+    })();
+  }, [code]);
+
+  const resetGame = useCallback((): void => {
+    if (resettingRef.current) return;
+    resettingRef.current = true;
+    setResetting(true);
+    void (async () => {
+      try {
+        const client = getSupabaseBrowserClient();
+        const { data: session } = await client.auth.getSession();
+        const token = session.session?.access_token;
+        if (!token) {
+          setError('Not signed in. Please refresh.');
+          return;
+        }
+        const res = await fetch(`/api/rooms/${code}/reset`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setRefreshTick((n) => n + 1);
+          return;
+        }
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setError(`Could not reset room: ${body.error ?? `HTTP ${res.status}`}`);
+      } finally {
+        resettingRef.current = false;
+        setResetting(false);
       }
     })();
   }, [code]);
@@ -309,9 +338,7 @@ export function useLobby(code: string): UseLobbyReturn {
       // The remote tab still gets it from the channel; this just
       // closes the visible delay on the picker's own UI.
       setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === currentPlayerId ? { ...p, zodiac_sign: sign } : p,
-        ),
+        prev.map((p) => (p.id === currentPlayerId ? { ...p, zodiac_sign: sign } : p)),
       );
       return { ok: true };
     },
@@ -333,11 +360,7 @@ export function useLobby(code: string): UseLobbyReturn {
         setError(`Could not toggle ready: ${result.error.cause}`);
         return { ok: false };
       }
-      setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === currentPlayerId ? { ...p, ready } : p,
-        ),
-      );
+      setPlayers((prev) => prev.map((p) => (p.id === currentPlayerId ? { ...p, ready } : p)));
       return { ok: true };
     },
     [currentPlayerId],
@@ -350,8 +373,10 @@ export function useLobby(code: string): UseLobbyReturn {
     error,
     loading,
     beginning,
+    resetting,
     refresh,
     beginGame,
+    resetGame,
     setZodiacSign,
     setReady,
   };

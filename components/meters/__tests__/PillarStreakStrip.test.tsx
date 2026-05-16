@@ -10,16 +10,12 @@ describe('PillarStreakStrip — three-chevron triptych', () => {
     expect(chevrons.length).toBe(3);
     expect(container.querySelector('[data-pillar-chevron="mercy"]')).not.toBeNull();
     expect(container.querySelector('[data-pillar-chevron="balance"]')).not.toBeNull();
-    expect(
-      container.querySelector('[data-pillar-chevron="severity"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-pillar-chevron="severity"]')).not.toBeNull();
   });
 
   it('chevrons appear in left-to-right order: mercy → balance → severity', () => {
     const { container } = render(<PillarStreakStrip state={EMPTY_PILLAR_STREAK} />);
-    const chevrons = Array.from(
-      container.querySelectorAll('[data-pillar-chevron]'),
-    );
+    const chevrons = Array.from(container.querySelectorAll('[data-pillar-chevron]'));
     expect(chevrons.map((c) => c.getAttribute('data-pillar-chevron'))).toEqual([
       'mercy',
       'balance',
@@ -63,15 +59,11 @@ describe('PillarStreakStrip — three-chevron triptych', () => {
 
   it('streak kind reads "imbalance" when sameCount >= alternationCount', () => {
     const { container } = render(
-      <PillarStreakStrip
-        state={{ currentPillar: 'mercy', sameCount: 2, alternationCount: 1 }}
-      />,
+      <PillarStreakStrip state={{ currentPillar: 'mercy', sameCount: 2, alternationCount: 1 }} />,
     );
-    expect(
-      container
-        .querySelector('[data-pillar-streak]')
-        ?.getAttribute('data-streak-kind'),
-    ).toBe('imbalance');
+    expect(container.querySelector('[data-pillar-streak]')?.getAttribute('data-streak-kind')).toBe(
+      'imbalance',
+    );
   });
 
   it('streak kind reads "equilibrium" when alternationCount > sameCount', () => {
@@ -80,19 +72,15 @@ describe('PillarStreakStrip — three-chevron triptych', () => {
         state={{ currentPillar: 'severity', sameCount: 1, alternationCount: 2 }}
       />,
     );
-    expect(
-      container
-        .querySelector('[data-pillar-streak]')
-        ?.getAttribute('data-streak-kind'),
-    ).toBe('equilibrium');
+    expect(container.querySelector('[data-pillar-streak]')?.getAttribute('data-streak-kind')).toBe(
+      'equilibrium',
+    );
   });
 
   it('streak kind reads "none" for a fresh 0/0 state (not "imbalance")', () => {
     const { container } = render(<PillarStreakStrip state={EMPTY_PILLAR_STREAK} />);
-    expect(
-      container
-        .querySelector('[data-pillar-streak]')
-        ?.getAttribute('data-streak-kind'),
-    ).toBe('none');
+    expect(container.querySelector('[data-pillar-streak]')?.getAttribute('data-streak-kind')).toBe(
+      'none',
+    );
   });
 });

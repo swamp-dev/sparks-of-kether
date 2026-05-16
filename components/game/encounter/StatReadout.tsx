@@ -54,9 +54,7 @@ export function StatReadout({
         <StatIcon stat={stat} className="h-7 w-7" />
       </div>
       <div className="flex flex-1 flex-col">
-        <span className="text-xs uppercase tracking-widest opacity-60">
-          {statLabel}
-        </span>
+        <span className="text-xs uppercase tracking-widest opacity-60">{statLabel}</span>
         <span
           // The stat number is the dramatic readout — display face,
           // tabular nums so the digits don't dance under projected-
@@ -67,13 +65,8 @@ export function StatReadout({
           {statValue}
         </span>
       </div>
-      <div
-        className="flex flex-col items-end text-right"
-        data-stat-readout-projected
-      >
-        <span className="text-[10px] uppercase tracking-widest opacity-50">
-          Projected
-        </span>
+      <div className="flex flex-col items-end text-right" data-stat-readout-projected>
+        <span className="text-[10px] uppercase tracking-widest opacity-50">Projected</span>
         <span
           // `transition-all duration-300 ease-emerge` so the total
           // animates upward when the player stages allies/burns —

@@ -20,7 +20,7 @@ const STEPS: readonly Step[] = [
   {
     n: 2,
     heading: 'Ascend together',
-    body: "Move through the 22 paths. Each Sefirah you visit grants a Spark — a one-use ability tied to that node’s lesson. Gather Sparks. Outpace Separation.",
+    body: 'Move through the 22 paths. Each Sefirah you visit grants a Spark — a one-use ability tied to that node’s lesson. Gather Sparks. Outpace Separation.',
   },
   {
     n: 3,
@@ -31,11 +31,7 @@ const STEPS: readonly Step[] = [
 
 export function HowToPlay({ className }: HowToPlayProps): JSX.Element {
   return (
-    <section
-      data-home-how-to-play
-      aria-labelledby="home-how-to-play-heading"
-      className={className}
-    >
+    <section data-home-how-to-play aria-labelledby="home-how-to-play-heading" className={className}>
       <div className="mb-10 text-center">
         <h2
           id="home-how-to-play-heading"
@@ -43,17 +39,10 @@ export function HowToPlay({ className }: HowToPlayProps): JSX.Element {
         >
           How to play
         </h2>
-        <p className="mt-2 text-sm text-veil/60">
-          Three acts. Thirty to forty-five minutes.
-        </p>
+        <p className="mt-2 text-sm text-veil/60">Three acts. Thirty to forty-five minutes.</p>
       </div>
 
-      <ol
-        className="
-          mx-auto grid w-full max-w-4xl list-none grid-cols-1 gap-8
-          sm:grid-cols-3 sm:gap-6
-        "
-      >
+      <ol className="mx-auto grid w-full max-w-4xl list-none grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6">
         {STEPS.map((step) => (
           <li
             key={step.n}
@@ -89,12 +78,8 @@ export function HowToPlay({ className }: HowToPlayProps): JSX.Element {
                 {step.n}
               </text>
             </svg>
-            <h3 className="font-display text-xl tracking-widest text-veil">
-              {step.heading}
-            </h3>
-            <p className="max-w-xs text-sm leading-relaxed text-veil/80">
-              {step.body}
-            </p>
+            <h3 className="font-display text-xl tracking-widest text-veil">{step.heading}</h3>
+            <p className="max-w-xs text-sm leading-relaxed text-veil/80">{step.body}</p>
           </li>
         ))}
       </ol>
@@ -103,13 +88,7 @@ export function HowToPlay({ className }: HowToPlayProps): JSX.Element {
         <Link
           href="/about"
           data-how-to-play-link="rules"
-          className="
-            text-sm text-veil/60 underline-offset-2
-            hover:text-veil hover:underline
-            focus-visible:outline-none focus-visible:ring-1
-            focus-visible:ring-veil/60 focus-visible:ring-offset-2
-            focus-visible:ring-offset-void
-          "
+          className="text-sm text-veil/60 underline-offset-2 hover:text-veil hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void"
         >
           Read the full rules →
         </Link>

@@ -88,9 +88,7 @@ export function TeamMeters({
     <div data-team-meters className={`flex flex-col gap-3 ${className ?? ''}`}>
       <div data-meters-row className="flex justify-center gap-8">
         <div className="flex flex-col items-center gap-1">
-          <span className="text-xs uppercase tracking-widest opacity-70">
-            Illumination
-          </span>
+          <span className="text-xs uppercase tracking-widest opacity-70">Illumination</span>
           {/* Conditional spread is required under
               `exactOptionalPropertyTypes: true` — passing `undefined`
               explicitly would violate the optional-but-not-undefined
@@ -100,27 +98,19 @@ export function TeamMeters({
             max={max}
             {...(onIlluminationIncrease ? { onIlluminationIncrease } : {})}
           />
-          <span
-            data-meter-readout="illumination"
-            className="font-display text-sm tabular-nums"
-          >
+          <span data-meter-readout="illumination" className="font-display text-sm tabular-nums">
             {illumination} / {max}
           </span>
         </div>
 
         <div className="flex flex-col items-center gap-1">
-          <span className="text-xs uppercase tracking-widest opacity-70">
-            Separation
-          </span>
+          <span className="text-xs uppercase tracking-widest opacity-70">Separation</span>
           <SeparationMeter
             value={separation}
             max={max}
             {...(onSeparationIncrease ? { onSeparationIncrease } : {})}
           />
-          <span
-            data-meter-readout="separation"
-            className="font-display text-sm tabular-nums"
-          >
+          <span data-meter-readout="separation" className="font-display text-sm tabular-nums">
             {separation} / {max}
           </span>
         </div>
@@ -128,12 +118,7 @@ export function TeamMeters({
 
       {pillarStreak ? <PillarStreakStrip state={pillarStreak} /> : null}
 
-      <p
-        role="status"
-        aria-live="polite"
-        data-meters-announcement
-        className="sr-only"
-      >
+      <p role="status" aria-live="polite" data-meters-announcement className="sr-only">
         {announcement}
       </p>
     </div>

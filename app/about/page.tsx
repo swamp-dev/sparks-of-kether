@@ -57,34 +57,28 @@ export default function AboutPage(): JSX.Element {
 
       <section className="mt-12 max-w-2xl space-y-5 self-center text-base leading-relaxed opacity-90">
         <p>
-          Two to four players journey together from{' '}
-          <strong>Malkuth</strong> (the material world) to{' '}
-          <strong>Kether</strong> (the Crown). Along the way, each Sefirah you
-          visit grants you a <strong>Spark</strong> — a lesson and a one-use
-          ability — and each Spark brightens the team&rsquo;s shared{' '}
-          <strong>Illumination</strong>. Fail a challenge, hoard resources, or
-          take the wrong shortcut, and <strong>Separation</strong> rises
-          instead; the <strong>Shells</strong> awaken and the Tree begins to dim.
+          Two to four players journey together from <strong>Malkuth</strong> (the material world) to{' '}
+          <strong>Kether</strong> (the Crown). Along the way, each Sefirah you visit grants you a{' '}
+          <strong>Spark</strong> — a lesson and a one-use ability — and each Spark brightens the
+          team&rsquo;s shared <strong>Illumination</strong>. Fail a challenge, hoard resources, or
+          take the wrong shortcut, and <strong>Separation</strong> rises instead; the{' '}
+          <strong>Shells</strong> awaken and the Tree begins to dim.
         </p>
         <p>
-          You win by reaching the Crown together with more Illumination than
-          Separation. You lose by letting the Shells swallow the Tree. Evil
-          here is separation and ignorance. Good is illumination and unity.
-          The mechanics aren&rsquo;t decoration — they teach the thing.
+          You win by reaching the Crown together with more Illumination than Separation. You lose by
+          letting the Shells swallow the Tree. Evil here is separation and ignorance. Good is
+          illumination and unity. The mechanics aren&rsquo;t decoration — they teach the thing.
         </p>
         <p>
-          Sparks of Kether is a game-design document and a working web
-          implementation, both medium-agnostic. It could be realized as a
-          board game, a card game, a web app, or a computer game. The soul of
-          the game lives in the symbolic system and its rules; any
+          Sparks of Kether is a game-design document and a working web implementation, both
+          medium-agnostic. It could be realized as a board game, a card game, a web app, or a
+          computer game. The soul of the game lives in the symbolic system and its rules; any
           implementation is downstream.
         </p>
       </section>
 
       <section className="mt-16">
-        <h2 className="text-center font-display text-2xl tracking-widest">
-          Gameplay
-        </h2>
+        <h2 className="text-center font-display text-2xl tracking-widest">Gameplay</h2>
         <p className="mt-2 text-center text-sm opacity-70">
           A walk through the surfaces in the order a player meets them.
         </p>
@@ -123,7 +117,7 @@ export default function AboutPage(): JSX.Element {
         </div>
       </section>
 
-      <footer className="mt-16 mb-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-6">
+      <footer className="mb-4 mt-16 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-6">
         <Link
           href="/"
           data-about-cta="play"
@@ -178,9 +172,7 @@ function GalleryItem({ src, alt, caption, className }: GalleryItemProps): JSX.El
         alt={alt}
         className="h-auto w-full rounded-lg border border-veil/15 shadow-md"
       />
-      <figcaption className="mt-3 text-sm leading-relaxed opacity-75">
-        {caption}
-      </figcaption>
+      <figcaption className="mt-3 text-sm leading-relaxed opacity-75">{caption}</figcaption>
     </figure>
   );
 }

@@ -25,7 +25,7 @@ describe('SignStage', () => {
           disabled={false}
           takenBy={undefined}
           onSelect={vi.fn()}
-          />,
+        />,
       );
       expect(
         container.querySelector(`[data-sign="${sign.key}"]`),
@@ -103,9 +103,7 @@ describe('SignStage', () => {
       />,
     );
     const button = container.querySelector('[data-sign="aries"]') as HTMLElement;
-    button.dispatchEvent(
-      new KeyboardEvent('keydown', { key: ' ', bubbles: true }),
-    );
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
     // Space fires onSelect (the WAI-ARIA radiogroup contract); the
     // explicit Confirm CTA in the picker chrome is the only commit
     // path. SignStage does not carry a separate activation handler.
@@ -132,9 +130,7 @@ describe('SignStage', () => {
       />,
     );
     const button = container.querySelector('[data-sign="aries"]') as HTMLElement;
-    button.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    );
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(onSelect).not.toHaveBeenCalled();
   });
 
@@ -229,9 +225,7 @@ describe('SignStage', () => {
         onSelect={onSelect}
       />,
     );
-    expect(container.querySelector('[data-taken-by]')?.textContent).toMatch(
-      /Taken by Andy/,
-    );
+    expect(container.querySelector('[data-taken-by]')?.textContent).toMatch(/Taken by Andy/);
     const button = container.querySelector('[data-sign="aries"]') as HTMLElement;
     button.click();
     expect(onSelect).not.toHaveBeenCalled();

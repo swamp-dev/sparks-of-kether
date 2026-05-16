@@ -52,9 +52,18 @@ const expected: Readonly<Record<ZodiacSignKey, Bonus>> = {
 };
 
 const allSigns: readonly ZodiacSignKey[] = [
-  'aries',       'taurus',      'gemini',      'cancer',
-  'leo',         'virgo',       'libra',       'scorpio',
-  'sagittarius', 'capricorn',   'aquarius',    'pisces',
+  'aries',
+  'taurus',
+  'gemini',
+  'cancer',
+  'leo',
+  'virgo',
+  'libra',
+  'scorpio',
+  'sagittarius',
+  'capricorn',
+  'aquarius',
+  'pisces',
 ];
 
 describe('zodiacBonus', () => {

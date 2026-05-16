@@ -201,37 +201,34 @@ for (const viewport of VIEWPORTS) {
           await route.setup(page);
         }
 
-        await expect(page).toHaveScreenshot(
-          `${route.slug}-${viewport.name}.png`,
-          {
-            fullPage: true,
-            animations: 'disabled',
-            // Allow a few percent of pixel variance — anti-aliasing
-            // on font glyphs and SVG strokes is real and the diff
-            // between local Linux and the GitHub Actions
-            // ubuntu-latest runner is consistently ~1–2% per page on
-            // text-heavy routes (codex / sefirah / about / tokens).
-            // The previous 0.005 (0.5%) threshold was tight enough
-            // to fail roughly every PR on hosted CI for reasons
-            // unrelated to the diff — see Journal entries for #366
-            // and the `project_hosted_ci_billing_blocked` memory.
-            //
-            // 0.035 (3.5%) absorbs two stacked rendering deltas between
-            // local Linux and ubuntu-latest CI:
-            //   1. Font-AA (freetype version divergence): ~2.1% max,
-            //      observed consistently since #381.
-            //   2. Decorative-element pixel noise added by the
-            //      BlessingRitual atmosphere pass (#73): small Hebrew
-            //      watermark glyph, particle dots, and the stat-label
-            //      span all sub-pixel-render slightly differently on CI,
-            //      adding ~0.7% on the demo-ritual-tablet baseline.
-            // Combined ceiling: ~2.8%; 3.5% leaves headroom without
-            // masking real regressions (a 4 px padding shift or a colour
-            // swap diffs ≥ 5% easily). If CI starts exceeding 3.5%,
-            // root-cause the new source rather than bumping further.
-            maxDiffPixelRatio: 0.035,
-          },
-        );
+        await expect(page).toHaveScreenshot(`${route.slug}-${viewport.name}.png`, {
+          fullPage: true,
+          animations: 'disabled',
+          // Allow a few percent of pixel variance — anti-aliasing
+          // on font glyphs and SVG strokes is real and the diff
+          // between local Linux and the GitHub Actions
+          // ubuntu-latest runner is consistently ~1–2% per page on
+          // text-heavy routes (codex / sefirah / about / tokens).
+          // The previous 0.005 (0.5%) threshold was tight enough
+          // to fail roughly every PR on hosted CI for reasons
+          // unrelated to the diff — see Journal entries for #366
+          // and the `project_hosted_ci_billing_blocked` memory.
+          //
+          // 0.035 (3.5%) absorbs two stacked rendering deltas between
+          // local Linux and ubuntu-latest CI:
+          //   1. Font-AA (freetype version divergence): ~2.1% max,
+          //      observed consistently since #381.
+          //   2. Decorative-element pixel noise added by the
+          //      BlessingRitual atmosphere pass (#73): small Hebrew
+          //      watermark glyph, particle dots, and the stat-label
+          //      span all sub-pixel-render slightly differently on CI,
+          //      adding ~0.7% on the demo-ritual-tablet baseline.
+          // Combined ceiling: ~2.8%; 3.5% leaves headroom without
+          // masking real regressions (a 4 px padding shift or a colour
+          // swap diffs ≥ 5% easily). If CI starts exceeding 3.5%,
+          // root-cause the new source rather than bumping further.
+          maxDiffPixelRatio: 0.035,
+        });
       });
     }
   });

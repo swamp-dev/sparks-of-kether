@@ -106,9 +106,7 @@ export function RevealLine({
     }
     // Total time from mount until the last word finishes its keyframe.
     // Reduced motion: 0 (one tick via `setTimeout(_, 0)`).
-    const totalMs = reducedMotion
-      ? 0
-      : (words.length - 1) * stagger + WORD_REVEAL_DURATION_MS;
+    const totalMs = reducedMotion ? 0 : (words.length - 1) * stagger + WORD_REVEAL_DURATION_MS;
     const handle = setTimeout(() => {
       onCompleteRef.current?.();
     }, totalMs);
@@ -139,11 +137,7 @@ export function RevealLine({
   // selectors work across both paths.
   if (reducedMotion) {
     return (
-      <span
-        data-reveal-line
-        data-reveal-state="reduced"
-        className={className}
-      >
+      <span data-reveal-line data-reveal-state="reduced" className={className}>
         {words.map((word, idx) => (
           <span key={`${word}-${idx}`} data-reveal-word>
             {word}
@@ -155,11 +149,7 @@ export function RevealLine({
   }
 
   return (
-    <span
-      data-reveal-line
-      data-reveal-state="animating"
-      className={className}
-    >
+    <span data-reveal-line data-reveal-state="animating" className={className}>
       {words.map((word, idx) => (
         <span
           key={`${word}-${idx}`}

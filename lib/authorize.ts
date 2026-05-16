@@ -24,10 +24,7 @@ export type AuthorizationRejection =
       readonly kind: 'not-witness-turn';
       readonly callerId: string;
       readonly expectedPlayerId: string | null;
-      readonly action:
-        | 'kether-witness-play'
-        | 'kether-witness-pass'
-        | 'kether-host-skip-witness';
+      readonly action: 'kether-witness-play' | 'kether-witness-pass' | 'kether-host-skip-witness';
       /**
        * For `kether-host-skip-witness` only: the rejected dispatcher's
        * named `targetPlayerId` (which failed the witness check). Omitted

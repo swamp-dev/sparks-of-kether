@@ -42,13 +42,8 @@ export interface UsePresenceReturn {
   readonly error: string | null;
 }
 
-export function usePresence(
-  roomId: string | null,
-  selfPlayerId: string | null,
-): UsePresenceReturn {
-  const [onlinePlayerIds, setOnlinePlayerIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
+export function usePresence(roomId: string | null, selfPlayerId: string | null): UsePresenceReturn {
+  const [onlinePlayerIds, setOnlinePlayerIds] = useState<ReadonlySet<string>>(() => new Set());
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

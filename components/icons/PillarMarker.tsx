@@ -81,13 +81,7 @@ function ChevronDown({ color }: { color: string }): JSX.Element {
 
 function DoubleChevron({ color }: { color: string }): JSX.Element {
   return (
-    <g
-      fill="none"
-      stroke={color}
-      strokeWidth={2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <g fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
       <polyline points="6,18 18,6 30,18" />
       <polyline points="6,22 18,10 30,22" />
     </g>

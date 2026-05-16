@@ -67,10 +67,7 @@ function polyBlep(t: number, dt: number): number {
   return 0;
 }
 
-export function sawtoothPolyBlep(
-  freqHz: number,
-  sampleRate: number,
-): () => number {
+export function sawtoothPolyBlep(freqHz: number, sampleRate: number): () => number {
   let phase = 0;
   const dt = freqHz / sampleRate;
   return () => {
@@ -82,10 +79,7 @@ export function sawtoothPolyBlep(
   };
 }
 
-export function squarePolyBlep(
-  freqHz: number,
-  sampleRate: number,
-): () => number {
+export function squarePolyBlep(freqHz: number, sampleRate: number): () => number {
   let phase = 0;
   const dt = freqHz / sampleRate;
   return () => {
@@ -194,11 +188,7 @@ export function onePoleHighpass(cutoffHz: number, sampleRate: number): Filter {
 }
 
 // RBJ-cookbook bandpass (constant 0 dB peak gain). Q controls bandwidth.
-export function biquadBandpass(
-  centerHz: number,
-  q: number,
-  sampleRate: number,
-): Filter {
+export function biquadBandpass(centerHz: number, q: number, sampleRate: number): Filter {
   let b0 = 0;
   let b2 = 0;
   let a1 = 0;
@@ -305,12 +295,8 @@ export function schroederReverb(opts: {
 }): StereoFilter {
   const sr = opts.sampleRate;
   // FreeVerb-baseline lengths at 44.1 kHz, scaled for arbitrary sample rate.
-  const combDelays = [1116, 1188, 1277, 1356].map((n) =>
-    Math.max(2, Math.round(n * (sr / 44100))),
-  );
-  const allpassDelays = [556, 441].map((n) =>
-    Math.max(2, Math.round(n * (sr / 44100))),
-  );
+  const combDelays = [1116, 1188, 1277, 1356].map((n) => Math.max(2, Math.round(n * (sr / 44100))));
+  const allpassDelays = [556, 441].map((n) => Math.max(2, Math.round(n * (sr / 44100))));
 
   // RT60 ≈ -3D / (sr · log10(g)) → g = 10^(-3D / (sr·RT60)) for the longest comb.
   let longestD = 0;

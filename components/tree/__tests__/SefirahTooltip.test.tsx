@@ -25,9 +25,7 @@ import { SefirahTooltip } from '../SefirahTooltip';
  */
 describe('SefirahTooltip', () => {
   it('renders English name, Hebrew name, meaning, and team Sparks count', () => {
-    const { getByText, container } = render(
-      <SefirahTooltip sefirahKey="tiferet" teamSparks={2} />,
-    );
+    const { getByText, container } = render(<SefirahTooltip sefirahKey="tiferet" teamSparks={2} />);
 
     expect(getByText(/Beauty/)).toBeTruthy();
     // Hebrew is rendered with lang=he so screen readers / browsers
@@ -46,9 +44,7 @@ describe('SefirahTooltip', () => {
   });
 
   it('renders a 0-spark count when no team-mate has earned the spark yet', () => {
-    const { container } = render(
-      <SefirahTooltip sefirahKey="hod" teamSparks={0} />,
-    );
+    const { container } = render(<SefirahTooltip sefirahKey="hod" teamSparks={0} />);
     const sparks = container.querySelector('[data-tooltip-sparks]');
     expect(sparks?.textContent ?? '').toMatch(/0/);
   });
@@ -57,9 +53,7 @@ describe('SefirahTooltip', () => {
     // The tooltip is implemented as a `role="tooltip"` so AT users
     // see it referenced by `aria-describedby` from the Sefirah node.
     // Without this, the hover affordance is purely visual.
-    const { container } = render(
-      <SefirahTooltip sefirahKey="kether" teamSparks={0} />,
-    );
+    const { container } = render(<SefirahTooltip sefirahKey="kether" teamSparks={0} />);
     const tip = container.querySelector('[data-sefirah-tooltip]');
     expect(tip?.getAttribute('role')).toBe('tooltip');
   });

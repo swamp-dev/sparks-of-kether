@@ -79,10 +79,7 @@ function makeFakeChannel(channelName: string): FakeChannel {
       }
       return this;
     }),
-    subscribe: vi.fn(function (
-      this: FakeChannel,
-      cb?: (status: string) => void,
-    ) {
+    subscribe: vi.fn(function (this: FakeChannel, cb?: (status: string) => void) {
       if (cb !== undefined) {
         const status = channelName.startsWith('lobby_players')
           ? playersChannelSubscribeStatus

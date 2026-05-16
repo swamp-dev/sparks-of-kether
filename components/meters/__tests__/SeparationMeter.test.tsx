@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
-import {
-  SeparationMeter,
-  SHELL_THRESHOLDS,
-  DEFAULT_SHELL_HINTS,
-} from '../SeparationMeter';
+import { SeparationMeter, SHELL_THRESHOLDS, DEFAULT_SHELL_HINTS } from '../SeparationMeter';
 
 describe('SeparationMeter — rendering', () => {
   it('renders with role="meter" and aria-valuenow / aria-valuemax', () => {
@@ -69,12 +65,7 @@ describe('SeparationMeter — Shell-awakening threshold marks', () => {
     const { container } = render(<SeparationMeter value={0} max={15} />);
     // Default order tracks `pickNextShellTarget` with all-dormant
     // Shells + 0 sparks: Malkuth, Yesod, Hod, Netzach.
-    expect(DEFAULT_SHELL_HINTS.map((h) => h.letter)).toEqual([
-      'מ',
-      'י',
-      'ה',
-      'נ',
-    ]);
+    expect(DEFAULT_SHELL_HINTS.map((h) => h.letter)).toEqual(['מ', 'י', 'ה', 'נ']);
     SHELL_THRESHOLDS.forEach((t, i) => {
       const hint = DEFAULT_SHELL_HINTS[i];
       expect(hint, `hint at index ${i}`).toBeDefined();
@@ -92,9 +83,7 @@ describe('SeparationMeter — Shell-awakening threshold marks', () => {
       { letter: 'ב', name: 'Despair (Binah)' },
       { letter: 'ח', name: 'Hoarding (Chesed)' },
     ];
-    const { container } = render(
-      <SeparationMeter value={0} max={15} nextShellHints={custom} />,
-    );
+    const { container } = render(<SeparationMeter value={0} max={15} nextShellHints={custom} />);
     const t3 = container.querySelector('[data-shell-threshold="3"]');
     expect(t3?.textContent).toContain('כ');
   });
@@ -118,9 +107,7 @@ describe('SeparationMeter — change hook', () => {
     // Tick 0 → 1, surface threshold awareness via the hook (the
     // hint rendering itself is asserted above; this test pins the
     // sound-design hook fires).
-    rerender(
-      <SeparationMeter value={1} max={15} onSeparationIncrease={onInc} />,
-    );
+    rerender(<SeparationMeter value={1} max={15} onSeparationIncrease={onInc} />);
     expect(onInc).toHaveBeenCalledTimes(1);
     expect(onInc).toHaveBeenCalledWith(1);
   });
@@ -130,12 +117,8 @@ describe('SeparationMeter — change hook', () => {
     const { rerender } = render(
       <SeparationMeter value={5} max={15} onSeparationIncrease={onInc} />,
     );
-    rerender(
-      <SeparationMeter value={3} max={15} onSeparationIncrease={onInc} />,
-    );
-    rerender(
-      <SeparationMeter value={3} max={15} onSeparationIncrease={onInc} />,
-    );
+    rerender(<SeparationMeter value={3} max={15} onSeparationIncrease={onInc} />);
+    rerender(<SeparationMeter value={3} max={15} onSeparationIncrease={onInc} />);
     expect(onInc).not.toHaveBeenCalled();
   });
 });

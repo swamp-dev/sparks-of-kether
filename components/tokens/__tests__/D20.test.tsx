@@ -40,9 +40,7 @@ describe('D20 — roll-settle motion (#206)', () => {
     const { container } = render(<D20 />);
     const svg = container.querySelector('svg');
     expect(svg?.getAttribute('data-rolled')).toBe('false');
-    expect(svg?.getAttribute('class') ?? '').not.toMatch(
-      /animate-d20-roll-settle/,
-    );
+    expect(svg?.getAttribute('class') ?? '').not.toMatch(/animate-d20-roll-settle/);
   });
 
   it('applies the settle animation when rolled=true', () => {

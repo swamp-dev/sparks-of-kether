@@ -2,12 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
-import {
-  createRoom,
-  joinRoom,
-  type CreateRoomError,
-  type JoinRoomError,
-} from '@/lib/rooms';
+import { createRoom, joinRoom, type CreateRoomError, type JoinRoomError } from '@/lib/rooms';
 import { ROOM_CODE_LENGTH, normalizeRoomCode } from '@/lib/room-code';
 import { clearLastGame, writeLastGame } from '@/lib/last-game';
 
@@ -105,9 +100,7 @@ export function HomeRoomForms(): JSX.Element {
   return (
     <div data-home-forms className="flex flex-col gap-4">
       <label className="block text-left">
-        <span className="block text-xs uppercase tracking-widest opacity-70">
-          Nickname
-        </span>
+        <span className="block text-xs uppercase tracking-widest opacity-70">Nickname</span>
         <input
           type="text"
           value={nickname}
@@ -136,9 +129,7 @@ export function HomeRoomForms(): JSX.Element {
       </div>
 
       <label className="block text-left">
-        <span className="block text-xs uppercase tracking-widest opacity-70">
-          Room code
-        </span>
+        <span className="block text-xs uppercase tracking-widest opacity-70">Room code</span>
         <input
           type="text"
           value={code}
@@ -196,7 +187,8 @@ function formatJoinError(err: JoinRoomError): string {
       return `No room with code ${err.code}.`;
     case 'room-not-joinable':
       if (err.state === 'playing') return 'That game is already in progress.';
-      if (err.state === 'paused') return 'That game is paused. Use your Continue Game bookmark to rejoin.';
+      if (err.state === 'paused')
+        return 'That game is paused. Use your Continue Game bookmark to rejoin.';
       return 'That game has finished.';
     case 'room-full':
       return 'That room is full (4 players max).';

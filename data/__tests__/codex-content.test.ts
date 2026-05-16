@@ -72,9 +72,7 @@ describe('codex-content', () => {
     //   - Tiferet's quote (the most-quoted Sefirah line)
     //   - Kether's Shell name (must be "Fragmentation")
     //   - The Fool's meaning (the iconic card)
-    expect(sefirahCodex.tiferet.quote).toBe(
-      'Know yourself, and you know the All.',
-    );
+    expect(sefirahCodex.tiferet.quote).toBe('Know yourself, and you know the All.');
     expect(sefirahCodex.kether.shellRule).toContain('Fragmentation');
     expect(arcanumCodex[0]?.meaning).toContain('leap');
   });

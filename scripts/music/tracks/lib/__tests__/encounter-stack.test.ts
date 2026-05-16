@@ -19,11 +19,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import {
-  buildEncounterTrack,
-  DEFAULT_QA_GATES,
-  type EncounterConfig,
-} from '../encounter-stack';
+import { buildEncounterTrack, DEFAULT_QA_GATES, type EncounterConfig } from '../encounter-stack';
 
 const SR = 8000;
 

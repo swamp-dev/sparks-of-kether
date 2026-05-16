@@ -16,9 +16,7 @@ import type { EncounterAvatarKey } from './types';
  * Returns `undefined` for any Sefirah without a shipped twist —
  * callers omit the banner entirely.
  */
-export const sefirahTwist: Readonly<
-  Partial<Record<EncounterAvatarKey, string>>
-> = {
+export const sefirahTwist: Readonly<Partial<Record<EncounterAvatarKey, string>>> = {
   hod: 'Hermes asks: name an arcanum. Match the deck-top, and the road bends your way.',
   yesod: 'Selene offers: fail here, and a hidden door opens to your sight.',
 } as const;

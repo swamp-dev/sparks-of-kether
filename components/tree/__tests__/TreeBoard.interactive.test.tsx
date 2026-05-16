@@ -25,14 +25,12 @@ describe('TreeBoard — interactive', () => {
 
     const validPaths = ['13', '24'];
     for (const num of validPaths) {
-      expect(
-        container.querySelector(`[data-path="${num}"]`)?.getAttribute('data-valid'),
-      ).toBe('true');
+      expect(container.querySelector(`[data-path="${num}"]`)?.getAttribute('data-valid')).toBe(
+        'true',
+      );
     }
     // Path 11 (Kether ↔ Chokmah) is NOT touchable from Tiferet.
-    expect(
-      container.querySelector('[data-path="11"]')?.getAttribute('data-valid'),
-    ).toBe('false');
+    expect(container.querySelector('[data-path="11"]')?.getAttribute('data-valid')).toBe('false');
   });
 
   it('fires onPathClick with the path number when a highlighted path is clicked', () => {
@@ -84,12 +82,7 @@ describe('TreeBoard — interactive', () => {
     });
     const state = makeState({}, { players: [player] });
     const { container } = render(
-      <TreeBoard
-        state={state}
-        activePlayerId="p1"
-        onPathClick={vi.fn()}
-        movesEnabled={false}
-      />,
+      <TreeBoard state={state} activePlayerId="p1" onPathClick={vi.fn()} movesEnabled={false} />,
     );
     const allPathEdges = container.querySelectorAll('[data-path]');
     for (const edge of allPathEdges) {
@@ -149,9 +142,7 @@ describe('TreeBoard — interactive', () => {
       hand: [2],
     });
     const state = makeState({}, { players: [player] });
-    const { container } = render(
-      <TreeBoard state={state} activePlayerId="p1" />,
-    );
+    const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
     const path13 = container.querySelector('[data-path="13"]');
     expect(path13?.getAttribute('data-valid')).toBe('true');
     // But not a button — there's nowhere to send the click.
@@ -190,7 +181,7 @@ describe('TreeBoard — interactive', () => {
     expect(validPaths.length).toBe(0);
   });
 
-  it('renders a player token on each player\'s current Sefirah', () => {
+  it("renders a player token on each player's current Sefirah", () => {
     const p1 = makePlayer({ id: 'p1', name: 'Andy', position: 'tiferet' });
     const p2 = makePlayer({ id: 'p2', name: 'Bea', position: 'malkuth' });
     const state = makeState({}, { players: [p1, p2] });

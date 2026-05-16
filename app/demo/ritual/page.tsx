@@ -37,9 +37,9 @@ export default function RitualDemoPage(): JSX.Element {
       <GlyphWash letter="א" side="left" />
       <h1 className="font-display text-3xl tracking-widest">Blessing Ritual</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
-        Walk through Kether to Malkuth. 3d6 per stat. Seeded RNG so reloads
-        produce the same blessings. Choose a sign below to see the per-Sefirah
-        voice calibrate to that astrological class (#255 / Voices Epic).
+        Walk through Kether to Malkuth. 3d6 per stat. Seeded RNG so reloads produce the same
+        blessings. Choose a sign below to see the per-Sefirah voice calibrate to that astrological
+        class (#255 / Voices Epic).
       </p>
 
       <label className="mt-4 inline-flex items-center gap-2 text-xs uppercase tracking-widest">

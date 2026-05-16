@@ -31,13 +31,10 @@ describe('<PeerCursor>', () => {
     // sinon-backed clock. Stubbing raf AFTER useFakeTimers wins.
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     vi.setSystemTime(0);
-    vi.stubGlobal(
-      'requestAnimationFrame',
-      (cb: (t: number) => void): number => {
-        rafCalls.push(cb);
-        return rafCalls.length;
-      },
-    );
+    vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void): number => {
+      rafCalls.push(cb);
+      return rafCalls.length;
+    });
     vi.stubGlobal('cancelAnimationFrame', () => undefined);
   });
 
@@ -74,9 +71,7 @@ describe('<PeerCursor>', () => {
   });
 
   it('snaps to the latest sample without rAF when reduceMotion is on', () => {
-    const { rerender } = render(
-      <PeerCursor cursor={cursor({ x: 0.1, y: 0.2 })} reduceMotion />,
-    );
+    const { rerender } = render(<PeerCursor cursor={cursor({ x: 0.1, y: 0.2 })} reduceMotion />);
     const node = screen.getByTestId('peer-cursor-p2');
     expect(node.getAttribute('data-x')).toBe('0.1');
 
@@ -88,9 +83,7 @@ describe('<PeerCursor>', () => {
   });
 
   it('interpolates toward the latest sample on each rAF tick (motion-safe)', () => {
-    const { rerender } = render(
-      <PeerCursor cursor={cursor({ x: 0, y: 0 })} />,
-    );
+    const { rerender } = render(<PeerCursor cursor={cursor({ x: 0, y: 0 })} />);
     rerender(<PeerCursor cursor={cursor({ x: 1, y: 1 })} />);
 
     // First tick should land somewhere strictly between 0 and 1 — the

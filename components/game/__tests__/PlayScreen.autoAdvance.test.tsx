@@ -43,9 +43,7 @@ describe('PlayScreen — auto-advance turn', () => {
     // Draw click). The auto-advance timer flips the seat after the
     // delay.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     // Pre-clear yesod for the active player so move via path 32
     // (Malkuth↔Yesod, "The World"/arcanum 21) skips challenge phase
     // and lands directly in 'end'. Card 21 in hand to play the path.
@@ -60,9 +58,7 @@ describe('PlayScreen — auto-advance turn', () => {
         : p,
     );
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
     const main = container.querySelector('[data-play-screen]');
     const initialActive = main?.getAttribute('data-active-player');
@@ -75,9 +71,7 @@ describe('PlayScreen — auto-advance turn', () => {
     act(() => {
       fireEvent.click(cardBtn);
     });
-    const path32 = container.querySelector(
-      '[data-path="32"]',
-    ) as SVGElement;
+    const path32 = container.querySelector('[data-path="32"]') as SVGElement;
     act(() => {
       fireEvent.click(path32);
     });
@@ -102,17 +96,13 @@ describe('PlayScreen — auto-advance turn', () => {
     // `'move'` when `meditatedThisTurn === true` (the player may
     // choose not to play one of the new cards).
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
     const main = container.querySelector('[data-play-screen]');
     const initialActive = main?.getAttribute('data-active-player');
 
     act(() => {
-      fireEvent.click(
-        container.querySelector('[data-action="meditate"]') as HTMLButtonElement,
-      );
+      fireEvent.click(container.querySelector('[data-action="meditate"]') as HTMLButtonElement);
     });
     // Phase stays in move post-Meditate.
     expect(main?.getAttribute('data-phase')).toBe('move');
@@ -127,9 +117,7 @@ describe('PlayScreen — auto-advance turn', () => {
     expect(main?.getAttribute('data-phase')).toBe('move');
 
     // Post-Meditate the End Turn button is reachable from `'move'`.
-    const endBtn = container.querySelector(
-      '[data-action="end-turn"]',
-    ) as HTMLButtonElement;
+    const endBtn = container.querySelector('[data-action="end-turn"]') as HTMLButtonElement;
     expect(endBtn).toBeTruthy();
     act(() => {
       fireEvent.click(endBtn);
@@ -143,9 +131,7 @@ describe('PlayScreen — auto-advance turn', () => {
     // (#502) and arms the auto-advance timer. Clicking End Turn before
     // the timer fires must rotate the seat exactly once.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? {
@@ -157,9 +143,7 @@ describe('PlayScreen — auto-advance turn', () => {
         : p,
     );
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
     const main = container.querySelector('[data-play-screen]');
     const initialActive = main?.getAttribute('data-active-player');
@@ -170,18 +154,14 @@ describe('PlayScreen — auto-advance turn', () => {
     act(() => {
       fireEvent.click(cardBtn);
     });
-    const path32 = container.querySelector(
-      '[data-path="32"]',
-    ) as SVGElement;
+    const path32 = container.querySelector('[data-path="32"]') as SVGElement;
     act(() => {
       fireEvent.click(path32);
     });
     expect(main?.getAttribute('data-phase')).toBe('end');
 
     // Click End Turn before the timer fires.
-    const endBtn = container.querySelector(
-      '[data-action="end-turn"]',
-    ) as HTMLButtonElement;
+    const endBtn = container.querySelector('[data-action="end-turn"]') as HTMLButtonElement;
     act(() => {
       fireEvent.click(endBtn);
     });

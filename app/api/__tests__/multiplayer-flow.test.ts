@@ -67,10 +67,7 @@ async function callStart(code: string): Promise<RouteResponse> {
   return { status: res.status, body: await res.json() };
 }
 
-async function callEvent(
-  code: string,
-  action: unknown,
-): Promise<RouteResponse> {
+async function callEvent(code: string, action: unknown): Promise<RouteResponse> {
   const req = new Request(`http://localhost/api/rooms/${code}/events`, {
     method: 'POST',
     headers: {
@@ -191,9 +188,7 @@ describe('multiplayer flow — start → events integration', () => {
     // count assertion guards against a regression that would write
     // BOTH an accepted event and a rejected audit row.
     expect(db.game_events).toHaveLength(1);
-    const audit = db.game_events.find(
-      (e) => e.event_type === 'rejected:end-turn',
-    );
+    const audit = db.game_events.find((e) => e.event_type === 'rejected:end-turn');
     expect(audit).toBeDefined();
     expect(audit?.player_id).toBe('p2');
 
@@ -309,9 +304,7 @@ describe('multiplayer flow — start → events integration', () => {
     seedLobby('ABCDEF');
     await callStart('ABCDEF');
 
-    const before =
-      db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand
-        .length ?? 0;
+    const before = db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand.length ?? 0;
     // Precondition: the start-route fixture must leave room for two
     // more cards. If `makeFullGame`'s starting hand size ever
     // changes, the test wants to fail loudly here, not via a
@@ -328,9 +321,7 @@ describe('multiplayer flow — start → events integration', () => {
     expect(db.game_events[0]?.event_type).toBe('meditate');
     expect(db.game_states[0]?.last_event_id).toBe(1);
 
-    const after =
-      db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand
-        .length ?? 0;
+    const after = db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1')?.hand.length ?? 0;
     expect(after - before).toBe(2);
   });
 
@@ -362,9 +353,7 @@ describe('multiplayer flow — start → events integration', () => {
 
     // Hand grew by exactly MEDITATE_DRAW (2) cards; pendingDiscard NOT
     // set yet (the cap check defers to end-turn).
-    const afterMeditate = db.game_states[0]?.snapshot.players.find(
-      (p) => p.id === 'p1',
-    );
+    const afterMeditate = db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1');
     expect(afterMeditate?.hand).toHaveLength(8);
     expect(db.game_states[0]?.snapshot.pendingDiscard).toBeUndefined();
     expect(db.game_events).toHaveLength(1);
@@ -495,17 +484,13 @@ describe('multiplayer flow — start → events integration', () => {
     expect(res.status).toBe(403);
 
     expect(db.game_events).toHaveLength(1);
-    const audit = db.game_events.find(
-      (e) => e.event_type === 'rejected:prep-add-modifier',
-    );
+    const audit = db.game_events.find((e) => e.event_type === 'rejected:prep-add-modifier');
     expect(audit).toBeDefined();
     expect(audit?.player_id).toBe('p2');
 
     // Snapshot untouched.
     expect(db.game_states[0]?.last_event_id).toBe(0);
-    expect(db.game_states[0]?.snapshot.pendingModifiers).toEqual(
-      beforeSnapshot.pendingModifiers,
-    );
+    expect(db.game_states[0]?.snapshot.pendingModifiers).toEqual(beforeSnapshot.pendingModifiers);
     expect(db.game_states[0]?.snapshot.activePlayerId).toBe('p1');
   });
 

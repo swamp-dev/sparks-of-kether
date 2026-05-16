@@ -255,12 +255,7 @@ export function applyClientAction(
         action.serverArrivedAtKether !== undefined
           ? { now: () => action.serverArrivedAtKether as number }
           : undefined;
-      const result = applyMove(
-        state,
-        action.playerId,
-        action.pathNumber,
-        moveOptions,
-      );
+      const result = applyMove(state, action.playerId, action.pathNumber, moveOptions);
       if (!result.ok) return { ok: false, error: { kind: 'move', cause: result.reason } };
       return { ok: true, newState: padPhaseAfterMove(result.value, action.playerId) };
     }
@@ -358,14 +353,9 @@ export function applyClientAction(
           error: { kind: 'meditate', cause: 'already-meditated' },
         };
       }
-      const drewState = drawNCards(
-        state,
-        action.playerId,
-        MEDITATE_DRAW,
-        HAND_CAP,
-        rng,
-        { overCap: true },
-      );
+      const drewState = drawNCards(state, action.playerId, MEDITATE_DRAW, HAND_CAP, rng, {
+        overCap: true,
+      });
       const newState: GameState = {
         ...drewState,
         phase: 'move',
@@ -415,9 +405,7 @@ export function applyClientAction(
       // *without* rotating the seat. Mirrors the engine reducer's arm
       // so server- and client-applied state agree on when the discard
       // prompt fires (only when ending the turn, not on Meditate).
-      const activeForCap = state.players.find(
-        (p) => p.id === state.activePlayerId,
-      );
+      const activeForCap = state.players.find((p) => p.id === state.activePlayerId);
       if (
         activeForCap !== undefined &&
         activeForCap.hand.length > HAND_CAP &&
@@ -506,9 +494,7 @@ export function applyClientAction(
         return { ok: true, newState: passResult.value };
       }
       if (passResult.reason.kind === 'kether-pass-cap-exceeded') {
-        const target = state.players.find(
-          (p) => p.id === action.targetPlayerId,
-        );
+        const target = state.players.find((p) => p.id === action.targetPlayerId);
         if (target === undefined) {
           // Defense in depth: a corrupted action carrying a non-
           // player targetPlayerId reaches engine `ketherPassCard`
@@ -658,11 +644,7 @@ function padPhaseAfterMove(state: GameState, playerId: string): GameState {
  * because the caller's request kind has to match what `state.phase`
  * and `state.challengeSubPhase` actually are.
  */
-function dispatchPrepEvent(
-  state: GameState,
-  rng: Rng,
-  event: TurnEvent,
-): ApplyActionResult {
+function dispatchPrepEvent(state: GameState, rng: Rng, event: TurnEvent): ApplyActionResult {
   const snapshot: TurnSnapshot = { state };
   const result = turnReducer(snapshot, event, rng);
   if (!result.ok) {

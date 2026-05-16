@@ -16,9 +16,7 @@ describe('Footer', () => {
     const codex = screen.getByRole('link', { name: /^codex$/i });
 
     expect(rules.getAttribute('href')).toBe('/about');
-    expect(source.getAttribute('href')).toBe(
-      'https://github.com/swamp-dev/sparks-of-kether',
-    );
+    expect(source.getAttribute('href')).toBe('https://github.com/swamp-dev/sparks-of-kether');
     // Codex is a placeholder route until #320 lands. Pin the path
     // so the link doesn't silently 404 in a future refactor.
     expect(codex.getAttribute('href')).toBe('/codex');

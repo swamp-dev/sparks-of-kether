@@ -7,7 +7,9 @@ let getUserResult: { data: { user: { id: string } | null }; error: unknown } = {
 };
 let roomResponse: { data: unknown; error: unknown } = { data: null, error: null };
 let membershipResponse: { data: unknown; error: unknown } = { data: null, error: null };
-let roomUpdateResult: { error: { message: string } | null; count?: number | null } = { error: null };
+let roomUpdateResult: { error: { message: string } | null; count?: number | null } = {
+  error: null,
+};
 
 let roomUpdates: unknown[] = [];
 
@@ -146,7 +148,7 @@ describe('POST /api/rooms/[code]/resume', () => {
     const { POST } = await import('../route');
     const res = await POST(makeRequest('KETHR1'), { params: { code: 'KETHR1' } });
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean };
+    const body = (await res.json()) as { ok: boolean };
     expect(body.ok).toBe(true);
     expect(roomUpdates).toHaveLength(1);
     expect((roomUpdates[0] as Record<string, unknown>)['state']).toBe('playing');
@@ -158,7 +160,7 @@ describe('POST /api/rooms/[code]/resume', () => {
     const { POST } = await import('../route');
     const res = await POST(makeRequest('KETHR1'), { params: { code: 'KETHR1' } });
     expect(res.status).toBe(409);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toBe('state-changed');
   });
 });

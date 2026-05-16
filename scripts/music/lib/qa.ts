@@ -119,10 +119,7 @@ export function silenceRegions(
 // requires listening, not a Pearson score. If a future track has
 // transient content near the loop boundary, add a separate gate that
 // measures local RMS jump at the wrap point.
-export function loopSeamCorrelation(
-  buffer: StereoBuffer,
-  opts: { crossfadeSec: number },
-): number {
+export function loopSeamCorrelation(buffer: StereoBuffer, opts: { crossfadeSec: number }): number {
   const { left, right, sampleRate } = buffer;
   const N = Math.floor(opts.crossfadeSec * sampleRate);
   if (N <= 0 || N > left.length / 2) {
@@ -147,10 +144,8 @@ export function loopSeamCorrelation(
   let denH = 0;
   let denT = 0;
   for (let i = 0; i < N; i++) {
-    const h =
-      ((left[headOffset + i] ?? 0) + (right[headOffset + i] ?? 0)) * 0.5 - meanH;
-    const t =
-      ((left[tailOffset + i] ?? 0) + (right[tailOffset + i] ?? 0)) * 0.5 - meanT;
+    const h = ((left[headOffset + i] ?? 0) + (right[headOffset + i] ?? 0)) * 0.5 - meanH;
+    const t = ((left[tailOffset + i] ?? 0) + (right[tailOffset + i] ?? 0)) * 0.5 - meanT;
     num += h * t;
     denH += h * h;
     denT += t * t;
@@ -252,15 +247,11 @@ export async function runQa(
   const failures: string[] = [];
   const loopSeam = loopSeamCorrelation(buffer, { crossfadeSec: opts.crossfadeSec });
   if (loopSeam < opts.minLoopSeam) {
-    failures.push(
-      `loop-seam correlation ${loopSeam.toFixed(3)} < ${opts.minLoopSeam}`,
-    );
+    failures.push(`loop-seam correlation ${loopSeam.toFixed(3)} < ${opts.minLoopSeam}`);
   }
   const peakDbfs = measurePeakDbfs(buffer);
   if (peakDbfs > opts.maxPeakDbfs) {
-    failures.push(
-      `peak ${peakDbfs.toFixed(2)} dBFS exceeds ${opts.maxPeakDbfs} dBFS`,
-    );
+    failures.push(`peak ${peakDbfs.toFixed(2)} dBFS exceeds ${opts.maxPeakDbfs} dBFS`);
   }
   const regions = silenceRegions(buffer, {
     thresholdDbfs: -50,
@@ -274,9 +265,7 @@ export async function runQa(
   }
   const lufs = await measureLufs(buffer);
   if (lufs < opts.minLufs || lufs > opts.maxLufs) {
-    failures.push(
-      `loudness ${lufs.toFixed(2)} LUFS outside [${opts.minLufs}, ${opts.maxLufs}]`,
-    );
+    failures.push(`loudness ${lufs.toFixed(2)} LUFS outside [${opts.minLufs}, ${opts.maxLufs}]`);
   }
   return {
     ok: failures.length === 0,

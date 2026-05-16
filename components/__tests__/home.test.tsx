@@ -54,13 +54,9 @@ describe('HomePage', () => {
     const trigger = screen.getByRole('button', { name: /begin the ascent/i });
     fireEvent.click(trigger);
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /^new game$/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^new game$/i })).toBeInTheDocument();
     });
-    expect(
-      screen.getByRole('button', { name: /^join game$/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^join game$/i })).toBeInTheDocument();
     const hotseat = screen.getByRole('link', { name: /hot-seat/i });
     expect(hotseat).toBeInTheDocument();
     expect(hotseat.getAttribute('href')).toBe('/play');
@@ -71,15 +67,9 @@ describe('HomePage', () => {
     // Each column carries `data-pitch-column="<key>"`. Pinning by
     // attribute is more durable than pinning by glyph or copy — the
     // glyphs may evolve, the structural contract should not.
-    const cooperative = document.querySelector(
-      '[data-pitch-column="cooperative"]',
-    );
-    const symbolic = document.querySelector(
-      '[data-pitch-column="symbolic"]',
-    );
-    const short = document.querySelector(
-      '[data-pitch-column="short"]',
-    );
+    const cooperative = document.querySelector('[data-pitch-column="cooperative"]');
+    const symbolic = document.querySelector('[data-pitch-column="symbolic"]');
+    const short = document.querySelector('[data-pitch-column="short"]');
     expect(cooperative).not.toBeNull();
     expect(symbolic).not.toBeNull();
     expect(short).not.toBeNull();
@@ -112,13 +102,9 @@ describe('HomePage', () => {
     const trigger = screen.getByRole('button', { name: /begin the ascent/i });
     fireEvent.click(trigger);
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /^new game$/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^new game$/i })).toBeInTheDocument();
     });
-    expect(
-      screen.getByRole('button', { name: /^join game$/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^join game$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /hot-seat/i })).toBeInTheDocument();
 
     // No CTA carries a `hidden sm:` or `sm:hidden` class — these are

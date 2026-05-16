@@ -152,7 +152,10 @@ export function applyMove(
   const { path, player } = validation.value;
 
   const handIndex = player.hand.indexOf(path.arcanumNumber);
-  const handMinusPathCard = [...player.hand.slice(0, handIndex), ...player.hand.slice(handIndex + 1)];
+  const handMinusPathCard = [
+    ...player.hand.slice(0, handIndex),
+    ...player.hand.slice(handIndex + 1),
+  ];
 
   // #17: Shell of Netzach (Obsession) — playing a card on a Netzach-adjacent
   // path burns the card with no movement. The card can still count for
@@ -186,8 +189,7 @@ export function applyMove(
     isInertiaActive(state) && handMinusPathCard.length > 0
       ? handMinusPathCard[handMinusPathCard.length - 1]
       : undefined;
-  const nextHand =
-    inertiaExtra !== undefined ? handMinusPathCard.slice(0, -1) : handMinusPathCard;
+  const nextHand = inertiaExtra !== undefined ? handMinusPathCard.slice(0, -1) : handMinusPathCard;
 
   const fromSefirah = sefirahByKey(player.position);
   const toSefirah = sefirahByKey(destination);
@@ -222,9 +224,7 @@ export function applyMove(
   const streakResult = recordPillarMove(state.pillarStreak, toSefirah.pillar);
 
   const discardedCards =
-    inertiaExtra !== undefined
-      ? [path.arcanumNumber, inertiaExtra]
-      : [path.arcanumNumber];
+    inertiaExtra !== undefined ? [path.arcanumNumber, inertiaExtra] : [path.arcanumNumber];
 
   let nextState: GameState = {
     ...state,
