@@ -44,10 +44,14 @@ export interface UseLobbyReturn {
   readonly loading: boolean;
   /** True between `beginGame()` invocation and the response landing. */
   readonly beginning: boolean;
+  /** True between `resetGame()` invocation and the response landing. */
+  readonly resetting: boolean;
   /** Trigger a re-fetch of room + players. */
   readonly refresh: () => void;
   /** POST `/api/rooms/[code]/start`. Idempotent re-entry: returns early if `beginning`. */
   readonly beginGame: () => void;
+  /** POST `/api/rooms/[code]/reset`. Returns room to lobby, clears game state. Host-only. */
+  readonly resetGame: () => void;
   /**
    * Update the current player's `zodiac_sign`. Returns `{ ok: false }`
    * if the caller is not signed in (no `currentPlayerId`).
@@ -68,15 +72,16 @@ export function useLobby(code: string): UseLobbyReturn {
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [beginning, setBeginning] = useState(false);
+  const [resetting, setResetting] = useState(false);
   // True until the first fetch resolves. Stays true on subsequent
   // refreshes (the page already has data; "loading" framing would
   // be misleading) — only the *initial* read sets it false.
   const [loading, setLoading] = useState(true);
-  // Guard against re-entrancy within a single render. `beginning`
-  // is React state — synchronous double-clicks both see the
-  // pre-update value via the useCallback closure. The ref flips
-  // immediately on the first call so the second call returns early.
+  // Guards against re-entrancy within a single render. React state
+  // double-clicks both see the pre-update value via the useCallback
+  // closure; the refs flip immediately on the first call.
   const beginningRef = useRef(false);
+  const resettingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -225,6 +230,40 @@ export function useLobby(code: string): UseLobbyReturn {
     })();
   }, [code]);
 
+  const resetGame = useCallback((): void => {
+    if (resettingRef.current) return;
+    resettingRef.current = true;
+    setResetting(true);
+    void (async () => {
+      try {
+        const client = getSupabaseBrowserClient();
+        const { data: session } = await client.auth.getSession();
+        const token = session.session?.access_token;
+        if (!token) {
+          setError('Not signed in. Please refresh.');
+          return;
+        }
+        const res = await fetch(`/api/rooms/${code}/reset`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setRefreshTick((n) => n + 1);
+          return;
+        }
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setError(
+          `Could not reset room: ${body.error ?? `HTTP ${res.status}`}`,
+        );
+      } finally {
+        resettingRef.current = false;
+        setResetting(false);
+      }
+    })();
+  }, [code]);
+
   const setZodiacSign = useCallback(
     async (sign: ZodiacSignKey): Promise<{ readonly ok: boolean }> => {
       if (currentPlayerId === null) {
@@ -288,8 +327,10 @@ export function useLobby(code: string): UseLobbyReturn {
     error,
     loading,
     beginning,
+    resetting,
     refresh,
     beginGame,
+    resetGame,
     setZodiacSign,
     setReady,
   };
