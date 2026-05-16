@@ -75,6 +75,13 @@ interface PlayScreenProps {
    * route landing.
    */
   readonly roomCode?: string;
+  /**
+   * The authenticated viewer's player ID. Undefined in hot-seat
+   * mode (all seats share one screen). In multiplayer, each client
+   * passes its own ID so the screen shows only that player's hand
+   * and disables actions when it is not their turn.
+   */
+  readonly currentPlayerId?: string;
 }
 
 /**
@@ -93,6 +100,7 @@ export function PlayScreen({
   rng,
   className,
   roomCode,
+  currentPlayerId,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
@@ -230,6 +238,14 @@ export function PlayScreen({
   }, [turn.phase, pendingDiscardCount]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
+  // In multiplayer each client passes its own player ID. The viewer's
+  // seat shows their own hand; actions are gated on being the active player.
+  // In hot-seat (currentPlayerId undefined) the viewer IS the active player.
+  const viewerPlayer =
+    currentPlayerId !== undefined
+      ? (turn.state.players.find((p) => p.id === currentPlayerId) ?? activePlayer)
+      : activePlayer;
+  const isMyTurn = currentPlayerId === undefined || currentPlayerId === activePlayer?.id;
   const endgame = checkEndgame(turn.state);
 
   // #526: ambient music. Must come before any early returns so the hook
@@ -545,7 +561,7 @@ export function PlayScreen({
             // the player has moved, the board is decorative until the
             // next turn begins; the action panel below carries the
             // available affordances (End Turn, etc.).
-            movesEnabled={turn.phase === 'move'}
+            movesEnabled={turn.phase === 'move' && isMyTurn}
             // #312 + #405: light the corresponding paths on the Tree
             // when the player is considering a card. The signal source
             // is `hoveredCard` (mouse / focus) with `selectedCard` as
@@ -581,7 +597,7 @@ export function PlayScreen({
             {turn.phase === 'move' ? (
               <MeditateButton
                 onMeditate={turn.meditate}
-                disabled={turn.state.meditatedThisTurn === true}
+                disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
               />
             ) : null}
             {/*
@@ -604,6 +620,7 @@ export function PlayScreen({
               <button
                 type="button"
                 onClick={() => turn.endTurn()}
+                disabled={!isMyTurn}
                 data-action="end-turn"
                 className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground"
               >
@@ -633,30 +650,36 @@ export function PlayScreen({
             You drew 2 cards. You may still play a card, or End your turn.
           </div>
         ) : null}
-        {activePlayer ? (
+        {viewerPlayer ? (
           <Hand
-            hand={activePlayer.hand}
-            visible={isHandVisible(turn.state, activePlayer.id, activePlayer.id)}
-            {...(pendingDiscardCount === 0
+            hand={viewerPlayer.hand}
+            visible={isHandVisible(turn.state, viewerPlayer.id, viewerPlayer.id)}
+            {...(isMyTurn && pendingDiscardCount === 0
               ? { onCardSelect: (n: number) => setSelectedCard(n) }
               : {})}
-            onCardHover={(n) => setHoveredCard(n)}
+            {...(isMyTurn
+              ? { onCardHover: (n: number | undefined) => setHoveredCard(n) }
+              : {})}
             // #412: drag-to-play wiring. drag-start lights the path
             // beneath the gesture; drag-end runs the drop handler;
             // drag-cancel clears the highlight without dispatching.
-            onCardDragStart={(n) => setDraggingCard(n)}
-            onCardDragEnd={handleCardDrop}
-            onCardDragCancel={() => setDraggingCard(undefined)}
-            {...(selectedCard !== undefined && pendingDiscardCount === 0
+            {...(isMyTurn
+              ? {
+                  onCardDragStart: (n: number) => setDraggingCard(n),
+                  onCardDragEnd: handleCardDrop,
+                  onCardDragCancel: () => setDraggingCard(undefined),
+                }
+              : {})}
+            {...(isMyTurn && selectedCard !== undefined && pendingDiscardCount === 0
               ? { selectedArcanum: selectedCard }
               : {})}
-            {...(pendingDiscardCount > 0
+            {...(isMyTurn && pendingDiscardCount > 0
               ? {
                   discardMode: true as const,
                   onDiscard: (arcanum: number) => turn.discard(arcanum),
                 }
               : {})}
-            ariaLabel={`${activePlayer.name}'s hand`}
+            ariaLabel={`${viewerPlayer.name}'s hand`}
             className="w-full max-w-xl"
           />
         ) : null}
@@ -779,7 +802,7 @@ export function PlayScreen({
        * hand cards directly so players can hover for path-lighting
        * before committing.
        */}
-      {pendingDiscardCount > 0 ? (
+      {pendingDiscardCount > 0 && isMyTurn ? (
         <div
           role="status"
           aria-live="polite"
