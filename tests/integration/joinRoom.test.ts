@@ -69,7 +69,9 @@ describe('integration: joinRoom multi-player flow (real Supabase)', () => {
     const rows = (players.data ?? []) as { id: string; seat: number }[];
     expect(rows).toHaveLength(2);
     expect(rows.map((r) => r.seat)).toEqual([0, 1]);
-    expect(rows[0]?.id).toBe(host.userId);
+    // createRoom calls signOut() internally so host.userId is stale;
+    // created.value.playerId is the authoritative host player ID.
+    expect(rows[0]?.id).toBe(created.value.playerId);
     expect(rows[1]?.id).toBe(guest.userId);
   });
 

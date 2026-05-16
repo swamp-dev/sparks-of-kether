@@ -37,14 +37,17 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
   });
 
   it('lets the caller update their own zodiac_sign', async () => {
-    const { client, userId } = await makeAnonClient();
+    const { client } = await makeAnonClient();
     const create = await createRoom({ nickname: 'Andy', client });
     if (!create.ok) {
       throw new Error(`createRoom failed: ${JSON.stringify(create.error)}`);
     }
+    // createRoom calls signOut() internally; use the returned playerId as
+    // the authoritative user ID for the new session.
+    const playerId = create.value.playerId;
 
     const result = await setZodiacSign(client, {
-      playerId: userId,
+      playerId,
       sign: 'aries',
     });
     expect(result.ok).toBe(true);
@@ -53,7 +56,7 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
     const players = await svc
       .from('players')
       .select('id, zodiac_sign')
-      .eq('id', userId)
+      .eq('id', playerId)
       .single();
     expect(players.error).toBeNull();
     expect((players.data as { zodiac_sign: string | null }).zodiac_sign).toBe(
@@ -62,20 +65,23 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
   });
 
   it('lets the caller toggle their own ready flag', async () => {
-    const { client, userId } = await makeAnonClient();
+    const { client } = await makeAnonClient();
     const create = await createRoom({ nickname: 'Andy', client });
     if (!create.ok) {
       throw new Error(`createRoom failed: ${JSON.stringify(create.error)}`);
     }
+    // createRoom calls signOut() internally; use the returned playerId as
+    // the authoritative user ID for the new session.
+    const playerId = create.value.playerId;
 
-    const r1 = await setReady(client, { playerId: userId, ready: true });
+    const r1 = await setReady(client, { playerId, ready: true });
     expect(r1.ok).toBe(true);
 
     const svc = getServiceClient();
     const after = await svc
       .from('players')
       .select('ready')
-      .eq('id', userId)
+      .eq('id', playerId)
       .single();
     expect((after.data as { ready: boolean }).ready).toBe(true);
   });
