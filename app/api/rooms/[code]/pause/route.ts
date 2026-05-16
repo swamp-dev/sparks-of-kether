@@ -71,14 +71,23 @@ export async function POST(
     return NextResponse.json({ error: 'not-a-member' }, { status: 403 });
   }
 
+  // Conditional update: only write if the room is still in 'playing' state.
+  // Guards the TOCTOU window between the state check above and this write —
+  // two concurrent pause requests both pass the check, but only one wins the
+  // conditional update; the other gets 0 rows and returns 409.
   const roomUpdate = await query(serviceClient, 'rooms')
     .update({ state: 'paused', paused_at: new Date().toISOString() })
-    .eq('id', room.id);
+    .eq('id', room.id)
+    .eq('state', 'playing');
   if (roomUpdate.error) {
     return NextResponse.json(
       { error: 'update-failed', cause: roomUpdate.error.message },
       { status: 500 },
     );
+  }
+  // count === 0 means another request won the race and already changed state.
+  if ((roomUpdate as { count?: number }).count === 0) {
+    return NextResponse.json({ error: 'state-changed', state: 'playing' }, { status: 409 });
   }
 
   return NextResponse.json({ ok: true });

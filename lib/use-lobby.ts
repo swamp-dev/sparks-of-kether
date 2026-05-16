@@ -225,6 +225,10 @@ export function useLobby(code: string): UseLobbyReturn {
         if (status === 'CHANNEL_ERROR') {
           // eslint-disable-next-line no-console
           console.error(`[useLobby] Realtime channel error on lobby_room:${roomId}`);
+          // Mirror the lobby_players behaviour: surface the error so
+          // the lobby/play page can show a recovery prompt rather than
+          // silently freezing on the current room state.
+          setError('Realtime sync error. Refresh to retry.');
         }
       });
 

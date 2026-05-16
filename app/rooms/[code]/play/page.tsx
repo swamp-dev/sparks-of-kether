@@ -32,7 +32,7 @@ interface PlayPageProps {
 export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   const { code } = params;
   const router = useRouter();
-  const { room, players, currentPlayerId } = useLobby(code);
+  const { room, players, currentPlayerId, error, loading } = useLobby(code);
   const { state: gameState, lastEventId } = useRoomState(room?.id ?? null);
   // RNG seeded from the last applied event ID — stays in sync with
   // the server's deterministic fold sequence.
@@ -66,17 +66,25 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   // POST /pause. The timer resets whenever more players reconnect.
   // We use a ref to hold the timer ID so cleanup is synchronous.
   const autoPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Only arm auto-pause when a previously-multiplayer session drops to
+  // 1 player. Without this guard a solo game (1 player total) would
+  // trigger auto-pause 30s after the page loads and loop forever.
+  const hadMultiplePlayersRef = useRef(false);
+  useEffect(() => {
+    if (onlinePlayerIds.size > 1) hadMultiplePlayersRef.current = true;
+  }, [onlinePlayerIds.size]);
+
   useEffect(() => {
     if (room?.state !== 'playing') return;
-    if (onlinePlayerIds.size > 1) {
-      // Others still connected — cancel any pending auto-pause.
+    if (onlinePlayerIds.size > 1 || !hadMultiplePlayersRef.current) {
+      // Others still connected, or this was always a solo session — cancel.
       if (autoPauseTimerRef.current !== null) {
         clearTimeout(autoPauseTimerRef.current);
         autoPauseTimerRef.current = null;
       }
       return;
     }
-    // Last client standing — start the 30s countdown.
+    // Last client standing in a previously-multiplayer session — start 30s countdown.
     autoPauseTimerRef.current = setTimeout(() => {
       void (async () => {
         const client = getSupabaseBrowserClient();
@@ -120,8 +128,29 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   // Pause overlay — shown whenever room.state === 'paused'.
   const isPaused = room?.state === 'paused';
 
-  // Loading state: game snapshot not yet received.
-  if (gameState === null || room === null) {
+  // Surface fetch errors (expired session, RLS denial, room not found).
+  if (error !== null) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-veil">
+        <p
+          role="alert"
+          className="rounded border border-pillar-severity/50 bg-pillar-severity/10 px-4 py-3 text-sm text-pillar-severity"
+        >
+          {error}
+        </p>
+        <button
+          type="button"
+          onClick={handleLeave}
+          className="rounded border border-veil/30 px-4 py-2 text-xs uppercase tracking-widest"
+        >
+          Back to home
+        </button>
+      </main>
+    );
+  }
+
+  // Loading state: room fetch or game snapshot not yet received.
+  if (loading || gameState === null || room === null) {
     return (
       <main className="flex min-h-screen items-center justify-center text-veil">
         <p className="text-sm opacity-50">Connecting…</p>

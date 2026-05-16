@@ -25,7 +25,11 @@ alter table public.rooms
 -- postgres_changes listeners on the 'rooms' table fire for all members.
 -- Without this, the pause overlay and lobby redirect never receive room-state
 -- updates without a manual poll.
-do $$ begin
-  alter publication supabase_realtime add table public.rooms;
-exception when duplicate_object then null;
-end $$;
+--
+-- If rooms is already in the publication (re-run scenario), this will error
+-- with "relation already exists in publication". On Supabase Cloud the
+-- dashboard migration runner handles idempotency; on local `supabase db push`
+-- re-runs are not expected. Adding a plain statement avoids wrapping DDL in
+-- a PL/pgSQL DO block, which can conflict with implicit transaction handling
+-- for DDL in some Postgres versions.
+alter publication supabase_realtime add table public.rooms;

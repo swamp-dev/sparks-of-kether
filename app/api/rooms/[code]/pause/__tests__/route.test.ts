@@ -30,10 +30,12 @@ function makeServiceClient() {
             }),
           }),
           update: (patch: unknown) => ({
-            eq: async () => {
-              roomUpdates.push(patch);
-              return roomUpdateResult;
-            },
+            eq: (_col1: string, _val1: unknown) => ({
+              eq: async (_col2: string, _val2: unknown) => {
+                roomUpdates.push(patch);
+                return roomUpdateResult;
+              },
+            }),
           }),
         };
       }

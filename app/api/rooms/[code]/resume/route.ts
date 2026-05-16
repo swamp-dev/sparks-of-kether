@@ -66,14 +66,20 @@ export async function POST(
     return NextResponse.json({ error: 'not-a-member' }, { status: 403 });
   }
 
+  // Conditional update: only write if still paused. Guards concurrent resume
+  // requests from racing each other on a brief Realtime delivery gap.
   const roomUpdate = await query(serviceClient, 'rooms')
     .update({ state: 'playing', paused_at: null })
-    .eq('id', room.id);
+    .eq('id', room.id)
+    .eq('state', 'paused');
   if (roomUpdate.error) {
     return NextResponse.json(
       { error: 'update-failed', cause: roomUpdate.error.message },
       { status: 500 },
     );
+  }
+  if ((roomUpdate as { count?: number }).count === 0) {
+    return NextResponse.json({ error: 'state-changed', state: 'paused' }, { status: 409 });
   }
 
   return NextResponse.json({ ok: true });
