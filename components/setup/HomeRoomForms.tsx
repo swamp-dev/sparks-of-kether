@@ -9,6 +9,7 @@ import {
   type JoinRoomError,
 } from '@/lib/rooms';
 import { ROOM_CODE_LENGTH, normalizeRoomCode } from '@/lib/room-code';
+import { clearLastGame, writeLastGame } from '@/lib/last-game';
 
 /**
  * Home-page room forms. Two modes:
@@ -38,6 +39,9 @@ export function HomeRoomForms(): JSX.Element {
     }
     setError(null);
     setBusy(true);
+    // createRoom calls auth.signOut() internally, which orphans the old
+    // anonymous session. Clear any stale bookmark before the new session begins.
+    clearLastGame();
     try {
       const result = await createRoom({
         client: getSupabaseBrowserClient(),
@@ -47,6 +51,12 @@ export function HomeRoomForms(): JSX.Element {
         setError(formatCreateError(result.error));
         return;
       }
+      writeLastGame({
+        code: result.value.code,
+        nickname: nickname.trim(),
+        roomState: 'lobby',
+        writtenAt: Date.now(),
+      });
       router.push(`/rooms/${result.value.code}/lobby`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error.');
@@ -78,6 +88,12 @@ export function HomeRoomForms(): JSX.Element {
         setError(formatJoinError(result.error));
         return;
       }
+      writeLastGame({
+        code: normalized,
+        nickname: nickname.trim(),
+        roomState: 'lobby',
+        writtenAt: Date.now(),
+      });
       router.push(`/rooms/${normalized}/lobby`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error.');
@@ -179,9 +195,9 @@ function formatJoinError(err: JoinRoomError): string {
     case 'room-not-found':
       return `No room with code ${err.code}.`;
     case 'room-not-joinable':
-      return err.state === 'playing'
-        ? 'That game is already in progress.'
-        : 'That game has finished.';
+      if (err.state === 'playing') return 'That game is already in progress.';
+      if (err.state === 'paused') return 'That game is paused. Use your Continue Game bookmark to rejoin.';
+      return 'That game has finished.';
     case 'room-full':
       return 'That room is full (4 players max).';
     case 'seat-rpc-failed':

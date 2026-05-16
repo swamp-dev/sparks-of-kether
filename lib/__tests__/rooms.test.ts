@@ -135,6 +135,7 @@ describe('createRoom', () => {
                   created_at: 'now',
                   started_at: null,
                   finished_at: null,
+                  paused_at: null,
                 } as RoomRow,
                 error: null,
               }),
@@ -178,6 +179,7 @@ describe('createRoom', () => {
                     created_at: 'now',
                     started_at: null,
                     finished_at: null,
+                  paused_at: null,
                   } as RoomRow,
                   error: null,
                 };
@@ -228,6 +230,7 @@ describe('createRoom', () => {
                   created_at: 'now',
                   started_at: null,
                   finished_at: null,
+                  paused_at: null,
                 } as RoomRow,
                 error: null,
               }),
@@ -270,6 +273,7 @@ describe('createRoom', () => {
                   created_at: 'now',
                   started_at: null,
                   finished_at: null,
+                  paused_at: null,
                 } as RoomRow,
                 error: null,
               }),
@@ -320,6 +324,7 @@ describe('joinRoom', () => {
       created_at: 'now',
       started_at: null,
       finished_at: null,
+                  paused_at: null,
       ...overrides,
     };
   }

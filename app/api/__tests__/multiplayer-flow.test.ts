@@ -109,6 +109,7 @@ function seedLobby(code: string): void {
     created_at: 't',
     started_at: null,
     finished_at: null,
+    paused_at: null,
   });
   db.players.push({
     id: 'p1',
