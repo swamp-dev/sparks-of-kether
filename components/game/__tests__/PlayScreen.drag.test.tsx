@@ -212,12 +212,12 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
     const pile = container.querySelector('[data-drop-zone="discard"]') as Element;
     expect(pile, 'discard drop zone in DOM').toBeTruthy();
     // #587 pre-condition: while `pendingDiscard.count > 0`, PlayScreen
-    // mounts `<DiscardPrompt>` (PlayScreen.tsx ~L772 gates this on
-    // `pendingDiscardCount > 0`). The prompt is the visible signal
-    // that the engine has unsatisfied pendingDiscard state.
+    // mounts the discard status bar (gated on `pendingDiscardCount > 0`).
+    // The status bar is the visible signal that the engine has unsatisfied
+    // pendingDiscard state.
     expect(
-      container.querySelector('[data-discard-prompt]'),
-      'DiscardPrompt mounted while pendingDiscard.count > 0',
+      container.querySelector('[data-discard-status]'),
+      'discard status bar mounted while pendingDiscard.count > 0',
     ).toBeTruthy();
 
     const initialCount = container.querySelector('[data-discard-count]')?.textContent;
@@ -232,13 +232,13 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
       container.querySelector('[data-card-slot][data-arcanum="2"]'),
     ).toBeNull();
     // #587: direct assertion that engine-state `pendingDiscard.count`
-    // went from 1 → 0 after the discard. The DiscardPrompt unmounts
+    // went from 1 → 0 after the discard. The discard status bar unmounts
     // when `pendingDiscardCount > 0` becomes false, so its absence
     // proves the engine cleared the pendingDiscard. Closes the loop
     // on the "turn-state updated" half of the #462 acceptance.
     expect(
-      container.querySelector('[data-discard-prompt]'),
-      'DiscardPrompt unmounted after pendingDiscard cleared',
+      container.querySelector('[data-discard-status]'),
+      'discard status bar unmounted after pendingDiscard cleared',
     ).toBeNull();
   });
 

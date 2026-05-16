@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { sefirahByKey, zodiacSigns } from '@/data';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { arcanumByNumber, sefirahByKey, zodiacSigns } from '@/data';
+import { Hand } from '@/components/hand/Hand';
 import type { EncounterAvatarKey } from '@/data/types';
 import { usePantheon } from '@/lib/settings/pantheon';
 // Pickers are pantheon-neutral (matrix-as-parameter, post-#550) — the
@@ -295,6 +296,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // use case) without that gate landing in this PR — see PR body for
   // the deferral rationale and test-impact survey.
   const [framingComplete, setFramingComplete] = useState(false);
+  // #90: burn-discard gate. Set to true when the player has staged card
+  // burns and clicks Roll — they must shed one card before the die rolls.
+  const [awaitingBurnDiscard, setAwaitingBurnDiscard] = useState(false);
+  const [burnDiscardHovered, setBurnDiscardHovered] = useState<number | undefined>(undefined);
 
   // Reset staged counters when the engine sub-phase loops back to
   // 'prep' (a `react-retry`). The engine's `pendingModifiers` carries
@@ -319,6 +324,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setResolvedOutcome(null);
       setCommittedModifiers(null);
       setAnimatingResolve(false);
+      setAwaitingBurnDiscard(false);
+      setBurnDiscardHovered(undefined);
       // #321: clear the verdict-cue ref so a retry's new outcome
       // fires its own cue. Without this, a retry that lands on the
       // same boolean (fail → fail) would still be a NEW outcome
@@ -527,13 +534,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     };
   }, []);
 
-  const handleRoll = (): void => {
-    // Defensive: only roll from prep. Without this guard, a double-
-    // click between the click handler and the state flush would fire
-    // two rolls and consume two values from `rng`.
-    if (uiSubPhase !== 'prep') return;
-    if (turn.challengeSubPhase !== 'prep') return;
-
+  const doRoll = (): void => {
     const modifiers: CheckModifiers = {
       assistStats: allies
         .filter((a) => stagedAssistIds.has(a.id))
@@ -602,6 +603,47 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setAnimatingResolve(false);
       resolveTimerRef.current = null;
     }, delayMs);
+  };
+
+  // #90: deferred roll after burn-discard. React 18 batches all setState
+  // calls in a single event handler; calling doRoll() directly inside
+  // handleBurnDiscard would let turn.submitChallenge close over the
+  // pre-discard snapshot and silently overwrite the card removal.
+  // This ref is set to true by handleBurnDiscard and cleared by the
+  // useLayoutEffect below, which fires on the NEXT render — after
+  // encounterBurnDiscard's setSnapshot has committed — so doRoll() sees
+  // the post-discard state.
+  const pendingRollAfterBurnDiscardRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!pendingRollAfterBurnDiscardRef.current) return;
+    pendingRollAfterBurnDiscardRef.current = false;
+    doRoll();
+  });
+
+  const handleRoll = (): void => {
+    // Defensive: only roll from prep. Without this guard, a double-
+    // click between the click handler and the state flush would fire
+    // two rolls and consume two values from `rng`.
+    if (uiSubPhase !== 'prep') return;
+    if (turn.challengeSubPhase !== 'prep') return;
+    // #90: if the player staged card burns and still has cards, require
+    // a burn-discard before rolling. UI gates it; engine no-ops if hand
+    // is empty so we skip the picker in that edge case.
+    if (cumulativeCardBurns > 0 && (player?.hand.length ?? 0) > 0) {
+      setAwaitingBurnDiscard(true);
+      return;
+    }
+    doRoll();
+  };
+
+  const handleBurnDiscard = (arcanum: number): void => {
+    if (!player) return;
+    turn.encounterBurnDiscard(arcanum);
+    setAwaitingBurnDiscard(false);
+    setBurnDiscardHovered(undefined);
+    // Defer the roll to the next render via pendingRollAfterBurnDiscardRef —
+    // see the useLayoutEffect above for why doRoll() cannot be called here.
+    pendingRollAfterBurnDiscardRef.current = true;
   };
 
   const handleContinue = (): void => {
@@ -884,10 +926,40 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             cumulativeCardBurns={cumulativeCardBurns}
             cumulativeSparkBurns={cumulativeSparkBurns}
             isRetry={isRetry}
-            onRoll={handleRoll}
+            onRoll={awaitingBurnDiscard ? undefined : handleRoll}
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
           />
+          {awaitingBurnDiscard && player ? (
+            <div
+              data-burn-discard-picker
+              role="region"
+              aria-label="Discard one card before rolling"
+              className="mt-4 rounded border border-veil/30 bg-ground/80 p-4"
+            >
+              <p className="mb-2 font-display text-sm tracking-widest opacity-80">
+                Burning a card costs a discard — shed one card before the die rolls.
+              </p>
+              {burnDiscardHovered !== undefined ? (
+                <p className="mb-2 text-xs opacity-60">
+                  {arcanumByNumber(burnDiscardHovered).name}
+                </p>
+              ) : (
+                <p className="mb-2 text-xs opacity-60">
+                  Hover a card to see its name, then click ✕ to discard it.
+                </p>
+              )}
+              <Hand
+                hand={player.hand}
+                visible={true}
+                layout="inline"
+                discardMode={true}
+                onDiscard={handleBurnDiscard}
+                onCardHover={(n) => setBurnDiscardHovered(n)}
+                ariaLabel="Cards available to discard"
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
 
@@ -935,7 +1007,7 @@ interface PrepPanelProps {
   readonly cumulativeCardBurns: number;
   readonly cumulativeSparkBurns: number;
   readonly isRetry: boolean;
-  readonly onRoll: () => void;
+  readonly onRoll: (() => void) | undefined;
   readonly onCancel: (() => void) | undefined;
   /**
    * Sefirah-coloured glow class — applied to the d20 roll button so
@@ -1048,7 +1120,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         <D20Button
           state="idle"
           glowClass={glowClass}
-          onClick={onRoll}
+          {...(onRoll !== undefined ? { onClick: onRoll } : {})}
           caption="Roll"
         />
         {onCancel ? (
