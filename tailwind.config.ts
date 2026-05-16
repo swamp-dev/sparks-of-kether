@@ -190,6 +190,27 @@ const config: Config = {
             transform: 'translateY(0) scale(1)',
           },
         },
+        // #22: per-Sefirah idle motion — Hermes (hod). Quicksilver,
+        // restless, language-loving. A 4-frame micro-jitter conveys
+        // nervous energy without being distracting — the figure reads
+        // as constantly almost-moving. Paired with `[animation-delay:
+        // 600ms]` at the call site so the jitter starts after the
+        // 600ms avatar-emerge settle.
+        'idle-jitter': {
+          '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
+          '25%': { transform: 'translate(-1px, -1px) rotate(-0.3deg)' },
+          '50%': { transform: 'translate(1.5px, 0.5px) rotate(0.2deg)' },
+          '75%': { transform: 'translate(-0.5px, 1px) rotate(0.3deg)' },
+        },
+        // #22: per-Sefirah idle motion — Selene (yesod). Cool, dreamy,
+        // tidal. A slow drift conveys the lunar pull — the figure sways
+        // gently like a reflection on water. Paired with `[animation-
+        // delay:600ms]` at the call site.
+        'idle-drift': {
+          '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
+          '33%': { transform: 'translate(-3px, -2px) rotate(-0.5deg)' },
+          '67%': { transform: 'translate(2px, 1.5px) rotate(0.4deg)' },
+        },
         // #482: word-by-word reveal for the avatar's framing line and
         // verdict line in the EncounterScreen. Each word fades in on a
         // shared keyframe with a staggered `animation-delay` set
@@ -258,6 +279,12 @@ const config: Config = {
         // Applied under `motion-safe:` at the AvatarPortrait call
         // site (only the `stage` size variant gets it).
         'avatar-emerge': 'avatar-emerge 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
+        // #22: per-Sefirah idle body animations. Applied under
+        // `motion-safe:` at the AvatarPortrait call site, with
+        // `[animation-delay:600ms]` so the entrance (avatar-emerge)
+        // settles before idle motion begins.
+        'idle-jitter': 'idle-jitter 10s linear infinite',
+        'idle-drift': 'idle-drift 10s cubic-bezier(0.65, 0, 0.35, 1) infinite',
         // #482: each word in the avatar's framing / verdict line
         // fades in over 320ms with `ease-emerge` so the rhythm reads
         // like speech, not subtitles. Stagger between words is set

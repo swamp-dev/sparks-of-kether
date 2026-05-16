@@ -114,11 +114,35 @@ of authoring new keyframes per call site:
 | Token | Recipe | Use for |
 |---|---|---|
 | `animate-avatar-emerge` | 600ms `ease-emerge` `forwards` — opacity 0→1 + 12px slide-up + scale 0.92→1 | Encounter prep stage avatar entrance (#481). Settles confidently; the `forwards` fill-mode keeps the wrapper at the 100% keyframe state after the 600ms — without it the element would snap back to the 0% frame when the animation ends. The breath halo on the inner frame is on a separate element and is unaffected. |
+| `animate-idle-jitter` | 10s `linear` `infinite` — 4-frame micro translate (±1.5px) + micro rotate (±0.3°) | Hermes (hod) idle body motion (#22). Quicksilver, restless, never-quite-still. Applied under `motion-safe:` with `[animation-delay:600ms]` so the emerge settles first. |
+| `animate-idle-drift` | 10s `ease-flow` `infinite` — 3-keyframe slow lateral drift (±3px) + micro rotate (±0.5°) | Selene (yesod) idle body motion (#22). Lunar pull, tidal sway. Same delay/gating as `animate-idle-jitter`. |
 | `animate-shell-awaken` | 500ms `cubic-bezier(0.22, 1, 0.36, 1)` `both` — opacity 0→1 + scale 0.92→1 | Shell sigil awakening transition (#317). |
 | `animate-shell-banish` | 600ms `ease-flow` `both` — three-stop opacity + scale | Shell sigil banishing transition (#317). |
 
-All three are gated under `motion-safe:` at the call site so
+All are gated under `motion-safe:` at the call site so
 reduced-motion users see the static end-state.
+
+---
+
+## Per-Sefirah idle motion catalogue
+
+Applied to the stage-size `AvatarPortrait` body (the portrait `<img>` or
+`AvatarSilhouette` fallback) when `pose === 'idle'`. Derived from each
+avatar's voice character in `design/avatars.md` § 2.
+
+| Sefirah | Avatar | Idle motion | Rationale |
+|---|---|---|---|
+| Hod | Hermes | `animate-idle-jitter` (10s micro-jitter) | Quicksilver, restless — never fully still |
+| Yesod | Selene | `animate-idle-drift` (10s slow lateral drift) | Lunar pull, cool tidal sway |
+| Gevurah | Ares | **None** (breath suppressed) | Martial austerity — dead still is a choice |
+| Netzach | Aphrodite | `animate-breath` (6s halo, default) | Long slow breath; frame breath is her idle |
+| Tiferet | Apollo | `animate-breath` (6s halo, default) | Balanced, harmonious — clean rhythmic breath |
+| Chesed | Zeus | `animate-breath` (6s halo, default) | Magnanimous, abundant — generous breath |
+| Binah | Demeter | `animate-breath` (6s halo, default) | Few words, weighed — breath like the earth turning |
+| Chokmah | Athena | `animate-breath` (6s halo, default) | Strategic stillness — breath is her only tell |
+
+All idle body animations start with `[animation-delay:600ms]` so the
+`animate-avatar-emerge` entrance (600ms) settles before idle begins.
 
 ---
 

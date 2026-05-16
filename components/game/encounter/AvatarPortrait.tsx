@@ -69,6 +69,20 @@ interface AvatarPortraitProps {
   readonly className?: string;
 }
 
+// Per-Sefirah idle motion at stage size. Overrides the default `breath`
+// for three characters with distinct behaviours derived from their voice
+// guide (design/avatars.md § 2):
+//   hod      (Hermes)   — jitter:  quicksilver, restless, never-quite-still
+//   yesod    (Selene)   — drift:   lunar pull, slow tidal sway
+//   gevurah  (Ares)     — still:   martial austerity; breath suppressed
+// All others default to `breath` (the frame's existing 6s opacity cycle).
+type IdleMotion = 'jitter' | 'drift' | 'still' | 'breath';
+const SEFIRAH_IDLE_MOTION: Partial<Record<SefirahKey, IdleMotion>> = {
+  hod: 'jitter',
+  yesod: 'drift',
+  gevurah: 'still',
+};
+
 export function AvatarPortrait({
   sefirah,
   avatarName,
@@ -96,12 +110,32 @@ export function AvatarPortrait({
   const showPortraitImage =
     size === 'stage' && character !== undefined && !imageFailed;
 
+  // Idle motion for stage-size portraits at idle pose. Non-idle poses
+  // and small size always use breath (the default frame animation).
+  const idleMotion: IdleMotion =
+    size === 'stage' && pose === 'idle'
+      ? (SEFIRAH_IDLE_MOTION[sefirah] ?? 'breath')
+      : 'breath';
+
+  // Body animation class applied to the portrait content (img or
+  // AvatarSilhouette). Delayed 600ms so the avatar-emerge entrance
+  // settles before idle motion begins (#22 AC: entrance plays first).
+  const contentIdleClass =
+    idleMotion === 'jitter'
+      ? 'motion-safe:animate-idle-jitter motion-safe:[animation-delay:600ms]'
+      : idleMotion === 'drift'
+        ? 'motion-safe:animate-idle-drift motion-safe:[animation-delay:600ms]'
+        : '';
+
   // Frame size: small disc vs stage oval. The stage oval is taller
   // than wide so half-body framing reads correctly; the small variant
   // is a perfect circle as before.
+  // Ares (gevurah) at stage+idle is dead still — breath animation
+  // suppressed. All other combos keep the 6s breath halo.
+  const breathClass = idleMotion !== 'still' ? 'motion-safe:animate-breath' : '';
   const frameClass =
     size === 'stage'
-      ? `relative h-60 w-44 overflow-hidden rounded-[40%] border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`
+      ? `relative h-60 w-44 overflow-hidden rounded-[40%] border-2 ${tokens.avatarRing} ${tokens.avatarPlate} ${breathClass}`
       : `relative flex h-16 w-16 items-center justify-center rounded-full border-2 ${tokens.avatarRing} ${tokens.avatarPlate} motion-safe:animate-breath`;
 
   // Entrance animation (#481): the stage variant slides up + scales
@@ -128,6 +162,7 @@ export function AvatarPortrait({
       data-avatar-state={state}
       data-avatar-size={size}
       data-avatar-pose={pose}
+      data-avatar-idle-motion={idleMotion}
       className={wrapperClass}
     >
       <div className={frameClass}>
@@ -146,7 +181,7 @@ export function AvatarPortrait({
             // and slightly above the vertical centre. `center 25%`
             // frames head + shoulders for most characters; will be
             // tuned per-character in #483 if any look wrong in situ.
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${contentIdleClass}`}
             style={{ objectPosition: 'center 25%' }}
             onError={() => {
               if (typeof console !== 'undefined' && console.warn) {
@@ -162,7 +197,7 @@ export function AvatarPortrait({
             pose={pose}
             sefirah={sefirah}
             reducedMotion={reducedMotion}
-            className="absolute inset-0 text-veil"
+            className={`absolute inset-0 text-veil ${contentIdleClass}`}
           />
         ) : (
           <span
