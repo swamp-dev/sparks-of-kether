@@ -53,7 +53,7 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
     const state = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const cappedPlayers = state.players.map((p, idx) =>
-      idx === activeIdx ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
+      idx === activeIdx ? { ...p, hand: [0, 1, 2, 3, 4] } : p,
     );
     const initial = { ...state, players: cappedPlayers };
     const rng = seededRng(2);
@@ -67,9 +67,9 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
       fireEvent.click(meditateBtn);
     });
 
-    // Post-Meditate: 8 cards, NO discard UI yet.
+    // Post-Meditate: 7 cards, NO discard UI yet.
     let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    expect(slots.length).toBe(8);
+    expect(slots.length).toBe(7);
     expect(document.querySelector('[data-discard-status]')).toBeNull();
 
     // Click End turn — cap check fires; discard status bar + icons appear.
@@ -78,7 +78,7 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
       fireEvent.click(endBtn);
     });
     slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    expect(slots.length).toBe(8); // hand still 8 — no rotation yet
+    expect(slots.length).toBe(7); // hand still 7 — no rotation yet
     const status = document.querySelector('[data-discard-status]');
     expect(status).not.toBeNull();
     expect(status?.textContent ?? '').toMatch(/2/);
@@ -86,14 +86,14 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
 });
 
 describe('PlayScreen — full hand visibility (#290)', () => {
-  // #290: a player whose hand is at HAND_CAP=6 (e.g. just meditated
-  // from a hand of 4) must see all 6 cards rendered in the fan.
-  // The earlier bug clipped the visible count at 4.
-  it('renders all 6 card slots when the active player holds HAND_CAP cards', () => {
+  // #290: a player whose hand is at HAND_CAP=5 (e.g. just meditated
+  // from a hand of 3) must see all 5 cards rendered in the fan.
+  // The earlier bug clipped the visible count at the previous count.
+  it('renders all 5 card slots when the active player holds HAND_CAP cards', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const cappedPlayers = state.players.map((p, idx) =>
-      idx === activeIdx ? { ...p, hand: [0, 2, 5, 13, 18, 21] } : p,
+      idx === activeIdx ? { ...p, hand: [0, 2, 5, 13, 18] } : p,
     );
     const initial = { ...state, players: cappedPlayers };
     const rng = seededRng(2);
@@ -101,34 +101,34 @@ describe('PlayScreen — full hand visibility (#290)', () => {
     render(<PlayScreen initialState={initial} rng={rng} />);
 
     const slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    expect(slots.length).toBe(6);
+    expect(slots.length).toBe(5);
   });
 
-  it('reveals all newly-drawn cards after Meditate from a 4-card hand', () => {
+  it('reveals all newly-drawn cards after Meditate from a 3-card hand', () => {
     // Reproduces the user-visible regression: STARTING_HAND_SIZE is
-    // 4, Meditate draws +2 (to 6 = HAND_CAP). Newly-drawn cards must
+    // 3, Meditate draws +2 (to 5 = HAND_CAP). Newly-drawn cards must
     // appear in the DOM, not be silently clipped at the previous count.
     const state = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
-    const fourCardPlayers = state.players.map((p, idx) =>
-      idx === activeIdx ? { ...p, hand: p.hand.slice(0, 4) } : p,
+    const threeCardPlayers = state.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: p.hand.slice(0, 3) } : p,
     );
-    const initial = { ...state, players: fourCardPlayers };
+    const initial = { ...state, players: threeCardPlayers };
     const rng = seededRng(2);
 
     render(<PlayScreen initialState={initial} rng={rng} />);
 
-    // Pre-meditate: 4 cards.
+    // Pre-meditate: 3 cards.
     let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    expect(slots.length).toBe(4);
+    expect(slots.length).toBe(3);
 
     const meditateBtn = screen.getByRole('button', { name: /meditate/i });
     act(() => {
       fireEvent.click(meditateBtn);
     });
 
-    // Post-meditate: all 6 must be in the DOM.
+    // Post-meditate: all 5 must be in the DOM.
     slots = document.querySelectorAll('[data-hand] [data-card-slot]');
-    expect(slots.length).toBe(6);
+    expect(slots.length).toBe(5);
   });
 });

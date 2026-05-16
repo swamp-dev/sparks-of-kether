@@ -39,24 +39,26 @@ const STAT_FLOOR = 1;
 const STAT_CEILING = 18;
 
 /**
- * Hand size dealt at game start. Per `design/mechanics.md` § Starting
- * hand: every player starts with 4 cards regardless of count. The
- * hand-size cap of 6 leaves a 2-card buffer for early gifts and
- * draws.
+ * Hand size dealt at game start and the start-of-turn refill target.
+ * Per `design/mechanics.md` § Starting hand: every player starts with
+ * 3 cards regardless of count. The hand-size cap of 5 leaves a 2-card
+ * buffer for early gifts and draws. Reduced from 4 → 3 to tighten the
+ * card economy and increase discard pressure.
  */
-export const STARTING_HAND_SIZE = 4;
+export const STARTING_HAND_SIZE = 3;
 
 /**
  * Hand-size hard cap. Per `design/mechanics.md` § Drawing & gift
- * handling: "Hand-size cap is 6; starting at 4 leaves a 2-card buffer
+ * handling: "Hand-size cap is 5; starting at 3 leaves a 2-card buffer
  * for early gifts and draws before the cap starts to bite."
  *
  * Enforced at gift / spark-ability sites (Chesed-Grace rejects with
  * `gift-rejected-cap-full`; Kether-Unity skips at-cap players). The
  * end-of-turn replenish target is `STARTING_HAND_SIZE`, which is
- * already below the cap so no clamp is needed there.
+ * already below the cap so no clamp is needed there. Reduced from 6 → 5
+ * to tighten the card economy alongside STARTING_HAND_SIZE.
  */
-export const HAND_CAP = 6;
+export const HAND_CAP = 5;
 
 /**
  * Number of full Major-Arcana decks (22 cards each) shuffled into

@@ -15,8 +15,8 @@ function freshHook() {
     {},
     {
       players: [
-        makePlayer({ id: 'p1', name: 'Andy', hand: [0, 1, 2, 3] }),
-        makePlayer({ id: 'p2', name: 'Bea', hand: [4, 5, 6, 7] }),
+        makePlayer({ id: 'p1', name: 'Andy', hand: [0, 1, 2] }),
+        makePlayer({ id: 'p2', name: 'Bea', hand: [4, 5, 6] }),
       ],
       deck: [10, 11, 12, 13, 14, 15, 16, 17],
     },
@@ -47,9 +47,9 @@ describe('useTurn — phase machine', () => {
     expect(result.current.phase).toBe('move');
     expect(result.current.state.meditatedThisTurn).toBe(true);
     const handAfter = result.current.state.players[0]?.hand.length ?? 0;
-    // Hand grew by up to 2, capped at 6.
+    // Hand grew by up to 2, capped at 5.
     expect(handAfter).toBeGreaterThan(handBefore);
-    expect(handAfter).toBeLessThanOrEqual(6);
+    expect(handAfter).toBeLessThanOrEqual(5);
   });
 
   it('endTurn rotates to the next player and resets to move phase', () => {
@@ -216,7 +216,7 @@ describe('useTurn — meditate draw mechanics', () => {
     const six = {
       ...initial,
       players: initial.players.map((p, idx) =>
-        idx === 0 ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
+        idx === 0 ? { ...p, hand: [0, 1, 2, 3, 4] } : p,
       ),
     };
     act(() => {
@@ -225,10 +225,10 @@ describe('useTurn — meditate draw mechanics', () => {
     act(() => {
       result.current.meditate();
     });
-    // Hand grew to 8 (over HAND_CAP=6 by 2 cards) — but no
+    // Hand grew to 7 (over HAND_CAP=5 by 2 cards) — but no
     // pendingDiscard yet; Meditate stays in 'move' so the player
     // could still play a card.
-    expect(result.current.state.players[0]?.hand.length).toBe(8);
+    expect(result.current.state.players[0]?.hand.length).toBe(7);
     expect(result.current.state.pendingDiscard).toBeUndefined();
     expect(result.current.phase).toBe('move');
     // Now End turn — the cap check fires here. Seat does NOT advance;
@@ -313,11 +313,11 @@ describe('useTurn — acceptChallengeSetback', () => {
 
 /**
  * Mount a hook and drive it into `challenge / prep` by moving
- * the active player from `chokmah` along path 14 (chokmah ↔
- * binah). The destination `binah` has `challenge.kind === 'check'`
+ * the active player from `chokmah` along path 16 (chokmah ↔
+ * chesed). The destination `chesed` has `challenge.kind === 'check'`
  * and is uncleared by default, so the reducer enters
  * `challenge / prep` automatically. An ally `p2` is pre-staged
- * at `binah` so assist-staging tests have a co-located ally to
+ * at `chesed` so assist-staging tests have a co-located ally to
  * reference.
  *
  * `useTurn`'s `useState` always initialises at `phase: 'move'`,
@@ -330,14 +330,14 @@ function hookViaMoveIntoPrep(playerOverrides?: Partial<PlayerState>) {
     id: 'p1',
     name: 'Andy',
     position: 'chokmah',
-    hand: [3, 7, 11, 14],
+    hand: [5, 7, 11, 14],
     sparksHeld: new Set(),
     ...playerOverrides,
   });
   const ally: PlayerState = makePlayer({
     id: 'p2',
     name: 'Bea',
-    position: 'binah', // pre-positioned at the destination so assist works
+    position: 'chesed', // pre-positioned at the destination so assist works
     hand: [],
   });
   const initialState = makeState(
@@ -348,11 +348,10 @@ function hookViaMoveIntoPrep(playerOverrides?: Partial<PlayerState>) {
     },
   );
   const harness = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
-  // chokmah ↔ binah is path 14 (Heh, lovingkindness pillar). Move
-  // p1 along it; the destination is an uncleared check Sefirah,
-  // so the reducer enters `challenge / prep`.
+  // chokmah ↔ chesed is path 16. Move p1 along it; the destination
+  // is an uncleared check Sefirah, so the reducer enters `challenge / prep`.
   act(() => {
-    harness.result.current.move(14);
+    harness.result.current.move(16);
   });
   return harness;
 }
@@ -396,8 +395,8 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   });
 
   it('prepRemoveModifier removes by value-equality', () => {
-    // Hand after move(14): [7, 11, 14] — arcanum 3 was consumed
-    // by the move into binah. Stage two in-hand burns and remove
+    // Hand after move(16): [7, 11, 14] — arcanum 5 was consumed
+    // by the move into chesed. Stage two in-hand burns and remove
     // the first by value.
     const { result } = hookViaMoveIntoPrep();
     act(() => {
@@ -417,7 +416,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
     const { result } = hookViaMoveIntoPrep();
     let outcome: ReturnType<typeof result.current.prepConfirm> | undefined;
     act(() => {
-      outcome = result.current.prepConfirm('binah', {
+      outcome = result.current.prepConfirm('chesed', {
         rolled: 18,
         statContribution: 10,
         modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
@@ -440,7 +439,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
     });
     expect(result.current.pendingModifiers?.cardBurns).toEqual([7]);
     act(() => {
-      result.current.prepConfirm('binah', {
+      result.current.prepConfirm('chesed', {
         rolled: 1,
         statContribution: 10,
         modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
@@ -465,7 +464,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   it('reactRetry on a passed challenge surfaces a structured rejection', () => {
     const { result } = hookViaMoveIntoPrep();
     act(() => {
-      result.current.prepConfirm('binah', {
+      result.current.prepConfirm('chesed', {
         rolled: 18,
         statContribution: 10,
         modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
@@ -490,7 +489,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   it('reactContinue after a passed prepConfirm advances phase to end and clears challenge state', () => {
     const { result } = hookViaMoveIntoPrep();
     act(() => {
-      result.current.prepConfirm('binah', {
+      result.current.prepConfirm('chesed', {
         rolled: 18,
         statContribution: 10,
         modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
@@ -514,7 +513,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   it('reactContinue on a failed challenge surfaces a structured rejection', () => {
     const { result } = hookViaMoveIntoPrep();
     act(() => {
-      result.current.prepConfirm('binah', {
+      result.current.prepConfirm('chesed', {
         rolled: 1,
         statContribution: 10,
         modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
@@ -552,7 +551,7 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
   };
 
   it('wrapper produces the same state as per-step add+confirm with the same inputs', () => {
-    // Player has cards 3, 7 in hand. No assists / sparks in this
+    // Player has cards 5, 7 in hand. No assists / sparks in this
     // path — the wrapper-equivalence test for assists is
     // separately covered by the engine-level `directAssistStats`
     // test (see turn-machine.test.ts) because the wrapper has no
@@ -560,7 +559,7 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
     // while the per-step path stages by ally ID. This test
     // covers card-burn equivalence end-to-end.
     const playerOverrides: Partial<PlayerState> = {
-      hand: [3, 7, 11, 14],
+      hand: [5, 7, 11, 14],
     };
     const harnessWrapper = hookViaMoveIntoPrep(playerOverrides);
     const harnessPerStep = hookViaMoveIntoPrep(playerOverrides);
@@ -574,14 +573,14 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
       shortcutPenalty: false,
     };
     act(() => {
-      harnessWrapper.result.current.submitChallenge('binah', modifiers, PASS_OUTCOME);
+      harnessWrapper.result.current.submitChallenge('chesed', modifiers, PASS_OUTCOME);
     });
 
     // Per-step path: stage two card-burns one at a time, then
     // confirm. The wrapper's card-synthesis order is the order they
     // appear in the player's hand (first N) AT THE TIME OF
-    // submitChallenge. Pre-prep, `move(14)` (chokmah ↔ binah, Daleth
-    // path, arcanumNumber=3) consumes arcanum 3 from hand, leaving
+    // submitChallenge. Pre-prep, `move(16)` (chokmah ↔ chesed,
+    // arcanumNumber=5) consumes arcanum 5 from hand, leaving
     // [7, 11, 14]. So for cardBurns=2 the synthesized events are
     // arcanum=7 then arcanum=11. (#281 made the in-hand vs.
     // gone-from-hand distinction load-bearing because consumption
@@ -599,7 +598,7 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
       });
     });
     act(() => {
-      harnessPerStep.result.current.prepConfirm('binah', PASS_OUTCOME);
+      harnessPerStep.result.current.prepConfirm('chesed', PASS_OUTCOME);
     });
 
     // Both paths land in the same react sub-state (post-resolve,
@@ -619,11 +618,11 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
     // shape, post-call sub-phase). If E4 changes this, PlayScreen
     // would break — read it as "regression guard for
     // PlayScreen.tsx:172".
-    const { result } = hookViaMoveIntoPrep({ hand: [3, 7] });
+    const { result } = hookViaMoveIntoPrep({ hand: [5, 7] });
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {
       outcome = result.current.submitChallenge(
-        'binah',
+        'chesed',
         {
           assistStats: [],
           cardBurns: 0,
@@ -654,19 +653,19 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
     // (as of #281) removes the burned sparks from `sparksHeld`
     // at confirm-time alongside the d20-modifier credit.
     //
-    // Hand needs arcanum 3 so the move(14) (chokmah ↔ binah,
-    // arcanum 3) is legal. The sparkBurns count (2) is the
+    // Hand needs arcanum 5 so the move(16) (chokmah ↔ chesed,
+    // arcanum 5) is legal. The sparkBurns count (2) is the
     // wrapper's input; the synthesised PrepModifiers come from
     // sparksHeld.
     const { result } = hookViaMoveIntoPrep({
-      hand: [3],
+      hand: [5],
       sparksHeld: new Set(['chokmah', 'malkuth']),
     });
     expect(result.current.phase).toBe('challenge');
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {
       outcome = result.current.submitChallenge(
-        'binah',
+        'chesed',
         {
           assistStats: [],
           cardBurns: 0,
@@ -690,14 +689,14 @@ describe('useTurn — submitChallenge wrapper equivalence (E4 / #229)', () => {
     // Challenge succeeded → Sefirah cleared, confirming the
     // engine saw the sparkBurn contribution.
     const player = result.current.state.players[0];
-    expect(player?.clearedSefirot.has('binah')).toBe(true);
+    expect(player?.clearedSefirot.has('chesed')).toBe(true);
     // #281: burned sparks are removed from `sparksHeld`. Both
     // chokmah and malkuth were burned; both must be gone. (The
-    // passed challenge earns a `binah` spark — that's separate
+    // passed challenge earns a `chesed` spark — that's separate
     // from the consumption being pinned here.)
     expect(player?.sparksHeld.has('chokmah')).toBe(false);
     expect(player?.sparksHeld.has('malkuth')).toBe(false);
-    expect(player?.sparksHeld.has('binah')).toBe(true);
+    expect(player?.sparksHeld.has('chesed')).toBe(true);
     expect(player?.sparksHeld.size).toBe(1);
   });
 });
@@ -769,9 +768,9 @@ describe('useTurn — submitChallenge shortcutPenalty derivation (#286)', () => 
   it('engine derives no penalty after a non-shortcut arrival, even if modifiers.shortcutPenalty=true', () => {
     // Belt-and-braces: pin that the modifiers.shortcutPenalty bit
     // the modal sets is no longer authoritative. The active player
-    // arrived at binah via path 14 (Chokmah ↔ Binah, mercy/severity
-    // — not a shortcut). The wrapper still receives `shortcutPenalty:
-    // true` in the modifiers blob (e.g. a future UI bug or stale
+    // arrived at chesed via path 16 (Chokmah ↔ Chesed — not a
+    // shortcut). The wrapper still receives `shortcutPenalty: true`
+    // in the modifiers blob (e.g. a future UI bug or stale
     // CheckModifiers), but the engine MUST disregard it and read
     // truth from `lastArrivalPathNumber`. This is the security-
     // benefit half of the #286 derivation: the wrapper can no
@@ -779,7 +778,7 @@ describe('useTurn — submitChallenge shortcutPenalty derivation (#286)', () => 
     const { result } = hookViaMoveIntoPrep();
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {
-      outcome = result.current.submitChallenge('binah', {
+      outcome = result.current.submitChallenge('chesed', {
         assistStats: [],
         cardBurns: 0,
         sparkBurns: 0,
@@ -788,17 +787,17 @@ describe('useTurn — submitChallenge shortcutPenalty derivation (#286)', () => 
     });
     expect(outcome?.ok).toBe(true);
     if (!outcome?.ok) return;
-    // binah base DC 16; non-shortcut arrival, no bump.
-    expect(outcome.value.outcome.effectiveDC).toBe(16);
+    // chesed base DC 13; non-shortcut arrival, no bump.
+    expect(outcome.value.outcome.effectiveDC).toBe(13);
   });
 
   it('engine derives no penalty when modifiers.shortcutPenalty is false on a non-shortcut path', () => {
-    // The path 14 arrival via hookViaMoveIntoPrep + the modal's
+    // The path 16 arrival via hookViaMoveIntoPrep + the modal's
     // honest `shortcutPenalty: false`. Baseline DC.
     const { result } = hookViaMoveIntoPrep();
     let outcome: ReturnType<typeof result.current.submitChallenge> | undefined;
     act(() => {
-      outcome = result.current.submitChallenge('binah', {
+      outcome = result.current.submitChallenge('chesed', {
         assistStats: [],
         cardBurns: 0,
         sparkBurns: 0,
@@ -807,7 +806,7 @@ describe('useTurn — submitChallenge shortcutPenalty derivation (#286)', () => 
     });
     expect(outcome?.ok).toBe(true);
     if (!outcome?.ok) return;
-    expect(outcome.value.outcome.effectiveDC).toBe(16);
+    expect(outcome.value.outcome.effectiveDC).toBe(13);
   });
 });
 
@@ -868,7 +867,7 @@ describe('useTurn — submitChallenge atomicity / rollback (E4 / #229)', () => {
     act(() => {
       outcome = result.current.submitChallenge('tiferet', {
         assistStats: [],
-        cardBurns: 99, // far exceeds hand size of 4
+        cardBurns: 99, // far exceeds hand size of 3
         sparkBurns: 0,
         shortcutPenalty: false,
       });
