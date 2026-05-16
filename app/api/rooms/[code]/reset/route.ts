@@ -14,9 +14,14 @@ import { query } from '@/lib/supabase-query';
  * `rooms.state = 'lobby'`. Idempotent: calling this on a room already
  * in `lobby` is a no-op (cleans any orphan rows and returns success).
  *
+ * Accepts any source state including `'paused'` — this endpoint is a
+ * recovery tool for the host, not a state-machine step. A host who
+ * wants to abandon a paused game and restart should be able to.
+ * `paused_at` is explicitly cleared alongside `started_at` / `finished_at`.
+ *
  * Intended for: (a) after a game ends and players want to play again,
  * (b) recovering a room stuck in `playing` due to a partial write
- * during the original `/start` call.
+ * during the original `/start` call, (c) abandoning a paused game.
  */
 
 interface RouteParams {
@@ -88,7 +93,7 @@ export async function POST(request: Request, { params }: RouteParams): Promise<N
   }
 
   const roomReset = await query(serviceClient, 'rooms')
-    .update({ state: 'lobby', started_at: null, finished_at: null })
+    .update({ state: 'lobby', started_at: null, finished_at: null, paused_at: null })
     .eq('id', room.id);
   if (roomReset.error) {
     return NextResponse.json(

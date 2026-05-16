@@ -187,6 +187,31 @@ describe('POST /api/rooms/[code]/reset', () => {
       state: 'lobby',
       started_at: null,
       finished_at: null,
+      paused_at: null,
+    });
+  });
+
+  it('resets a paused room, clearing paused_at', async () => {
+    roomResponse = {
+      data: {
+        ...playingRoom,
+        state: 'paused' as const,
+        paused_at: '2026-01-01T01:00:00Z',
+      },
+      error: null,
+    };
+    const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
+    expect(res.status).toBe(200);
+    expect(gameEventsDeletes).toBe(1);
+    expect(gameStatesDeletes).toBe(1);
+    expect(roomUpdates).toHaveLength(1);
+    expect(roomUpdates[0]).toEqual({
+      state: 'lobby',
+      started_at: null,
+      finished_at: null,
+      paused_at: null,
     });
   });
 
