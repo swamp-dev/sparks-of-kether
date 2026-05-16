@@ -149,6 +149,59 @@ describe('AvatarPortrait', () => {
     });
   });
 
+  describe('per-Sefirah idle motion (#22)', () => {
+    it('labels Hermes (hod) stage+idle as jitter', () => {
+      render(<AvatarPortrait sefirah="hod" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('jitter');
+    });
+
+    it('labels Selene (yesod) stage+idle as drift', () => {
+      render(<AvatarPortrait sefirah="yesod" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('drift');
+    });
+
+    it('labels Ares (gevurah) stage+idle as still', () => {
+      render(<AvatarPortrait sefirah="gevurah" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('still');
+    });
+
+    it('labels all other encounter sefirot stage+idle as breath', () => {
+      for (const sefirah of ['chokmah', 'binah', 'chesed', 'tiferet', 'netzach'] as const) {
+        render(<AvatarPortrait sefirah={sefirah} state="prep" size="stage" pose="idle" />);
+        const portrait = document.querySelector('[data-avatar-portrait]');
+        expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('breath');
+        document.body.innerHTML = '';
+      }
+    });
+
+    it('does not apply idle motion at non-idle poses (speaking, watching, pass, fail)', () => {
+      for (const pose of ['speaking', 'watching', 'pass', 'fail'] as const) {
+        render(<AvatarPortrait sefirah="hod" state="prep" size="stage" pose={pose} />);
+        const portrait = document.querySelector('[data-avatar-portrait]');
+        // Non-idle poses always fall back to breath — never jitter/drift/still
+        expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('breath');
+        document.body.innerHTML = '';
+      }
+    });
+
+    it('suppresses breath animation on the frame for Ares (gevurah) at stage+idle', () => {
+      render(<AvatarPortrait sefirah="gevurah" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      const innerFrame = portrait?.firstElementChild as HTMLElement | null;
+      // Dead still — frame must NOT breathe.
+      expect(innerFrame?.className).not.toContain('animate-breath');
+    });
+
+    it('small size always uses breath regardless of sefirah', () => {
+      render(<AvatarPortrait sefirah="gevurah" state="prep" size="small" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('breath');
+    });
+  });
+
   describe('caption + name label', () => {
     it('renders avatarName label when supplied', () => {
       render(
