@@ -75,10 +75,7 @@ export interface CardDragStep {
 
 export const initialCardDragState: CardDragState = { kind: 'idle' };
 
-export function reduceCardDrag(
-  state: CardDragState,
-  event: CardDragEvent,
-): CardDragStep {
+export function reduceCardDrag(state: CardDragState, event: CardDragEvent): CardDragStep {
   switch (state.kind) {
     case 'idle': {
       if (event.kind === 'pointer-down') {

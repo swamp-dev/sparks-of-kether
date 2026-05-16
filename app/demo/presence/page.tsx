@@ -46,20 +46,17 @@ export default function PresenceDemoPage(): JSX.Element {
   return (
     <main className="min-h-screen p-4 text-veil sm:p-8">
       <header className="mb-6">
-        <h1 className="font-display text-3xl tracking-widest">
-          Presence Layer
-        </h1>
+        <h1 className="font-display text-3xl tracking-widest">Presence Layer</h1>
         <p className="mt-2 max-w-2xl text-sm opacity-70">
-          Figma-style multiplayer presence (#322): tinted cursors, avatar
-          stack, targeted-node rings, action toast. Click an avatar below
-          to set the active player.
+          Figma-style multiplayer presence (#322): tinted cursors, avatar stack, targeted-node
+          rings, action toast. Click an avatar below to set the active player.
         </p>
       </header>
 
       <Section title="Avatar stack">
         <p className="mb-3 text-xs opacity-60">
-          Top-right of every game page during multiplayer. Click an avatar
-          to mark them as active (gold ring + breath halo).
+          Top-right of every game page during multiplayer. Click an avatar to mark them as active
+          (gold ring + breath halo).
         </p>
         <AvatarStack
           peers={SAMPLE_PEERS}
@@ -71,8 +68,7 @@ export default function PresenceDemoPage(): JSX.Element {
 
       <Section title="Peer cursor">
         <p className="mb-3 text-xs opacity-60">
-          Tinted SVG arrow with trailing nickname label. Label fades after
-          1s of stillness.
+          Tinted SVG arrow with trailing nickname label. Label fades after 1s of stillness.
         </p>
         <div className="relative h-40 overflow-hidden rounded-lg border border-veil/20 bg-ground/50">
           <PeerCursor
@@ -102,8 +98,8 @@ export default function PresenceDemoPage(): JSX.Element {
 
       <Section title="Target ring">
         <p className="mb-3 text-xs opacity-60">
-          Thin tinted ring drawn around a Sefirah node when peers focus
-          it. Multiple peers stack with progressively-larger radii.
+          Thin tinted ring drawn around a Sefirah node when peers focus it. Multiple peers stack
+          with progressively-larger radii.
         </p>
         <div className="rounded-lg border border-veil/20 bg-ground/50 p-2">
           <svg viewBox="0 0 400 620" className="mx-auto h-96 w-full">
@@ -132,8 +128,7 @@ export default function PresenceDemoPage(): JSX.Element {
 
       <Section title="Action toast">
         <p className="mb-3 text-xs opacity-60">
-          Top-center toast surfacing peer pre-action state. Auto-dismisses
-          after 6s of staleness.
+          Top-center toast surfacing peer pre-action state. Auto-dismisses after 6s of staleness.
         </p>
         <ActionToast
           actions={[
@@ -157,18 +152,10 @@ export default function PresenceDemoPage(): JSX.Element {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): JSX.Element {
+function Section({ title, children }: { title: string; children: React.ReactNode }): JSX.Element {
   return (
     <section className="mt-10">
-      <h2 className="mb-4 font-display text-lg tracking-widest opacity-90">
-        {title}
-      </h2>
+      <h2 className="mb-4 font-display text-lg tracking-widest opacity-90">{title}</h2>
       {children}
     </section>
   );

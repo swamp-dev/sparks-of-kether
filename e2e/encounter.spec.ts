@@ -31,9 +31,7 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
-test('hot-seat /play route renders without flipping into multiplayer mode', async ({
-  page,
-}) => {
+test('hot-seat /play route renders without flipping into multiplayer mode', async ({ page }) => {
   // The route's only consumer of the encounter flow is when an active
   // player arrives at a check Sefirah — which depends on the seeded
   // RNG dealing a card matching an outgoing path's arcanum. Driving
@@ -61,9 +59,7 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
   // the existing `play-flow.spec.ts` to land on the play screen.
   // #255: sign-pick now runs BEFORE the blessing ritual.
   for (let player = 1; player <= 2; player++) {
-    await expect(
-      page.getByRole('heading', { name: /Choose your sign/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
     // #314 carousel: with nothing taken, aries is the default-focused
     // stage. P1 confirms it directly. P2's picker mounts after P1
     // picked aries, so aries is in `taken`; #370 makes the picker
@@ -71,28 +67,20 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
     // three Next clicks to reach leo (taurus → gemini → cancer →
     // leo).
     if (player === 2) {
-      const nextArrow = page
-        .getByRole('button', { name: /^Next sign$/ })
-        .first();
+      const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
       for (let i = 0; i < 3; i++) {
         await nextArrow.click();
       }
     }
     const signLabel = player === 1 ? 'Aries' : 'Leo';
-    await page
-      .getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) })
-      .click();
+    await page.getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) }).click();
 
-    await expect(
-      page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`)),
-    ).toBeVisible();
+    await expect(page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`))).toBeVisible();
     for (let step = 0; step < 10; step++) {
       await page.getByRole('button', { name: /Roll 3d6/i }).click();
       await page.getByRole('button', { name: /^Next$/i }).click();
     }
-    await expect(
-      page.getByRole('heading', { name: /The Tree has spoken/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /The Tree has spoken/i })).toBeVisible();
     await page.getByRole('button', { name: /^Continue$/ }).click();
   }
 
@@ -105,7 +93,5 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
   // so the locator is absent. If a future setup change parks the
   // first arrival on a check Sefirah, this assertion would need to
   // shift to inspecting the data-mode attribute.
-  await expect(
-    page.locator('[data-encounter-screen][data-mode="multiplayer"]'),
-  ).toHaveCount(0);
+  await expect(page.locator('[data-encounter-screen][data-mode="multiplayer"]')).toHaveCount(0);
 });

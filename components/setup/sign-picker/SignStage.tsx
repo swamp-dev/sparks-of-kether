@@ -87,10 +87,7 @@ export function SignStage({
 }: SignStageProps): JSX.Element {
   const isCurrent = stage === 'current';
   const soulCard = useMemo(
-    () =>
-      arcana.find(
-        (a) => a.attribution.kind === 'sign' && a.attribution.value === sign.key,
-      ),
+    () => arcana.find((a) => a.attribution.kind === 'sign' && a.attribution.value === sign.key),
     [sign.key],
   );
   if (soulCard === undefined) {
@@ -109,10 +106,7 @@ export function SignStage({
     // The type predicate narrows away `undefined` so the downstream
     // map call deals in `[string, number]` without a `as number` cast.
     return Object.entries(bonus)
-      .filter(
-        (entry): entry is [string, number] =>
-          entry[1] !== 0 && entry[1] !== undefined,
-      )
+      .filter((entry): entry is [string, number] => entry[1] !== 0 && entry[1] !== undefined)
       .map(([stat, delta]) => ({ stat, delta }))
       .sort((a, b) => b.delta - a.delta);
   }, [sign.key]);
@@ -179,10 +173,7 @@ export function SignStage({
   );
 }
 
-function stageClass(
-  stage: SignStageProps['stage'],
-  disabled: boolean,
-): string {
+function stageClass(stage: SignStageProps['stage'], disabled: boolean): string {
   // Theatre framing: the current stage takes the full center column;
   // wings are smaller, dimmer, and pushed to the sides. Disabled
   // stages drop opacity further. The flex/grid layout itself is the
@@ -234,10 +225,7 @@ function CurrentStage({
         className="pointer-events-none absolute inset-x-0 top-0 z-0 mx-auto flex h-72 w-72 max-w-full items-center justify-center text-veil sm:h-96 sm:w-96"
         aria-hidden="true"
       >
-        <Constellation
-          sign={sign.key}
-          className="h-full w-full opacity-70"
-        />
+        <Constellation sign={sign.key} className="h-full w-full opacity-70" />
       </div>
 
       {/* Foreground stage content. Stack: ruler orbit + glyph at top,
@@ -246,9 +234,7 @@ function CurrentStage({
         <GlyphWithRuler sign={sign} />
 
         <div className="flex flex-col items-center gap-1">
-          <h3 className="font-display text-3xl tracking-widest text-veil">
-            {sign.name}
-          </h3>
+          <h3 className="font-display text-3xl tracking-widest text-veil">{sign.name}</h3>
           <p className="text-sm uppercase tracking-[0.25em] opacity-60">
             Soul card: {soulCardName} · Path {pathNumber}
           </p>
@@ -283,11 +269,7 @@ function CurrentStage({
 
         <StatWeights bonusEntries={bonusEntries} />
 
-        <SoulDoors
-          doors={doors}
-          soulCardNumber={soulCardNumber}
-          isPisces={isPisces}
-        />
+        <SoulDoors doors={doors} soulCardNumber={soulCardNumber} isPisces={isPisces} />
       </div>
     </>
   );
@@ -295,8 +277,7 @@ function CurrentStage({
 
 function GlyphWithRuler({ sign }: { readonly sign: ZodiacSign }): JSX.Element {
   const rulerSefirah = PLANET_TO_SEFIRAH[sign.ruler];
-  const coRulerSefirah =
-    sign.coRuler !== undefined ? PLANET_TO_SEFIRAH[sign.coRuler] : undefined;
+  const coRulerSefirah = sign.coRuler !== undefined ? PLANET_TO_SEFIRAH[sign.coRuler] : undefined;
   return (
     <div className="relative h-32 w-32 sm:h-40 sm:w-40">
       {/* Halo + glyph. Tiferet gold + breath halo per the brief. */}
@@ -316,12 +297,7 @@ function GlyphWithRuler({ sign }: { readonly sign: ZodiacSign }): JSX.Element {
           parked on the orbit ring at angle 0 by default. The orbit
           ring rotates under motion-safe so the glyph appears to swing
           around the sign at low opacity. */}
-      <RulerOrbit
-        planet={sign.ruler}
-        sefirah={rulerSefirah}
-        offsetDegrees={0}
-        size="primary"
-      />
+      <RulerOrbit planet={sign.ruler} sefirah={rulerSefirah} offsetDegrees={0} size="primary" />
       {sign.coRuler !== undefined && coRulerSefirah !== undefined ? (
         <RulerOrbit
           planet={sign.coRuler}
@@ -344,12 +320,7 @@ interface RulerOrbitProps {
   readonly size: 'primary' | 'secondary';
 }
 
-function RulerOrbit({
-  planet,
-  sefirah,
-  offsetDegrees,
-  size,
-}: RulerOrbitProps): JSX.Element {
+function RulerOrbit({ planet, sefirah, offsetDegrees, size }: RulerOrbitProps): JSX.Element {
   // Three nested elements:
   //   1. `[data-ruler-orbit]` — the parking layer; carries the
   //      one-time `rotate(offset)` so the co-ruler orbit starts at a
@@ -381,7 +352,7 @@ function RulerOrbit({
     >
       <div className="absolute inset-0 motion-safe:animate-[spin_18s_linear_infinite]">
         <div
-          className="absolute left-1/2 -top-2 -translate-x-1/2 flex h-7 w-7 items-center justify-center rounded-full text-xs"
+          className="absolute -top-2 left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full text-xs"
           style={{
             // Use the Sefirah's own colour rather than Tiferet — a
             // Mars ruler glows red (Gevurah), Venus green (Netzach),
@@ -469,11 +440,7 @@ interface SoulDoorsProps {
   readonly isPisces: boolean;
 }
 
-function SoulDoors({
-  doors,
-  soulCardNumber,
-  isPisces,
-}: SoulDoorsProps): JSX.Element {
+function SoulDoors({ doors, soulCardNumber, isPisces }: SoulDoorsProps): JSX.Element {
   // The soul card is sign-level (one Major Arcana per sign per the
   // locked attribution in `data/arcana.ts`), so it renders ONCE here.
   // The doors are Sefirah-level (the 1–2 endpoints of the soul card's
@@ -482,15 +449,8 @@ function SoulDoors({
   // which read as "the same card twice" on 2-door signs (#382).
   return (
     <div className="flex flex-col items-center gap-2">
-      <span
-        data-soul-card
-        data-arcanum={soulCardNumber}
-        className="block"
-      >
-        <ArcanumCard
-          number={soulCardNumber}
-          className="h-40 w-24 sm:h-44 sm:w-[7rem]"
-        />
+      <span data-soul-card data-arcanum={soulCardNumber} className="block">
+        <ArcanumCard number={soulCardNumber} className="h-40 w-24 sm:h-44 sm:w-[7rem]" />
       </span>
       <p className="text-sm uppercase tracking-[0.25em] opacity-60">
         {doors.length === 1 ? 'Soul Door' : 'Soul Doors'}
@@ -502,8 +462,8 @@ function SoulDoors({
       </div>
       {isPisces ? (
         <p className="mt-1 max-w-xs text-center text-sm italic opacity-70">
-          Malkuth has no Challenge — so Pisces has one Door instead of
-          two (path 29 ends at Malkuth).
+          Malkuth has no Challenge — so Pisces has one Door instead of two (path 29 ends at
+          Malkuth).
         </p>
       ) : null}
     </div>
@@ -572,15 +532,10 @@ function transliterated(key: SefirahKey): string {
 function WingStage({ sign }: { readonly sign: ZodiacSign }): JSX.Element {
   return (
     <div className="flex flex-col items-center gap-2">
-      <span
-        aria-hidden="true"
-        className="font-display text-5xl text-veil/70"
-      >
+      <span aria-hidden="true" className="font-display text-5xl text-veil/70">
         {sign.glyph}
       </span>
-      <span className="font-display text-base tracking-widest text-veil/70">
-        {sign.name}
-      </span>
+      <span className="font-display text-base tracking-widest text-veil/70">{sign.name}</span>
       <span className="text-[10px] uppercase tracking-[0.3em] opacity-50">
         {sign.element} · {sign.modality}
       </span>

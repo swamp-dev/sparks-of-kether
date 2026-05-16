@@ -6,12 +6,12 @@ import { EMPTY_PILLAR_STREAK } from '@/engine/types';
 describe('TeamMeters — rendering', () => {
   it('renders both Illumination and Separation meters with readouts', () => {
     const { container } = render(<TeamMeters illumination={5} separation={3} />);
-    expect(
-      container.querySelector('[data-meter-readout="illumination"]')?.textContent,
-    ).toBe('5 / 15');
-    expect(
-      container.querySelector('[data-meter-readout="separation"]')?.textContent,
-    ).toBe('3 / 15');
+    expect(container.querySelector('[data-meter-readout="illumination"]')?.textContent).toBe(
+      '5 / 15',
+    );
+    expect(container.querySelector('[data-meter-readout="separation"]')?.textContent).toBe(
+      '3 / 15',
+    );
   });
 
   it('renders a Shell-threshold marker for each step (3, 6, 9, 12)', () => {
@@ -25,9 +25,7 @@ describe('TeamMeters — rendering', () => {
   });
 
   it('aria-live region announces deltas on value change', () => {
-    const { container, rerender } = render(
-      <TeamMeters illumination={5} separation={3} />,
-    );
+    const { container, rerender } = render(<TeamMeters illumination={5} separation={3} />);
     rerender(<TeamMeters illumination={7} separation={3} />);
     const live = container.querySelector('[data-meters-announcement]');
     expect(live?.textContent).toMatch(/Illumination \+2/);
@@ -152,20 +150,10 @@ describe('TeamMeters — sound hooks (silent today, wired for #321)', () => {
   it('forwards onIlluminationIncrease to the IlluminationMeter', () => {
     const onIllum = vi.fn();
     const { rerender } = render(
-      <TeamMeters
-        illumination={3}
-        separation={0}
-        onIlluminationIncrease={onIllum}
-      />,
+      <TeamMeters illumination={3} separation={0} onIlluminationIncrease={onIllum} />,
     );
     expect(onIllum).not.toHaveBeenCalled();
-    rerender(
-      <TeamMeters
-        illumination={5}
-        separation={0}
-        onIlluminationIncrease={onIllum}
-      />,
-    );
+    rerender(<TeamMeters illumination={5} separation={0} onIlluminationIncrease={onIllum} />);
     expect(onIllum).toHaveBeenCalledTimes(1);
     expect(onIllum).toHaveBeenCalledWith(2);
   });
@@ -176,9 +164,7 @@ describe('TeamMeters — sound hooks (silent today, wired for #321)', () => {
       <TeamMeters illumination={0} separation={0} onSeparationIncrease={onSep} />,
     );
     expect(onSep).not.toHaveBeenCalled();
-    rerender(
-      <TeamMeters illumination={0} separation={1} onSeparationIncrease={onSep} />,
-    );
+    rerender(<TeamMeters illumination={0} separation={1} onSeparationIncrease={onSep} />);
     expect(onSep).toHaveBeenCalledTimes(1);
     expect(onSep).toHaveBeenCalledWith(1);
   });
@@ -210,20 +196,18 @@ describe('TeamMeters — sound hooks (silent today, wired for #321)', () => {
 describe('TeamMeters — meter math', () => {
   it('value clamps at the loss threshold (15)', () => {
     const { container } = render(<TeamMeters illumination={20} separation={20} />);
-    expect(
-      container.querySelector('[data-meter-readout="illumination"]')?.textContent,
-    ).toBe('20 / 15');
+    expect(container.querySelector('[data-meter-readout="illumination"]')?.textContent).toBe(
+      '20 / 15',
+    );
     // The Meter component clamps the visual fill to 100% — verified
     // in its own tests; we just confirm the readout shows the raw
     // value so observers see overflow rather than a silent cap.
   });
 
   it('accepts a custom max', () => {
-    const { container } = render(
-      <TeamMeters illumination={10} separation={5} max={25} />,
+    const { container } = render(<TeamMeters illumination={10} separation={5} max={25} />);
+    expect(container.querySelector('[data-meter-readout="illumination"]')?.textContent).toBe(
+      '10 / 25',
     );
-    expect(
-      container.querySelector('[data-meter-readout="illumination"]')?.textContent,
-    ).toBe('10 / 25');
   });
 });

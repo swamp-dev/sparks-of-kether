@@ -66,10 +66,7 @@ function replacePlayer(state: GameState, next: PlayerState): GameState {
   };
 }
 
-function setFlags(
-  player: PlayerState,
-  patch: Partial<PlayerAbilityFlags>,
-): PlayerState {
+function setFlags(player: PlayerState, patch: Partial<PlayerAbilityFlags>): PlayerState {
   return {
     ...player,
     pendingAbilities: { ...player.pendingAbilities, ...patch },
@@ -177,7 +174,10 @@ function applyAbility(
       }
       return applyChesedGrace(state, player, ability.toPlayerId, ability.arcanumNumber);
     case 'gevurah-severance':
-      return { ok: true, value: { ...state, shellCancellationsAvailable: state.shellCancellationsAvailable + 1 } };
+      return {
+        ok: true,
+        value: { ...state, shellCancellationsAvailable: state.shellCancellationsAvailable + 1 },
+      };
     case 'tiferet-harmony':
       // #17: Shell of Tiferet (Vanity) — Tiferet Soul Aspect ability disabled.
       if (isVanityActive(state)) {
@@ -187,7 +187,10 @@ function applyAbility(
     case 'hod-clarity':
       return applyHodClarity(state, ability.arcanumNumber);
     case 'netzach-courage':
-      return { ok: true, value: replacePlayer(state, setFlags(player, { courageRetryAvailable: true })) };
+      return {
+        ok: true,
+        value: replacePlayer(state, setFlags(player, { courageRetryAvailable: true })),
+      };
     case 'yesod-intuition':
       return applyYesodIntuition(state, ability.reorder);
     case 'binah-acceptance':
@@ -195,14 +198,20 @@ function applyAbility(
     case 'chokmah-flash':
       return {
         ok: true,
-        value: replacePlayer(state, setFlags(player, { flashExtraMoves: player.pendingAbilities.flashExtraMoves + 1 })),
+        value: replacePlayer(
+          state,
+          setFlags(player, { flashExtraMoves: player.pendingAbilities.flashExtraMoves + 1 }),
+        ),
       };
     case 'kether-unity':
       return applyKetherUnity(state, rng);
     case 'malkuth-grounding':
       return {
         ok: true,
-        value: replacePlayer(state, setFlags(player, { separationShields: player.pendingAbilities.separationShields + 1 })),
+        value: replacePlayer(
+          state,
+          setFlags(player, { separationShields: player.pendingAbilities.separationShields + 1 }),
+        ),
       };
   }
 }
@@ -269,7 +278,10 @@ function applyChesedGrace(
   return { ok: true, value: next };
 }
 
-function applyHodClarity(state: GameState, arcanumNumber: number): Result<GameState, SparkRejection> {
+function applyHodClarity(
+  state: GameState,
+  arcanumNumber: number,
+): Result<GameState, SparkRejection> {
   const held = state.players.some((p) => p.hand.includes(arcanumNumber));
   if (!held) {
     // Spark still spent; no reveal. State unchanged except for the
@@ -296,8 +308,7 @@ function applyYesodIntuition(
   const topSorted = [...state.deck.slice(0, reorder.length)].sort((a, b) => a - b);
   const reorderSorted = [...reorder].sort((a, b) => a - b);
   const samePermutation =
-    topSorted.length === reorderSorted.length &&
-    topSorted.every((n, i) => n === reorderSorted[i]);
+    topSorted.length === reorderSorted.length && topSorted.every((n, i) => n === reorderSorted[i]);
   if (!samePermutation) {
     return {
       ok: false,

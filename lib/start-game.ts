@@ -100,9 +100,7 @@ export function validateAndBuildSetup(
 
   const sorted = [...players].sort((a, b) => a.seat - b.seat);
 
-  const missing = sorted
-    .filter((p) => p.zodiac_sign === null)
-    .map((p) => p.id);
+  const missing = sorted.filter((p) => p.zodiac_sign === null).map((p) => p.id);
   if (missing.length > 0) {
     return {
       ok: false,

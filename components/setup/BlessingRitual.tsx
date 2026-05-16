@@ -103,12 +103,7 @@ export function BlessingRitual({
     if (currentSefirah) {
       setStats((prev) => ({ ...prev, [currentSefirah.stat]: a + b + c }));
       setBlessing({
-        quote: quoteForBlessing(
-          pantheon.sefirahBlessings,
-          currentSefirah.key,
-          sign,
-          rng,
-        ),
+        quote: quoteForBlessing(pantheon.sefirahBlessings, currentSefirah.key, sign, rng),
         tier: dignityRelationship(currentSefirah.key, sign),
       });
     }
@@ -163,9 +158,7 @@ export function BlessingRitual({
       if (stats[s.stat] === undefined) missing.push(s.stat);
     }
     if (missing.length > 0) {
-      throw new Error(
-        `BlessingRitual: missing stats at completion: ${missing.join(', ')}`,
-      );
+      throw new Error(`BlessingRitual: missing stats at completion: ${missing.join(', ')}`);
     }
     onComplete(stats as StatSheet);
   };
@@ -197,9 +190,7 @@ export function BlessingRitual({
         aria-label="Hastening the rite — rolling all remaining blessings"
         className={`mx-auto max-w-5xl text-center ${className ?? ''}`}
       >
-        <p className="font-display text-2xl tracking-widest opacity-70">
-          The rite quickens…
-        </p>
+        <p className="font-display text-2xl tracking-widest opacity-70">The rite quickens…</p>
         <div
           role="status"
           aria-live="polite"
@@ -230,8 +221,7 @@ export function BlessingRitual({
     );
   }
 
-  const isEncounterSefirah =
-    currentSefirah.key !== 'kether' && currentSefirah.key !== 'malkuth';
+  const isEncounterSefirah = currentSefirah.key !== 'kether' && currentSefirah.key !== 'malkuth';
   const avatarName = isEncounterSefirah
     ? pantheon.avatarNames[currentSefirah.key as EncounterAvatarKey].primary
     : undefined;
@@ -250,7 +240,6 @@ export function BlessingRitual({
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_2fr_1fr] md:items-start md:gap-8">
-
         {/* Left: avatar with ambient glow ring (#73) */}
         <div className="relative flex flex-col items-center gap-2 md:items-end md:pt-8">
           {/* Pulsing ring behind the avatar — solid color (not gradient)
@@ -328,10 +317,7 @@ export function BlessingRitual({
 
           <p className="relative mt-4 italic opacity-80" data-essence>
             &ldquo;{copy.essence}&rdquo;
-            <span
-              className="mt-2 block not-italic text-sm opacity-90"
-              data-invocation
-            >
+            <span className="mt-2 block text-sm not-italic opacity-90" data-invocation>
               {copy.invocation}
             </span>
           </p>
@@ -349,26 +335,24 @@ export function BlessingRitual({
               }
               className="flex gap-3"
             >
-              {lastRoll ? (
-                lastRoll.map((d, i) => (
-                  <D6Roll
-                    key={i}
-                    value={d}
-                    rolling={rolling}
-                    durationMs={ROLL_ANIMATION_MS}
-                    announceToAt={false}
-                    className="h-14 w-14"
-                  />
-                ))
-              ) : (
-                [0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    aria-hidden="true"
-                    className="h-14 w-14 rounded border border-veil/20 opacity-25"
-                  />
-                ))
-              )}
+              {lastRoll
+                ? lastRoll.map((d, i) => (
+                    <D6Roll
+                      key={i}
+                      value={d}
+                      rolling={rolling}
+                      durationMs={ROLL_ANIMATION_MS}
+                      announceToAt={false}
+                      className="h-14 w-14"
+                    />
+                  ))
+                : [0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      aria-hidden="true"
+                      className="h-14 w-14 rounded border border-veil/20 opacity-25"
+                    />
+                  ))}
             </div>
 
             {/* Stat total — visible after roll */}
@@ -440,16 +424,16 @@ const PARTICLE_DOTS: readonly {
   opacity: number;
   delay: string;
 }[] = [
-  { top: '12%', left: '8%',  opacity: 0.6, delay: '0ms' },
+  { top: '12%', left: '8%', opacity: 0.6, delay: '0ms' },
   { top: '28%', left: '85%', opacity: 0.4, delay: '400ms' },
-  { top: '45%', left: '4%',  opacity: 0.5, delay: '800ms' },
+  { top: '45%', left: '4%', opacity: 0.5, delay: '800ms' },
   { top: '65%', left: '90%', opacity: 0.3, delay: '1200ms' },
   { top: '80%', left: '15%', opacity: 0.6, delay: '200ms' },
   { top: '18%', left: '72%', opacity: 0.4, delay: '600ms' },
   { top: '55%', left: '78%', opacity: 0.5, delay: '1000ms' },
   { top: '38%', left: '20%', opacity: 0.3, delay: '1400ms' },
   { top: '72%', left: '60%', opacity: 0.5, delay: '300ms' },
-  { top: '8%',  left: '48%', opacity: 0.4, delay: '700ms' },
+  { top: '8%', left: '48%', opacity: 0.4, delay: '700ms' },
 ];
 
 function Summary({
@@ -483,11 +467,8 @@ function Summary({
             <span className="text-veil opacity-80">
               <StatIcon stat={s.stat} className="h-5 w-5" />
             </span>
-            <dt className="flex-1 capitalize text-sm">{s.stat}</dt>
-            <dd
-              data-summary-value={s.stat}
-              className="font-display tabular-nums"
-            >
+            <dt className="flex-1 text-sm capitalize">{s.stat}</dt>
+            <dd data-summary-value={s.stat} className="font-display tabular-nums">
               {stats[s.stat]}
             </dd>
           </div>

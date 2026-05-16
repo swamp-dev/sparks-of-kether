@@ -62,15 +62,11 @@ describe('SefirahDetail', () => {
     // the swatch's title for designers / debuggers.
     const { container } = render(<SefirahDetail sefirahKey="kether" />);
     const codeNodes = container.querySelectorAll('code');
-    const tokenCodes = Array.from(codeNodes).filter(
-      (n) => n.textContent === 'bg-kether',
-    );
+    const tokenCodes = Array.from(codeNodes).filter((n) => n.textContent === 'bg-kether');
     expect(tokenCodes.length).toBe(1);
     // The hex must NOT appear as visible text in any <code> node — it
     // belongs in the swatch's title attribute now.
-    const hexCodes = Array.from(codeNodes).filter(
-      (n) => n.textContent === '#ffffff',
-    );
+    const hexCodes = Array.from(codeNodes).filter((n) => n.textContent === '#ffffff');
     expect(hexCodes.length).toBe(0);
   });
 

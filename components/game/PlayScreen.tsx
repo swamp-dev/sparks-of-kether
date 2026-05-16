@@ -8,7 +8,6 @@ import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { DiscardPile } from '@/components/game/DiscardPile';
-import { DiscardPrompt } from '@/components/game/DiscardPrompt';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
@@ -237,7 +236,9 @@ export function PlayScreen({
   // fires on every render path. During a challenge, the active player's
   // position is the encounter Sefirah — use it directly rather than
   // waiting for challengeContext to be built later in the component.
-  useMusic(turn.phase === 'challenge' && activePlayer !== undefined ? activePlayer.position : 'play');
+  useMusic(
+    turn.phase === 'challenge' && activePlayer !== undefined ? activePlayer.position : 'play',
+  );
 
   // Final Threshold takeover: once the engine flips `phase: 'kether'`
   // (K1's `maybeTriggerKetherRitual` fires when every player has
@@ -414,16 +415,12 @@ export function PlayScreen({
     // phase — the player can only play a card to advance during
     // their move. Outside `move`, the path drop is rejected.
     if (turn.phase !== 'move') {
-      announceDragRejection(
-        'You can only play a card during the move phase.',
-      );
+      announceDragRejection('You can only play a card during the move phase.');
       return;
     }
     const pathMatch = /^path-(\d+)$/.exec(slug);
     if (!pathMatch || pathMatch[1] === undefined) {
-      announceDragRejection(
-        'No path under the pointer. Drag onto a Tree path to play.',
-      );
+      announceDragRejection('No path under the pointer. Drag onto a Tree path to play.');
       return;
     }
     const pathNumber = Number(pathMatch[1]);
@@ -434,9 +431,7 @@ export function PlayScreen({
     }
     const result = turn.move(pathNumber);
     if (!result.ok) {
-      announceDragRejection(
-        'That move is not available right now. Try a different path.',
-      );
+      announceDragRejection('That move is not available right now. Try a different path.');
       return;
     }
     setSelectedCard(undefined);
@@ -537,7 +532,7 @@ export function PlayScreen({
           `inline-block` would defeat the aspect-ratio sizing if
           applied to the wrapper itself.
         */}
-        <div className="w-full max-w-2xl lg:max-w-none lg:w-auto lg:aspect-[400/620] lg:h-[calc(100vh-120px)] lg:max-h-[820px]">
+        <div className="w-full max-w-2xl lg:aspect-[400/620] lg:h-[calc(100vh-120px)] lg:max-h-[820px] lg:w-auto lg:max-w-none">
           <TreeBoard
             state={turn.state}
             {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
@@ -642,7 +637,9 @@ export function PlayScreen({
           <Hand
             hand={activePlayer.hand}
             visible={isHandVisible(turn.state, activePlayer.id, activePlayer.id)}
-            onCardSelect={(n) => setSelectedCard(n)}
+            {...(pendingDiscardCount === 0
+              ? { onCardSelect: (n: number) => setSelectedCard(n) }
+              : {})}
             onCardHover={(n) => setHoveredCard(n)}
             // #412: drag-to-play wiring. drag-start lights the path
             // beneath the gesture; drag-end runs the drop handler;
@@ -650,7 +647,15 @@ export function PlayScreen({
             onCardDragStart={(n) => setDraggingCard(n)}
             onCardDragEnd={handleCardDrop}
             onCardDragCancel={() => setDraggingCard(undefined)}
-            {...(selectedCard !== undefined ? { selectedArcanum: selectedCard } : {})}
+            {...(selectedCard !== undefined && pendingDiscardCount === 0
+              ? { selectedArcanum: selectedCard }
+              : {})}
+            {...(pendingDiscardCount > 0
+              ? {
+                  discardMode: true as const,
+                  onDiscard: (arcanum: number) => turn.discard(arcanum),
+                }
+              : {})}
             ariaLabel={`${activePlayer.name}'s hand`}
             className="w-full max-w-xl"
           />
@@ -769,19 +774,21 @@ export function PlayScreen({
       ) : null}
 
       {/*
-       * #291: end-of-turn over-cap reconciliation. Renders when the
-       * active player Meditated past HAND_CAP and still owes a trim;
-       * unmounts as soon as count reaches 0 (the engine's discard
-       * reducer clears pendingDiscard at that point). The auto-
-       * advance timer is gated on count === 0, so the player drives
-       * the cadence here.
+       * #90: end-of-turn over-cap reconciliation. Status bar replaces
+       * the DiscardPrompt bottom sheet — discard icons now overlay the
+       * hand cards directly so players can hover for path-lighting
+       * before committing.
        */}
-      {pendingDiscardCount > 0 && activePlayer ? (
-        <DiscardPrompt
-          hand={activePlayer.hand}
-          count={pendingDiscardCount}
-          onDiscard={(arcanum) => turn.discard(arcanum)}
-        />
+      {pendingDiscardCount > 0 ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-discard-status
+          className="w-full max-w-xl rounded border border-veil/30 bg-ground/80 px-4 py-2 text-center text-xs text-veil"
+        >
+          Shed {pendingDiscardCount} card{pendingDiscardCount === 1 ? '' : 's'} — hover a card to
+          see its paths, then click <span aria-hidden>✕</span> to discard
+        </div>
       ) : null}
 
       {/* #321: floating settings cog. Always available on the play

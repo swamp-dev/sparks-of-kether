@@ -54,28 +54,20 @@ describe('<AvatarStack>', () => {
   it('marks the active player with data-active="true" and a gold ring class', () => {
     render(
       <AvatarStack
-        peers={[
-          peer({ playerId: 'p1' }),
-          peer({ playerId: 'p2', name: 'Brae' }),
-        ]}
+        peers={[peer({ playerId: 'p1' }), peer({ playerId: 'p2', name: 'Brae' })]}
         viewerPlayerId="p1"
         activePlayerId="p2"
       />,
     );
     const active = screen.getByTestId('avatar-token-p2');
     expect(active.getAttribute('data-active')).toBe('true');
-    expect(screen.getByTestId('avatar-token-p1').getAttribute('data-active')).toBe(
-      'false',
-    );
+    expect(screen.getByTestId('avatar-token-p1').getAttribute('data-active')).toBe('false');
   });
 
   it('marks the disconnected peer with data-online="false" and a status label', () => {
     render(
       <AvatarStack
-        peers={[
-          peer({ playerId: 'p1' }),
-          peer({ playerId: 'p2', online: false, name: 'Brae' }),
-        ]}
+        peers={[peer({ playerId: 'p1' }), peer({ playerId: 'p2', online: false, name: 'Brae' })]}
         viewerPlayerId="p1"
         activePlayerId="p1"
       />,
@@ -121,17 +113,12 @@ describe('<AvatarStack>', () => {
   it('exposes the viewer with a "(you)" affordance for screen readers', () => {
     render(
       <AvatarStack
-        peers={[
-          peer({ playerId: 'p1', name: 'Andy' }),
-          peer({ playerId: 'p2', name: 'Brae' }),
-        ]}
+        peers={[peer({ playerId: 'p1', name: 'Andy' }), peer({ playerId: 'p2', name: 'Brae' })]}
         viewerPlayerId="p1"
         activePlayerId="p2"
       />,
     );
-    expect(
-      screen.getByTestId('avatar-token-p1').getAttribute('aria-label'),
-    ).toMatch(/you/i);
+    expect(screen.getByTestId('avatar-token-p1').getAttribute('aria-label')).toMatch(/you/i);
   });
 
   it('renders nothing when peers is empty (avoids a stray top-right chrome bar)', () => {

@@ -73,12 +73,7 @@ describe('playthrough — win path (2 players)', () => {
     const p1 = initial.players[0]!.id;
     const p2 = initial.players[1]!.id;
 
-    const final = scenario(initial)
-      .move(p1, 13)
-      .endTurn(p1)
-      .move(p2, 13)
-      .endTurn(p2)
-      .run();
+    const final = scenario(initial).move(p1, 13).endTurn(p1).move(p2, 13).endTurn(p2).run();
 
     // Both at Kether.
     expect(final.players.every((p) => p.position === 'kether')).toBe(true);
@@ -121,9 +116,7 @@ describe('playthrough — win path (2 players)', () => {
       // the default Aries-class strength stat (zodiac dignity already
       // applied at game start: Mars rulership +1).
       const players = base.players.map((p, i) =>
-        i === 0
-          ? { ...p, position: 'gevurah' as const, hand: [...p.hand] }
-          : p,
+        i === 0 ? { ...p, position: 'gevurah' as const, hand: [...p.hand] } : p,
       );
       // Post-#227 review fix: phase / challengeSubPhase are on
       // GameState now, and the dispatcher reads them directly. Pin
@@ -165,9 +158,7 @@ describe('playthrough — win path (2 players)', () => {
     expect(a.players[0]!.clearedSefirot.has('gevurah')).toBe(
       b.players[0]!.clearedSefirot.has('gevurah'),
     );
-    expect(a.players[0]!.sparksHeld.has('gevurah')).toBe(
-      b.players[0]!.sparksHeld.has('gevurah'),
-    );
+    expect(a.players[0]!.sparksHeld.has('gevurah')).toBe(b.players[0]!.sparksHeld.has('gevurah'));
   });
 });
 
@@ -214,9 +205,7 @@ describe('playthrough — loss path (2 players)', () => {
     };
     const p1 = initial.players[0]!.id;
 
-    const final = scenario(initial)
-      .acceptSetback(p1, 'tiferet', true)
-      .run();
+    const final = scenario(initial).acceptSetback(p1, 'tiferet', true).run();
 
     expect(final.separation).toBe(15);
     expect(checkEndgame(final).status).toBe('lost');

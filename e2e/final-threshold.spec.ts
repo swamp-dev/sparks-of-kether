@@ -22,9 +22,7 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
-test('hold view renders the arrived/climbing roster + waiting status', async ({
-  page,
-}) => {
+test('hold view renders the arrived/climbing roster + waiting status', async ({ page }) => {
   await page.goto('/demo/final-threshold?subPhase=hold');
   const screen = page.locator('[data-final-threshold-screen]');
   await expect(screen).toBeVisible();
@@ -33,24 +31,16 @@ test('hold view renders the arrived/climbing roster + waiting status', async ({
   // Polite live region for the waiting status — assert the text is
   // present so a screen-reader user receives the same content the
   // sighted user does.
-  await expect(
-    page.getByText(/Waiting for the rest of the team/i),
-  ).toBeVisible();
+  await expect(page.getByText(/Waiting for the rest of the team/i)).toBeVisible();
 
   // Both rosters render with the right players. P1 is held (arrived),
   // P2 is climbing. Pin via data-player attributes so the assertion
   // doesn't double-match the climbing entry's Sefirah name aside.
-  await expect(
-    page.locator('[data-roster="arrived"] [data-player="p1"]'),
-  ).toBeVisible();
-  await expect(
-    page.locator('[data-roster="climbing"] [data-player="p2"]'),
-  ).toBeVisible();
+  await expect(page.locator('[data-roster="arrived"] [data-player="p1"]')).toBeVisible();
+  await expect(page.locator('[data-roster="climbing"] [data-player="p2"]')).toBeVisible();
 });
 
-test('witness sub-state advances when the active witness clicks Play', async ({
-  page,
-}) => {
+test('witness sub-state advances when the active witness clicks Play', async ({ page }) => {
   await page.goto('/demo/final-threshold?subPhase=witness');
   const screen = page.locator('[data-final-threshold-screen]');
   await expect(screen).toHaveAttribute('data-sub-phase', 'witness');
@@ -58,12 +48,8 @@ test('witness sub-state advances when the active witness clicks Play', async ({
   // P2 is the active witness (last-arrived per § 2.2). The demo mounts
   // for P1 by default, so P1 sees a read-only view with the "Waiting
   // for Bea" status — Play / Pass affordances are absent for P1.
-  await expect(
-    page.locator('[data-witness-status]').getByText(/Waiting for Bea/i),
-  ).toBeVisible();
-  await expect(
-    page.locator('[data-action="kether-witness-play"]'),
-  ).toHaveCount(0);
+  await expect(page.locator('[data-witness-status]').getByText(/Waiting for Bea/i)).toBeVisible();
+  await expect(page.locator('[data-action="kether-witness-play"]')).toHaveCount(0);
 
   // The witness order ribbon shows both seats; the active one carries
   // the data-witness-active=true marker.
@@ -71,9 +57,7 @@ test('witness sub-state advances when the active witness clicks Play', async ({
   await expect(activeSeats).toHaveCount(1);
 });
 
-test('closure sub-state stages a Spark and surfaces the projected gap', async ({
-  page,
-}) => {
+test('closure sub-state stages a Spark and surfaces the projected gap', async ({ page }) => {
   await page.goto('/demo/final-threshold?subPhase=close');
   const screen = page.locator('[data-final-threshold-screen]');
   await expect(screen).toHaveAttribute('data-sub-phase', 'close');
@@ -87,15 +71,11 @@ test('closure sub-state stages a Spark and surfaces the projected gap', async ({
   // P1 (the demo's seat) holds Gevurah and Tiferet Sparks. Stage one
   // and verify aria-pressed flips. The closure status updates with
   // a staged-count line.
-  const gevurahStage = page.locator(
-    '[data-spark-player="p1"][data-spark-sefirah="gevurah"]',
-  );
+  const gevurahStage = page.locator('[data-spark-player="p1"][data-spark-sefirah="gevurah"]');
   await expect(gevurahStage).toHaveAttribute('aria-pressed', 'false');
   await gevurahStage.click();
   await expect(gevurahStage).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-closure-staged-count]')).toContainText(
-    /1 Spark staged/i,
-  );
+  await expect(page.locator('[data-closure-staged-count]')).toContainText(/1 Spark staged/i);
 
   // Confirm closure — single button. After click, the engine exits
   // the ritual: `phase` flips from 'kether' to 'end' inside the

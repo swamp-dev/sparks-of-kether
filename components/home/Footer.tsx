@@ -25,12 +25,7 @@ export function Footer({ className }: FooterProps): JSX.Element {
       <Link
         href="/about"
         data-footer-link="rules"
-        className="
-          font-sans tracking-wide hover:text-veil
-          focus-visible:outline-none focus-visible:ring-1
-          focus-visible:ring-veil/60 focus-visible:ring-offset-2
-          focus-visible:ring-offset-void
-        "
+        className="font-sans tracking-wide hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void"
       >
         Read the rules
       </Link>
@@ -39,24 +34,14 @@ export function Footer({ className }: FooterProps): JSX.Element {
         data-footer-link="source"
         target="_blank"
         rel="noopener noreferrer"
-        className="
-          font-sans tracking-wide hover:text-veil
-          focus-visible:outline-none focus-visible:ring-1
-          focus-visible:ring-veil/60 focus-visible:ring-offset-2
-          focus-visible:ring-offset-void
-        "
+        className="font-sans tracking-wide hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void"
       >
         View source
       </a>
       <Link
         href="/codex"
         data-footer-link="codex"
-        className="
-          font-sans tracking-wide hover:text-veil
-          focus-visible:outline-none focus-visible:ring-1
-          focus-visible:ring-veil/60 focus-visible:ring-offset-2
-          focus-visible:ring-offset-void
-        "
+        className="font-sans tracking-wide hover:text-veil focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-veil/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void"
       >
         Codex
       </Link>

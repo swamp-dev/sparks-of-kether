@@ -42,9 +42,7 @@ import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
  */
 function makeChallengeState(): GameState {
   const base = makeFullGame({ playerCount: 2, seed: 1 });
-  const activeIdx = base.players.findIndex(
-    (p) => p.id === base.activePlayerId,
-  );
+  const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
   const players = base.players.map((p, idx) =>
     idx === activeIdx
       ? {
@@ -78,13 +76,7 @@ describe('PlayScreen — EncounterScreen mode derivation (#278)', () => {
 
   it('renders EncounterScreen with mode="multiplayer" when roomCode is supplied', () => {
     const initial = makeChallengeState();
-    render(
-      <PlayScreen
-        initialState={initial}
-        rng={seededRng(3)}
-        roomCode="ABCD"
-      />,
-    );
+    render(<PlayScreen initialState={initial} rng={seededRng(3)} roomCode="ABCD" />);
 
     const screenEl = document.querySelector('[data-encounter-screen]');
     expect(screenEl).not.toBeNull();
@@ -108,13 +100,7 @@ describe('PlayScreen — EncounterScreen mode derivation (#278)', () => {
     // appears. In hot-seat the dispatch is deferred to Roll and
     // the block stays absent.
     const initial = makeChallengeState();
-    render(
-      <PlayScreen
-        initialState={initial}
-        rng={seededRng(3)}
-        roomCode="ABCD"
-      />,
-    );
+    render(<PlayScreen initialState={initial} rng={seededRng(3)} roomCode="ABCD" />);
 
     // Pre-click: engine has no pending burns; the cumulative-burns
     // hint is absent.

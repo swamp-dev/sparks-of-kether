@@ -10,16 +10,16 @@ import {
   type CheckModifiers,
 } from '@/engine/checks';
 import { seededRng, type Rng } from '@/engine/rng';
-import {
-  drawNCards,
-  drawToHand,
-  MEDITATE_DRAW as ENGINE_MEDITATE_DRAW,
-} from '@/engine/draws';
+import { drawNCards, drawToHand, MEDITATE_DRAW as ENGINE_MEDITATE_DRAW } from '@/engine/draws';
 import {
   HAND_CAP as ENGINE_HAND_CAP,
   STARTING_HAND_SIZE as ENGINE_STARTING_HAND_SIZE,
 } from '@/engine/setup';
-import { discard as discardReducer, endTurn as endTurnReducer } from '@/engine/turn';
+import {
+  discard as discardReducer,
+  encounterBurnDiscard as encounterBurnDiscardReducer,
+  endTurn as endTurnReducer,
+} from '@/engine/turn';
 import {
   EMPTY_PENDING_MODIFIERS,
   type ChallengeSubPhase,
@@ -253,6 +253,16 @@ export type TurnEvent =
        * end of their turn; only their hand needs reconciling.
        */
       readonly kind: 'discard';
+      readonly arcanum: number;
+    }
+  | {
+      /**
+       * Encounter-burn forced discard: shed one card before rolling
+       * when the player has burned card(s) during challenge prep.
+       * Gating is a UI concern (EncounterScreen); the reducer no-ops
+       * if the card is not in hand.
+       */
+      readonly kind: 'encounter-burn-discard';
       readonly arcanum: number;
     }
   | { readonly kind: 'end-turn' }
@@ -765,11 +775,7 @@ function applyChesedGiftTransfers(
  * current `snapshot`, OR a structured rejection. The hook commits
  * `next` to React state on success.
  */
-export function turnReducer(
-  snapshot: TurnSnapshot,
-  event: TurnEvent,
-  rng: Rng,
-): TurnReducerResult {
+export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng): TurnReducerResult {
   const { state } = snapshot;
   const { phase, challengeSubPhase } = state;
 
@@ -862,9 +868,7 @@ export function turnReducer(
       let nextPhase: TurnPhase = 'end';
       if (movedPlayer) {
         const arrival = sefirahByKey(movedPlayer.position);
-        const alreadyCleared = movedPlayer.clearedSefirot.has(
-          movedPlayer.position,
-        );
+        const alreadyCleared = movedPlayer.clearedSefirot.has(movedPlayer.position);
         if (arrival.challenge.kind === 'check' && !alreadyCleared) {
           nextPhase = 'challenge';
         }
@@ -963,9 +967,7 @@ export function turnReducer(
           // retry inference and silently inflate the d20 modifier.
           const arcanum = event.modifier.arcanum;
           const heldCount = player.hand.filter((c) => c === arcanum).length;
-          const alreadyStaged = pending.cardBurns.filter(
-            (c) => c === arcanum,
-          ).length;
+          const alreadyStaged = pending.cardBurns.filter((c) => c === arcanum).length;
           if (alreadyStaged >= heldCount) {
             return {
               ok: false,
@@ -987,8 +989,7 @@ export function turnReducer(
           const source = state.players.find((p) => p.id === sourcePlayerId);
           const sourceHolds = source?.sparksHeld.has(spkSefirah) ?? false;
           const alreadyStaged = pending.sparkBurns.some(
-            (b) =>
-              b.sourcePlayerId === sourcePlayerId && b.sefirah === spkSefirah,
+            (b) => b.sourcePlayerId === sourcePlayerId && b.sefirah === spkSefirah,
           );
           if (!sourceHolds || alreadyStaged) {
             return {
@@ -1002,10 +1003,7 @@ export function turnReducer(
           }
           nextPending = {
             ...pending,
-            sparkBurns: [
-              ...pending.sparkBurns,
-              { sefirah: spkSefirah, sourcePlayerId },
-            ],
+            sparkBurns: [...pending.sparkBurns, { sefirah: spkSefirah, sourcePlayerId }],
           };
           break;
         }
@@ -1160,19 +1158,14 @@ export function turnReducer(
           if (idx >= 0) {
             nextPending = {
               ...pending,
-              cardBurns: [
-                ...pending.cardBurns.slice(0, idx),
-                ...pending.cardBurns.slice(idx + 1),
-              ],
+              cardBurns: [...pending.cardBurns.slice(0, idx), ...pending.cardBurns.slice(idx + 1)],
             };
           }
           break;
         }
         case 'spark-burn': {
           const idx = pending.sparkBurns.findIndex(
-            (b) =>
-              b.sefirah === target.sefirah &&
-              b.sourcePlayerId === target.sourcePlayerId,
+            (b) => b.sefirah === target.sefirah && b.sourcePlayerId === target.sourcePlayerId,
           );
           if (idx >= 0) {
             nextPending = {
@@ -1207,10 +1200,7 @@ export function turnReducer(
           if (idx >= 0) {
             nextPending = {
               ...pending,
-              nameCards: [
-                ...pending.nameCards.slice(0, idx),
-                ...pending.nameCards.slice(idx + 1),
-              ],
+              nameCards: [...pending.nameCards.slice(0, idx), ...pending.nameCards.slice(idx + 1)],
             };
           }
           break;
@@ -1220,25 +1210,18 @@ export function turnReducer(
           // arcanum can be staged to two different recipients, each
           // removable independently).
           const idx = pending.giftCards.findIndex(
-            (g) =>
-              g.arcanum === target.arcanum &&
-              g.recipientId === target.recipientId,
+            (g) => g.arcanum === target.arcanum && g.recipientId === target.recipientId,
           );
           if (idx >= 0) {
             nextPending = {
               ...pending,
-              giftCards: [
-                ...pending.giftCards.slice(0, idx),
-                ...pending.giftCards.slice(idx + 1),
-              ],
+              giftCards: [...pending.giftCards.slice(0, idx), ...pending.giftCards.slice(idx + 1)],
             };
           }
           break;
         }
         case 'declare-desire': {
-          const idx = pending.declareDesires.findIndex(
-            (s) => s === target.sefirah,
-          );
+          const idx = pending.declareDesires.findIndex((s) => s === target.sefirah);
           if (idx >= 0) {
             nextPending = {
               ...pending,
@@ -1251,9 +1234,7 @@ export function turnReducer(
           break;
         }
         case 'dream-guess': {
-          const idx = pending.dreamGuesses.findIndex(
-            (p) => p === target.pillar,
-          );
+          const idx = pending.dreamGuesses.findIndex((p) => p === target.pillar);
           if (idx >= 0) {
             nextPending = {
               ...pending,
@@ -1327,8 +1308,7 @@ export function turnReducer(
       // state / synthesised test fixture), `isPathShortcut` returns
       // `false`, matching the prior translate-default of `false`.
       const shortcutPenalty =
-        player.lastArrivalPathNumber !== undefined &&
-        isPathShortcut(player.lastArrivalPathNumber);
+        player.lastArrivalPathNumber !== undefined && isPathShortcut(player.lastArrivalPathNumber);
       if (shortcutPenalty) {
         modifiers = { ...modifiers, shortcutPenalty: true };
       }
@@ -1654,6 +1634,11 @@ export function turnReducer(
       return { ok: true, value: { next: { state: after } } };
     }
 
+    case 'encounter-burn-discard': {
+      const after = encounterBurnDiscardReducer(state, player.id, event.arcanum);
+      return { ok: true, value: { next: { state: after } } };
+    }
+
     case 'end-turn': {
       // #503: end-turn is permitted from `'move'` when the player has
       // already meditated this turn — Meditate is itself a complete
@@ -1664,8 +1649,7 @@ export function turnReducer(
       // Meditate transitioned straight to `'end'`, so this affordance
       // wasn't needed.
       const allowEndTurn =
-        phase === 'end' ||
-        (phase === 'move' && state.meditatedThisTurn === true);
+        phase === 'end' || (phase === 'move' && state.meditatedThisTurn === true);
       if (!allowEndTurn) {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'end', actual: phase } };
       }
@@ -1733,4 +1717,3 @@ export function turnReducer(
     }
   }
 }
-

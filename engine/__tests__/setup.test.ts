@@ -36,25 +36,22 @@ describe('initializeGame — hand sizes', () => {
     [2, 1, 22],
     [3, 2, 44],
     [4, 2, 44],
-  ])(
-    '%i players → %i deck(s) → %i total cards in circulation',
-    (count, decks, totalCards) => {
-      const state = initializeGame({
-        players: setup(count),
-        rng: seededRng(1),
-      });
-      // Every player has the starting hand size.
-      for (const p of state.players) {
-        expect(p.hand.length).toBe(STARTING_HAND_SIZE);
-      }
-      // Sum of in-hand + draw = total cards.
-      const inHands = state.players.length * STARTING_HAND_SIZE;
-      expect(state.deck.length + inHands).toBe(totalCards);
-      expect(state.deck.length).toBe(totalCards - inHands);
-      // Sanity: number of decks scales as expected.
-      expect(decks).toBe(deckCountFor(count));
-    },
-  );
+  ])('%i players → %i deck(s) → %i total cards in circulation', (count, decks, totalCards) => {
+    const state = initializeGame({
+      players: setup(count),
+      rng: seededRng(1),
+    });
+    // Every player has the starting hand size.
+    for (const p of state.players) {
+      expect(p.hand.length).toBe(STARTING_HAND_SIZE);
+    }
+    // Sum of in-hand + draw = total cards.
+    const inHands = state.players.length * STARTING_HAND_SIZE;
+    expect(state.deck.length + inHands).toBe(totalCards);
+    expect(state.deck.length).toBe(totalCards - inHands);
+    // Sanity: number of decks scales as expected.
+    expect(decks).toBe(deckCountFor(count));
+  });
 });
 
 describe('initializeGame — starting state', () => {

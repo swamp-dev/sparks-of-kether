@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  dignityRelationship,
-  quoteForBlessing,
-  type DignityRelationship,
-} from '../sefirah-quote';
+import { dignityRelationship, quoteForBlessing, type DignityRelationship } from '../sefirah-quote';
 import { sefirahBlessings } from '@/data/pantheons/greco-roman/blessings';
 import { seededRng } from '../rng';
 import type { SefirahKey, ZodiacSignKey } from '@/data';

@@ -12,10 +12,7 @@ import type { GameState } from '@/engine/types';
  * — UI render paths shouldn't blow up on a stale active-player id
  * during transitions; the engine's `adjacentPaths` is stricter.
  */
-export function validPathsForPlayer(
-  state: GameState,
-  playerId: string,
-): readonly number[] {
+export function validPathsForPlayer(state: GameState, playerId: string): readonly number[] {
   // The pre-check guards against `adjacentPaths`'s throw on unknown
   // ids — UI render shouldn't crash on a stale active-player id during
   // a state transition. If the engine ever changes its contract (e.g.

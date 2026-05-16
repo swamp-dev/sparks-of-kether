@@ -41,8 +41,16 @@ describe('TreeBoard — #312 breath halos', () => {
     // All 10 keys; the helper makes the test's failure message tell
     // you which one is missing rather than just "expected 10, got 9".
     const allKeys = [
-      'kether', 'chokmah', 'binah', 'chesed', 'gevurah',
-      'tiferet', 'netzach', 'hod', 'yesod', 'malkuth',
+      'kether',
+      'chokmah',
+      'binah',
+      'chesed',
+      'gevurah',
+      'tiferet',
+      'netzach',
+      'hod',
+      'yesod',
+      'malkuth',
     ] as const;
     for (const key of allKeys) {
       const halo = container.querySelector(`[data-breath-halo="${key}"]`);
@@ -67,10 +75,8 @@ describe('TreeBoard — #312 breath halos', () => {
     const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
 
     // Every Sefirah, cleared or not, has a baseline halo.
-    expect(container.querySelector('[data-breath-halo="gevurah"]'))
-      .not.toBeNull();
-    expect(container.querySelector('[data-breath-halo="chesed"]'))
-      .not.toBeNull();
+    expect(container.querySelector('[data-breath-halo="gevurah"]')).not.toBeNull();
+    expect(container.querySelector('[data-breath-halo="chesed"]')).not.toBeNull();
     // The cleared signal is on the disc's data-cleared attribute.
     const gevurahNode = container.querySelector('[data-sefirah="gevurah"]');
     const chesedNode = container.querySelector('[data-sefirah="chesed"]');
@@ -119,9 +125,7 @@ describe('TreeBoard — #312 path-light-from-card', () => {
   it('renders no card-lit paths when `highlightedCard` is undefined', () => {
     const player = makePlayer({ id: 'p1', position: 'tiferet', hand: [13] });
     const state = makeState({}, { players: [player] });
-    const { container } = render(
-      <TreeBoard state={state} activePlayerId="p1" />,
-    );
+    const { container } = render(<TreeBoard state={state} activePlayerId="p1" />);
     const lit = container.querySelectorAll('[data-card-lit="true"]');
     expect(lit.length).toBe(0);
   });

@@ -31,7 +31,13 @@ interface D6RollProps {
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
-export function D6Roll({ value, rolling, durationMs = 700, announceToAt = true, className }: D6RollProps): JSX.Element {
+export function D6Roll({
+  value,
+  rolling,
+  durationMs = 700,
+  announceToAt = true,
+  className,
+}: D6RollProps): JSX.Element {
   const [displayed, setDisplayed] = useState<number>(value);
   // `settled` drives the D6 gold-glow settle keyframe after the spin.
   // D20Roll omits this flag because the challenge D20 doesn't glow;

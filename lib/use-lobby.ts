@@ -4,6 +4,7 @@ import type { ZodiacSignKey } from '@/data';
 import { setReady as setReadyMutation, setZodiacSign as setZodiacSignMutation } from './rooms';
 import { getSupabaseBrowserClient } from './supabase';
 import type { PlayerRow, RoomRow } from './supabase';
+import { writeLastGame } from './last-game';
 
 /**
  * Lobby page state machine extracted from
@@ -56,13 +57,9 @@ export interface UseLobbyReturn {
    * Update the current player's `zodiac_sign`. Returns `{ ok: false }`
    * if the caller is not signed in (no `currentPlayerId`).
    */
-  readonly setZodiacSign: (
-    sign: ZodiacSignKey,
-  ) => Promise<{ readonly ok: boolean }>;
+  readonly setZodiacSign: (sign: ZodiacSignKey) => Promise<{ readonly ok: boolean }>;
   /** Update the current player's `ready` flag. */
-  readonly setReady: (
-    ready: boolean,
-  ) => Promise<{ readonly ok: boolean }>;
+  readonly setReady: (ready: boolean) => Promise<{ readonly ok: boolean }>;
 }
 
 export function useLobby(code: string): UseLobbyReturn {
@@ -82,6 +79,10 @@ export function useLobby(code: string): UseLobbyReturn {
   // closure; the refs flip immediately on the first call.
   const beginningRef = useRef(false);
   const resettingRef = useRef(false);
+  // Stable ref to the current player's nickname — avoids adding
+  // `players` and `currentPlayerId` as deps to `beginGame` (which
+  // would recreate the callback on every player-list change).
+  const currentNicknameRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +128,14 @@ export function useLobby(code: string): UseLobbyReturn {
       cancelled = true;
     };
   }, [code, refreshTick]);
+
+  // Keep currentNicknameRef in sync so beginGame can write lastGame
+  // without needing players/currentPlayerId in its dependency array.
+  useEffect(() => {
+    if (currentPlayerId === null) return;
+    const self = players.find((p) => p.id === currentPlayerId);
+    currentNicknameRef.current = self?.nickname ?? null;
+  }, [players, currentPlayerId]);
 
   // #265: Realtime subscription on `players` filtered to this room.
   // Multiplayer was broken end-to-end without it because the lobby
@@ -176,9 +185,48 @@ export function useLobby(code: string): UseLobbyReturn {
         // stop the silence.
         if (status === 'CHANNEL_ERROR') {
           // eslint-disable-next-line no-console
-          console.error(
-            `[useLobby] Realtime channel error on lobby_players:${roomId}`,
-          );
+          console.error(`[useLobby] Realtime channel error on lobby_players:${roomId}`);
+          setError('Realtime sync error. Refresh to retry.');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      void client.removeChannel(channel);
+    };
+  }, [roomId]);
+
+  // Realtime subscription on `rooms` filtered to this room.
+  // Propagates room-state changes (lobby→playing, playing→paused,
+  // paused→playing) to the lobby page so the play-page redirect fires
+  // reactively instead of waiting for a manual refresh.
+  useEffect(() => {
+    if (roomId === null) return;
+    let cancelled = false;
+    const client = getSupabaseBrowserClient();
+    const channel = client
+      .channel(`lobby_room:${roomId}`)
+      .on(
+        'postgres_changes' as 'system',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rooms',
+          filter: `id=eq.${roomId}`,
+        },
+        (payload: { new: RoomRow }) => {
+          if (cancelled) return;
+          setRoom(payload.new);
+        },
+      )
+      .subscribe((status) => {
+        if (cancelled) return;
+        if (status === 'CHANNEL_ERROR') {
+          // eslint-disable-next-line no-console
+          console.error(`[useLobby] Realtime channel error on lobby_room:${roomId}`);
+          // Clear room so the play page shows the error UI rather than
+          // a ghost state (live PlayScreen with stale room.state).
+          setRoom(null);
           setError('Realtime sync error. Refresh to retry.');
         }
       });
@@ -211,6 +259,14 @@ export function useLobby(code: string): UseLobbyReturn {
           headers: { authorization: `Bearer ${token}` },
         });
         if (res.ok) {
+          if (currentNicknameRef.current !== null) {
+            writeLastGame({
+              code,
+              nickname: currentNicknameRef.current,
+              roomState: 'playing',
+              writtenAt: Date.now(),
+            });
+          }
           setRefreshTick((n) => n + 1);
           return;
         }
@@ -219,9 +275,7 @@ export function useLobby(code: string): UseLobbyReturn {
           reason?: { kind?: string };
         };
         setError(
-          `Could not start game: ${
-            body.reason?.kind ?? body.error ?? `HTTP ${res.status}`
-          }`,
+          `Could not start game: ${body.reason?.kind ?? body.error ?? `HTTP ${res.status}`}`,
         );
       } finally {
         beginningRef.current = false;
@@ -286,9 +340,7 @@ export function useLobby(code: string): UseLobbyReturn {
       // The remote tab still gets it from the channel; this just
       // closes the visible delay on the picker's own UI.
       setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === currentPlayerId ? { ...p, zodiac_sign: sign } : p,
-        ),
+        prev.map((p) => (p.id === currentPlayerId ? { ...p, zodiac_sign: sign } : p)),
       );
       return { ok: true };
     },
@@ -310,11 +362,7 @@ export function useLobby(code: string): UseLobbyReturn {
         setError(`Could not toggle ready: ${result.error.cause}`);
         return { ok: false };
       }
-      setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === currentPlayerId ? { ...p, ready } : p,
-        ),
-      );
+      setPlayers((prev) => prev.map((p) => (p.id === currentPlayerId ? { ...p, ready } : p)));
       return { ok: true };
     },
     [currentPlayerId],

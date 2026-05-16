@@ -77,13 +77,7 @@ describe('RevealLine', () => {
     vi.useFakeTimers();
     try {
       const onComplete = vi.fn();
-      render(
-        <RevealLine
-          text="one two three"
-          stagger={50}
-          onComplete={onComplete}
-        />,
-      );
+      render(<RevealLine text="one two three" stagger={50} onComplete={onComplete} />);
       // 3 words × 50ms stagger means the last word starts at
       // 100ms; with 320ms keyframe duration it finishes at 420ms.
       expect(onComplete).not.toHaveBeenCalled();
@@ -143,11 +137,7 @@ describe('RevealLine', () => {
     try {
       const onComplete = vi.fn();
       const { unmount } = render(
-        <RevealLine
-          text="one two three"
-          stagger={50}
-          onComplete={onComplete}
-        />,
+        <RevealLine text="one two three" stagger={50} onComplete={onComplete} />,
       );
       unmount();
       // Advance past the would-be completion time. If the timer
@@ -168,13 +158,9 @@ describe('RevealLine', () => {
     try {
       const first = vi.fn();
       const second = vi.fn();
-      const { rerender } = render(
-        <RevealLine text="one two" stagger={50} onComplete={first} />,
-      );
+      const { rerender } = render(<RevealLine text="one two" stagger={50} onComplete={first} />);
       // Swap callbacks before the timer fires.
-      rerender(
-        <RevealLine text="one two" stagger={50} onComplete={second} />,
-      );
+      rerender(<RevealLine text="one two" stagger={50} onComplete={second} />);
       // 2 words × 50ms stagger + 320ms = 370ms total.
       act(() => {
         vi.advanceTimersByTime(370);
@@ -187,12 +173,7 @@ describe('RevealLine', () => {
   });
 
   it('passes className through to the wrapping span', () => {
-    render(
-      <RevealLine
-        text="Hermes asks"
-        className="font-display italic opacity-90"
-      />,
-    );
+    render(<RevealLine text="Hermes asks" className="font-display italic opacity-90" />);
     const reveal = document.querySelector('[data-reveal-line]');
     expect(reveal?.className).toContain('font-display');
     expect(reveal?.className).toContain('italic');

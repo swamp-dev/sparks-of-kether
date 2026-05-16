@@ -53,10 +53,7 @@ describe('applyClientAction — move', () => {
       position: 'tiferet',
       hand: [2],
     });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p2' });
     const result = applyClientAction(
       state,
       { kind: 'move', playerId: 'p2', pathNumber: 13 },
@@ -86,10 +83,7 @@ describe('applyClientAction — move', () => {
       position: 'tiferet',
       hand: [],
     });
-    const state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move', activePlayerId: 'p1' },
-    );
+    const state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p1' });
     const result = applyClientAction(
       state,
       { kind: 'move', playerId: 'p1', pathNumber: 13 },
@@ -219,9 +213,7 @@ describe('applyClientAction — prep-remove-modifier', () => {
     let state = makeState(
       {},
       {
-        players: [
-          makePlayer({ id: 'p1', position: 'gevurah', hand: [3, 5] }),
-        ],
+        players: [makePlayer({ id: 'p1', position: 'gevurah', hand: [3, 5] })],
         phase: 'challenge',
         challengeSubPhase: 'prep',
       },
@@ -469,11 +461,7 @@ describe('applyClientAction — react-retry — security gate (pre-#227 exploit 
     // succeeded (synthesized `lastOutcome.pass: false` bypassed the
     // gate). Post-fix the dispatcher reads `state.lastOutcome.pass`
     // = true and the reducer returns `react-retry-on-pass`.
-    const retry = applyClientAction(
-      state,
-      { kind: 'react-retry', playerId: 'p1' },
-      seededRng(1),
-    );
+    const retry = applyClientAction(state, { kind: 'react-retry', playerId: 'p1' }, seededRng(1));
     expect(retry.ok).toBe(false);
     if (retry.ok) return;
     expect(retry.error.kind).toBe('prep');
@@ -489,11 +477,7 @@ describe('applyClientAction — react-retry — security gate (pre-#227 exploit 
     // sub-phase guard rejects directly.
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] }); // phase: 'move'
-    const retry = applyClientAction(
-      state,
-      { kind: 'react-retry', playerId: 'p1' },
-      seededRng(1),
-    );
+    const retry = applyClientAction(state, { kind: 'react-retry', playerId: 'p1' }, seededRng(1));
     expect(retry.ok).toBe(false);
     if (retry.ok) return;
     expect(retry.error.kind).toBe('prep');
@@ -550,11 +534,7 @@ describe('applyClientAction — react-retry', () => {
     expect(failed.ok).toBe(true);
     if (!failed.ok) return;
     state = failed.newState;
-    const retry = applyClientAction(
-      state,
-      { kind: 'react-retry', playerId: 'p1' },
-      seededRng(1),
-    );
+    const retry = applyClientAction(state, { kind: 'react-retry', playerId: 'p1' }, seededRng(1));
     expect(retry.ok).toBe(true);
     if (!retry.ok) return;
     // Retry preserves pendingModifiers (engine returns input state on
@@ -576,10 +556,7 @@ describe('applyClientAction — react-continue (#390)', () => {
   // react-continue lands in `'end'` directly.
   it('advances phase from challenge.react to end on a passed challenge', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
-    const state = makeState(
-      {},
-      { players: [player] },
-    );
+    const state = makeState({}, { players: [player] });
     const passedState: typeof state = {
       ...state,
       phase: 'challenge',
@@ -611,10 +588,7 @@ describe('applyClientAction — react-continue (#390)', () => {
     // wrong-phase guard rejects it and the dispatcher surfaces the
     // rejection back through the prep error envelope.
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
-    const state = makeState(
-      {},
-      { players: [player] },
-    );
+    const state = makeState({}, { players: [player] });
     const endState: typeof state = { ...state, phase: 'end' };
     const result = applyClientAction(
       endState,
@@ -634,10 +608,7 @@ describe('applyClientAction — react-continue (#390)', () => {
     // engine's sub-phase guard. Pin the rejection envelope at
     // the wire layer.
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
-    const state = makeState(
-      {},
-      { players: [player] },
-    );
+    const state = makeState({}, { players: [player] });
     const prepState: typeof state = {
       ...state,
       phase: 'challenge',
@@ -662,10 +633,7 @@ describe('applyClientAction — react-continue (#390)', () => {
     // instead; the engine's defensive guard rejects it cleanly
     // rather than skipping the Separation tick.
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
-    const state = makeState(
-      {},
-      { players: [player] },
-    );
+    const state = makeState({}, { players: [player] });
     const failedReactState: typeof state = {
       ...state,
       phase: 'challenge',
@@ -753,24 +721,14 @@ describe('applyClientAction — accept-setback', () => {
 
 describe('applyClientAction — end-turn', () => {
   it('advances activePlayerId to the next seat', () => {
-    const players = [
-      makePlayer({ id: 'p1' }),
-      makePlayer({ id: 'p2' }),
-    ];
+    const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })];
     // #522: `end-turn` requires phase === 'end' OR
     // (phase === 'move' && meditatedThisTurn === true). The default
     // `makeState` phase is `'move'` with no meditation, which would
     // now be rejected — pin the legitimate seat-rotation path on
     // phase 'end'.
-    const state = makeState(
-      {},
-      { players, activePlayerId: 'p1', phase: 'end' },
-    );
-    const result = applyClientAction(
-      state,
-      { kind: 'end-turn', playerId: 'p1' },
-      seededRng(1),
-    );
+    const state = makeState({}, { players, activePlayerId: 'p1', phase: 'end' });
+    const result = applyClientAction(state, { kind: 'end-turn', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.activePlayerId).toBe('p2');
@@ -780,10 +738,7 @@ describe('applyClientAction — end-turn', () => {
     // #503 affordance: a player who meditated may end the turn directly
     // even from `'move'` (Meditate is a complete turn-action). The
     // dispatcher must mirror the reducer's allowEndTurn rule.
-    const players = [
-      makePlayer({ id: 'p1' }),
-      makePlayer({ id: 'p2' }),
-    ];
+    const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })];
     const state = makeState(
       {},
       {
@@ -793,11 +748,7 @@ describe('applyClientAction — end-turn', () => {
         meditatedThisTurn: true,
       },
     );
-    const result = applyClientAction(
-      state,
-      { kind: 'end-turn', playerId: 'p1' },
-      seededRng(1),
-    );
+    const result = applyClientAction(state, { kind: 'end-turn', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.activePlayerId).toBe('p2');
@@ -811,19 +762,9 @@ describe('applyClientAction — end-turn', () => {
     // bypass (cheating client / racing tabs / future code path)
     // surfaces a `wrong-phase` rejection instead of silently rotating
     // the seat.
-    const players = [
-      makePlayer({ id: 'p1' }),
-      makePlayer({ id: 'p2' }),
-    ];
-    const state = makeState(
-      {},
-      { players, activePlayerId: 'p1', phase: 'move' },
-    );
-    const result = applyClientAction(
-      state,
-      { kind: 'end-turn', playerId: 'p1' },
-      seededRng(1),
-    );
+    const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2' })];
+    const state = makeState({}, { players, activePlayerId: 'p1', phase: 'move' });
+    const result = applyClientAction(state, { kind: 'end-turn', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('end-turn');
@@ -854,15 +795,8 @@ describe('applyClientAction — meditate', () => {
     // the once-per-turn cap. Server- and client-applied state must
     // agree on these fields or the multiplayer flow desyncs.
     const player = makePlayer({ id: 'p1', hand: [1, 2] });
-    const state = makeState(
-      {},
-      { players: [player], deck: [10, 11, 12, 13], discardPile: [] },
-    );
-    const result = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'p1' },
-      seededRng(1),
-    );
+    const state = makeState({}, { players: [player], deck: [10, 11, 12, 13], discardPile: [] });
+    const result = applyClientAction(state, { kind: 'meditate', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.players[0]?.hand).toEqual([1, 2, 10, 11]);
@@ -886,11 +820,7 @@ describe('applyClientAction — meditate', () => {
         meditatedThisTurn: true,
       },
     );
-    const result = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'p1' },
-      seededRng(1),
-    );
+    const result = applyClientAction(state, { kind: 'meditate', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('meditate');
@@ -908,15 +838,8 @@ describe('applyClientAction — meditate', () => {
     // This lets a Meditate-then-Move flow that drops back under cap
     // proceed without any prompt.
     const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
-    const state = makeState(
-      {},
-      { players: [player], deck: [10, 11], discardPile: [] },
-    );
-    const result = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'p1' },
-      seededRng(1),
-    );
+    const state = makeState({}, { players: [player], deck: [10, 11], discardPile: [] });
+    const result = applyClientAction(state, { kind: 'meditate', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 6, 10, 11]);
@@ -939,11 +862,7 @@ describe('applyClientAction — meditate', () => {
       {},
       { players: [p1, p2], activePlayerId: 'p1', deck: [10, 11], discardPile: [] },
     );
-    const meditated = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'p1' },
-      seededRng(1),
-    );
+    const meditated = applyClientAction(state, { kind: 'meditate', playerId: 'p1' }, seededRng(1));
     expect(meditated.ok).toBe(true);
     if (!meditated.ok) return;
     const ended = applyClientAction(
@@ -967,11 +886,7 @@ describe('applyClientAction — meditate', () => {
     // rather than a silent 200.
     const player = makePlayer({ id: 'p1', hand: [1, 2] });
     const state = makeState({}, { players: [player], deck: [10, 11] });
-    const result = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'ghost' },
-      seededRng(1),
-    );
+    const result = applyClientAction(state, { kind: 'meditate', playerId: 'ghost' }, seededRng(1));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('meditate');
@@ -981,15 +896,8 @@ describe('applyClientAction — meditate', () => {
 
   it('recycles a non-empty discard pile when the deck empties mid-meditate', () => {
     const player = makePlayer({ id: 'p1', hand: [1, 2] });
-    const state = makeState(
-      {},
-      { players: [player], deck: [10], discardPile: [20, 21, 22] },
-    );
-    const result = applyClientAction(
-      state,
-      { kind: 'meditate', playerId: 'p1' },
-      seededRng(7),
-    );
+    const state = makeState({}, { players: [player], deck: [10], discardPile: [20, 21, 22] });
+    const result = applyClientAction(state, { kind: 'meditate', playerId: 'p1' }, seededRng(7));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     // Hand grew by exactly 2 (10 from the deck + one from recycled discard).
@@ -1081,10 +989,7 @@ describe('applyClientAction — kether wire-format (#350)', () => {
     // by the same code path. But for a unit test we can build the
     // state directly: maybeTriggerKetherRitual is idempotent and we
     // just want a valid in-ritual state.
-    let state = makeState(
-      {},
-      { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
-    );
+    let state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p2' });
     // Easiest: synthesize the ritual state by going through one move.
     // p2 moves to kether-from-kether is a no-op — instead we set up
     // the state manually mirroring what initKetherRitual produces.
@@ -1125,10 +1030,7 @@ describe('applyClientAction — kether wire-format (#350)', () => {
         position: 'tiferet',
         hand: [2],
       });
-      const state = makeState(
-        {},
-        { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
-      );
+      const state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p2' });
       const result = applyClientAction(
         state,
         {
@@ -1165,10 +1067,7 @@ describe('applyClientAction — kether wire-format (#350)', () => {
         position: 'tiferet',
         hand: [2],
       });
-      const state = makeState(
-        {},
-        { players: [p1, p2], phase: 'move', activePlayerId: 'p2' },
-      );
+      const state = makeState({}, { players: [p1, p2], phase: 'move', activePlayerId: 'p2' });
       const before = Date.now();
       const result = applyClientAction(
         state,
@@ -1198,9 +1097,7 @@ describe('applyClientAction — kether wire-format (#350)', () => {
         { kind: 'played', playerId: 'p2', arcanum: 5 },
       ]);
       expect(result.newState.ketherRitual?.witnessTurnIndex).toBe(1);
-      expect(result.newState.players.find((p) => p.id === 'p2')?.hand).toEqual(
-        [6],
-      );
+      expect(result.newState.players.find((p) => p.id === 'p2')?.hand).toEqual([6]);
     });
 
     it('rejects with kether cause when the engine rejects', () => {
@@ -1274,9 +1171,7 @@ describe('applyClientAction — kether wire-format (#350)', () => {
       if (!ritual) throw new Error('fixture');
       const state: typeof base = {
         ...base,
-        players: base.players.map((p) =>
-          p.id === 'p1' ? p1Updated : p,
-        ),
+        players: base.players.map((p) => (p.id === 'p1' ? p1Updated : p)),
         ketherRitual: { ...ritual, subPhase: 'close' },
       };
       const result = applyClientAction(
@@ -1441,9 +1336,7 @@ describe('applyClientAction — kether wire-format (#350)', () => {
       expect(result.newState.ketherRitual?.witnessLog).toEqual([
         { kind: 'played', playerId: 'p2', arcanum: 5 },
       ]);
-      expect(result.newState.players.find((p) => p.id === 'p2')?.hand).toEqual(
-        [6],
-      );
+      expect(result.newState.players.find((p) => p.id === 'p2')?.hand).toEqual([6]);
     });
   });
 });
@@ -1466,11 +1359,7 @@ describe('applyClientAction — end-turn refuses while pendingDiscard pending (#
         phase: 'end',
       },
     );
-    const result = applyClientAction(
-      state,
-      { kind: 'end-turn', playerId: 'p1' },
-      seededRng(1),
-    );
+    const result = applyClientAction(state, { kind: 'end-turn', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newState.activePlayerId).toBe('p1');

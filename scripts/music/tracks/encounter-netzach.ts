@@ -45,7 +45,7 @@ export const encounterNetzach = buildEncounterTrack({
     pitchesHz: [F4, A4, C5, F5],
     chorusCents: 4,
     amCycles: 4,
-    gain: 0.060,
+    gain: 0.06,
     pans: [-0.3, 0.0, 0.3, 0.0],
   },
 

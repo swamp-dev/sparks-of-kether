@@ -21,73 +21,73 @@ export default function IconsDemoPage(): JSX.Element {
       </p>
 
       <div data-demo-canvas>
-      <Section title="Pillar markers">
-        <div className="flex gap-6">
-          {(['mercy', 'severity', 'balance'] as const).map((p) => (
-            <div key={p} className="flex flex-col items-center gap-1">
-              <PillarMarker pillar={p} className="h-10 w-12" />
-              <span className="text-xs uppercase tracking-widest opacity-60">{p}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Stat icons (10)">
-        <div className="flex flex-wrap gap-4">
-          {sefirot.map((s) => (
-            <div key={s.stat} className="flex flex-col items-center gap-1">
-              <div className="text-veil">
-                <StatIcon stat={s.stat} className="h-8 w-8" />
+        <Section title="Pillar markers">
+          <div className="flex gap-6">
+            {(['mercy', 'severity', 'balance'] as const).map((p) => (
+              <div key={p} className="flex flex-col items-center gap-1">
+                <PillarMarker pillar={p} className="h-10 w-12" />
+                <span className="text-xs uppercase tracking-widest opacity-60">{p}</span>
               </div>
-              <span className="text-xs opacity-60">{s.stat}</span>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Stat icons (10)">
+          <div className="flex flex-wrap gap-4">
+            {sefirot.map((s) => (
+              <div key={s.stat} className="flex flex-col items-center gap-1">
+                <div className="text-veil">
+                  <StatIcon stat={s.stat} className="h-8 w-8" />
+                </div>
+                <span className="text-xs opacity-60">{s.stat}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Meters">
+          <div className="flex items-end gap-8">
+            <div className="flex flex-col items-center gap-2">
+              <Meter
+                value={7}
+                max={15}
+                color="#ffd700"
+                label="Illumination"
+                orientation="vertical"
+                className="h-32 w-4"
+              />
+              <span className="text-xs opacity-70">Illumination 7/15</span>
             </div>
-          ))}
-        </div>
-      </Section>
+            <div className="flex flex-col items-center gap-2">
+              <Meter
+                value={3}
+                max={15}
+                color="#dc143c"
+                label="Separation"
+                orientation="vertical"
+                className="h-32 w-4"
+              />
+              <span className="text-xs opacity-70">Separation 3/15</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Meter
+                value={11}
+                max={20}
+                color="#4169e1"
+                label="Demo (horizontal)"
+                orientation="horizontal"
+                className="h-4 w-40"
+              />
+              <span className="text-xs opacity-70">Horizontal 11/20</span>
+            </div>
+          </div>
+        </Section>
 
-      <Section title="Meters">
-        <div className="flex items-end gap-8">
-          <div className="flex flex-col items-center gap-2">
-            <Meter
-              value={7}
-              max={15}
-              color="#ffd700"
-              label="Illumination"
-              orientation="vertical"
-              className="h-32 w-4"
-            />
-            <span className="text-xs opacity-70">Illumination 7/15</span>
+        <Section title="Flourish (decorative)">
+          <div className="text-veil opacity-80">
+            <Flourish className="h-4 w-32" />
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <Meter
-              value={3}
-              max={15}
-              color="#dc143c"
-              label="Separation"
-              orientation="vertical"
-              className="h-32 w-4"
-            />
-            <span className="text-xs opacity-70">Separation 3/15</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <Meter
-              value={11}
-              max={20}
-              color="#4169e1"
-              label="Demo (horizontal)"
-              orientation="horizontal"
-              className="h-4 w-40"
-            />
-            <span className="text-xs opacity-70">Horizontal 11/20</span>
-          </div>
-        </div>
-      </Section>
-
-      <Section title="Flourish (decorative)">
-        <div className="text-veil opacity-80">
-          <Flourish className="h-4 w-32" />
-        </div>
-      </Section>
+        </Section>
       </div>
     </main>
   );

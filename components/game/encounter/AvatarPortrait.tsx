@@ -107,15 +107,12 @@ export function AvatarPortrait({
       ? undefined
       : pantheon.avatarNames[sefirah as EncounterAvatarKey].primary.toLowerCase();
   const [imageFailed, setImageFailed] = useState(false);
-  const showPortraitImage =
-    size === 'stage' && character !== undefined && !imageFailed;
+  const showPortraitImage = size === 'stage' && character !== undefined && !imageFailed;
 
   // Idle motion for stage-size portraits at idle pose. Non-idle poses
   // and small size always use breath (the default frame animation).
   const idleMotion: IdleMotion =
-    size === 'stage' && pose === 'idle'
-      ? (SEFIRAH_IDLE_MOTION[sefirah] ?? 'breath')
-      : 'breath';
+    size === 'stage' && pose === 'idle' ? (SEFIRAH_IDLE_MOTION[sefirah] ?? 'breath') : 'breath';
 
   // Body animation class applied to the portrait content (img or
   // AvatarSilhouette). Delayed 600ms so the avatar-emerge entrance

@@ -38,17 +38,11 @@ describe('<ActionToast>', () => {
   });
 
   it('renders different copy for each action kind', () => {
-    const { rerender } = render(
-      <ActionToast actions={[action({ kind: 'rolling' })]} />,
-    );
-    expect(screen.getByTestId('action-toast-p2').textContent).toMatch(
-      /rolling/i,
-    );
+    const { rerender } = render(<ActionToast actions={[action({ kind: 'rolling' })]} />);
+    expect(screen.getByTestId('action-toast-p2').textContent).toMatch(/rolling/i);
 
     rerender(<ActionToast actions={[action({ kind: 'targeting' })]} />);
-    expect(screen.getByTestId('action-toast-p2').textContent).toMatch(
-      /targeting/i,
-    );
+    expect(screen.getByTestId('action-toast-p2').textContent).toMatch(/targeting/i);
   });
 
   it('omits a toast when the peer is idle (kind=null)', () => {
@@ -68,12 +62,7 @@ describe('<ActionToast>', () => {
   });
 
   it('drops the slide-in animation class when reduceMotion is on', () => {
-    render(
-      <ActionToast
-        actions={[action({ kind: 'choosing-card' })]}
-        reduceMotion
-      />,
-    );
+    render(<ActionToast actions={[action({ kind: 'choosing-card' })]} reduceMotion />);
     const toast = screen.getByTestId('action-toast-p2');
     expect(toast.getAttribute('data-slide-in')).toBe('false');
   });

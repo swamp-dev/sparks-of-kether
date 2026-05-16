@@ -75,11 +75,15 @@ describe('useSoundEnabled — sfxEnabled', () => {
 
   it('persists to localStorage when the setter is called', () => {
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    act(() => { result.current.setSfxEnabled(false); });
+    act(() => {
+      result.current.setSfxEnabled(false);
+    });
     expect(result.current.sfxEnabled).toBe(false);
     expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBe('false');
 
-    act(() => { result.current.setSfxEnabled(true); });
+    act(() => {
+      result.current.setSfxEnabled(true);
+    });
     expect(result.current.sfxEnabled).toBe(true);
     expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBe('true');
   });
@@ -104,11 +108,15 @@ describe('useSoundEnabled — sfxEnabled', () => {
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
     expect(playCalls).toHaveLength(0);
 
-    act(() => { result.current.setSfxEnabled(true); });
+    act(() => {
+      result.current.setSfxEnabled(true);
+    });
     expect(playCalls.length).toBeGreaterThan(0);
 
     const countAfterEnable = playCalls.length;
-    act(() => { result.current.setSfxEnabled(false); });
+    act(() => {
+      result.current.setSfxEnabled(false);
+    });
     expect(playCalls.length).toBe(countAfterEnable);
 
     vi.unstubAllGlobals();
@@ -138,25 +146,35 @@ describe('useSoundEnabled — musicEnabled', () => {
 
   it('persists to localStorage when the setter is called', () => {
     const { result } = renderHook(() => useSoundEnabled(), { wrapper });
-    act(() => { result.current.setMusicEnabled(true); });
+    act(() => {
+      result.current.setMusicEnabled(true);
+    });
     expect(result.current.musicEnabled).toBe(true);
     expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBe('true');
 
-    act(() => { result.current.setMusicEnabled(false); });
+    act(() => {
+      result.current.setMusicEnabled(false);
+    });
     expect(result.current.musicEnabled).toBe(false);
     expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBe('false');
   });
 });
 
 describe('useSoundEnabled — outside provider', () => {
-  beforeEach(() => { localStorage.clear(); });
+  beforeEach(() => {
+    localStorage.clear();
+  });
 
   it('returns a silent-OFF stub for both settings when used without provider', () => {
     const { result } = renderHook(() => useSoundEnabled());
     expect(result.current.sfxEnabled).toBe(false);
     expect(result.current.musicEnabled).toBe(false);
-    act(() => { result.current.setSfxEnabled(true); });
-    act(() => { result.current.setMusicEnabled(true); });
+    act(() => {
+      result.current.setSfxEnabled(true);
+    });
+    act(() => {
+      result.current.setMusicEnabled(true);
+    });
     expect(result.current.sfxEnabled).toBe(false);
     expect(result.current.musicEnabled).toBe(false);
     expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBeNull();

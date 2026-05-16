@@ -13,10 +13,7 @@ import type { Rng } from '@/engine/rng';
 import type { PlayerState } from '@/engine/types';
 import { StatIcon } from '@/components/icons/StatIcon';
 import { StatSheet } from '@/components/player/StatSheet';
-import type {
-  ChallengeContext,
-  ChallengeResolution,
-} from '@/lib/challenge-types';
+import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import { D20Roll } from './D20Roll';
 
 // Re-exported for back-compat with the `/demo/challenge` route and
@@ -106,8 +103,7 @@ export function ChallengeModal({
   // player is at one of their Doors). Mirror of `rollCheck`'s
   // composition in `engine/checks.ts`.
   const soulDoorDelta = context.soulDoorDelta ?? 0;
-  const effectiveDC =
-    baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta;
+  const effectiveDC = baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta;
   // Only the canonical Door discount (`-2`) shows the callout. Any
   // future positive delta (anti-Door penalty, hypothetical) would be
   // semantically wrong to render under "Soul Door open here", so the
@@ -118,19 +114,13 @@ export function ChallengeModal({
   const [cardBurns, setCardBurns] = useState(0);
   const [sparkBurns, setSparkBurns] = useState(0);
   const [outcome, setOutcome] = useState<CheckOutcome | null>(null);
-  const [committedModifiers, setCommittedModifiers] =
-    useState<CheckModifiers | null>(null);
-  const [phase, setPhase] = useState<'committing' | 'rolling' | 'reveal'>(
-    'committing',
-  );
+  const [committedModifiers, setCommittedModifiers] = useState<CheckModifiers | null>(null);
+  const [phase, setPhase] = useState<'committing' | 'rolling' | 'reveal'>('committing');
 
   // Wrap the `??` in useMemo so the empty-array fallback identity is
   // stable across renders — otherwise it would be a new `[]` each
   // render and re-trigger the dependent useMemo unnecessarily.
-  const allies = useMemo(
-    () => context.availableAllies ?? [],
-    [context.availableAllies],
-  );
+  const allies = useMemo(() => context.availableAllies ?? [], [context.availableAllies]);
   const maxCardBurns = context.availableCardBurns ?? 0;
   const maxSparkBurns = context.availableSparkBurns ?? 0;
 
@@ -141,10 +131,7 @@ export function ChallengeModal({
   }, [allies, assistIds]);
 
   const projectedTotal =
-    context.stat +
-    assistTotal +
-    cardBurns * CARD_BURN_BONUS +
-    sparkBurns * SPARK_BURN_BONUS;
+    context.stat + assistTotal + cardBurns * CARD_BURN_BONUS + sparkBurns * SPARK_BURN_BONUS;
 
   const handleRoll = (): void => {
     // Defensive guard. The Roll button only renders during the
@@ -154,9 +141,7 @@ export function ChallengeModal({
     // shared `rng` and fire `onResolved` twice.
     if (phase !== 'committing') return;
     const modifiers: CheckModifiers = {
-      assistStats: allies
-        .filter((a) => assistIds.has(a.id))
-        .map((a) => a.stat),
+      assistStats: allies.filter((a) => assistIds.has(a.id)).map((a) => a.stat),
       cardBurns,
       sparkBurns,
       shortcutPenalty: context.shortcut ?? false,
@@ -263,21 +248,14 @@ export function ChallengeModal({
         // player can read their full stat row without dismissing the
         // dialog. `activeStat` highlights the challenge stat.
         <div className="mt-3 rounded border border-veil/15 bg-ground/60 p-2">
-          <StatSheet
-            player={player}
-            mode="compact"
-            activeStat={sefirahData.stat}
-          />
+          <StatSheet player={player} mode="compact" activeStat={sefirahData.stat} />
         </div>
       ) : null}
 
       <div className="mt-4 flex items-center gap-2 rounded bg-illumination/10 px-3 py-2 ring-1 ring-illumination">
         <StatIcon stat={sefirahData.stat} className="h-5 w-5" />
         <span className="capitalize">{context.statLabel}</span>
-        <span
-          className="ml-auto font-display text-lg tabular-nums"
-          data-stat-contribution
-        >
+        <span className="ml-auto font-display text-lg tabular-nums" data-stat-contribution>
           {context.stat}
         </span>
       </div>
@@ -369,11 +347,7 @@ function CommittingPanel(props: CommittingPanelProps): JSX.Element {
                     checked ? 'ring-illumination' : 'ring-veil/20'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleAssist(ally.id)}
-                  />
+                  <input type="checkbox" checked={checked} onChange={() => toggleAssist(ally.id)} />
                   {ally.name} (+{Math.floor(ally.stat / 2)})
                 </label>
               );
@@ -401,9 +375,7 @@ function CommittingPanel(props: CommittingPanelProps): JSX.Element {
       />
 
       <div className="flex items-center justify-between rounded bg-veil/5 px-3 py-2">
-        <span className="text-xs uppercase tracking-widest opacity-70">
-          Projected before d20
-        </span>
+        <span className="text-xs uppercase tracking-widest opacity-70">Projected before d20</span>
         <span className="font-display tabular-nums" data-projected-total>
           {projectedTotal} vs DC {effectiveDC}
         </span>
@@ -457,10 +429,7 @@ function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Eleme
         >
           −
         </button>
-        <span
-          data-stepper-value={kind}
-          className="w-6 text-center font-display tabular-nums"
-        >
+        <span data-stepper-value={kind} className="w-6 text-center font-display tabular-nums">
           {value}
         </span>
         <button
@@ -485,12 +454,7 @@ interface RollPanelProps {
   readonly onContinue: () => void;
 }
 
-function RollPanel({
-  outcome,
-  phase,
-  onFailChoice,
-  onContinue,
-}: RollPanelProps): JSX.Element {
+function RollPanel({ outcome, phase, onFailChoice, onContinue }: RollPanelProps): JSX.Element {
   return (
     <div className="mt-6 flex flex-col items-center gap-3">
       <D20Roll value={outcome.rolled} rolling={phase === 'rolling'} className="h-16 w-16" />
@@ -507,9 +471,7 @@ function RollPanel({
                 outcome.modifierBreakdown.sparkBurn}{' '}
               = <span data-total>{outcome.total}</span> vs {outcome.effectiveDC}
             </span>
-            <p className="mt-1 text-sm opacity-80">
-              {outcome.pass ? 'Pass' : 'Fail'}
-            </p>
+            <p className="mt-1 text-sm opacity-80">{outcome.pass ? 'Pass' : 'Fail'}</p>
           </div>
           {outcome.pass ? (
             // #135: pass needs an explicit dismissal so the player

@@ -26,12 +26,7 @@ interface D20Props {
   readonly rolled?: boolean;
 }
 
-export function D20({
-  value,
-  color = VEIL,
-  className,
-  rolled = false,
-}: D20Props): JSX.Element {
+export function D20({ value, color = VEIL, className, rolled = false }: D20Props): JSX.Element {
   const cx = VIEW / 2;
   const cy = VIEW / 2;
   const r = VIEW / 2 - 2;
@@ -51,7 +46,9 @@ export function D20({
     const pts: string[] = [];
     for (let i = 0; i < 3; i++) {
       const angle = (i * 2 * Math.PI) / 3 - Math.PI / 2;
-      pts.push(`${(cx + Math.cos(angle) * innerR).toFixed(2)},${(cy + Math.sin(angle) * innerR).toFixed(2)}`);
+      pts.push(
+        `${(cx + Math.cos(angle) * innerR).toFixed(2)},${(cy + Math.sin(angle) * innerR).toFixed(2)}`,
+      );
     }
     return pts.join(' ');
   })();
@@ -63,9 +60,7 @@ export function D20({
   // the wrapping <svg> carries a `key` derived from the value so React
   // mounts a fresh element each roll. Without the key, the same class
   // on the same element wouldn't re-run the keyframe.
-  const settleClass = rolled
-    ? 'animate-d20-roll-settle motion-reduce:animate-none'
-    : '';
+  const settleClass = rolled ? 'animate-d20-roll-settle motion-reduce:animate-none' : '';
   const composedClassName = [className, settleClass].filter(Boolean).join(' ');
   return (
     <svg

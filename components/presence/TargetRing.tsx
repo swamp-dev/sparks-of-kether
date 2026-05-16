@@ -51,9 +51,7 @@ export function TargetRing({
 }: TargetRingProps): JSX.Element | null {
   // Filter to the peers actually targeting a node; group by node so
   // we know what concentric-offset to apply to each ring.
-  const active = targets.filter(
-    (t): t is PeerTarget & { nodeId: SefirahKey } => t.nodeId !== null,
-  );
+  const active = targets.filter((t): t is PeerTarget & { nodeId: SefirahKey } => t.nodeId !== null);
   if (active.length === 0) return null;
 
   // Group by node id to compute per-peer offsets. Order within a
@@ -115,9 +113,7 @@ export function TargetRing({
             // Inline animation control: motion-safe gets a slow breath
             // via `animate-breath`; reduce-motion users see the ring
             // static but visible.
-            className={
-              reduceMotion ? '' : 'motion-safe:animate-breath'
-            }
+            className={reduceMotion ? '' : 'motion-safe:animate-breath'}
           />
         );
       })}

@@ -67,10 +67,7 @@ export function ActionToast({
       role="status"
       aria-live="polite"
       aria-atomic="false"
-      className={`
-        pointer-events-none flex flex-col items-center gap-2
-        ${className ?? ''}
-      `}
+      className={`pointer-events-none flex flex-col items-center gap-2 ${className ?? ''} `}
     >
       {live.map((action) => (
         <div
@@ -78,12 +75,7 @@ export function ActionToast({
           data-testid={`action-toast-${action.playerId}`}
           data-action-kind={action.kind}
           data-slide-in={reduceMotion ? 'false' : 'true'}
-          className={`
-            rounded-full border border-veil/30 bg-ground/85
-            px-4 py-1.5 text-sm text-veil shadow-lg
-            transition-opacity duration-300 ease-emerge
-            data-[slide-in=true]:motion-safe:animate-[hand-fade-in_180ms_ease-out]
-          `}
+          className={`rounded-full border border-veil/30 bg-ground/85 px-4 py-1.5 text-sm text-veil shadow-lg transition-opacity duration-300 ease-emerge data-[slide-in=true]:motion-safe:animate-[hand-fade-in_180ms_ease-out]`}
         >
           <span className="font-semibold">{action.name}</span>{' '}
           <span className="opacity-80">{COPY_BY_KIND[action.kind]}</span>

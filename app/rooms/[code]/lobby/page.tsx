@@ -1,12 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Lobby, type LobbyPlayer } from '@/components/setup/Lobby';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
-import {
-  AvatarStack,
-  type PresencePeer,
-} from '@/components/presence/AvatarStack';
+import { AvatarStack, type PresencePeer } from '@/components/presence/AvatarStack';
 import { useLobby } from '@/lib/use-lobby';
 import { usePresence } from '@/lib/presence';
 import { sefirot, zodiacSigns } from '@/data';
@@ -22,8 +20,7 @@ import type { ZodiacSignKey } from '@/data';
 const SIGN_COLOR_BY_KEY = (() => {
   const sefirahColorByPlanet = new Map<string, string>();
   for (const s of sefirot) {
-    if (s.planetKey !== undefined)
-      sefirahColorByPlanet.set(s.planetKey, s.color);
+    if (s.planetKey !== undefined) sefirahColorByPlanet.set(s.planetKey, s.color);
   }
   const out: Partial<Record<ZodiacSignKey, string>> = {};
   for (const sign of zodiacSigns) {
@@ -33,9 +30,10 @@ const SIGN_COLOR_BY_KEY = (() => {
   return out;
 })();
 
-const SIGN_GLYPH_BY_KEY = Object.fromEntries(
-  zodiacSigns.map((s) => [s.key, s.glyph]),
-) as Record<ZodiacSignKey, string>;
+const SIGN_GLYPH_BY_KEY = Object.fromEntries(zodiacSigns.map((s) => [s.key, s.glyph])) as Record<
+  ZodiacSignKey,
+  string
+>;
 
 /**
  * Room lobby page. Thin renderer over `useLobby(code)` — the hook
@@ -57,6 +55,7 @@ interface LobbyPageProps {
 
 export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   const { code } = params;
+  const router = useRouter();
   const {
     room,
     players,
@@ -71,6 +70,14 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     setZodiacSign,
     setReady,
   } = useLobby(code);
+
+  // When the game starts (host clicks Begin, or this tab was open when
+  // another tab triggered the start), send the player to the play surface.
+  useEffect(() => {
+    if (room?.state === 'playing' || room?.state === 'paused') {
+      router.push(`/rooms/${code}/play`);
+    }
+  }, [room?.state, code, router]);
 
   if (error !== null) {
     return (
@@ -100,12 +107,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     return (
       <main className="min-h-screen p-8 text-center text-veil">
         <h1 className="font-display text-3xl tracking-widest">Lobby — {code}</h1>
-        <p
-          role="status"
-          aria-live="polite"
-          data-loading
-          className="mt-8 text-sm opacity-70"
-        >
+        <p role="status" aria-live="polite" data-loading className="mt-8 text-sm opacity-70">
           Connecting…
         </p>
       </main>
@@ -117,11 +119,8 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   // anon-auth bootstrap and the first players fetch; in that window
   // the lobby renders read-only (no toggle, no picker).
   const currentPlayer =
-    currentPlayerId !== null
-      ? players.find((p) => p.id === currentPlayerId) ?? null
-      : null;
-  const needsSignPick =
-    currentPlayer !== null && currentPlayer.zodiac_sign === null;
+    currentPlayerId !== null ? (players.find((p) => p.id === currentPlayerId) ?? null) : null;
+  const needsSignPick = currentPlayer !== null && currentPlayer.zodiac_sign === null;
 
   // Room is in a non-lobby state (playing or finished). Show a recovery
   // screen: the host can reset back to lobby so players can start again.
@@ -198,9 +197,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
           <h1 className="font-display text-3xl tracking-widest">
             {currentPlayer.nickname} — Choose Sign
           </h1>
-          <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">
-            {code}
-          </p>
+          <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">{code}</p>
         </header>
         <ZodiacSignPicker taken={taken} onPick={handlePick} className="min-h-0 flex-1" />
       </main>
@@ -230,9 +227,7 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
       />
       <header className="mb-6 text-center">
         <h1 className="font-display text-3xl tracking-widest">Lobby</h1>
-        <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">
-          {code}
-        </p>
+        <p className="mt-1 font-display text-2xl tracking-[0.5em] text-illumination">{code}</p>
         <p className="mt-1 text-xs uppercase tracking-widest opacity-50">
           Share this code so others can join
         </p>
@@ -314,10 +309,7 @@ function PresenceAvatarStack({
   if (peers.length === 0 || viewerPlayerId === null) return null;
 
   return (
-    <div
-      className="absolute right-4 top-4 z-20"
-      data-testid="lobby-avatar-stack-wrapper"
-    >
+    <div className="absolute right-4 top-4 z-20" data-testid="lobby-avatar-stack-wrapper">
       <AvatarStack
         peers={peers}
         viewerPlayerId={viewerPlayerId}

@@ -1,11 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from './supabase';
-import {
-  deserializeGameState,
-  type GameStateRow,
-  type SerializedGameState,
-} from './supabase';
+import { deserializeGameState, type GameStateRow, type SerializedGameState } from './supabase';
 import type { GameState } from '@/engine/types';
 
 /**

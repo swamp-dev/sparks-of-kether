@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  pickFraming,
-  sefirahFraming,
-  sefirahFramingPlaceholder,
-} from '../framing';
+import { pickFraming, sefirahFraming, sefirahFramingPlaceholder } from '../framing';
 import { avatarNames } from '../avatar-names';
 import { seededRng } from '@/engine/rng';
 import type { EncounterAvatarKey, ZodiacSignKey } from '../../../types';
@@ -61,9 +57,7 @@ describe('sefirah-framing', () => {
         for (const sign of SIGN_KEYS) {
           expect(sefirahFraming[avatar][sign]).toBeDefined();
         }
-        expect(Object.keys(sefirahFraming[avatar]).sort()).toEqual(
-          [...SIGN_KEYS].sort(),
-        );
+        expect(Object.keys(sefirahFraming[avatar]).sort()).toEqual([...SIGN_KEYS].sort());
       }
     });
 
@@ -101,10 +95,9 @@ describe('sefirah-framing', () => {
         for (const sign of SIGN_KEYS) {
           const variants = sefirahFraming[avatar][sign];
           const unique = new Set(variants);
-          expect(
-            unique.size,
-            `cell ${avatar}/${sign} has duplicate variants`,
-          ).toBe(variants.length);
+          expect(unique.size, `cell ${avatar}/${sign} has duplicate variants`).toBe(
+            variants.length,
+          );
         }
       }
     });
@@ -173,7 +166,8 @@ describe('sefirah-framing', () => {
       // Threshold tightened from >25% to >50% (#498) so a real voice
       // drift trips the canary earlier without becoming brittle.
       const allHermes = SIGN_KEYS.flatMap((s) => sefirahFraming['hod'][s]);
-      const wordPattern = /\b(word|words|name|riddle|answer|tongue|language|speak|cousin|game|wit|message)\b/i;
+      const wordPattern =
+        /\b(word|words|name|riddle|answer|tongue|language|speak|cousin|game|wit|message)\b/i;
       const hits = allHermes.filter((l) => wordPattern.test(l));
       expect(hits.length).toBeGreaterThan(allHermes.length / 2);
     });
@@ -182,7 +176,8 @@ describe('sefirah-framing', () => {
       // Same >50% threshold as the Hermes canary (#498) — half the
       // matrix should reflect the avatar's voice keywords.
       const allDemeter = SIGN_KEYS.flatMap((s) => sefirahFraming['binah'][s]);
-      const weightPattern = /\b(earth|grief|weigh|loss|silent|silence|patience|patient|grain|seed|harvest|sorrow|memory|remember)\b/i;
+      const weightPattern =
+        /\b(earth|grief|weigh|loss|silent|silence|patience|patient|grain|seed|harvest|sorrow|memory|remember)\b/i;
       const hits = allDemeter.filter((l) => weightPattern.test(l));
       expect(hits.length).toBeGreaterThan(allDemeter.length / 2);
     });
@@ -191,7 +186,8 @@ describe('sefirah-framing', () => {
       // Same >50% threshold as the Hermes canary (#498) — half the
       // matrix should reflect the avatar's voice keywords.
       const allAres = SIGN_KEYS.flatMap((s) => sefirahFraming['gevurah'][s]);
-      const martialPattern = /\b(strength|cost|pay|burn|war|blade|sword|shield|wound|battle|enemy|stand|fight)\b/i;
+      const martialPattern =
+        /\b(strength|cost|pay|burn|war|blade|sword|shield|wound|battle|enemy|stand|fight)\b/i;
       const hits = allAres.filter((l) => martialPattern.test(l));
       expect(hits.length).toBeGreaterThan(allAres.length / 2);
     });
@@ -215,10 +211,9 @@ describe('sefirah-framing', () => {
       for (const avatar of AVATAR_KEYS) {
         const placeholder = sefirahFramingPlaceholder[avatar];
         const expectedName = avatarNames[avatar].primary;
-        expect(
-          placeholder,
-          `placeholder for ${avatar} should mention "${expectedName}"`,
-        ).toContain(expectedName);
+        expect(placeholder, `placeholder for ${avatar} should mention "${expectedName}"`).toContain(
+          expectedName,
+        );
       }
     });
   });

@@ -1,11 +1,6 @@
 import { vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type {
-  GameEventRow,
-  GameStateRow,
-  PlayerRow,
-  RoomRow,
-} from '@/lib/supabase';
+import type { GameEventRow, GameStateRow, PlayerRow, RoomRow } from '@/lib/supabase';
 
 /**
  * In-memory Supabase shim for integration-style route tests.
@@ -56,9 +51,7 @@ interface SelectFilters {
 
 function rowsMatching<T>(rows: readonly T[], filters: SelectFilters): T[] {
   return rows.filter((row) =>
-    filters.eqs.every(
-      (f) => (row as unknown as Record<string, unknown>)[f.col] === f.val,
-    ),
+    filters.eqs.every((f) => (row as unknown as Record<string, unknown>)[f.col] === f.val),
   );
 }
 
@@ -128,10 +121,7 @@ function makeFluent(db: InMemoryDb, table: TableName) {
       // game_events.id is numeric and uses the dedicated counter
       // (nextRowId throws for that table). Other tables fall back
       // to a string id when the row doesn't supply one.
-      const assignedId =
-        table === 'game_events'
-          ? db.nextEventId
-          : (row['id'] ?? nextRowId(table));
+      const assignedId = table === 'game_events' ? db.nextEventId : (row['id'] ?? nextRowId(table));
       if (table === 'game_events') {
         db.nextEventId += 1;
       }
@@ -142,9 +132,7 @@ function makeFluent(db: InMemoryDb, table: TableName) {
       };
       // game_states unique constraint on room_id.
       if (table === 'game_states') {
-        const existing = tableRef.find(
-          (r) => r['room_id'] === created['room_id'],
-        );
+        const existing = tableRef.find((r) => r['room_id'] === created['room_id']);
         if (existing !== undefined) {
           const dup = {
             data: null,
@@ -153,8 +141,7 @@ function makeFluent(db: InMemoryDb, table: TableName) {
           // Awaitable + chainable.
           return {
             select: () => ({ single: async () => dup }),
-            then: (resolve: (v: typeof dup) => unknown) =>
-              Promise.resolve(dup).then(resolve),
+            then: (resolve: (v: typeof dup) => unknown) => Promise.resolve(dup).then(resolve),
           };
         }
       }
@@ -179,8 +166,7 @@ function makeFluent(db: InMemoryDb, table: TableName) {
       );
       return {
         select: () => insertSelect,
-        then: (resolve: (v: typeof result) => unknown) =>
-          Promise.resolve(result).then(resolve),
+        then: (resolve: (v: typeof result) => unknown) => Promise.resolve(result).then(resolve),
       };
     },
     update(patch: Record<string, unknown>) {
@@ -192,9 +178,7 @@ function makeFluent(db: InMemoryDb, table: TableName) {
         then(onResolve: (v: unknown) => unknown) {
           const matches = rowsMatching(tableRef, filters);
           for (const row of matches) Object.assign(row, patch);
-          return Promise.resolve({ data: matches, error: null }).then(
-            onResolve,
-          );
+          return Promise.resolve({ data: matches, error: null }).then(onResolve);
         },
       };
       return updateChain;
@@ -219,9 +203,7 @@ function makeFluent(db: InMemoryDb, table: TableName) {
             const idx = tableRef.indexOf(row);
             if (idx >= 0) tableRef.splice(idx, 1);
           }
-          return Promise.resolve({ data: matches, error: null }).then(
-            onResolve,
-          );
+          return Promise.resolve({ data: matches, error: null }).then(onResolve);
         },
       };
       return deleteChain;
@@ -243,10 +225,7 @@ export interface MockClientOptions {
  * the player list created a temporal coupling: the returned identity
  * would depend on insertion order. Tests pass the caller explicitly.
  */
-export function createMockBrowserClient(
-  db: InMemoryDb,
-  opts: MockClientOptions,
-): SupabaseClient {
+export function createMockBrowserClient(db: InMemoryDb, opts: MockClientOptions): SupabaseClient {
   const { callerId } = opts;
   return {
     auth: {

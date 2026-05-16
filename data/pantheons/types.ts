@@ -11,11 +11,7 @@
  * ("pantheon-rotation architecture").
  */
 
-import type {
-  EncounterAvatarKey,
-  SefirahKey,
-  ZodiacSignKey,
-} from '../types';
+import type { EncounterAvatarKey, SefirahKey, ZodiacSignKey } from '../types';
 
 /**
  * Identifier for a single pantheon in the registry. Extensible union —

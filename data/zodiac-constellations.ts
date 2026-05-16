@@ -34,9 +34,7 @@ interface ConstellationEntry {
   readonly edges: ReadonlyArray<readonly [number, number]>;
 }
 
-export const ZODIAC_CONSTELLATIONS: Readonly<
-  Record<ZodiacSignKey, ConstellationEntry>
-> = {
+export const ZODIAC_CONSTELLATIONS: Readonly<Record<ZodiacSignKey, ConstellationEntry>> = {
   // Aries — the "ram's horn" curve. Three principal stars: Hamal,
   // Sheratan, Mesarthim. Two edges form a bent line.
   aries: {

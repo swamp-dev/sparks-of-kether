@@ -10,8 +10,8 @@ import { resolvePlaySeed } from '../play-seed';
 describe('resolvePlaySeed', () => {
   beforeEach(() => {
     vi.spyOn(console, 'info').mockImplementation(() => {
-        /* swallow log during this test */
-      });
+      /* swallow log during this test */
+    });
   });
 
   afterEach(() => {

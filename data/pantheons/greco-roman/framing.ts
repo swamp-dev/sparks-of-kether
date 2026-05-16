@@ -175,7 +175,7 @@ const athena = {
   aries: [
     'Aries. The first move is the answer. Strike — but pick the right edge.',
     'Charge with your eyes open. Lightning needs aim, not just heat.',
-    "Quick blade. Make sure it lands on the question, not next to it.",
+    'Quick blade. Make sure it lands on the question, not next to it.',
   ],
   taurus: [
     "Taurus. Wisdom that takes a season is still wisdom. Don't rush; don't drag.",
@@ -463,7 +463,7 @@ const zeus = {
   leo: [
     'Leo. Throne-gift. Sit large; receive larger.',
     'Solar match. The gift rivals your light. Both shine.',
-    "Centre stage — and centre seat. Take it. The role is yours.",
+    'Centre stage — and centre seat. Take it. The role is yours.',
   ],
   virgo: [
     "Virgo. Don't audit the abundance. Receive first; reconcile after.",
@@ -543,7 +543,7 @@ const selene = {
     "Both/and in the dark. Hold both — but don't choose.",
   ],
   scorpio: [
-    "Scorpio. Compressed sight. Release into the dream — it knows where to go.",
+    'Scorpio. Compressed sight. Release into the dream — it knows where to go.',
     "Hidden image. The dream surfaces it; don't dig.",
     'Underwater sees underwater. The trial trusts the depth.',
   ],
@@ -592,19 +592,13 @@ export const sefirahFraming: FramingMatrix = {
 export const sefirahFramingPlaceholder: FramingPlaceholderMap = {
   chokmah:
     "Athena's spear flashes. Strike before naming — Chokmah answers only the unhesitating eye.",
-  binah:
-    'Demeter remembers every loss. Show patience here, or grief will school you.',
-  chesed:
-    'Zeus opens his hand. Match his abundance, and the path floods with light.',
-  gevurah:
-    'Ares draws the line. Pay it in strength, or take back what you brought.',
-  tiferet:
-    'Apollo holds the chord. Speak true, and the harmony falls toward you.',
-  netzach:
-    'Aphrodite asks the desire beneath the desire. Want well, and the gate yields.',
+  binah: 'Demeter remembers every loss. Show patience here, or grief will school you.',
+  chesed: 'Zeus opens his hand. Match his abundance, and the path floods with light.',
+  gevurah: 'Ares draws the line. Pay it in strength, or take back what you brought.',
+  tiferet: 'Apollo holds the chord. Speak true, and the harmony falls toward you.',
+  netzach: 'Aphrodite asks the desire beneath the desire. Want well, and the gate yields.',
   hod: 'Hermes grins. Wit against wit — outflank me, and the road is yours.',
-  yesod:
-    'Selene closes the curtain. Dream past the veil, or wake where you started.',
+  yesod: 'Selene closes the curtain. Dream past the veil, or wake where you started.',
 } as const;
 
 // ──────────────── Picker ────────────────
@@ -628,9 +622,7 @@ export function pickFraming(
   }
   const variants = cell[sign];
   if (variants === undefined || variants.length === 0) {
-    throw new Error(
-      `pickFraming: no variants for sefirah=${sefirah} sign=${sign}`,
-    );
+    throw new Error(`pickFraming: no variants for sefirah=${sefirah} sign=${sign}`);
   }
   const idx = rng.int(0, variants.length - 1);
   // Non-null assertion safe: idx is in [0, length-1] and arrays of

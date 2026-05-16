@@ -91,10 +91,7 @@ describe('hebrew letters', () => {
   });
 
   it('has 3 mothers, 7 doubles, 12 simples', () => {
-    const counts = { mother: 0, double: 0, simple: 0 } satisfies Record<
-      LetterClass,
-      number
-    >;
+    const counts = { mother: 0, double: 0, simple: 0 } satisfies Record<LetterClass, number>;
     for (const l of letters) {
       counts[l.class] += 1;
     }
@@ -209,4 +206,3 @@ describe('paths', () => {
     }
   });
 });
-

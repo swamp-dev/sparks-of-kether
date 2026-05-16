@@ -207,6 +207,13 @@ export interface UseTurnReturn {
    * `endTurn` then unblocks and the seat advances.
    */
   readonly discard: (arcanum: number) => GameState;
+  /**
+   * Encounter-burn forced discard: shed one card from the active
+   * player's hand before the die is rolled when they have burned
+   * card(s) during encounter prep. The UI (EncounterScreen) gates
+   * invocation; the reducer no-ops if the card is not in hand.
+   */
+  readonly encounterBurnDiscard: (arcanum: number) => GameState;
   readonly endTurn: () => void;
   /** Force a state replacement — used when an external action mutates state out-of-band. */
   readonly setState: (s: GameState) => void;
@@ -245,18 +252,14 @@ export interface UseTurnReturn {
    * the hook can't determine an actor (no current witness or no
    * `selfPlayerId` in multiplayer mode).
    */
-  readonly ketherWitnessPlay: (
-    arcanum: number,
-  ) => Result<GameState, KetherRejection> | undefined;
+  readonly ketherWitnessPlay: (arcanum: number) => Result<GameState, KetherRejection> | undefined;
 
   /**
    * Active witness passes their turn (+1 Separation; cap
    * `⌈personalQueueLength / 2⌉`). Symmetric with `ketherWitnessPlay`
    * for actor resolution.
    */
-  readonly ketherWitnessPass: () =>
-    | Result<GameState, KetherRejection>
-    | undefined;
+  readonly ketherWitnessPass: () => Result<GameState, KetherRejection> | undefined;
 
   /**
    * Stage one of `playerId`'s held Sparks for the closure window
@@ -329,9 +332,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const { state } = snapshot;
   const { phase } = state;
 
-  const activePlayerIndex = state.players.findIndex(
-    (p) => p.id === state.activePlayerId,
-  );
+  const activePlayerIndex = state.players.findIndex((p) => p.id === state.activePlayerId);
 
   const challengeSubPhase: ChallengeSubPhase | undefined =
     state.phase === 'challenge' ? state.challengeSubPhase : undefined;
@@ -366,14 +367,8 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   }, [snapshot, state, opts.rng]);
 
   const prepAddModifier = useCallback(
-    (
-      modifier: PrepModifier,
-    ): Result<TurnReducerSuccess, TurnReducerError> => {
-      const result = turnReducer(
-        snapshot,
-        { kind: 'prep-add-modifier', modifier },
-        opts.rng,
-      );
+    (modifier: PrepModifier): Result<TurnReducerSuccess, TurnReducerError> => {
+      const result = turnReducer(snapshot, { kind: 'prep-add-modifier', modifier }, opts.rng);
       if (!result.ok) return result;
       setSnapshot(result.value.next);
       return result;
@@ -382,14 +377,8 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   );
 
   const prepRemoveModifier = useCallback(
-    (
-      modifier: PrepModifier,
-    ): Result<TurnReducerSuccess, TurnReducerError> => {
-      const result = turnReducer(
-        snapshot,
-        { kind: 'prep-remove-modifier', modifier },
-        opts.rng,
-      );
+    (modifier: PrepModifier): Result<TurnReducerSuccess, TurnReducerError> => {
+      const result = turnReducer(snapshot, { kind: 'prep-remove-modifier', modifier }, opts.rng);
       if (!result.ok) return result;
       setSnapshot(result.value.next);
       return result;
@@ -442,35 +431,26 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   );
 
   const prepConfirm = useCallback(
-    (
-      sefirah: SefirahKey,
-      outcome?: CheckOutcome,
-    ): Result<ChallengeSuccess, ChallengeRejection> =>
+    (sefirah: SefirahKey, outcome?: CheckOutcome): Result<ChallengeSuccess, ChallengeRejection> =>
       dispatchPrepConfirm(sefirah, outcome, undefined),
     [dispatchPrepConfirm],
   );
 
-  const reactRetry = useCallback(
-    (): Result<TurnReducerSuccess, TurnReducerError> => {
-      const result = turnReducer(snapshot, { kind: 'react-retry' }, opts.rng);
-      if (!result.ok) return result;
-      setSnapshot(result.value.next);
-      return result;
-    },
-    [snapshot, opts.rng],
-  );
+  const reactRetry = useCallback((): Result<TurnReducerSuccess, TurnReducerError> => {
+    const result = turnReducer(snapshot, { kind: 'react-retry' }, opts.rng);
+    if (!result.ok) return result;
+    setSnapshot(result.value.next);
+    return result;
+  }, [snapshot, opts.rng]);
 
   // #385: pass-path Continue out of challenge.react. Mirrors
   // `reactRetry`'s shape — same return type, same setSnapshot-on-ok.
-  const reactContinue = useCallback(
-    (): Result<TurnReducerSuccess, TurnReducerError> => {
-      const result = turnReducer(snapshot, { kind: 'react-continue' }, opts.rng);
-      if (!result.ok) return result;
-      setSnapshot(result.value.next);
-      return result;
-    },
-    [snapshot, opts.rng],
-  );
+  const reactContinue = useCallback((): Result<TurnReducerSuccess, TurnReducerError> => {
+    const result = turnReducer(snapshot, { kind: 'react-continue' }, opts.rng);
+    if (!result.ok) return result;
+    setSnapshot(result.value.next);
+    return result;
+  }, [snapshot, opts.rng]);
 
   /**
    * Hot-seat one-click wrapper. The modal hands us pre-built
@@ -504,9 +484,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       // a card-burn synthesis bumps into a sub-phase guard mid-way.
       let working: TurnSnapshot = snapshot;
 
-      const player = working.state.players.find(
-        (p) => p.id === working.state.activePlayerId,
-      );
+      const player = working.state.players.find((p) => p.id === working.state.activePlayerId);
       if (!player) {
         return { ok: false, reason: SYNTHETIC_CHALLENGE_REJECTION };
       }
@@ -577,9 +555,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
           kind: 'prep-confirm',
           sefirah,
           ...(outcome !== undefined ? { outcome } : {}),
-          ...(modifiers.assistStats.length > 0
-            ? { directAssistStats: modifiers.assistStats }
-            : {}),
+          ...(modifiers.assistStats.length > 0 ? { directAssistStats: modifiers.assistStats } : {}),
         },
         opts.rng,
       );
@@ -623,11 +599,17 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
 
   const discard = useCallback(
     (arcanum: number): GameState => {
-      const result = turnReducer(
-        snapshot,
-        { kind: 'discard', arcanum },
-        opts.rng,
-      );
+      const result = turnReducer(snapshot, { kind: 'discard', arcanum }, opts.rng);
+      if (!result.ok) return state;
+      setSnapshot(result.value.next);
+      return result.value.next.state;
+    },
+    [snapshot, state, opts.rng],
+  );
+
+  const encounterBurnDiscard = useCallback(
+    (arcanum: number): GameState => {
+      const result = turnReducer(snapshot, { kind: 'encounter-burn-discard', arcanum }, opts.rng);
       if (!result.ok) return state;
       setSnapshot(result.value.next);
       return result.value.next.state;
@@ -643,11 +625,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
 
   const replaceState = useCallback(
     (s: GameState): void => {
-      const result = turnReducer(
-        snapshot,
-        { kind: 'replace-state', state: s },
-        opts.rng,
-      );
+      const result = turnReducer(snapshot, { kind: 'replace-state', state: s }, opts.rng);
       if (!result.ok) return;
       setSnapshot(result.value.next);
     },
@@ -699,19 +677,14 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const witnessPointer = currentWitnessPlayerId(state);
 
   const ketherWitnessPlay = useCallback(
-    (
-      arcanum: number,
-    ): Result<GameState, KetherRejection> | undefined => {
+    (arcanum: number): Result<GameState, KetherRejection> | undefined => {
       // Pick the actor: in multiplayer the caller's selfPlayerId IS
       // the actor (the wire layer will reject if it isn't the current
       // witness; the local optimistic apply will likewise reject via
       // engine kether-not-your-turn). In hot-seat we use the engine
       // pointer because there's only one keyboard — the round-robin
       // is a UI focus, not a security boundary.
-      const actor =
-        dispatch !== undefined
-          ? selfPlayerId
-          : currentWitnessPlayerId(state);
+      const actor = dispatch !== undefined ? selfPlayerId : currentWitnessPlayerId(state);
       if (actor === undefined || actor === null) return undefined;
       const result = ketherPlayCard(state, { playerId: actor, arcanum });
       if (!result.ok) return result;
@@ -724,29 +697,20 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [state, dispatch, selfPlayerId],
   );
 
-  const ketherWitnessPass = useCallback(
-    (): Result<GameState, KetherRejection> | undefined => {
-      const actor =
-        dispatch !== undefined
-          ? selfPlayerId
-          : currentWitnessPlayerId(state);
-      if (actor === undefined || actor === null) return undefined;
-      const result = ketherPassCard(state, { playerId: actor });
-      if (!result.ok) return result;
-      setSnapshot({ state: result.value });
-      if (dispatch !== undefined) {
-        dispatch({ kind: 'kether-witness-pass', playerId: actor });
-      }
-      return result;
-    },
-    [state, dispatch, selfPlayerId],
-  );
+  const ketherWitnessPass = useCallback((): Result<GameState, KetherRejection> | undefined => {
+    const actor = dispatch !== undefined ? selfPlayerId : currentWitnessPlayerId(state);
+    if (actor === undefined || actor === null) return undefined;
+    const result = ketherPassCard(state, { playerId: actor });
+    if (!result.ok) return result;
+    setSnapshot({ state: result.value });
+    if (dispatch !== undefined) {
+      dispatch({ kind: 'kether-witness-pass', playerId: actor });
+    }
+    return result;
+  }, [state, dispatch, selfPlayerId]);
 
   const ketherCloseStageSpark = useCallback(
-    (
-      playerId: string,
-      sefirah: SefirahKey,
-    ): Result<GameState, KetherRejection> => {
+    (playerId: string, sefirah: SefirahKey): Result<GameState, KetherRejection> => {
       const result = ketherStageSpark(state, { playerId, sefirah });
       if (!result.ok) return result;
       setSnapshot({ state: result.value });
@@ -763,10 +727,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   );
 
   const ketherCloseUnstageSpark = useCallback(
-    (
-      playerId: string,
-      sefirah: SefirahKey,
-    ): Result<GameState, KetherRejection> => {
+    (playerId: string, sefirah: SefirahKey): Result<GameState, KetherRejection> => {
       const result = ketherUnstageSpark(state, { playerId, sefirah });
       if (!result.ok) return result;
       setSnapshot({ state: result.value });
@@ -782,37 +743,31 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [state, dispatch],
   );
 
-  const thresholdConfirm = useCallback(
-    (): KetherConfirmResult | undefined => {
-      // Implicit actor: multiplayer uses selfPlayerId; hot-seat uses
-      // state.activePlayerId (the seat that pressed the confirm
-      // button). Either is acceptable to the engine — `ketherConfirmClosure`
-      // doesn't enforce a per-actor rule (any player can close, per
-      // § 3.3); the playerId field is for audit/logging. The hook-init
-      // guard above guarantees that when dispatch is set, selfPlayerId
-      // is also set — so `actor` is never `undefined` in multiplayer
-      // (the early-return below is hot-seat-only defense for an
-      // engine-corrupted state with `activePlayerId` unset).
-      const actor =
-        dispatch !== undefined ? selfPlayerId : state.activePlayerId;
-      if (actor === undefined) return undefined;
-      const result = ketherConfirmClosure(state, { playerId: actor });
-      if (!result.ok) return result;
-      setSnapshot({ state: result.value });
-      if (dispatch !== undefined) {
-        dispatch({ kind: 'threshold-confirm', playerId: actor });
-      }
-      return result;
-    },
-    [state, dispatch, selfPlayerId],
-  );
+  const thresholdConfirm = useCallback((): KetherConfirmResult | undefined => {
+    // Implicit actor: multiplayer uses selfPlayerId; hot-seat uses
+    // state.activePlayerId (the seat that pressed the confirm
+    // button). Either is acceptable to the engine — `ketherConfirmClosure`
+    // doesn't enforce a per-actor rule (any player can close, per
+    // § 3.3); the playerId field is for audit/logging. The hook-init
+    // guard above guarantees that when dispatch is set, selfPlayerId
+    // is also set — so `actor` is never `undefined` in multiplayer
+    // (the early-return below is hot-seat-only defense for an
+    // engine-corrupted state with `activePlayerId` unset).
+    const actor = dispatch !== undefined ? selfPlayerId : state.activePlayerId;
+    if (actor === undefined) return undefined;
+    const result = ketherConfirmClosure(state, { playerId: actor });
+    if (!result.ok) return result;
+    setSnapshot({ state: result.value });
+    if (dispatch !== undefined) {
+      dispatch({ kind: 'threshold-confirm', playerId: actor });
+    }
+    return result;
+  }, [state, dispatch, selfPlayerId]);
 
   // Host-skip is a multiplayer-only affordance — no local engine
   // apply; the server runs the forced pass / play on receipt. The
   // hot-seat hook leaves this `undefined` (see UseTurnReturn comment).
-  const ketherHostSkipWitness = useMemo<
-    ((targetPlayerId: string) => void) | undefined
-  >(() => {
+  const ketherHostSkipWitness = useMemo<((targetPlayerId: string) => void) | undefined>(() => {
     if (dispatch === undefined || selfPlayerId === undefined) {
       return undefined;
     }
@@ -843,6 +798,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactContinue,
       acceptChallengeSetback,
       discard,
+      encounterBurnDiscard,
       endTurn,
       setState: replaceState,
       // K4 (#352) — Kether ritual adapter.
@@ -857,9 +813,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       // succeeds whether the key is absent or has value `undefined`.
       // Multiplayer surfaces the function; hot-seat doesn't have the
       // key. Tests rely on this dichotomy.
-      ...(ketherHostSkipWitness !== undefined
-        ? { ketherHostSkipWitness }
-        : {}),
+      ...(ketherHostSkipWitness !== undefined ? { ketherHostSkipWitness } : {}),
     }),
     [
       state,
@@ -878,6 +832,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactContinue,
       acceptChallengeSetback,
       discard,
+      encounterBurnDiscard,
       endTurn,
       replaceState,
       witnessPointer,

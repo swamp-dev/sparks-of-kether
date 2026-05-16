@@ -25,12 +25,7 @@ import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 // Net-neutral or mildly positive picks per `test/fixtures.ts`
 // convention — we sample 4 distinct signs without replacement so
 // generated states satisfy `makeFullGame`'s uniqueness check.
-const SAMPLE_ZODIAC_SIGNS: readonly ZodiacSignKey[] = [
-  'aries',
-  'leo',
-  'libra',
-  'cancer',
-];
+const SAMPLE_ZODIAC_SIGNS: readonly ZodiacSignKey[] = ['aries', 'leo', 'libra', 'cancer'];
 
 const ALL_CLEARABLE_SEFIROT: readonly SefirahKey[] = [
   'chokmah',
@@ -116,61 +111,53 @@ describe('property: applyMove does not mutate input state', () => {
 describe('property: resolveChallenge with a passing outcome increments illumination by exactly 1', () => {
   it('holds across generated states + sefirot', () => {
     fc.assert(
-      fc.property(
-        gameStateArb(),
-        fc.constantFrom(...ALL_CLEARABLE_SEFIROT),
-        (initial, sefirah) => {
-          // Place the active player at the chosen sefirah and clear
-          // the precondition (hand requirements, etc.) to ensure the
-          // challenge can resolve. We force `outcome.pass = true`
-          // so the property is about the side effect, not the roll.
-          const activeId = initial.activePlayerId;
-          const state: GameState = {
-            ...initial,
-            players: initial.players.map((p) =>
-              p.id === activeId ? { ...p, position: sefirah } : p,
-            ),
-          };
-          const passingOutcome: CheckOutcome = {
-            rolled: 20,
-            statContribution: 12,
-            modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
-            total: 32,
-            effectiveDC: 10,
-            pass: true,
-          };
-          const result = resolveChallenge({
-            state,
-            playerId: activeId,
-            sefirah,
-            modifiers: {
-              assistStats: [],
-              cardBurns: 0,
-              sparkBurns: 0,
-              shortcutPenalty: false,
-            },
-            rng: seededRng(1),
-            outcome: passingOutcome,
-          });
-          if (!result.ok) {
-            // Skip cases where the engine rejects the resolve for a
-            // reason orthogonal to the property (e.g. already cleared).
-            // The escape list MUST match `ChallengeRejection['kind']`
-            // in `engine/checks.ts:48-58`. A drift here gives false
-            // confidence — the test would interpret an unexpected
-            // rejection as a real failure of the property.
-            expect([
-              'unknown-player',
-              'no-standard-check',
-              'already-cleared',
-            ]).toContain(result.reason.kind);
-            return;
-          }
-          expect(result.value.newState.illumination).toBe(
-            state.illumination + 1,
+      fc.property(gameStateArb(), fc.constantFrom(...ALL_CLEARABLE_SEFIROT), (initial, sefirah) => {
+        // Place the active player at the chosen sefirah and clear
+        // the precondition (hand requirements, etc.) to ensure the
+        // challenge can resolve. We force `outcome.pass = true`
+        // so the property is about the side effect, not the roll.
+        const activeId = initial.activePlayerId;
+        const state: GameState = {
+          ...initial,
+          players: initial.players.map((p) =>
+            p.id === activeId ? { ...p, position: sefirah } : p,
+          ),
+        };
+        const passingOutcome: CheckOutcome = {
+          rolled: 20,
+          statContribution: 12,
+          modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+          total: 32,
+          effectiveDC: 10,
+          pass: true,
+        };
+        const result = resolveChallenge({
+          state,
+          playerId: activeId,
+          sefirah,
+          modifiers: {
+            assistStats: [],
+            cardBurns: 0,
+            sparkBurns: 0,
+            shortcutPenalty: false,
+          },
+          rng: seededRng(1),
+          outcome: passingOutcome,
+        });
+        if (!result.ok) {
+          // Skip cases where the engine rejects the resolve for a
+          // reason orthogonal to the property (e.g. already cleared).
+          // The escape list MUST match `ChallengeRejection['kind']`
+          // in `engine/checks.ts:48-58`. A drift here gives false
+          // confidence — the test would interpret an unexpected
+          // rejection as a real failure of the property.
+          expect(['unknown-player', 'no-standard-check', 'already-cleared']).toContain(
+            result.reason.kind,
           );
-        },
-      ),
+          return;
+        }
+        expect(result.value.newState.illumination).toBe(state.illumination + 1);
+      }),
       { numRuns: 100 },
     );
   });
@@ -234,41 +221,37 @@ const SHORTCUT_SCENARIOS: readonly ShortcutScenario[] = [
 describe('property: shortcut acceptSetback rolls active player back to path origin', () => {
   it('holds across all three shortcut paths in either direction', () => {
     fc.assert(
-      fc.property(
-        gameStateArb(),
-        fc.constantFrom(...SHORTCUT_SCENARIOS),
-        (initial, scenario) => {
-          // Place the active player at the "arrived" endpoint with the
-          // matching `lastArrivalPathNumber`. Other players are
-          // untouched — the rollback property is per-player.
-          const activeId = initial.activePlayerId;
-          const state: GameState = {
-            ...initial,
-            players: initial.players.map((p) =>
-              p.id === activeId
-                ? {
-                    ...p,
-                    position: scenario.arrivedAt,
-                    lastArrivalPathNumber: scenario.pathNumber,
-                  }
-                : p,
-            ),
-          };
+      fc.property(gameStateArb(), fc.constantFrom(...SHORTCUT_SCENARIOS), (initial, scenario) => {
+        // Place the active player at the "arrived" endpoint with the
+        // matching `lastArrivalPathNumber`. Other players are
+        // untouched — the rollback property is per-player.
+        const activeId = initial.activePlayerId;
+        const state: GameState = {
+          ...initial,
+          players: initial.players.map((p) =>
+            p.id === activeId
+              ? {
+                  ...p,
+                  position: scenario.arrivedAt,
+                  lastArrivalPathNumber: scenario.pathNumber,
+                }
+              : p,
+          ),
+        };
 
-          const next = acceptSetback(state, {
-            playerId: activeId,
-            sefirah: scenario.arrivedAt,
-            shortcut: true,
-          });
+        const next = acceptSetback(state, {
+          playerId: activeId,
+          sefirah: scenario.arrivedAt,
+          shortcut: true,
+        });
 
-          const movedPlayer = next.players.find((p) => p.id === activeId);
-          // Position rolled back to the OTHER endpoint of the path.
-          expect(movedPlayer?.position).toBe(scenario.origin);
-          // lastArrivalPathNumber cleared so a subsequent challenge
-          // at the origin doesn't re-read the old path's pillarsCrossed.
-          expect(movedPlayer?.lastArrivalPathNumber).toBeUndefined();
-        },
-      ),
+        const movedPlayer = next.players.find((p) => p.id === activeId);
+        // Position rolled back to the OTHER endpoint of the path.
+        expect(movedPlayer?.position).toBe(scenario.origin);
+        // lastArrivalPathNumber cleared so a subsequent challenge
+        // at the origin doesn't re-read the old path's pillarsCrossed.
+        expect(movedPlayer?.lastArrivalPathNumber).toBeUndefined();
+      }),
       { numRuns: 100 },
     );
   });
@@ -299,10 +282,7 @@ describe('property: Kether ritual transitions to close iff all queues empty', ()
           // `makeWitnessState` (in kether.test.ts) is local; reproduce
           // the minimal shape here so the property is self-contained.
           const p1Hand = Array.from({ length: p1Cards }, (_, i) => 11 + i);
-          const p2Hand = Array.from(
-            { length: p2Cards },
-            (_, i) => 11 + p1Cards + i,
-          );
+          const p2Hand = Array.from({ length: p2Cards }, (_, i) => 11 + p1Cards + i);
           const players = [
             makePlayer({ id: 'p1', position: 'kether', hand: p1Hand }),
             makePlayer({ id: 'p2', position: 'kether', hand: p2Hand }),
@@ -339,10 +319,7 @@ describe('property: Kether ritual transitions to close iff all queues empty', ()
             // a silent break would let the property's outer assertion
             // pass on degenerate states (no remaining cards, still
             // witnessing) instead of surfacing the bug.
-            const stepTotalRemaining = state.players.reduce(
-              (sum, p) => sum + p.hand.length,
-              0,
-            );
+            const stepTotalRemaining = state.players.reduce((sum, p) => sum + p.hand.length, 0);
             if (
               state.phase === 'kether' &&
               state.ketherRitual?.subPhase === 'witness' &&
@@ -352,9 +329,7 @@ describe('property: Kether ritual transitions to close iff all queues empty', ()
                 'witness sub-phase with zero remaining cards — advance logic failed to transition to close',
               );
             }
-            const current = state.ketherRitual.witnessOrder[
-              state.ketherRitual.witnessTurnIndex
-            ];
+            const current = state.ketherRitual.witnessOrder[state.ketherRitual.witnessTurnIndex];
             if (current === undefined) break;
             const player = state.players.find((p) => p.id === current);
             if (player === undefined || player.hand.length === 0) {
@@ -363,9 +338,7 @@ describe('property: Kether ritual transitions to close iff all queues empty', ()
               break;
             }
             const wantsPass = passCoinFlips[coinIdx++ % passCoinFlips.length];
-            const cap = Math.ceil(
-              (state.ketherRitual.personalQueueLengths[current] ?? 0) / 2,
-            );
+            const cap = Math.ceil((state.ketherRitual.personalQueueLengths[current] ?? 0) / 2);
             const passed = state.ketherRitual.passCounts[current] ?? 0;
             const canPass = passed < cap;
             const arcanum = player.hand[0]!;
@@ -379,9 +352,7 @@ describe('property: Kether ritual transitions to close iff all queues empty', ()
             if (!result.ok) {
               // A rejection here would mean a logic bug — the
               // property should never feed an illegal action.
-              throw new Error(
-                `unexpected rejection: ${result.reason.kind}`,
-              );
+              throw new Error(`unexpected rejection: ${result.reason.kind}`);
             }
             state = result.value;
           }
@@ -389,18 +360,14 @@ describe('property: Kether ritual transitions to close iff all queues empty', ()
           // Final state: either we're in `'close'` (or the post-confirm
           // `'end'`, if a separation overflow exited early), and in
           // either case every still-on-the-field queue is empty.
-          const totalRemaining = state.players.reduce(
-            (sum, p) => sum + p.hand.length,
-            0,
-          );
+          const totalRemaining = state.players.reduce((sum, p) => sum + p.hand.length, 0);
           if (state.ketherRitual?.subPhase === 'close') {
             expect(totalRemaining).toBe(0);
           } else {
             // Either ritual moved past close (phase: 'end' on overflow)
             // or we never finished the queue — but we must NOT be
             // stuck in 'witness' with no remaining cards.
-            const stillWitnessing =
-              state.ketherRitual?.subPhase === 'witness';
+            const stillWitnessing = state.ketherRitual?.subPhase === 'witness';
             if (stillWitnessing) {
               expect(totalRemaining).toBeGreaterThan(0);
             }
@@ -420,33 +387,29 @@ describe('property: applyMove conserves total card count', () => {
     // moves from hand to discard. Total card count across all pools
     // never changes; per-pool changes are exactly +1 / -1.
     fc.assert(
-      fc.property(
-        gameStateArb(),
-        fc.integer({ min: 11, max: 32 }),
-        (state, pathNumber) => {
-          const totalBefore =
-            state.deck.length +
-            state.discardPile.length +
-            state.players.reduce((sum, p) => sum + p.hand.length, 0);
-          const result = applyMove(state, state.activePlayerId, pathNumber);
-          if (!result.ok) {
-            // Rejected moves do not mutate state — total count
-            // unchanged trivially. Skip detailed assertions; the
-            // immutability property already covers this case.
-            return;
-          }
-          const next = result.value;
-          const totalAfter =
-            next.deck.length +
-            next.discardPile.length +
-            next.players.reduce((sum, p) => sum + p.hand.length, 0);
-          expect(totalAfter).toBe(totalBefore);
-          // Deck does not change (movement does not draw).
-          expect(next.deck.length).toBe(state.deck.length);
-          // Discard grows by exactly one (the played card).
-          expect(next.discardPile.length).toBe(state.discardPile.length + 1);
-        },
-      ),
+      fc.property(gameStateArb(), fc.integer({ min: 11, max: 32 }), (state, pathNumber) => {
+        const totalBefore =
+          state.deck.length +
+          state.discardPile.length +
+          state.players.reduce((sum, p) => sum + p.hand.length, 0);
+        const result = applyMove(state, state.activePlayerId, pathNumber);
+        if (!result.ok) {
+          // Rejected moves do not mutate state — total count
+          // unchanged trivially. Skip detailed assertions; the
+          // immutability property already covers this case.
+          return;
+        }
+        const next = result.value;
+        const totalAfter =
+          next.deck.length +
+          next.discardPile.length +
+          next.players.reduce((sum, p) => sum + p.hand.length, 0);
+        expect(totalAfter).toBe(totalBefore);
+        // Deck does not change (movement does not draw).
+        expect(next.deck.length).toBe(state.deck.length);
+        // Discard grows by exactly one (the played card).
+        expect(next.discardPile.length).toBe(state.discardPile.length + 1);
+      }),
       { numRuns: 100 },
     );
   });

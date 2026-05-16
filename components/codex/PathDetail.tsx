@@ -1,10 +1,5 @@
 import Link from 'next/link';
-import {
-  arcanumByNumber,
-  letterByKey,
-  pathByNumber,
-  sefirahByKey,
-} from '@/data';
+import { arcanumByNumber, letterByKey, pathByNumber, sefirahByKey } from '@/data';
 import { pathCodex, type PathStructuralRole } from '@/data/codex-content';
 
 const STRUCTURAL_LABEL: Record<NonNullable<PathStructuralRole>, string> = {
@@ -48,29 +43,20 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
   const toSefirah = sefirahByKey(path.to);
 
   return (
-    <article
-      data-codex-path={pathNumber}
-      className="mx-auto max-w-5xl px-6 py-12 text-veil"
-    >
+    <article data-codex-path={pathNumber} className="mx-auto max-w-5xl px-6 py-12 text-veil">
       <header className="mb-10 flex flex-col items-center gap-3 rounded-lg border border-veil/15 p-8 text-center">
         <div className="text-xs uppercase tracking-widest opacity-70">
           Path {pathNumber} · <Translit sefirah={fromSefirah.key} /> ↔{' '}
           <Translit sefirah={toSefirah.key} />
         </div>
-        <h1 className="font-display text-5xl tracking-widest">
-          Path {pathNumber}
-        </h1>
+        <h1 className="font-display text-5xl tracking-widest">Path {pathNumber}</h1>
         <div className="flex items-center justify-center gap-3">
           <span lang="he" dir="rtl" className="font-hebrew text-5xl">
             {letter.glyph}
           </span>
-          <span className="font-display text-2xl tracking-widest opacity-80">
-            {letter.name}
-          </span>
+          <span className="font-display text-2xl tracking-widest opacity-80">{letter.name}</span>
         </div>
-        <p className="max-w-prose text-base italic opacity-80">
-          {codex.note}
-        </p>
+        <p className="max-w-prose text-base italic opacity-80">{codex.note}</p>
         {codex.structuralRole !== null ? (
           <span
             data-structural-role={codex.structuralRole}
@@ -82,14 +68,8 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
       </header>
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-[3fr_2fr]">
-        <section
-          aria-labelledby="english-pane-heading"
-          className="space-y-6"
-        >
-          <h2
-            id="english-pane-heading"
-            className="font-display text-2xl tracking-widest"
-          >
+        <section aria-labelledby="english-pane-heading" className="space-y-6">
+          <h2 id="english-pane-heading" className="font-display text-2xl tracking-widest">
             Letter &amp; arcanum
           </h2>
 
@@ -103,15 +83,11 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
             </dd>
             <dt className="font-display tracking-widest opacity-70">Meaning</dt>
             <dd>{letter.meaning}</dd>
-            <dt className="font-display tracking-widest opacity-70">
-              Gematria
-            </dt>
+            <dt className="font-display tracking-widest opacity-70">Gematria</dt>
             <dd className="tabular-nums">{letter.value}</dd>
             <dt className="font-display tracking-widest opacity-70">Class</dt>
             <dd className="capitalize">{letter.class}</dd>
-            <dt className="font-display tracking-widest opacity-70">
-              Attribution
-            </dt>
+            <dt className="font-display tracking-widest opacity-70">Attribution</dt>
             <dd className="capitalize">
               {path.attribution.kind}: {path.attribution.value}
             </dd>
@@ -125,10 +101,7 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
             aria-labelledby="arcanum-heading"
             className="space-y-3 rounded border border-veil/10 p-5"
           >
-            <h3
-              id="arcanum-heading"
-              className="font-display text-lg tracking-widest"
-            >
+            <h3 id="arcanum-heading" className="font-display text-lg tracking-widest">
               Major Arcanum
             </h3>
             <p className="text-sm leading-relaxed">
@@ -138,8 +111,8 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
               >
                 {arc.name}
               </Link>{' '}
-              walks this path. Playing the card in the team&rsquo;s hand is
-              what travels the path on the board.
+              walks this path. Playing the card in the team&rsquo;s hand is what travels the path on
+              the board.
             </p>
             <p className="text-xs leading-relaxed opacity-70">
               Keywords: {arc.keywords.join(', ')}.
@@ -152,10 +125,7 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
             aria-labelledby="endpoints-heading"
             className="space-y-3 rounded border border-veil/10 p-5"
           >
-            <h2
-              id="endpoints-heading"
-              className="font-display text-lg tracking-widest opacity-80"
-            >
+            <h2 id="endpoints-heading" className="font-display text-lg tracking-widest opacity-80">
               Endpoints
             </h2>
             <ul className="space-y-2 text-sm">
@@ -183,8 +153,8 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
               </li>
             </ul>
             <p className="text-xs leading-relaxed opacity-70">
-              Travel in either direction is legal. The traditional
-              numbering is top-down; the game is an ascent.
+              Travel in either direction is legal. The traditional numbering is top-down; the game
+              is an ascent.
             </p>
           </section>
         </aside>
@@ -195,12 +165,8 @@ export function PathDetail({ pathNumber }: PathDetailProps): JSX.Element {
           ← Back to Codex
         </Link>
         <span className="mx-3 opacity-40">·</span>
-        From{' '}
-        <code className="rounded bg-white/5 px-1">reference/paths.md</code> and{' '}
-        <code className="rounded bg-white/5 px-1">
-          reference/hebrew-letters.md
-        </code>
-        .
+        From <code className="rounded bg-white/5 px-1">reference/paths.md</code> and{' '}
+        <code className="rounded bg-white/5 px-1">reference/hebrew-letters.md</code>.
       </footer>
     </article>
   );

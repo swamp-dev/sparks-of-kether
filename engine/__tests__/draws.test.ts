@@ -19,10 +19,7 @@ import { makePlayer, makeState } from '@/test/fixtures';
 describe('drawNCards — over-cap mode for Meditate (#291)', () => {
   it('lands all MEDITATE_DRAW (2) cards in hand when starting at HAND_CAP', () => {
     const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
-    const state = makeState(
-      {},
-      { players: [player], deck: [10, 11, 12], discardPile: [] },
-    );
+    const state = makeState({}, { players: [player], deck: [10, 11, 12], discardPile: [] });
     expect(player.hand.length).toBe(HAND_CAP);
     const after = drawNCards(state, 'p1', MEDITATE_DRAW, HAND_CAP, seededRng(1), {
       overCap: true,
@@ -36,10 +33,7 @@ describe('drawNCards — over-cap mode for Meditate (#291)', () => {
     // Pin: existing callers (end-of-turn `drawToHand`) MUST continue
     // to honour the hardCap. The over-cap flag is opt-in.
     const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
-    const state = makeState(
-      {},
-      { players: [player], deck: [10, 11], discardPile: [] },
-    );
+    const state = makeState({}, { players: [player], deck: [10, 11], discardPile: [] });
     const after = drawNCards(state, 'p1', 2, HAND_CAP, seededRng(1));
     expect(after.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 6]);
     expect(after.deck).toEqual([10, 11]);
@@ -47,10 +41,7 @@ describe('drawNCards — over-cap mode for Meditate (#291)', () => {
 
   it('overCap mode still recycles discard when deck empties mid-fill', () => {
     const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
-    const state = makeState(
-      {},
-      { players: [player], deck: [10], discardPile: [20, 21, 22] },
-    );
+    const state = makeState({}, { players: [player], deck: [10], discardPile: [20, 21, 22] });
     const after = drawNCards(state, 'p1', 2, HAND_CAP, seededRng(7), {
       overCap: true,
     });

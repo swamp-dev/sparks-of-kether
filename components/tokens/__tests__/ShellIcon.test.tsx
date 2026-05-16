@@ -40,11 +40,8 @@ describe('ShellIcon', () => {
     expect(new Set(html).size).toBe(10);
   });
 
-  it.each(sefirot.map((s) => [s.key] as const))(
-    'matches active snapshot for %s',
-    (key) => {
-      const { container } = render(<ShellIcon sefirah={key} status="active" />);
-      expect(container.firstChild).toMatchSnapshot();
-    },
-  );
+  it.each(sefirot.map((s) => [s.key] as const))('matches active snapshot for %s', (key) => {
+    const { container } = render(<ShellIcon sefirah={key} status="active" />);
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

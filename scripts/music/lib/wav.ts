@@ -16,9 +16,7 @@ export type StereoBuffer = {
 export function encodeWav(buffer: StereoBuffer): Uint8Array {
   const { left, right, sampleRate } = buffer;
   if (left.length !== right.length) {
-    throw new Error(
-      `WAV channel length mismatch: left=${left.length} right=${right.length}`,
-    );
+    throw new Error(`WAV channel length mismatch: left=${left.length} right=${right.length}`);
   }
 
   const numFrames = left.length;

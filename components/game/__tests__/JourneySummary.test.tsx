@@ -15,10 +15,7 @@ import type { FinalThresholdResult } from '@/engine/endgame';
  */
 
 function makeWonOutcome(illumination = 20, separation = 5): FinalThresholdResult {
-  const wonState = makeState(
-    {},
-    { illumination, separation },
-  );
+  const wonState = makeState({}, { illumination, separation });
   return {
     ok: true,
     value: {
@@ -29,10 +26,7 @@ function makeWonOutcome(illumination = 20, separation = 5): FinalThresholdResult
 }
 
 function makeLostOutcome(illumination = 5, separation = 10): FinalThresholdResult {
-  const lostState = makeState(
-    {},
-    { illumination, separation },
-  );
+  const lostState = makeState({}, { illumination, separation });
   return {
     ok: true,
     value: {

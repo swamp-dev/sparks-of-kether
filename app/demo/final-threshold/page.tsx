@@ -31,10 +31,7 @@ import type { SefirahKey } from '@/data';
 
 type DemoSubPhase = 'hold' | 'witness' | 'close';
 
-const HELD_SPARKS: ReadonlySet<SefirahKey> = new Set([
-  'gevurah',
-  'tiferet',
-] as const);
+const HELD_SPARKS: ReadonlySet<SefirahKey> = new Set(['gevurah', 'tiferet'] as const);
 
 const HELD_SPARKS_P2: ReadonlySet<SefirahKey> = new Set(['hod'] as const);
 
@@ -53,9 +50,7 @@ function FinalThresholdDemoContent(): JSX.Element {
   const searchParams = useSearchParams();
   const subPhaseParam = searchParams.get('subPhase');
   const subPhase: DemoSubPhase =
-    subPhaseParam === 'witness' || subPhaseParam === 'close'
-      ? subPhaseParam
-      : 'hold';
+    subPhaseParam === 'witness' || subPhaseParam === 'close' ? subPhaseParam : 'hold';
 
   const initialState = useMemo<GameState>(() => {
     if (subPhase === 'hold') {
@@ -75,10 +70,7 @@ function FinalThresholdDemoContent(): JSX.Element {
         hand: [4, 5, 6],
         zodiacSign: 'leo',
       });
-      return makeState(
-        {},
-        { players: [heldPlayer, climbingPlayer], activePlayerId: 'p1' },
-      );
+      return makeState({}, { players: [heldPlayer, climbingPlayer], activePlayerId: 'p1' });
     }
 
     // Witness + close share a base: both players at Kether with the
@@ -100,10 +92,7 @@ function FinalThresholdDemoContent(): JSX.Element {
       zodiacSign: 'leo',
       sparksHeld: HELD_SPARKS_P2,
     });
-    const baseState = makeState(
-      {},
-      { players: [p1, p2], activePlayerId: 'p1' },
-    );
+    const baseState = makeState({}, { players: [p1, p2], activePlayerId: 'p1' });
     const initResult = initKetherRitual(baseState, { p1: 100, p2: 200 });
     if (!initResult.ok) {
       throw new Error(
@@ -145,12 +134,7 @@ function FinalThresholdDemoContent(): JSX.Element {
 
   return (
     <main className="min-h-screen bg-ground p-6">
-      <FinalThresholdScreen
-        state={turn.state}
-        player={player}
-        turn={turn}
-        mode="hot-seat"
-      />
+      <FinalThresholdScreen state={turn.state} player={player} turn={turn} mode="hot-seat" />
     </main>
   );
 }

@@ -19,9 +19,7 @@ import { seededRng } from '@/engine/rng';
 describe('PlayScreen — meditate updates the hand', () => {
   it('renders two more card slots after clicking Meditate', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = state.players.findIndex(
-      (p) => p.id === state.activePlayerId,
-    );
+    const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const trimmedPlayers = state.players.map((p, idx) =>
       idx === activeIdx ? { ...p, hand: p.hand.slice(0, 2) } : p,
     );
@@ -53,9 +51,7 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
   // without any prompt.
   it('enables Meditate at HAND_CAP; no DiscardPrompt until End turn click', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = state.players.findIndex(
-      (p) => p.id === state.activePlayerId,
-    );
+    const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const cappedPlayers = state.players.map((p, idx) =>
       idx === activeIdx ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
     );
@@ -71,21 +67,21 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
       fireEvent.click(meditateBtn);
     });
 
-    // Post-Meditate: 8 cards, NO DiscardPrompt yet.
+    // Post-Meditate: 8 cards, NO discard UI yet.
     let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(8);
-    expect(document.querySelector('[data-discard-prompt]')).toBeNull();
+    expect(document.querySelector('[data-discard-status]')).toBeNull();
 
-    // Click End turn — cap check fires; DiscardPrompt appears.
+    // Click End turn — cap check fires; discard status bar + icons appear.
     const endBtn = screen.getByRole('button', { name: /end turn/i });
     act(() => {
       fireEvent.click(endBtn);
     });
     slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(8); // hand still 8 — no rotation yet
-    const prompt = document.querySelector('[data-discard-prompt]');
-    expect(prompt).not.toBeNull();
-    expect(prompt?.textContent ?? '').toMatch(/2/);
+    const status = document.querySelector('[data-discard-status]');
+    expect(status).not.toBeNull();
+    expect(status?.textContent ?? '').toMatch(/2/);
   });
 });
 
@@ -95,9 +91,7 @@ describe('PlayScreen — full hand visibility (#290)', () => {
   // The earlier bug clipped the visible count at 4.
   it('renders all 6 card slots when the active player holds HAND_CAP cards', () => {
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = state.players.findIndex(
-      (p) => p.id === state.activePlayerId,
-    );
+    const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const cappedPlayers = state.players.map((p, idx) =>
       idx === activeIdx ? { ...p, hand: [0, 2, 5, 13, 18, 21] } : p,
     );
@@ -115,9 +109,7 @@ describe('PlayScreen — full hand visibility (#290)', () => {
     // 4, Meditate draws +2 (to 6 = HAND_CAP). Newly-drawn cards must
     // appear in the DOM, not be silently clipped at the previous count.
     const state = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = state.players.findIndex(
-      (p) => p.id === state.activePlayerId,
-    );
+    const activeIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
     const fourCardPlayers = state.players.map((p, idx) =>
       idx === activeIdx ? { ...p, hand: p.hand.slice(0, 4) } : p,
     );

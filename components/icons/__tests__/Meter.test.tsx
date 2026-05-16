@@ -4,9 +4,7 @@ import { Meter } from '../Meter';
 
 describe('Meter', () => {
   it('renders with role="meter" and reports current value via aria-valuenow', () => {
-    const { container } = render(
-      <Meter value={5} max={15} color="#ffd700" label="Illumination" />,
-    );
+    const { container } = render(<Meter value={5} max={15} color="#ffd700" label="Illumination" />);
     const meter = container.querySelector('[role="meter"]');
     expect(meter).not.toBeNull();
     expect(meter?.getAttribute('aria-valuenow')).toBe('5');
@@ -40,31 +38,17 @@ describe('Meter', () => {
   });
 
   it('switches axis based on orientation', () => {
-    const v = render(
-      <Meter
-        value={5}
-        max={10}
-        color="#ffd700"
-        label="V"
-        orientation="vertical"
-      />,
+    const v = render(<Meter value={5} max={10} color="#ffd700" label="V" orientation="vertical" />);
+    expect(v.container.querySelector('[role="meter"]')?.getAttribute('data-orientation')).toBe(
+      'vertical',
     );
-    expect(
-      v.container.querySelector('[role="meter"]')?.getAttribute('data-orientation'),
-    ).toBe('vertical');
 
     const h = render(
-      <Meter
-        value={5}
-        max={10}
-        color="#ffd700"
-        label="H"
-        orientation="horizontal"
-      />,
+      <Meter value={5} max={10} color="#ffd700" label="H" orientation="horizontal" />,
     );
-    expect(
-      h.container.querySelector('[role="meter"]')?.getAttribute('data-orientation'),
-    ).toBe('horizontal');
+    expect(h.container.querySelector('[role="meter"]')?.getAttribute('data-orientation')).toBe(
+      'horizontal',
+    );
     const fill = h.container.querySelector('[data-meter-fill]') as HTMLElement | null;
     expect(parseFloat(fill?.style.width ?? '')).toBeCloseTo(50, 1);
   });
@@ -73,18 +57,16 @@ describe('Meter', () => {
     const original = console.error;
     console.error = (..._args: unknown[]): void => undefined;
     try {
-      expect(() =>
-        render(<Meter value={1} max={0} color="#ffd700" label="X" />),
-      ).toThrow(/max must be > 0/);
+      expect(() => render(<Meter value={1} max={0} color="#ffd700" label="X" />)).toThrow(
+        /max must be > 0/,
+      );
     } finally {
       console.error = original;
     }
   });
 
   it('aria-valuenow and label clamp to [0, max] so visual and AT agree', () => {
-    const { container } = render(
-      <Meter value={25} max={10} color="#ffd700" label="Separation" />,
-    );
+    const { container } = render(<Meter value={25} max={10} color="#ffd700" label="Separation" />);
     const meter = container.querySelector('[role="meter"]');
     // Visual is clamped to 100%; AT must report the clamped value too,
     // not the raw 25 — otherwise screen-reader users hear "25 of 10"
@@ -96,9 +78,7 @@ describe('Meter', () => {
   it('applies a CSS transition on the fill axis (smooth deltas)', () => {
     // The "animates smoothly" acceptance criterion: a CSS transition
     // must be set on the fill axis so value changes interpolate.
-    const v = render(
-      <Meter value={5} max={10} color="#ffd700" label="V" orientation="vertical" />,
-    );
+    const v = render(<Meter value={5} max={10} color="#ffd700" label="V" orientation="vertical" />);
     const vFill = v.container.querySelector('[data-meter-fill]') as HTMLElement | null;
     expect(vFill?.style.transition).toContain('height');
 
@@ -110,9 +90,7 @@ describe('Meter', () => {
   });
 
   it('matches snapshot for a half-full Illumination meter', () => {
-    const { container } = render(
-      <Meter value={5} max={10} color="#ffd700" label="Illumination" />,
-    );
+    const { container } = render(<Meter value={5} max={10} color="#ffd700" label="Illumination" />);
     expect(container.firstChild).toMatchSnapshot();
   });
 });

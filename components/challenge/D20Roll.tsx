@@ -44,8 +44,7 @@ export function D20Roll({
     // final value. AT users / motion-sensitive users get the result
     // without the visual churn.
     const reduce =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.(REDUCED_MOTION_QUERY).matches;
+      typeof window !== 'undefined' && window.matchMedia?.(REDUCED_MOTION_QUERY).matches;
     if (reduce) {
       setDisplayed(value);
       return;

@@ -5,10 +5,7 @@ import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
 import { makeFullGame } from '@/test/fixtures';
-import {
-  EMPTY_PENDING_MODIFIERS,
-  type GameState,
-} from '@/engine/types';
+import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
 import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import type { SefirahKey, ZodiacSignKey } from '@/data';
 
@@ -61,8 +58,7 @@ function ChallengeDemoContent(): JSX.Element {
   const searchParams = useSearchParams();
   const doorOpen = searchParams.get('door') === 'open';
   const shortcut = searchParams.get('shortcut') === '1';
-  const sefirahParam =
-    (searchParams.get('sefirah') as SefirahKey | null) ?? 'gevurah';
+  const sefirahParam = (searchParams.get('sefirah') as SefirahKey | null) ?? 'gevurah';
 
   // Demo state lives behind a `useMemo` so the seeded RNG and
   // GameState identity stay stable across renders. The `useTurn`
@@ -71,9 +67,7 @@ function ChallengeDemoContent(): JSX.Element {
   // path.
   const initialState = useMemo<GameState>(() => {
     const base = makeFullGame({ playerCount: 2, seed: 42 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? {
@@ -81,9 +75,7 @@ function ChallengeDemoContent(): JSX.Element {
             position: sefirahParam,
             zodiacSign: 'aries' as ZodiacSignKey,
             hand: [0, 1, 2] as readonly number[],
-            sparksHeld: new Set(['chesed', 'tiferet']) as ReadonlySet<
-              'chesed' | 'tiferet'
-            >,
+            sparksHeld: new Set(['chesed', 'tiferet']) as ReadonlySet<'chesed' | 'tiferet'>,
             stats: { ...p.stats, strength: 12 },
           }
         : { ...p, position: sefirahParam, stats: { ...p.stats, strength: 10 } },
@@ -122,9 +114,7 @@ function ChallengeDemoContent(): JSX.Element {
   }, [sefirahParam, doorOpen, shortcut, reopenTick]);
   const turn = useTurn({ initialState, rng });
 
-  const activePlayer = initialState.players.find(
-    (p) => p.id === initialState.activePlayerId,
-  );
+  const activePlayer = initialState.players.find((p) => p.id === initialState.activePlayerId);
 
   const context: ChallengeContext = useMemo(
     () => ({
@@ -163,8 +153,8 @@ function ChallengeDemoContent(): JSX.Element {
     <main className="min-h-screen p-4 text-veil sm:p-8">
       <h1 className="font-display text-3xl tracking-widest">Encounter Screen</h1>
       <p className="mt-2 max-w-xl text-sm opacity-70">
-        Click the d20 to resolve a {sefirahParam} challenge. Seeded RNG so the
-        result is reproducible across reloads.
+        Click the d20 to resolve a {sefirahParam} challenge. Seeded RNG so the result is
+        reproducible across reloads.
         {doorOpen ? ' Soul Door open (?door=open).' : null}
         {shortcut ? ' Shortcut applied (?shortcut=1).' : null}
       </p>
@@ -184,8 +174,7 @@ function ChallengeDemoContent(): JSX.Element {
       ) : (
         <div data-demo-canvas className="mt-8 space-y-2">
           <p>
-            Modal closed. Resolution:{' '}
-            <code>{JSON.stringify(last, null, 2)}</code>
+            Modal closed. Resolution: <code>{JSON.stringify(last, null, 2)}</code>
           </p>
           <button
             type="button"

@@ -87,13 +87,9 @@ export interface UseDisconnectGraceInput {
  * countdown live; the interval auto-clears once we hit `expired` or
  * `connected` to avoid wasted renders.
  */
-export function useDisconnectGrace(
-  input: UseDisconnectGraceInput,
-): GraceState {
+export function useDisconnectGrace(input: UseDisconnectGraceInput): GraceState {
   const { activePlayerId, onlinePlayerIds } = input;
-  const [activeOfflineSince, setActiveOfflineSince] = useState<number | null>(
-    null,
-  );
+  const [activeOfflineSince, setActiveOfflineSince] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   // Keep the latest active id in a ref so the offline-detect effect
   // can compare without forcing a re-run dependency loop.
@@ -144,4 +140,3 @@ export function useDisconnectGrace(
     now,
   });
 }
-

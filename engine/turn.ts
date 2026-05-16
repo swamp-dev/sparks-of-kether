@@ -42,13 +42,9 @@ import type { GameState } from './types';
  * its purity for unit tests that don't care about hand contents.
  */
 export function endTurn(state: GameState): GameState {
-  const currentIdx = state.players.findIndex(
-    (p) => p.id === state.activePlayerId,
-  );
+  const currentIdx = state.players.findIndex((p) => p.id === state.activePlayerId);
   if (currentIdx === -1) {
-    throw new Error(
-      `endTurn: active player "${state.activePlayerId}" is not in player list`,
-    );
+    throw new Error(`endTurn: active player "${state.activePlayerId}" is not in player list`);
   }
   if (state.pendingDiscard !== undefined && state.pendingDiscard.count > 0) {
     return state;
@@ -138,11 +134,7 @@ export function endTurn(state: GameState): GameState {
  * trim. The reducer is generic enough that a future ticket could fire
  * it for a non-Meditate over-cap path without changing this signature.
  */
-export function discard(
-  state: GameState,
-  playerId: string,
-  arcanum: number,
-): GameState {
+export function discard(state: GameState, playerId: string, arcanum: number): GameState {
   if (state.pendingDiscard === undefined || state.pendingDiscard.count <= 0) {
     return state;
   }
@@ -151,10 +143,7 @@ export function discard(
   const player = state.players[pIndex]!;
   const cardIdx = player.hand.findIndex((n) => n === arcanum);
   if (cardIdx === -1) return state;
-  const nextHand = [
-    ...player.hand.slice(0, cardIdx),
-    ...player.hand.slice(cardIdx + 1),
-  ];
+  const nextHand = [...player.hand.slice(0, cardIdx), ...player.hand.slice(cardIdx + 1)];
   const nextDiscardPile = [...state.discardPile, arcanum];
   // Decrement pendingDiscard.count; clear when it hits 0 so the
   // subsequent end-turn isn't blocked.
@@ -165,10 +154,36 @@ export function discard(
       : undefined;
   return {
     ...state,
-    players: state.players.map((p, idx) =>
-      idx === pIndex ? { ...player, hand: nextHand } : p,
-    ),
+    players: state.players.map((p, idx) => (idx === pIndex ? { ...player, hand: nextHand } : p)),
     discardPile: nextDiscardPile,
     pendingDiscard: nextPendingDiscard,
+  };
+}
+
+/**
+ * Encounter-burn forced discard: when a player burns card(s) during
+ * challenge prep, they must shed one card from their remaining hand
+ * before the die rolls. Removes the arcanum from the player's hand
+ * and appends it to the discard pile.
+ *
+ * No phase guard — the UI (EncounterScreen) gates this to the burn-
+ * discard picker flow. Defense-in-depth: silently returns input state
+ * if the card is not in hand or the player is not found.
+ */
+export function encounterBurnDiscard(
+  state: GameState,
+  playerId: string,
+  arcanum: number,
+): GameState {
+  const pIndex = state.players.findIndex((p) => p.id === playerId);
+  if (pIndex === -1) return state;
+  const player = state.players[pIndex]!;
+  const cardIdx = player.hand.findIndex((n) => n === arcanum);
+  if (cardIdx === -1) return state;
+  const nextHand = [...player.hand.slice(0, cardIdx), ...player.hand.slice(cardIdx + 1)];
+  return {
+    ...state,
+    players: state.players.map((p, idx) => (idx === pIndex ? { ...player, hand: nextHand } : p)),
+    discardPile: [...state.discardPile, arcanum],
   };
 }

@@ -84,9 +84,7 @@ describe('PlayScreen — drag-to-play (#412)', () => {
     // Set up: active player at Malkuth, hand=[21], yesod cleared so
     // path 32 (arcanum 21, Malkuth↔Yesod) lands directly in 'end'.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? {
@@ -98,19 +96,13 @@ describe('PlayScreen — drag-to-play (#412)', () => {
         : p,
     );
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
     const main = container.querySelector('[data-play-screen]');
     expect(main?.getAttribute('data-phase')).toBe('move');
 
-    const cardBtn = container.querySelector(
-      '[data-card-slot][data-arcanum="21"]',
-    ) as HTMLElement;
-    const path32Hit = container.querySelector(
-      '[data-drop-zone="path-32"]',
-    ) as Element;
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="21"]') as HTMLElement;
+    const path32Hit = container.querySelector('[data-drop-zone="path-32"]') as Element;
     expect(path32Hit, 'path-32 drop zone in DOM').toBeTruthy();
 
     await performDragWithDropTarget(cardBtn, path32Hit);
@@ -123,25 +115,17 @@ describe('PlayScreen — drag-to-play (#412)', () => {
 
   it('dropping a card on a non-matching path announces rejection without dispatching', async () => {
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx
         ? { ...p, position: 'malkuth' as const, hand: [21] } // arcanum 21 only matches path 32
         : p,
     );
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
-    const cardBtn = container.querySelector(
-      '[data-card-slot][data-arcanum="21"]',
-    ) as HTMLElement;
-    const path31Hit = container.querySelector(
-      '[data-drop-zone="path-31"]',
-    ) as Element;
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="21"]') as HTMLElement;
+    const path31Hit = container.querySelector('[data-drop-zone="path-31"]') as Element;
     expect(path31Hit).toBeTruthy();
 
     await performDragWithDropTarget(cardBtn, path31Hit);
@@ -154,20 +138,14 @@ describe('PlayScreen — drag-to-play (#412)', () => {
 
   it('dropping a card outside any drop zone announces rejection without dispatching', async () => {
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx ? { ...p, position: 'malkuth' as const, hand: [21] } : p,
     );
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
-    const cardBtn = container.querySelector(
-      '[data-card-slot][data-arcanum="21"]',
-    ) as HTMLElement;
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="21"]') as HTMLElement;
 
     // Drop target is the document body — no `[data-drop-zone]`
     // ancestor.
@@ -187,13 +165,9 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
     // with `pendingDiscard.count = 1`. Engine accepts `discard` and
     // decrements `pendingDiscard.count`.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
-      idx === activeIdx
-        ? { ...p, hand: [2, 5, 13, 18, 21] }
-        : p,
+      idx === activeIdx ? { ...p, hand: [2, 5, 13, 18, 21] } : p,
     );
     // pendingDiscard count=1: one card needs to be shed.
     const state = {
@@ -202,22 +176,18 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
       phase: 'end' as const,
       pendingDiscard: { count: 1, requiredBy: 'end-of-turn' as const },
     };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
-    const cardBtn = container.querySelector(
-      '[data-card-slot][data-arcanum="2"]',
-    ) as HTMLElement;
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="2"]') as HTMLElement;
     const pile = container.querySelector('[data-drop-zone="discard"]') as Element;
     expect(pile, 'discard drop zone in DOM').toBeTruthy();
     // #587 pre-condition: while `pendingDiscard.count > 0`, PlayScreen
-    // mounts `<DiscardPrompt>` (PlayScreen.tsx ~L772 gates this on
-    // `pendingDiscardCount > 0`). The prompt is the visible signal
-    // that the engine has unsatisfied pendingDiscard state.
+    // mounts the discard status bar (gated on `pendingDiscardCount > 0`).
+    // The status bar is the visible signal that the engine has unsatisfied
+    // pendingDiscard state.
     expect(
-      container.querySelector('[data-discard-prompt]'),
-      'DiscardPrompt mounted while pendingDiscard.count > 0',
+      container.querySelector('[data-discard-status]'),
+      'discard status bar mounted while pendingDiscard.count > 0',
     ).toBeTruthy();
 
     const initialCount = container.querySelector('[data-discard-count]')?.textContent;
@@ -228,37 +198,29 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
     const finalCount = container.querySelector('[data-discard-count]')?.textContent;
     expect(Number(finalCount)).toBe(Number(initialCount) + 1);
     // Card 2 is no longer in the active player's hand.
-    expect(
-      container.querySelector('[data-card-slot][data-arcanum="2"]'),
-    ).toBeNull();
+    expect(container.querySelector('[data-card-slot][data-arcanum="2"]')).toBeNull();
     // #587: direct assertion that engine-state `pendingDiscard.count`
-    // went from 1 → 0 after the discard. The DiscardPrompt unmounts
+    // went from 1 → 0 after the discard. The discard status bar unmounts
     // when `pendingDiscardCount > 0` becomes false, so its absence
     // proves the engine cleared the pendingDiscard. Closes the loop
     // on the "turn-state updated" half of the #462 acceptance.
     expect(
-      container.querySelector('[data-discard-prompt]'),
-      'DiscardPrompt unmounted after pendingDiscard cleared',
+      container.querySelector('[data-discard-status]'),
+      'discard status bar unmounted after pendingDiscard cleared',
     ).toBeNull();
   });
 
   it('dropping a card on the discard pile outside pendingDiscard announces rejection without dispatching', async () => {
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx ? { ...p, hand: [2, 5, 13] } : p,
     );
     // No pendingDiscard — turn is in normal `move` phase.
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
-    const cardBtn = container.querySelector(
-      '[data-card-slot][data-arcanum="2"]',
-    ) as HTMLElement;
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="2"]') as HTMLElement;
     const pile = container.querySelector('[data-drop-zone="discard"]') as Element;
     expect(pile).toBeTruthy();
 
@@ -269,9 +231,7 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
     const finalCount = container.querySelector('[data-discard-count]')?.textContent;
     expect(finalCount).toBe(initialCount);
     // Card 2 still in hand.
-    expect(
-      container.querySelector('[data-card-slot][data-arcanum="2"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-card-slot][data-arcanum="2"]')).not.toBeNull();
     // Aria-live announced rejection.
     const liveRegion = container.querySelector('[data-drag-announcement]');
     expect(liveRegion?.textContent ?? '').toMatch(/over the hand cap|don't need to discard/i);
@@ -279,25 +239,19 @@ describe('PlayScreen — drag-to-discard (#462)', () => {
 
   it('discard pile lights up while a card is being dragged (data-drag-active)', async () => {
     const base = makeFullGame({ playerCount: 2, seed: 1 });
-    const activeIdx = base.players.findIndex(
-      (p) => p.id === base.activePlayerId,
-    );
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
       idx === activeIdx ? { ...p, hand: [2, 5, 13] } : p,
     );
     const state = { ...base, players };
-    const { container } = render(
-      <PlayScreen initialState={state} rng={seededRng(2)} />,
-    );
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
     const pile = container.querySelector('[data-discard-pile]') as HTMLElement;
     // At rest, drag-active is false.
     expect(pile.getAttribute('data-drag-active')).toBe('false');
 
     // Start a drag (without releasing) — the pile should light up.
-    const cardBtn = container.querySelector(
-      '[data-card-slot][data-arcanum="2"]',
-    ) as HTMLElement;
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="2"]') as HTMLElement;
     await act(async () => {
       fireEvent.pointerDown(cardBtn, { pointerId: 1, clientX: 100, clientY: 600 });
       fireEvent.pointerMove(cardBtn, { pointerId: 1, clientX: 220, clientY: 300 });

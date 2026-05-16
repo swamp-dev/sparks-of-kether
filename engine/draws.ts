@@ -103,11 +103,7 @@ export interface DrawOptions {
  * logic. Pre-#502 the helper was private to `lib/turn-machine.ts`;
  * with the refill moved to `end-turn`, both call sites need it.
  */
-export function drawToHand(
-  state: GameState,
-  playerId: string,
-  rng: Rng,
-): GameState {
+export function drawToHand(state: GameState, playerId: string, rng: Rng): GameState {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return state;
   const need = Math.max(0, STARTING_HAND_SIZE - player.hand.length);
@@ -156,9 +152,7 @@ export function drawNCards(
       : state.drawnThisTurn;
   return {
     ...state,
-    players: state.players.map((p, idx) =>
-      idx === pIndex ? { ...player, hand: pHand } : p,
-    ),
+    players: state.players.map((p, idx) => (idx === pIndex ? { ...player, hand: pHand } : p)),
     deck,
     discardPile: discard,
     ...(drawnThisTurn !== state.drawnThisTurn ? { drawnThisTurn } : {}),

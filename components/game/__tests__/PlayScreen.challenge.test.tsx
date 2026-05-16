@@ -25,13 +25,9 @@ import { EMPTY_PENDING_MODIFIERS, type GameState } from '@/engine/types';
  * post-Continue snapshot lands in `'end'` directly.
  */
 
-function makePassReadyState(opts: {
-  readonly destination: 'yesod';
-}): GameState {
+function makePassReadyState(opts: { readonly destination: 'yesod' }): GameState {
   const base = makeFullGame({ playerCount: 2, seed: 1 });
-  const activeIdx = base.players.findIndex(
-    (p) => p.id === base.activePlayerId,
-  );
+  const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
   // Stat 20 + DC 12 base (no shortcut) = guaranteed pass on any d20.
   // Empty hand / no sparks so no burn affordances clutter the modal.
   const players = base.players.map((p, idx) =>
@@ -72,15 +68,11 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
       render(<PlayScreen initialState={initial} rng={rng} />);
 
       // Sanity: the encounter modal is mounted.
-      expect(
-        document.querySelector('[data-encounter-screen]'),
-      ).not.toBeNull();
+      expect(document.querySelector('[data-encounter-screen]')).not.toBeNull();
       // Phase wrapper data attribute reflects 'challenge'.
-      expect(
-        document
-          .querySelector('[data-play-screen]')
-          ?.getAttribute('data-phase'),
-      ).toBe('challenge');
+      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe(
+        'challenge',
+      );
 
       // Click Roll — the Roll button is in the prep panel.
       act(() => {
@@ -112,11 +104,7 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
       // #502: after the click, modal unmounted, phase is now `'end'`
       // (pre-#502 this was `'draw'`).
       expect(document.querySelector('[data-encounter-screen]')).toBeNull();
-      expect(
-        document
-          .querySelector('[data-play-screen]')
-          ?.getAttribute('data-phase'),
-      ).toBe('end');
+      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('end');
     } finally {
       vi.useRealTimers();
     }
@@ -143,9 +131,7 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
 
       const continueBtn = document.querySelector('[data-action="continue"]');
       if (!continueBtn) {
-        throw new Error(
-          'test setup: expected pass branch but no Continue button rendered.',
-        );
+        throw new Error('test setup: expected pass branch but no Continue button rendered.');
       }
       act(() => {
         fireEvent.click(continueBtn as HTMLButtonElement);

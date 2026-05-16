@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createRoom,
-  joinRoom,
-  kickPlayer,
-  setReady,
-  setZodiacSign,
-} from '../rooms';
+import { createRoom, joinRoom, kickPlayer, setReady, setZodiacSign } from '../rooms';
 import type { RoomRow } from '../supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -25,7 +19,9 @@ interface SupabaseStubs {
     }>;
     readonly signOut?: () => Promise<{ error: { message: string } | null }>;
   };
-  readonly tableHandlers?: Partial<Record<'rooms' | 'players' | 'game_states' | 'game_events', TableHandler>>;
+  readonly tableHandlers?: Partial<
+    Record<'rooms' | 'players' | 'game_states' | 'game_events', TableHandler>
+  >;
   // RPC handler for `join_room_next_seat` (and any future RPC the
   // joinRoom path acquires). Receives the named-param object the
   // production code passes (`{ target_room_id }`) and returns a
@@ -58,12 +54,14 @@ interface TableHandler {
   readonly delete?: () => { eq: (col: string, val: string) => Promise<unknown> };
 }
 
-
 interface InsertChain {
   // Production callers pass no args (`.select().single<RoomRow>()`),
   // so the `cols` arg is optional in the stub.
   readonly select: (cols?: string) => {
-    readonly single: () => Promise<{ data: unknown; error: { message?: string; code?: string } | null }>;
+    readonly single: () => Promise<{
+      data: unknown;
+      error: { message?: string; code?: string } | null;
+    }>;
   };
 }
 
@@ -82,7 +80,10 @@ interface SelectFilterChain {
   readonly then?: (fn: (v: unknown) => unknown) => Promise<unknown>;
   // Two-eq variant: `select(...).eq(col1, v1).eq(col2, v2).maybeSingle()`.
   // Used by the joinRoom self-lookup after the seat RPC.
-  readonly eq?: (col: string, val: string) => {
+  readonly eq?: (
+    col: string,
+    val: string,
+  ) => {
     readonly maybeSingle: () => Promise<{
       data: unknown;
       error: { message?: string } | null;
@@ -100,7 +101,8 @@ function makeClient(stubs: SupabaseStubs): SupabaseClient {
       signOut: stubs.auth?.signOut ?? vi.fn(async () => ({ error: null as null })),
     },
     from: (table: string) => {
-      const handler = stubs.tableHandlers?.[table as 'rooms' | 'players' | 'game_states' | 'game_events'];
+      const handler =
+        stubs.tableHandlers?.[table as 'rooms' | 'players' | 'game_states' | 'game_events'];
       if (!handler) {
         throw new Error(`Test stub missing handler for table: ${table}`);
       }
@@ -135,6 +137,7 @@ describe('createRoom', () => {
                   created_at: 'now',
                   started_at: null,
                   finished_at: null,
+                  paused_at: null,
                 } as RoomRow,
                 error: null,
               }),
@@ -178,6 +181,7 @@ describe('createRoom', () => {
                     created_at: 'now',
                     started_at: null,
                     finished_at: null,
+                    paused_at: null,
                   } as RoomRow,
                   error: null,
                 };
@@ -228,6 +232,7 @@ describe('createRoom', () => {
                   created_at: 'now',
                   started_at: null,
                   finished_at: null,
+                  paused_at: null,
                 } as RoomRow,
                 error: null,
               }),
@@ -270,6 +275,7 @@ describe('createRoom', () => {
                   created_at: 'now',
                   started_at: null,
                   finished_at: null,
+                  paused_at: null,
                 } as RoomRow,
                 error: null,
               }),
@@ -320,6 +326,7 @@ describe('joinRoom', () => {
       created_at: 'now',
       started_at: null,
       finished_at: null,
+      paused_at: null,
       ...overrides,
     };
   }
@@ -383,9 +390,7 @@ describe('joinRoom', () => {
   it('returns room-not-joinable for non-lobby state', async () => {
     const client = makeClient({
       tableHandlers: {
-        rooms: roomLookupOk(
-          lobbyRoom({ state: 'playing', started_at: 'now' }),
-        ),
+        rooms: roomLookupOk(lobbyRoom({ state: 'playing', started_at: 'now' })),
       },
     });
     const result = await joinRoom({ code: 'ABC234', nickname: 'A', client });
@@ -599,7 +604,9 @@ describe('kickPlayer', () => {
       from: () => ({
         delete: () => {
           deleteCalled = true;
-          return { eq: () => ({ eq: () => ({ select: async () => ({ data: [], error: null }) }) }) };
+          return {
+            eq: () => ({ eq: () => ({ select: async () => ({ data: [], error: null }) }) }),
+          };
         },
       }),
     } as unknown as SupabaseClient;
@@ -706,10 +713,7 @@ describe('setZodiacSign', () => {
 
   it('surfaces a Postgres error as update-failed', async () => {
     const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
-    const client = makeUpdateClient(
-      { error: { message: 'permission denied' } },
-      calls,
-    );
+    const client = makeUpdateClient({ error: { message: 'permission denied' } }, calls);
     const result = await setZodiacSign(client, {
       playerId: 'p1',
       sign: 'leo',
@@ -740,10 +744,7 @@ describe('setReady', () => {
 
   it('surfaces a Postgres error as update-failed', async () => {
     const calls: UpdateChainCalls = { updates: [], eqArgs: [] };
-    const client = makeUpdateClient(
-      { error: { message: 'connection reset' } },
-      calls,
-    );
+    const client = makeUpdateClient({ error: { message: 'connection reset' } }, calls);
     const result = await setReady(client, { playerId: 'p1', ready: true });
     expect(result.ok).toBe(false);
     if (result.ok) return;

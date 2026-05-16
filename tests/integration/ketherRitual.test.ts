@@ -1,10 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { createRoom, joinRoom } from '@/lib/rooms';
-import {
-  deserializeGameState,
-  serializeGameState,
-  type GameStateRow,
-} from '@/lib/supabase';
+import { deserializeGameState, serializeGameState, type GameStateRow } from '@/lib/supabase';
 import { applyClientAction, type ClientAction } from '@/lib/room-actions';
 import { authorize } from '@/lib/authorize';
 import { checkEndgame } from '@/engine/endgame';
@@ -85,31 +81,23 @@ function buildRitualReadyState(playerIds: readonly [string, string]): GameState 
  * the events route does on the success path. Returns the resulting
  * row id for follow-up queries.
  */
-async function writeSnapshot(
-  roomId: string,
-  state: GameState,
-  lastEventId: number,
-): Promise<void> {
+async function writeSnapshot(roomId: string, state: GameState, lastEventId: number): Promise<void> {
   const svc = getServiceClient();
   // `game_states.room_id` carries a UNIQUE constraint
   // (`game_states_room_unique`) — `upsert` needs `onConflict: 'room_id'`
   // to hit the UPDATE arm; without it Postgres falls through to the
   // INSERT arm and trips the unique violation on the second write.
-  const insertOrUpdate = await svc
-    .from('game_states')
-    .upsert(
-      {
-        room_id: roomId,
-        snapshot: serializeGameState(state),
-        last_event_id: lastEventId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'room_id' },
-    );
+  const insertOrUpdate = await svc.from('game_states').upsert(
+    {
+      room_id: roomId,
+      snapshot: serializeGameState(state),
+      last_event_id: lastEventId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'room_id' },
+  );
   if (insertOrUpdate.error) {
-    throw new Error(
-      `writeSnapshot: ${insertOrUpdate.error.message}`,
-    );
+    throw new Error(`writeSnapshot: ${insertOrUpdate.error.message}`);
   }
 }
 
@@ -141,15 +129,11 @@ async function persistAction(
   const before = await readSnapshot(roomId);
   const auth = authorize(action, before, callerId);
   if (!auth.ok) {
-    throw new Error(
-      `persistAction: authorize rejected (${JSON.stringify(auth.reason)})`,
-    );
+    throw new Error(`persistAction: authorize rejected (${JSON.stringify(auth.reason)})`);
   }
   const apply = applyClientAction(before, action, seededRng(1));
   if (!apply.ok) {
-    throw new Error(
-      `persistAction: applyClientAction rejected (${JSON.stringify(apply.error)})`,
-    );
+    throw new Error(`persistAction: applyClientAction rejected (${JSON.stringify(apply.error)})`);
   }
   await writeSnapshot(roomId, apply.newState, options.lastEventId + 1);
   return apply.newState;
@@ -235,9 +219,7 @@ describe('integration: Final Threshold ritual end-to-end (real Supabase, #350)',
     expect(closeState.ketherRitual?.subPhase).toBe('close');
     // 4 played cards in the witness log, all distinct arcana.
     expect(closeState.ketherRitual?.witnessLog).toHaveLength(4);
-    expect(
-      closeState.ketherRitual?.witnessLog.every((e) => e.kind === 'played'),
-    ).toBe(true);
+    expect(closeState.ketherRitual?.witnessLog.every((e) => e.kind === 'played')).toBe(true);
 
     // 5. Closure window: confirm without staging any Spark (we set
     //    illumination ≥ separation + 5 in the fixture, so the gap is
@@ -261,10 +243,7 @@ describe('integration: Final Threshold ritual end-to-end (real Supabase, #350)',
     expect(persisted.phase).toBe('end');
     expect(persisted.ketherRitual?.witnessLog).toHaveLength(4);
     expect(persisted.ketherRitual?.closureLocked).toBe(true);
-    expect(persisted.ketherRitual?.witnessOrder).toEqual([
-      guest.userId,
-      host.userId,
-    ]);
+    expect(persisted.ketherRitual?.witnessOrder).toEqual([guest.userId, host.userId]);
   });
 
   it('drives a 2-player ritual to a lost end-state on illumination-gap', async () => {

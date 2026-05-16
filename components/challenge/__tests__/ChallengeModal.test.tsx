@@ -26,11 +26,7 @@ const baseContext: ChallengeContext = {
 describe('ChallengeModal — committing modifiers', () => {
   it('renders the Sefirah, DC, and stat', () => {
     const { container } = render(
-      <ChallengeModal
-        context={baseContext}
-        rng={seededRng(1)}
-        onResolved={vi.fn()}
-      />,
+      <ChallengeModal context={baseContext} rng={seededRng(1)} onResolved={vi.fn()} />,
     );
     expect(screen.getByText(/Challenge: Severity/i)).toBeInTheDocument();
     // DC text appears in the header AND in the projected-total — scope
@@ -43,11 +39,7 @@ describe('ChallengeModal — committing modifiers', () => {
 
   it('toggles ally assist and recomputes the projected total', () => {
     const { container } = render(
-      <ChallengeModal
-        context={baseContext}
-        rng={seededRng(1)}
-        onResolved={vi.fn()}
-      />,
+      <ChallengeModal context={baseContext} rng={seededRng(1)} onResolved={vi.fn()} />,
     );
     const before = container.querySelector('[data-projected-total]');
     expect(before?.textContent).toBe('12 vs DC 15');
@@ -64,11 +56,7 @@ describe('ChallengeModal — committing modifiers', () => {
 
   it('clamps the card-burn stepper at the max', () => {
     const { container } = render(
-      <ChallengeModal
-        context={baseContext}
-        rng={seededRng(1)}
-        onResolved={vi.fn()}
-      />,
+      <ChallengeModal context={baseContext} rng={seededRng(1)} onResolved={vi.fn()} />,
     );
     const inc = container.querySelector(
       '[data-stepper="cardBurns"] button:last-of-type',
@@ -159,9 +147,7 @@ describe('ChallengeModal — Soul Door callout (#245)', () => {
     // Per design doc § 6 worked example: "DC X → X−2" template plus
     // the (shortcut +N, Door −M) breakdown when the shortcut is also
     // active. `12` is base DC; `13` is final after both modifiers.
-    expect(callout?.textContent).toBe(
-      'Soul Door open here: DC 12 → 13 (shortcut +3, Door −2)',
-    );
+    expect(callout?.textContent).toBe('Soul Door open here: DC 12 → 13 (shortcut +3, Door −2)');
   });
 
   it('does not render the callout when soulDoorDelta is 0', () => {
@@ -179,11 +165,7 @@ describe('ChallengeModal — Soul Door callout (#245)', () => {
     // Existing callers (every test before this one) pass no soulDoor
     // field. The callout must stay invisible for them.
     const { container } = render(
-      <ChallengeModal
-        context={baseContext}
-        rng={seededRng(1)}
-        onResolved={vi.fn()}
-      />,
+      <ChallengeModal context={baseContext} rng={seededRng(1)} onResolved={vi.fn()} />,
     );
     expect(container.querySelector('[data-soul-door]')).toBeNull();
   });
@@ -208,7 +190,10 @@ describe('ChallengeModal — Soul Door callout (#245)', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(onResolved).toHaveBeenCalledTimes(1);
-    const arg = onResolved.mock.calls[0]?.[0] as { modifiers: { soulDoorDelta?: number }; outcome: { effectiveDC: number } };
+    const arg = onResolved.mock.calls[0]?.[0] as {
+      modifiers: { soulDoorDelta?: number };
+      outcome: { effectiveDC: number };
+    };
     expect(arg.modifiers.soulDoorDelta).toBe(-2);
     // Gevurah DC 15 - 2 Door = 13.
     expect(arg.outcome.effectiveDC).toBe(13);
@@ -269,11 +254,7 @@ describe('ChallengeModal — rolling and reveal', () => {
     // the test passing repeatedly. If the seed sequence ever changes,
     // this test will surface it.
     render(
-      <ChallengeModal
-        context={guaranteedFailContext}
-        rng={seededRng(1)}
-        onResolved={onResolved}
-      />,
+      <ChallengeModal context={guaranteedFailContext} rng={seededRng(1)} onResolved={onResolved} />,
     );
     fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
     act(() => {
@@ -377,9 +358,7 @@ describe('ChallengeModal — rolling and reveal', () => {
         onResolved={onResolved}
       />,
     );
-    const allyCheckbox = container.querySelector(
-      '[data-ally="a1"] input',
-    ) as HTMLInputElement;
+    const allyCheckbox = container.querySelector('[data-ally="a1"] input') as HTMLInputElement;
     fireEvent.click(allyCheckbox);
     const inc = container.querySelector(
       '[data-stepper="cardBurns"] button:last-of-type',
@@ -426,11 +405,7 @@ describe('ChallengeModal — rolling and reveal', () => {
 describe('ChallengeModal — accessibility', () => {
   it('uses role=dialog with an aria-labelledby pointing at the title', () => {
     const { container } = render(
-      <ChallengeModal
-        context={baseContext}
-        rng={seededRng(1)}
-        onResolved={vi.fn()}
-      />,
+      <ChallengeModal context={baseContext} rng={seededRng(1)} onResolved={vi.fn()} />,
     );
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
@@ -466,11 +441,7 @@ describe('ChallengeModal — embedded stat sheet (#134)', () => {
 
   it('does not render a stat sheet when `player` is omitted (back-compat for the demo route)', () => {
     const { container } = render(
-      <ChallengeModal
-        context={baseContext}
-        rng={seededRng(1)}
-        onResolved={vi.fn()}
-      />,
+      <ChallengeModal context={baseContext} rng={seededRng(1)} onResolved={vi.fn()} />,
     );
     expect(container.querySelector('[data-stat-sheet]')).toBeNull();
   });
