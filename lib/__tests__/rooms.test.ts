@@ -23,6 +23,7 @@ interface SupabaseStubs {
       data: { user: { id: string } | null };
       error: { message: string } | null;
     }>;
+    readonly signOut?: () => Promise<{ error: { message: string } | null }>;
   };
   readonly tableHandlers?: Partial<Record<'rooms' | 'players' | 'game_states' | 'game_events', TableHandler>>;
   // RPC handler for `join_room_next_seat` (and any future RPC the
@@ -96,6 +97,7 @@ function makeClient(stubs: SupabaseStubs): SupabaseClient {
       signInAnonymously:
         stubs.auth?.signInAnonymously ??
         vi.fn(async () => ({ data: { user: { id: 'auth-user-1' } }, error: null })),
+      signOut: stubs.auth?.signOut ?? vi.fn(async () => ({ error: null as null })),
     },
     from: (table: string) => {
       const handler = stubs.tableHandlers?.[table as 'rooms' | 'players' | 'game_states' | 'game_events'];
@@ -245,6 +247,59 @@ describe('createRoom', () => {
     const result = await createRoom({ nickname: 'A', client });
     expect(result.ok).toBe(false);
     expect(deleteChainEq).toHaveBeenCalledExactlyOnceWith('id', 'room-3');
+  });
+
+  it('signs out before creating a room (regression: stale anonymous session causes players_pkey 23505)', async () => {
+    // Supabase anonymous sessions persist in localStorage. A returning user
+    // who still has a player row from a previous game hits a 23505 unique
+    // constraint on players.id = auth.uid(). Fix: signOut at the start of
+    // createRoom so every room creation begins with a fresh identity.
+    const signOut = vi.fn(async () => ({ error: null }));
+    const client = makeClient({
+      auth: { signOut },
+      tableHandlers: {
+        rooms: {
+          insert: () => ({
+            select: () => ({
+              single: async () => ({
+                data: {
+                  id: 'room-4',
+                  code: 'ABCDEF',
+                  host_id: 'auth-user-1',
+                  state: 'lobby',
+                  created_at: 'now',
+                  started_at: null,
+                  finished_at: null,
+                } as RoomRow,
+                error: null,
+              }),
+            }),
+          }),
+        },
+        players: {
+          insert: () => Promise.resolve({ data: null, error: null }),
+        },
+      },
+    });
+    await createRoom({ nickname: 'Andy', client });
+    expect(signOut).toHaveBeenCalledOnce();
+  });
+
+  it('returns auth-failed when signOut fails (silently keeping the stale session regenerates the 23505)', async () => {
+    // If signOut errors, the stale session stays active. ensureAnonymousSession
+    // then returns the OLD userId via getUser() — skipping signInAnonymously —
+    // and the player insert hits 23505 again. Surface the error early instead.
+    const client = makeClient({
+      auth: {
+        signOut: vi.fn(async () => ({ error: { message: 'network error' } })),
+      },
+      tableHandlers: {},
+    });
+    const result = await createRoom({ nickname: 'Andy', client });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('auth-failed');
+    expect((result.error as { kind: 'auth-failed'; cause: string }).cause).toBe('network error');
   });
 });
 

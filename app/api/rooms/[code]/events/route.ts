@@ -62,14 +62,15 @@ export async function POST(
     return NextResponse.json({ error: 'invalid-action-shape' }, { status: 400 });
   }
 
-  const client = createSupabaseServerClient();
+  // Used only for JWT verification — not for any DB reads.
+  const authClient = createSupabaseServerClient();
   // Verify the bearer token corresponds to a real user, and pin the
   // caller's identity to `auth.uid()`. The action's `playerId` is
   // claimed by the client and must match — without this check, a
   // malicious caller could submit actions as another player and the
   // engine would fold them before the game_events RLS rejected the
   // insert (after-the-fact, surfacing as 500).
-  const userResult = await client.auth.getUser(token);
+  const userResult = await authClient.auth.getUser(token);
   if (userResult.error || !userResult.data.user) {
     return NextResponse.json({ error: 'invalid-token' }, { status: 401 });
   }
@@ -95,16 +96,16 @@ export async function POST(
     );
   }
 
-  // Apply the caller's auth so RLS reads scope to their membership.
-  await client.auth.setSession({ access_token: token, refresh_token: '' });
-  // Writes go via `query(client, table)` from `lib/supabase-query`,
-  // which centralizes the SupabaseClient<Database> → SupabaseClient
-  // cast needed to bypass the Insert-overload-collapses-to-`never`
-  // issue. Reads use the typed client directly with explicit
-  // `.maybeSingle<RowType>()` / `.single<RowType>()`.
+  // Use the service client for all reads and writes. setSession({ refresh_token: '' })
+  // silently fails on production Supabase, leaving auth.uid() null and causing
+  // RLS-gated reads to return null and RLS-gated inserts to be denied.
+  // Security is enforced by: (1) getUser above validates the JWT,
+  // (2) the playerId === callerId check above pins identity,
+  // (3) authorize() checks turn ownership against the snapshot.
+  const serviceClient = createSupabaseServiceClient();
 
   // Resolve the room by its code.
-  const roomLookup = await client
+  const roomLookup = await serviceClient
     .from('rooms')
     .select()
     .eq('code', params.code)
@@ -114,10 +115,8 @@ export async function POST(
   }
   const room = roomLookup.data;
 
-  // Load the current snapshot. `game_states` is service-role-write
-  // only per the migration; the read here goes through the caller's
-  // auth via the membership-based SELECT policy.
-  const snapshotLookup = await client
+  // Load the current snapshot.
+  const snapshotLookup = await serviceClient
     .from('game_states')
     .select()
     .eq('room_id', room.id)
@@ -144,7 +143,7 @@ export async function POST(
   // rejected events never mutate state.
   const authResult = authorize(action, currentState, callerId);
   if (!authResult.ok) {
-    await query(client, 'game_events').insert({
+    await query(serviceClient, 'game_events').insert({
       room_id: room.id,
       player_id: callerId,
       event_type: `rejected:${action.kind}`,
@@ -204,7 +203,7 @@ export async function POST(
   // procedure; for now an event-without-snapshot or vice-versa is
   // a known recovery case (event log is the source of truth on
   // restart). Documented in the README's multiplayer section.
-  const eventInsert = await query(client, 'game_events')
+  const eventInsert = await query(serviceClient, 'game_events')
     .insert({
       room_id: room.id,
       player_id: action.playerId,
@@ -225,12 +224,6 @@ export async function POST(
   }
   const newEventId = eventInsert.data.id;
 
-  // Snapshot writes go through the service-role client. The
-  // `game_states` table has no UPDATE RLS policy by design — the
-  // engine is the only legitimate writer, and it lives here on the
-  // server. Using the caller's anon JWT for this UPDATE would be
-  // denied by Postgres (RLS enabled + no matching policy = deny).
-  const serviceClient = createSupabaseServiceClient();
   const snapshotUpdate = await query(serviceClient, 'game_states')
     .update({
       snapshot: serializeGameState(apply.newState),

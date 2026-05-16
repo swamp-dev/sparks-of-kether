@@ -54,10 +54,13 @@ export async function POST(
   }
   const callerId = userResult.data.user.id;
 
-  // RLS-scoped reads via the caller's session.
-  await client.auth.setSession({ access_token: token, refresh_token: '' });
+  // Use the service client for all reads. setSession({ refresh_token: '' })
+  // silently fails on production Supabase, leaving auth.uid() null and causing
+  // RLS-gated reads to return null. Security is enforced by: (1) getUser above
+  // validates the JWT, (2) validateAndBuildSetup checks callerId === host_id.
+  const serviceClient = createSupabaseServiceClient();
 
-  const roomLookup = await client
+  const roomLookup = await serviceClient
     .from('rooms')
     .select()
     .eq('code', params.code)
@@ -67,7 +70,7 @@ export async function POST(
   }
   const room = roomLookup.data;
 
-  const playersLookup = await client
+  const playersLookup = await serviceClient
     .from('players')
     .select()
     .eq('room_id', room.id)
@@ -120,8 +123,6 @@ export async function POST(
   // operations. The `query()` helper centralizes the cast that
   // bypasses the Insert-overload-collapses-to-`never` issue
   // (see lib/supabase-query.ts).
-  const serviceClient = createSupabaseServiceClient();
-
   const snapshotInsert = await query(serviceClient, 'game_states').insert({
     room_id: room.id,
     snapshot: serializeGameState(initialState),
