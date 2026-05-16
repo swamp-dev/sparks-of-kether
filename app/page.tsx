@@ -1,7 +1,9 @@
 import { Hero } from '@/components/home/Hero';
 import { PrimaryCTA } from '@/components/home/PrimaryCTA';
 import { PitchColumns } from '@/components/home/PitchColumns';
+import { HowToPlay } from '@/components/home/HowToPlay';
 import { Filmstrip } from '@/components/home/Filmstrip';
+import { CodexTeaser } from '@/components/home/CodexTeaser';
 import { Footer } from '@/components/home/Footer';
 
 /**
@@ -15,8 +17,11 @@ import { Footer } from '@/components/home/Footer';
  *   2. Primary CTA — single "Begin the ascent" portal that expands
  *      to reveal New / Join / Hot-seat in ≤2 taps.
  *   3. Pitch columns — three-column "What is this?" answer.
- *   4. Filmstrip — four captioned screenshots of the surfaces.
- *   5. Footer — Read the rules / View source / Codex (placeholder).
+ *   4. HowToPlay — three numbered steps with a link to /about.
+ *   5. Filmstrip — four captioned screenshots; click any to enlarge.
+ *   6. CodexTeaser — mini preview of Sefirot / Arcana / Paths with
+ *      a link to /codex.
+ *   7. Footer — Read the rules / View source / Codex.
  *
  * No layout-level atmosphere component is added here — the
  * `Substrate` wired in `app/layout.tsx` provides the void + bloom +
@@ -24,14 +29,9 @@ import { Footer } from '@/components/home/Footer';
  * ambient bloom — don't add another layout-level atmosphere
  * component."
  *
- * Subtitle copy: "The lightning descends. The serpent ascends." —
- * the existing flavour line from `app/tokens/page.tsx` per the
- * ticket's recommendation, lightly adjusted to two short sentences
- * so the rhythm reads as a couplet, not a comma-spliced fragment.
- *
- * Server-rendered. `PrimaryCTA` is the one client component (it
- * manages a disclosure open/closed state); everything else is
- * static.
+ * Server-rendered. `PrimaryCTA` and `Filmstrip` are client components
+ * (disclosure state and lightbox state respectively); everything else
+ * is static.
  */
 
 const SUBTITLE = 'The lightning descends. The serpent ascends.';
@@ -93,13 +93,17 @@ export default function HomePage(): JSX.Element {
           rather than sitting on the hero band's heel. */}
       <PitchColumns className="mt-20 px-6 sm:mt-24 md:mt-28" />
 
+      {/* "How to play" — three numbered steps, link to /about. */}
+      <HowToPlay className="mt-20 px-6 sm:mt-24 md:mt-28" />
+
       {/* "How it plays" filmstrip — four captioned screenshots.
-          Carousel on mobile, grid on tablet/desktop. */}
+          Carousel on mobile, grid on tablet/desktop. Click to enlarge. */}
       <Filmstrip className="mt-20 px-6 sm:mt-24 md:mt-28" />
 
-      {/* Footer micro-block — Read the rules / View source / Codex
-          placeholder. Padded so the page doesn't end with the
-          filmstrip's last caption flush against the void. */}
+      {/* Codex teaser — mini preview of Sefirot / Arcana / Paths. */}
+      <CodexTeaser className="mt-20 px-6 sm:mt-24 md:mt-28" />
+
+      {/* Footer micro-block — Read the rules / View source / Codex. */}
       <Footer className="mt-20 mb-10 px-6 sm:mt-24" />
     </main>
   );
