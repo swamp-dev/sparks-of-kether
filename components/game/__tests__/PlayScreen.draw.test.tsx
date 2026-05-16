@@ -13,7 +13,7 @@ import { seededRng } from '@/engine/rng';
  *
  * We construct a real `makeFullGame` state and then trim the active
  * player's hand to 2 cards so the +2 from Meditate has room (the
- * cap is 6).
+ * cap is 5).
  */
 
 describe('PlayScreen — meditate updates the hand', () => {

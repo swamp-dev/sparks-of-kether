@@ -490,9 +490,9 @@ export function Hand({
           const ariaDisabled = !visible || (!interactive && !discardMode);
           const htmlDisabled = !visible;
           // #463: zIndex tiers — magnified > selected > unselected stack
-          // (left over right). With HAND_CAP=6 the magnified ceiling is
-          // `hand.length + 2` = 8; the over-cap Meditate path (#291,
-          // hand size up to 8) raises it to 10.
+          // (left over right). With HAND_CAP=5 the magnified ceiling is
+          // `hand.length + 2` = 7; the over-cap Meditate path (#291,
+          // hand size up to 7) raises it to 9.
           let zIndex: number;
           if (isMagnified) {
             zIndex = hand.length + 2;

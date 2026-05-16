@@ -81,8 +81,8 @@ describe('turnReducer — phase transitions', () => {
     // #128 fix: meditate is a complete turn-action that draws 2 cards
     // (capped at HAND_CAP). The pre-#128 contract — `phase: 'draw'`,
     // state unchanged — was broken: the 'draw' handler only refilled
-    // toward STARTING_HAND_SIZE so a meditating player at 4 cards saw
-    // nothing happen.
+    // toward STARTING_HAND_SIZE so a meditating player at STARTING_HAND_SIZE
+    // cards saw nothing happen.
     //
     // #503: post-#503 Meditate stays in `'move'` (pre-#503 it
     // transitioned to `'end'`) so the player may still play a card
@@ -1731,7 +1731,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
   // turn via pendingDiscard). Pre-#128 the reducer advanced to 'draw'
   // phase without changing state; players who meditated then clicked
   // Draw saw nothing because drawToHand only refills toward
-  // STARTING_HAND_SIZE (4) which they already had.
+  // STARTING_HAND_SIZE (3) which they already had.
   //
   // #503: post-#503 Meditate stays at `'move'` so the player may
   // still play a card the same turn — the cards drawn by Meditate
@@ -1781,7 +1781,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
-    // Hand was 5, cap is 6: meditate draws BOTH cards (not just one).
+    // Hand was 5 (= HAND_CAP): meditate draws BOTH cards (not just one).
     expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11, 12]);
     // #503: pendingDiscard NOT set on Meditate; it fires on end-turn.
     expect(result.value.next.state.pendingDiscard).toBeUndefined();
