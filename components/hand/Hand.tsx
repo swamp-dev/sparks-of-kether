@@ -513,7 +513,11 @@ export function Hand({
         // the AT tree as a readable element. `disabled` removes the
         // node from the accessibility tree — fine for face-down
         // cards (nothing to read), wrong for face-up cards.
-        const ariaDisabled = !interactive;
+        // In discard mode the card button is not selectable, but the sibling
+        // discard icon IS the active affordance — aria-disabled should be
+        // false so screen readers don't announce the card as "dimmed" when
+        // the icon is the thing to interact with.
+        const ariaDisabled = !visible || (!interactive && !discardMode);
         const htmlDisabled = !visible;
         // #463: zIndex tiers — magnified > selected > unselected stack
         // (left over right). With HAND_CAP=6 the magnified ceiling is
@@ -693,9 +697,7 @@ export function Hand({
                 data-discard-icon={arcanum}
                 aria-label={`Discard ${arcanumByNumber(arcanum).name}`}
                 tabIndex={0}
-                onClick={() => {
-                  if (onDiscard) onDiscard(arcanum);
-                }}
+                onClick={() => onDiscard(arcanum)}
                 className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-ground/60 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-veil/80"
               >
                 <svg

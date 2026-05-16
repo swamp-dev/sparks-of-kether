@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { arcanumByNumber, sefirahByKey, zodiacSigns } from '@/data';
 import { Hand } from '@/components/hand/Hand';
 import type { EncounterAvatarKey } from '@/data/types';
@@ -605,6 +605,21 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     }, delayMs);
   };
 
+  // #90: deferred roll after burn-discard. React 18 batches all setState
+  // calls in a single event handler; calling doRoll() directly inside
+  // handleBurnDiscard would let turn.submitChallenge close over the
+  // pre-discard snapshot and silently overwrite the card removal.
+  // This ref is set to true by handleBurnDiscard and cleared by the
+  // useLayoutEffect below, which fires on the NEXT render — after
+  // encounterBurnDiscard's setSnapshot has committed — so doRoll() sees
+  // the post-discard state.
+  const pendingRollAfterBurnDiscardRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!pendingRollAfterBurnDiscardRef.current) return;
+    pendingRollAfterBurnDiscardRef.current = false;
+    doRoll();
+  });
+
   const handleRoll = (): void => {
     // Defensive: only roll from prep. Without this guard, a double-
     // click between the click handler and the state flush would fire
@@ -626,7 +641,9 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     turn.encounterBurnDiscard(arcanum);
     setAwaitingBurnDiscard(false);
     setBurnDiscardHovered(undefined);
-    doRoll();
+    // Defer the roll to the next render via pendingRollAfterBurnDiscardRef —
+    // see the useLayoutEffect above for why doRoll() cannot be called here.
+    pendingRollAfterBurnDiscardRef.current = true;
   };
 
   const handleContinue = (): void => {
@@ -916,7 +933,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           {awaitingBurnDiscard && player ? (
             <div
               data-burn-discard-picker
-              role="dialog"
+              role="region"
               aria-label="Discard one card before rolling"
               className="mt-4 rounded border border-veil/30 bg-ground/80 p-4"
             >
