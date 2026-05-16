@@ -215,9 +215,7 @@ describe('useTurn — meditate draw mechanics', () => {
     const initial = result.current.state;
     const six = {
       ...initial,
-      players: initial.players.map((p, idx) =>
-        idx === 0 ? { ...p, hand: [0, 1, 2, 3, 4] } : p,
-      ),
+      players: initial.players.map((p, idx) => (idx === 0 ? { ...p, hand: [0, 1, 2, 3, 4] } : p)),
     };
     act(() => {
       result.current.setState(six);
