@@ -349,32 +349,32 @@ describe('Hand — empty state (#208)', () => {
 });
 
 describe('Hand — full hand at HAND_CAP (#290)', () => {
-  // #290: when a player draws beyond STARTING_HAND_SIZE (4) — e.g.
-  // via Meditate while already holding 4 cards — the new cards must
+  // #290: when a player draws beyond STARTING_HAND_SIZE (3) — e.g.
+  // via Meditate while already holding 3 cards — the new cards must
   // render. The bug report: "all cards in hand must be visible
-  // (currently caps at 4)". HAND_CAP is 6, so the fan must render
-  // every slot up to 6.
-  it('renders all 6 cards when the hand is at HAND_CAP=6', () => {
-    const sixCards = [0, 2, 5, 13, 18, 21] as const;
-    const { container } = render(<Hand hand={sixCards} visible={true} />);
+  // (currently caps at 3)". HAND_CAP is 5, so the fan must render
+  // every slot up to 5.
+  it('renders all 5 cards when the hand is at HAND_CAP=5', () => {
+    const fiveCards = [0, 2, 5, 13, 18] as const;
+    const { container } = render(<Hand hand={fiveCards} visible={true} />);
     const slots = container.querySelectorAll('[data-card-slot]');
-    expect(slots.length).toBe(6);
+    expect(slots.length).toBe(5);
     // Every arcanum number is exposed on its slot — no quiet drop
-    // of the 5th and 6th cards.
+    // of the 4th and 5th cards.
     const arcana = Array.from(slots).map((s) => s.getAttribute('data-arcanum'));
-    expect(arcana).toEqual(['0', '2', '5', '13', '18', '21']);
+    expect(arcana).toEqual(['0', '2', '5', '13', '18']);
   });
 
-  it('renders all 5 cards at hand size 5 (between starting size and cap)', () => {
+  it('renders all 5 cards at HAND_CAP', () => {
     const { container } = render(<Hand hand={[0, 2, 5, 13, 21]} visible={true} />);
     const slots = container.querySelectorAll('[data-card-slot]');
     expect(slots.length).toBe(5);
   });
 
-  it('renders all 6 cards face-down when hidden at HAND_CAP', () => {
-    const { container } = render(<Hand hand={[0, 2, 5, 13, 18, 21]} visible={false} />);
+  it('renders all 5 cards face-down when hidden at HAND_CAP', () => {
+    const { container } = render(<Hand hand={[0, 2, 5, 13, 18]} visible={false} />);
     const backs = container.querySelectorAll('[data-card="back"]');
-    expect(backs.length).toBe(6);
+    expect(backs.length).toBe(5);
   });
 
   it('overlap is sized to card width, not parent width (no % marginLeft)', () => {
