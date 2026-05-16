@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Lobby, type LobbyPlayer } from '@/components/setup/Lobby';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import {
@@ -57,6 +58,7 @@ interface LobbyPageProps {
 
 export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   const { code } = params;
+  const router = useRouter();
   const {
     room,
     players,
@@ -69,6 +71,14 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     setZodiacSign,
     setReady,
   } = useLobby(code);
+
+  // When the game starts (host clicks Begin, or this tab was open when
+  // another tab triggered the start), send the player to the play surface.
+  useEffect(() => {
+    if (room?.state === 'playing' || room?.state === 'paused') {
+      router.push(`/rooms/${code}/play`);
+    }
+  }, [room?.state, code, router]);
 
   if (error !== null) {
     return (

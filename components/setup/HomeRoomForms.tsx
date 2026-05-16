@@ -195,9 +195,9 @@ function formatJoinError(err: JoinRoomError): string {
     case 'room-not-found':
       return `No room with code ${err.code}.`;
     case 'room-not-joinable':
-      return err.state === 'playing'
-        ? 'That game is already in progress.'
-        : 'That game has finished.';
+      if (err.state === 'playing') return 'That game is already in progress.';
+      if (err.state === 'paused') return 'That game is paused. Use your Continue Game bookmark to rejoin.';
+      return 'That game has finished.';
     case 'room-full':
       return 'That room is full (4 players max).';
     case 'seat-rpc-failed':

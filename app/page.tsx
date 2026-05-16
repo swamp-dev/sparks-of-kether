@@ -1,5 +1,6 @@
 import { Hero } from '@/components/home/Hero';
 import { PrimaryCTA } from '@/components/home/PrimaryCTA';
+import { ContinueGame } from '@/components/home/ContinueGame';
 import { PitchColumns } from '@/components/home/PitchColumns';
 import { Filmstrip } from '@/components/home/Filmstrip';
 import { Footer } from '@/components/home/Footer';
@@ -86,6 +87,7 @@ export default function HomePage(): JSX.Element {
             three flat CTAs at a glance; expansion preserves the
             three-options-in-≤2-taps requirement. */}
         <PrimaryCTA className="mt-10 sm:mt-12" />
+        <ContinueGame />
       </section>
 
       {/* "What is this?" pitch — three columns, vertical-stack on
