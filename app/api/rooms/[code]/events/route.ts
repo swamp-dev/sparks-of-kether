@@ -62,14 +62,15 @@ export async function POST(
     return NextResponse.json({ error: 'invalid-action-shape' }, { status: 400 });
   }
 
-  const client = createSupabaseServerClient();
+  // Used only for JWT verification — not for any DB reads.
+  const authClient = createSupabaseServerClient();
   // Verify the bearer token corresponds to a real user, and pin the
   // caller's identity to `auth.uid()`. The action's `playerId` is
   // claimed by the client and must match — without this check, a
   // malicious caller could submit actions as another player and the
   // engine would fold them before the game_events RLS rejected the
   // insert (after-the-fact, surfacing as 500).
-  const userResult = await client.auth.getUser(token);
+  const userResult = await authClient.auth.getUser(token);
   if (userResult.error || !userResult.data.user) {
     return NextResponse.json({ error: 'invalid-token' }, { status: 401 });
   }

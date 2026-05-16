@@ -284,6 +284,23 @@ describe('createRoom', () => {
     await createRoom({ nickname: 'Andy', client });
     expect(signOut).toHaveBeenCalledOnce();
   });
+
+  it('returns auth-failed when signOut fails (silently keeping the stale session regenerates the 23505)', async () => {
+    // If signOut errors, the stale session stays active. ensureAnonymousSession
+    // then returns the OLD userId via getUser() — skipping signInAnonymously —
+    // and the player insert hits 23505 again. Surface the error early instead.
+    const client = makeClient({
+      auth: {
+        signOut: vi.fn(async () => ({ error: { message: 'network error' } })),
+      },
+      tableHandlers: {},
+    });
+    const result = await createRoom({ nickname: 'Andy', client });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('auth-failed');
+    expect((result.error as { kind: 'auth-failed'; cause: string }).cause).toBe('network error');
+  });
 });
 
 describe('joinRoom', () => {
