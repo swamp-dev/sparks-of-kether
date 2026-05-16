@@ -450,6 +450,9 @@ describe('useLobby', () => {
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);
     });
+    // lobby_room CHANNEL_ERROR clears room so the play page renders
+    // the error UI rather than a ghost state with stale room.state.
+    expect(result.current.room).toBeNull();
     expect(consoleError).toHaveBeenCalledWith(expect.stringMatching(/lobby_room:/));
     consoleError.mockRestore();
   });
