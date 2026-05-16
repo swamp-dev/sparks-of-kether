@@ -83,19 +83,21 @@ export function parseVerdict(reviewerOutput) {
   const verdictMatch = reviewerOutput.match(/##\s+Verdict\s*\n+([^\n]+)/i);
   if (!verdictMatch) return 'unknown';
   const line = verdictMatch[1].toLowerCase();
+  // Strip leading markdown emphasis (`**`, `__`) and check the first
+  // word first. This prevents prose like "does not block merge" or
+  // "the core fix is correct" from mis-classifying a Ship verdict.
+  // All four verdicts are checked by first-word before falling back
+  // to anywhere-in-line for non-standard reviewer formatting.
+  const stripped = line.trim().replace(/^[*_]+/, '');
+  if (/^block\b/.test(stripped)) return 'block';
+  if (/^rework\b/.test(stripped)) return 'rework';
+  if (/^ship\b/.test(stripped)) return 'ship';
+  if (/^fix\b/.test(stripped)) return 'fix';
+  // Fallback: anywhere in line (catches "verdict: ship" style phrasings)
   if (/\bblock\b/.test(line)) return 'block';
   if (/\brework\b/.test(line)) return 'rework';
-  // Ship-then-fix and clean-Ship-with-fix-in-prose both resolve to
-  // ship. "Fix issues then ship" starts with "Fix" — the headline
-  // word is "Fix", and we want that to classify as fix. We
-  // distinguish by checking the *first* verdict word: if it's
-  // Ship, it's a clean ship even when "fix" appears later in the
-  // sentence. Strip leading markdown emphasis (`**`, `__`) before
-  // matching.
-  const stripped = line.trim().replace(/^[*_]+/, '');
-  if (/^ship\b/.test(stripped)) return 'ship';
-  if (/\bfix\b/.test(line)) return 'fix';
   if (/\bship\b/.test(line)) return 'ship';
+  if (/\bfix\b/.test(line)) return 'fix';
   return 'unknown';
 }
 
