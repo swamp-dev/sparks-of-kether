@@ -43,7 +43,13 @@ export async function POST(
   }
   const callerId = userResult.data.user.id;
 
-  const roomLookup = await client
+  // Use the service client for all reads. setSession silently fails on
+  // production Supabase, leaving auth.uid() null and causing RLS-gated reads
+  // to return null. Security is enforced by: (1) getUser above validates the
+  // JWT, (2) the explicit callerId === host_id check below.
+  const serviceClient = createSupabaseServiceClient();
+
+  const roomLookup = await serviceClient
     .from('rooms')
     .select()
     .eq('code', params.code)
@@ -56,8 +62,6 @@ export async function POST(
   if (callerId !== room.host_id) {
     return NextResponse.json({ error: 'not-host' }, { status: 403 });
   }
-
-  const serviceClient = createSupabaseServiceClient();
 
   // Clear events and snapshot before the room state flip so a concurrent
   // /start can't win the lobby check and then have its game_states row

@@ -34,18 +34,6 @@ function makeServerClient() {
     auth: {
       getUser: vi.fn(async () => getUserResult),
     },
-    from: (table: string) => {
-      if (table === 'rooms') {
-        return {
-          select: () => ({
-            eq: () => ({
-              maybeSingle: async () => roomResponse,
-            }),
-          }),
-        };
-      }
-      throw new Error(`unexpected server-client table: ${table}`);
-    },
   };
 }
 
@@ -84,6 +72,11 @@ function makeServiceClient() {
       }
       if (table === 'rooms') {
         return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => roomResponse,
+            }),
+          }),
           update: (patch: unknown) => ({
             eq: async () => {
               roomUpdates.push(patch);
