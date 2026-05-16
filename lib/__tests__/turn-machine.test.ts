@@ -4307,3 +4307,274 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
     expect(result.value.next.state.encounter?.chokmahPriorAttempts).toBe(5);
   });
 });
+
+describe('turnReducer — Tiferet required burn (difficulty increase)', () => {
+  // Difficulty change: Tiferet (DC 14) requires at least one staged
+  // card-burn before prep-confirm, same gate pattern as Gevurah (#487).
+  // Empty-hand waiver applies: a player who spent all cards moving to
+  // Tiferet must not be hardlocked.
+
+  const passOutcome: CheckOutcome = {
+    rolled: 18,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 28,
+    effectiveDC: 14,
+    pass: true,
+  };
+
+  function teferetStats() {
+    return {
+      unity: 10,
+      insight: 10,
+      understanding: 10,
+      lovingkindness: 10,
+      strength: 10,
+      harmony: 10,
+      passion: 10,
+      intellect: 10,
+      intuition: 10,
+      body: 10,
+    };
+  }
+
+  it('rejects prep-confirm at Tiferet with non-empty hand and no staged card-burns', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [10, 5, 3],
+      stats: teferetStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'tiferet', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'tiferet', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('tiferet-requires-burn');
+  });
+
+  it('allows prep-confirm at Tiferet with empty hand (waiver: no hardlock)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [],
+      stats: teferetStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'tiferet', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'tiferet', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('allows prep-confirm at Tiferet when at least one card-burn is staged', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [10, 5, 3],
+      stats: teferetStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'tiferet', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'tiferet', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('Chokmah has no mandatory-burn gate (prep-confirm succeeds with 0 burns)', () => {
+    // Chokmah is intentionally excluded: Act-Before-Thought rewards the
+    // zero-burn flash for fire signs. A mandatory-burn gate would kill
+    // that path. Pin: if someone accidentally adds a chokmah gate, this
+    // test catches it.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chokmah',
+      hand: [10, 5, 3],
+      stats: teferetStats(),
+    });
+    const chokmahPassOutcome: CheckOutcome = {
+      rolled: 18,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 28,
+      effectiveDC: 16,
+      pass: true,
+    };
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'chokmah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'chokmah', outcome: chokmahPassOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe('turnReducer — Binah required burn (difficulty increase)', () => {
+  // Difficulty change: Binah (DC 16) requires at least one staged
+  // card-burn before prep-confirm, same gate pattern as Gevurah (#487).
+  // This is orthogonal to the existing binah-no-assists gate:
+  // - binah-no-assists fires at prep-add-modifier (earlier in the flow)
+  // - binah-requires-burn fires at prep-confirm (later, on confirm attempt)
+  // Both must be satisfied independently.
+
+  const passOutcome: CheckOutcome = {
+    rolled: 20,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 30,
+    effectiveDC: 16,
+    pass: true,
+  };
+
+  function binahStats() {
+    return {
+      unity: 10,
+      insight: 10,
+      understanding: 10,
+      lovingkindness: 10,
+      strength: 10,
+      harmony: 10,
+      passion: 10,
+      intellect: 10,
+      intuition: 10,
+      body: 10,
+    };
+  }
+
+  it('rejects prep-confirm at Binah with non-empty hand and no staged card-burns', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [15, 8, 2],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('binah-requires-burn');
+  });
+
+  it('allows prep-confirm at Binah with empty hand (waiver: no hardlock)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('allows prep-confirm at Binah when at least one card-burn is staged', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [15, 8, 2],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [8] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('binah-requires-burn is orthogonal to binah-no-assists (both gate independently)', () => {
+    // binah-no-assists fires at prep-add-modifier; binah-requires-burn
+    // fires at prep-confirm. This test verifies that binah-requires-burn
+    // fires even when no assist was attempted (the assists gate is not
+    // a prerequisite for the burns gate).
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [15, 8, 2],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        // No assists staged, no burns staged — both gates apply independently.
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('binah-requires-burn');
+  });
+});
