@@ -423,6 +423,8 @@ describe('useLobby', () => {
     // updates on a CHANNEL_ERROR; the host stares at a Begin that
     // never lights up. The fix surfaces an error string so the
     // failure has a paper trail.
+    // The lobby_room CHANNEL_ERROR also clears room so the play page
+    // renders the error UI rather than a ghost state with stale room.state.
     channelSubscribeStatus = 'CHANNEL_ERROR';
     const consoleError = vi
       .spyOn(console, 'error')
@@ -430,11 +432,11 @@ describe('useLobby', () => {
         /* swallow during this test */
       });
     const { result } = renderHook(() => useLobby('ABCDEF'));
-    await waitFor(() => expect(result.current.room).not.toBeNull());
-
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);
     });
+    // room is null because CHANNEL_ERROR on lobby_room clears it.
+    expect(result.current.room).toBeNull();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
   });

@@ -75,8 +75,10 @@ export async function POST(
   // Guards the TOCTOU window between the state check above and this write —
   // two concurrent pause requests both pass the check, but only one wins the
   // conditional update; the other gets 0 rows and returns 409.
+  // { count: 'exact' } sends Prefer: count=exact so PostgREST populates
+  // the count field — without it count is always null and the 0-row check below is dead.
   const roomUpdate = await query(serviceClient, 'rooms')
-    .update({ state: 'paused', paused_at: new Date().toISOString() })
+    .update({ state: 'paused', paused_at: new Date().toISOString() }, { count: 'exact' })
     .eq('id', room.id)
     .eq('state', 'playing');
   if (roomUpdate.error) {

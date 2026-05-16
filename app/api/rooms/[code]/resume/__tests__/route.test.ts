@@ -7,7 +7,7 @@ let getUserResult: { data: { user: { id: string } | null }; error: unknown } = {
 };
 let roomResponse: { data: unknown; error: unknown } = { data: null, error: null };
 let membershipResponse: { data: unknown; error: unknown } = { data: null, error: null };
-let roomUpdateResult: { error: { message: string } | null } = { error: null };
+let roomUpdateResult: { error: { message: string } | null; count?: number | null } = { error: null };
 
 let roomUpdates: unknown[] = [];
 
@@ -92,7 +92,7 @@ describe('POST /api/rooms/[code]/resume', () => {
       data: { id: 'player-uid', room_id: 'room-id', nickname: 'Miriam' },
       error: null,
     };
-    roomUpdateResult = { error: null };
+    roomUpdateResult = { error: null, count: 1 };
   });
 
   it('returns 401 when no bearer token is provided', async () => {
@@ -151,5 +151,14 @@ describe('POST /api/rooms/[code]/resume', () => {
     expect(roomUpdates).toHaveLength(1);
     expect((roomUpdates[0] as Record<string, unknown>)['state']).toBe('playing');
     expect((roomUpdates[0] as Record<string, unknown>)['paused_at']).toBeNull();
+  });
+
+  it('returns 409 when a concurrent request already changed the state (count=0)', async () => {
+    roomUpdateResult = { error: null, count: 0 };
+    const { POST } = await import('../route');
+    const res = await POST(makeRequest('KETHR1'), { params: { code: 'KETHR1' } });
+    expect(res.status).toBe(409);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('state-changed');
   });
 });

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlayScreen } from '@/components/game/PlayScreen';
 import { ColorBloom } from '@/components/atmosphere/ColorBloom';
@@ -33,6 +33,7 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   const { code } = params;
   const router = useRouter();
   const { room, players, currentPlayerId, error, loading } = useLobby(code);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const { state: gameState, lastEventId } = useRoomState(room?.id ?? null);
   // RNG seeded from the last applied event ID — stays in sync with
   // the server's deterministic fold sequence.
@@ -106,17 +107,25 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   }, [onlinePlayerIds.size, room?.state, code]);
 
   const handleResume = (): void => {
+    setResumeError(null);
     void (async () => {
       const client = getSupabaseBrowserClient();
       const { data: session } = await client.auth.getSession();
       const token = session.session?.access_token;
-      if (!token) return;
-      await fetch(`/api/rooms/${code}/resume`, {
+      if (!token) {
+        setResumeError('Not signed in. Please refresh.');
+        return;
+      }
+      const res = await fetch(`/api/rooms/${code}/resume`, {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
       });
       // Room state update arrives via the lobby_room Realtime channel —
-      // the overlay dismisses automatically.
+      // the overlay dismisses automatically on success.
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setResumeError(`Could not resume: ${body.error ?? `HTTP ${res.status}`}`);
+      }
     })();
   };
 
@@ -173,6 +182,7 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
         <PauseOverlay
           code={code}
           pausedAt={room.paused_at}
+          resumeError={resumeError}
           onResume={handleResume}
           onLeave={handleLeave}
         />
@@ -184,11 +194,13 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
 function PauseOverlay({
   code,
   pausedAt,
+  resumeError,
   onResume,
   onLeave,
 }: {
   readonly code: string;
   readonly pausedAt: string | null;
+  readonly resumeError: string | null;
   readonly onResume: () => void;
   readonly onLeave: () => void;
 }): JSX.Element {
@@ -216,6 +228,14 @@ function PauseOverlay({
           {code}
         </p>
         <p className="mt-1 text-xs opacity-40">Share this code to let others rejoin</p>
+        {resumeError !== null ? (
+          <p
+            role="alert"
+            className="mt-3 text-xs text-pillar-severity"
+          >
+            {resumeError}
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-col gap-3">
           <button
             type="button"

@@ -26,10 +26,17 @@ alter table public.rooms
 -- Without this, the pause overlay and lobby redirect never receive room-state
 -- updates without a manual poll.
 --
--- If rooms is already in the publication (re-run scenario), this will error
--- with "relation already exists in publication". On Supabase Cloud the
--- dashboard migration runner handles idempotency; on local `supabase db push`
--- re-runs are not expected. Adding a plain statement avoids wrapping DDL in
--- a PL/pgSQL DO block, which can conflict with implicit transaction handling
--- for DDL in some Postgres versions.
-alter publication supabase_realtime add table public.rooms;
+-- Idempotent: the DO block checks pg_publication_tables before issuing the
+-- ALTER so re-running the migration (fresh local stack, partial staging apply)
+-- does not error with "relation already exists in publication".
+-- ALTER PUBLICATION ADD TABLE is safe inside a PL/pgSQL function body; the
+-- DDL-in-implicit-transaction concern applies only to CREATE/DROP PUBLICATION.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'rooms'
+  ) then
+    execute 'alter publication supabase_realtime add table public.rooms';
+  end if;
+end $$;

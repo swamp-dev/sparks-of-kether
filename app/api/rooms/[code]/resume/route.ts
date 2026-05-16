@@ -68,8 +68,10 @@ export async function POST(
 
   // Conditional update: only write if still paused. Guards concurrent resume
   // requests from racing each other on a brief Realtime delivery gap.
+  // { count: 'exact' } sends Prefer: count=exact so PostgREST populates
+  // the count field — without it count is always null and the 0-row check below is dead.
   const roomUpdate = await query(serviceClient, 'rooms')
-    .update({ state: 'playing', paused_at: null })
+    .update({ state: 'playing', paused_at: null }, { count: 'exact' })
     .eq('id', room.id)
     .eq('state', 'paused');
   if (roomUpdate.error) {
