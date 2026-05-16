@@ -9,6 +9,8 @@ import type * as SupabaseModule from '@/lib/supabase';
  *   2. Deleting the game_states row for the room.
  *   3. Setting all players' ready = false.
  *   4. Setting rooms.state = 'lobby', started_at = null, finished_at = null.
+ *
+ * Each intermediate write is checked; a failure halts and returns 500.
  */
 
 let getUserResult: { data: { user: { id: string } | null }; error: unknown } = {
@@ -16,6 +18,10 @@ let getUserResult: { data: { user: { id: string } | null }; error: unknown } = {
   error: null,
 };
 let roomResponse: { data: unknown; error: unknown } = { data: null, error: null };
+
+let gameEventsDeleteResult: { error: { message: string } | null } = { error: null };
+let gameStatesDeleteResult: { error: { message: string } | null } = { error: null };
+let playersUpdateResult: { error: { message: string } | null } = { error: null };
 let roomResetResult: { error: { message: string } | null } = { error: null };
 
 let gameEventsDeletes = 0;
@@ -27,7 +33,6 @@ function makeServerClient() {
   return {
     auth: {
       getUser: vi.fn(async () => getUserResult),
-      setSession: vi.fn(async () => ({ data: { session: null }, error: null })),
     },
     from: (table: string) => {
       if (table === 'rooms') {
@@ -52,7 +57,7 @@ function makeServiceClient() {
           delete: () => ({
             eq: async () => {
               gameEventsDeletes += 1;
-              return { error: null };
+              return gameEventsDeleteResult;
             },
           }),
         };
@@ -62,7 +67,7 @@ function makeServiceClient() {
           delete: () => ({
             eq: async () => {
               gameStatesDeletes += 1;
-              return { error: null };
+              return gameStatesDeleteResult;
             },
           }),
         };
@@ -72,7 +77,7 @@ function makeServiceClient() {
           update: (patch: unknown) => ({
             eq: async () => {
               playersUpdates.push(patch);
-              return { error: null };
+              return playersUpdateResult;
             },
           }),
         };
@@ -124,6 +129,9 @@ describe('POST /api/rooms/[code]/reset', () => {
   beforeEach(() => {
     getUserResult = { data: { user: { id: 'host-uid' } }, error: null };
     roomResponse = { data: playingRoom, error: null };
+    gameEventsDeleteResult = { error: null };
+    gameStatesDeleteResult = { error: null };
+    playersUpdateResult = { error: null };
     roomResetResult = { error: null };
     gameEventsDeletes = 0;
     gameStatesDeletes = 0;
@@ -169,7 +177,7 @@ describe('POST /api/rooms/[code]/reset', () => {
     expect(roomUpdates).toHaveLength(0);
   });
 
-  it('returns 200 and writes all reset operations on success', async () => {
+  it('returns 200 and writes all reset operations in order on success', async () => {
     const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
       params: { code: 'ABCDEF' },
     });
@@ -191,11 +199,7 @@ describe('POST /api/rooms/[code]/reset', () => {
 
   it('resets a lobby-state room idempotently', async () => {
     roomResponse = {
-      data: {
-        ...playingRoom,
-        state: 'lobby' as const,
-        started_at: null,
-      },
+      data: { ...playingRoom, state: 'lobby' as const, started_at: null },
       error: null,
     };
     const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
@@ -207,7 +211,46 @@ describe('POST /api/rooms/[code]/reset', () => {
     expect(roomUpdates).toHaveLength(1);
   });
 
-  it('returns 500 when the rooms update fails', async () => {
+  it('returns 500 and halts when game_events delete fails', async () => {
+    gameEventsDeleteResult = { error: { message: 'events delete error' } };
+    const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error: string; cause: string };
+    expect(body.error).toBe('reset-failed');
+    expect(body.cause).toBe('events delete error');
+    expect(gameStatesDeletes).toBe(0);
+    expect(playersUpdates).toHaveLength(0);
+    expect(roomUpdates).toHaveLength(0);
+  });
+
+  it('returns 500 and halts when game_states delete fails', async () => {
+    gameStatesDeleteResult = { error: { message: 'snapshot delete error' } };
+    const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error: string; cause: string };
+    expect(body.error).toBe('reset-failed');
+    expect(body.cause).toBe('snapshot delete error');
+    expect(playersUpdates).toHaveLength(0);
+    expect(roomUpdates).toHaveLength(0);
+  });
+
+  it('returns 500 and halts when players update fails', async () => {
+    playersUpdateResult = { error: { message: 'players update error' } };
+    const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error: string; cause: string };
+    expect(body.error).toBe('reset-failed');
+    expect(body.cause).toBe('players update error');
+    expect(roomUpdates).toHaveLength(0);
+  });
+
+  it('returns 500 when the rooms state update fails', async () => {
     roomResetResult = { error: { message: 'db error' } };
     const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
       params: { code: 'ABCDEF' },

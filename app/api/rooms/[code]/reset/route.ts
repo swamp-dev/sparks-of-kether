@@ -43,8 +43,6 @@ export async function POST(
   }
   const callerId = userResult.data.user.id;
 
-  await client.auth.setSession({ access_token: token, refresh_token: '' });
-
   const roomLookup = await client
     .from('rooms')
     .select()
@@ -61,21 +59,43 @@ export async function POST(
 
   const serviceClient = createSupabaseServiceClient();
 
-  // game_events references players, so delete events before resetting
-  // players. game_states holds last_event_id but is independent — both
-  // deletes are safe in either order since we're removing rows, not
-  // updating foreign keys. Clear events and snapshot before the room
-  // state flip so a concurrent /start can't race in between.
-  await query(serviceClient, 'game_events').delete().eq('room_id', room.id);
-  await query(serviceClient, 'game_states').delete().eq('room_id', room.id);
-  await query(serviceClient, 'players')
+  // Clear events and snapshot before the room state flip so a concurrent
+  // /start can't win the lobby check and then have its game_states row
+  // deleted out from under it. Each write is checked; a failure here means
+  // the room is still in its prior state and the host can retry.
+  const eventsDelete = await query(serviceClient, 'game_events')
+    .delete()
+    .eq('room_id', room.id);
+  if (eventsDelete.error) {
+    return NextResponse.json(
+      { error: 'reset-failed', cause: eventsDelete.error.message },
+      { status: 500 },
+    );
+  }
+
+  const snapshotDelete = await query(serviceClient, 'game_states')
+    .delete()
+    .eq('room_id', room.id);
+  if (snapshotDelete.error) {
+    return NextResponse.json(
+      { error: 'reset-failed', cause: snapshotDelete.error.message },
+      { status: 500 },
+    );
+  }
+
+  const playersReset = await query(serviceClient, 'players')
     .update({ ready: false })
     .eq('room_id', room.id);
+  if (playersReset.error) {
+    return NextResponse.json(
+      { error: 'reset-failed', cause: playersReset.error.message },
+      { status: 500 },
+    );
+  }
 
   const roomReset = await query(serviceClient, 'rooms')
     .update({ state: 'lobby', started_at: null, finished_at: null })
     .eq('id', room.id);
-
   if (roomReset.error) {
     return NextResponse.json(
       { error: 'reset-failed', cause: roomReset.error.message },
