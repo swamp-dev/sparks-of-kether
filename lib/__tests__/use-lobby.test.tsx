@@ -46,11 +46,7 @@ interface FakeChannel {
   fireRow: (event: 'INSERT' | 'UPDATE' | 'DELETE', row: unknown, old?: unknown) => void;
 }
 
-type ChannelPayloadHandler = (payload: {
-  eventType: string;
-  new: unknown;
-  old: unknown;
-}) => void;
+type ChannelPayloadHandler = (payload: { eventType: string; new: unknown; old: unknown }) => void;
 
 // useLobby subscribes to two channels: lobby_players and lobby_room.
 // Track handlers by channel name so tests can fire events on the right one.
@@ -429,11 +425,9 @@ describe('useLobby', () => {
     // shows the error UI rather than a ghost state with stale room.state).
     playersChannelSubscribeStatus = 'CHANNEL_ERROR';
     roomsChannelSubscribeStatus = 'CHANNEL_ERROR';
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* swallow during this test */
-      });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* swallow during this test */
+    });
     const { result } = renderHook(() => useLobby('ABCDEF'));
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);
@@ -449,18 +443,14 @@ describe('useLobby', () => {
     // and the rooms effect mounts. It sets error + clears room to null —
     // so we wait for error directly rather than room !== null.
     roomsChannelSubscribeStatus = 'CHANNEL_ERROR';
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* swallow during this test */
-      });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* swallow during this test */
+    });
     const { result } = renderHook(() => useLobby('ABCDEF'));
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);
     });
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringMatching(/lobby_room:/),
-    );
+    expect(consoleError).toHaveBeenCalledWith(expect.stringMatching(/lobby_room:/));
     consoleError.mockRestore();
   });
 
