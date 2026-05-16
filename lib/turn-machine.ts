@@ -19,7 +19,11 @@ import {
   HAND_CAP as ENGINE_HAND_CAP,
   STARTING_HAND_SIZE as ENGINE_STARTING_HAND_SIZE,
 } from '@/engine/setup';
-import { discard as discardReducer, endTurn as endTurnReducer } from '@/engine/turn';
+import {
+  discard as discardReducer,
+  encounterBurnDiscard as encounterBurnDiscardReducer,
+  endTurn as endTurnReducer,
+} from '@/engine/turn';
 import {
   EMPTY_PENDING_MODIFIERS,
   type ChallengeSubPhase,
@@ -253,6 +257,16 @@ export type TurnEvent =
        * end of their turn; only their hand needs reconciling.
        */
       readonly kind: 'discard';
+      readonly arcanum: number;
+    }
+  | {
+      /**
+       * Encounter-burn forced discard: shed one card before rolling
+       * when the player has burned card(s) during challenge prep.
+       * Gating is a UI concern (EncounterScreen); the reducer no-ops
+       * if the card is not in hand.
+       */
+      readonly kind: 'encounter-burn-discard';
       readonly arcanum: number;
     }
   | { readonly kind: 'end-turn' }
@@ -1651,6 +1665,11 @@ export function turnReducer(
       // engine's `discard` is itself defensive (no-op if the card
       // isn't in hand).
       const after = discardReducer(state, player.id, event.arcanum);
+      return { ok: true, value: { next: { state: after } } };
+    }
+
+    case 'encounter-burn-discard': {
+      const after = encounterBurnDiscardReducer(state, player.id, event.arcanum);
       return { ok: true, value: { next: { state: after } } };
     }
 

@@ -207,6 +207,13 @@ export interface UseTurnReturn {
    * `endTurn` then unblocks and the seat advances.
    */
   readonly discard: (arcanum: number) => GameState;
+  /**
+   * Encounter-burn forced discard: shed one card from the active
+   * player's hand before the die is rolled when they have burned
+   * card(s) during encounter prep. The UI (EncounterScreen) gates
+   * invocation; the reducer no-ops if the card is not in hand.
+   */
+  readonly encounterBurnDiscard: (arcanum: number) => GameState;
   readonly endTurn: () => void;
   /** Force a state replacement — used when an external action mutates state out-of-band. */
   readonly setState: (s: GameState) => void;
@@ -635,6 +642,20 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, state, opts.rng],
   );
 
+  const encounterBurnDiscard = useCallback(
+    (arcanum: number): GameState => {
+      const result = turnReducer(
+        snapshot,
+        { kind: 'encounter-burn-discard', arcanum },
+        opts.rng,
+      );
+      if (!result.ok) return state;
+      setSnapshot(result.value.next);
+      return result.value.next.state;
+    },
+    [snapshot, state, opts.rng],
+  );
+
   const endTurn = useCallback((): void => {
     const result = turnReducer(snapshot, { kind: 'end-turn' }, opts.rng);
     if (!result.ok) return;
@@ -843,6 +864,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactContinue,
       acceptChallengeSetback,
       discard,
+      encounterBurnDiscard,
       endTurn,
       setState: replaceState,
       // K4 (#352) — Kether ritual adapter.
@@ -878,6 +900,7 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       reactContinue,
       acceptChallengeSetback,
       discard,
+      encounterBurnDiscard,
       endTurn,
       replaceState,
       witnessPointer,
