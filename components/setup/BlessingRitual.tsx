@@ -253,14 +253,15 @@ export function BlessingRitual({
 
         {/* Left: avatar with ambient glow ring (#73) */}
         <div className="relative flex flex-col items-center gap-2 md:items-end md:pt-8">
-          {/* Pulsing radiant ring behind the avatar */}
+          {/* Pulsing ring behind the avatar — solid color (not gradient)
+              so the rendering is stable across freetype versions on CI. */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 flex items-center justify-center md:items-start md:justify-end md:pt-8"
           >
             <div
-              className="h-40 w-40 rounded-full opacity-20 motion-safe:animate-pulse"
-              style={{ background: `radial-gradient(circle, ${currentSefirah.color} 0%, transparent 70%)` }}
+              className="h-40 w-40 rounded-full opacity-10 motion-safe:animate-pulse"
+              style={{ background: currentSefirah.color }}
             />
           </div>
           {/* Ambient particle field — small colored dots (#73) */}
