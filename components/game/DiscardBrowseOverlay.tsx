@@ -72,10 +72,9 @@ export function DiscardBrowseOverlay({
     <div
       data-discard-browse-backdrop
       onClick={onClose}
-      // z-50: above the `z-40` `DiscardPrompt` bottom-sheet so a player
-      // who has prior-turn discards can browse the pile while the
-      // over-cap reconciliation prompt is also up (the pile button
-      // remains enabled because the pile is non-empty).
+      // z-50: ensures the overlay sits above the hand and any inline
+      // discard affordances so a player can browse the pile any time
+      // (the pile button remains enabled because the pile is non-empty).
       className="fixed inset-0 z-50 flex items-center justify-center bg-ground/60 p-4 backdrop-blur-sm"
     >
       <div

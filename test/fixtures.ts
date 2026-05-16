@@ -121,6 +121,7 @@ export interface MakeRoomOverrides {
   readonly created_at?: string;
   readonly started_at?: string | null;
   readonly finished_at?: string | null;
+  readonly paused_at?: string | null;
 }
 
 /**
@@ -154,6 +155,7 @@ export function makeRoom(overrides: MakeRoomOverrides = {}): RoomRow {
     created_at: overrides.created_at ?? '2026-04-27T00:00:00Z',
     started_at: overrides.started_at ?? null,
     finished_at: overrides.finished_at ?? null,
+    paused_at: overrides.paused_at ?? null,
   };
 }
 

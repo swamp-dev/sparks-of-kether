@@ -8,7 +8,6 @@ import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { DiscardPile } from '@/components/game/DiscardPile';
-import { DiscardPrompt } from '@/components/game/DiscardPrompt';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
@@ -642,7 +641,7 @@ export function PlayScreen({
           <Hand
             hand={activePlayer.hand}
             visible={isHandVisible(turn.state, activePlayer.id, activePlayer.id)}
-            onCardSelect={(n) => setSelectedCard(n)}
+            {...(pendingDiscardCount === 0 ? { onCardSelect: (n: number) => setSelectedCard(n) } : {})}
             onCardHover={(n) => setHoveredCard(n)}
             // #412: drag-to-play wiring. drag-start lights the path
             // beneath the gesture; drag-end runs the drop handler;
@@ -650,7 +649,13 @@ export function PlayScreen({
             onCardDragStart={(n) => setDraggingCard(n)}
             onCardDragEnd={handleCardDrop}
             onCardDragCancel={() => setDraggingCard(undefined)}
-            {...(selectedCard !== undefined ? { selectedArcanum: selectedCard } : {})}
+            {...(selectedCard !== undefined && pendingDiscardCount === 0 ? { selectedArcanum: selectedCard } : {})}
+            {...(pendingDiscardCount > 0
+              ? {
+                  discardMode: true as const,
+                  onDiscard: (arcanum: number) => turn.discard(arcanum),
+                }
+              : {})}
             ariaLabel={`${activePlayer.name}'s hand`}
             className="w-full max-w-xl"
           />
@@ -769,19 +774,21 @@ export function PlayScreen({
       ) : null}
 
       {/*
-       * #291: end-of-turn over-cap reconciliation. Renders when the
-       * active player Meditated past HAND_CAP and still owes a trim;
-       * unmounts as soon as count reaches 0 (the engine's discard
-       * reducer clears pendingDiscard at that point). The auto-
-       * advance timer is gated on count === 0, so the player drives
-       * the cadence here.
+       * #90: end-of-turn over-cap reconciliation. Status bar replaces
+       * the DiscardPrompt bottom sheet — discard icons now overlay the
+       * hand cards directly so players can hover for path-lighting
+       * before committing.
        */}
-      {pendingDiscardCount > 0 && activePlayer ? (
-        <DiscardPrompt
-          hand={activePlayer.hand}
-          count={pendingDiscardCount}
-          onDiscard={(arcanum) => turn.discard(arcanum)}
-        />
+      {pendingDiscardCount > 0 ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-discard-status
+          className="w-full max-w-xl rounded border border-veil/30 bg-ground/80 px-4 py-2 text-center text-xs text-veil"
+        >
+          Shed {pendingDiscardCount} card{pendingDiscardCount === 1 ? '' : 's'} — hover a card to
+          see its paths, then click <span aria-hidden>✕</span> to discard
+        </div>
       ) : null}
 
       {/* #321: floating settings cog. Always available on the play

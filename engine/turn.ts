@@ -172,3 +172,36 @@ export function discard(
     pendingDiscard: nextPendingDiscard,
   };
 }
+
+/**
+ * Encounter-burn forced discard: when a player burns card(s) during
+ * challenge prep, they must shed one card from their remaining hand
+ * before the die rolls. Removes the arcanum from the player's hand
+ * and appends it to the discard pile.
+ *
+ * No phase guard — the UI (EncounterScreen) gates this to the burn-
+ * discard picker flow. Defense-in-depth: silently returns input state
+ * if the card is not in hand or the player is not found.
+ */
+export function encounterBurnDiscard(
+  state: GameState,
+  playerId: string,
+  arcanum: number,
+): GameState {
+  const pIndex = state.players.findIndex((p) => p.id === playerId);
+  if (pIndex === -1) return state;
+  const player = state.players[pIndex]!;
+  const cardIdx = player.hand.findIndex((n) => n === arcanum);
+  if (cardIdx === -1) return state;
+  const nextHand = [
+    ...player.hand.slice(0, cardIdx),
+    ...player.hand.slice(cardIdx + 1),
+  ];
+  return {
+    ...state,
+    players: state.players.map((p, idx) =>
+      idx === pIndex ? { ...player, hand: nextHand } : p,
+    ),
+    discardPile: [...state.discardPile, arcanum],
+  };
+}

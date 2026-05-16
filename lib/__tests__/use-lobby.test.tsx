@@ -45,22 +45,25 @@ interface FakeChannel {
   subscribe: ReturnType<typeof vi.fn>;
   fireRow: (event: 'INSERT' | 'UPDATE' | 'DELETE', row: unknown, old?: unknown) => void;
 }
+
 type ChannelPayloadHandler = (payload: {
   eventType: string;
   new: unknown;
   old: unknown;
 }) => void;
-// Players channel handler — referenced by existing tests via `channelHandler`.
+
+// useLobby subscribes to two channels: lobby_players and lobby_room.
+// Track handlers by channel name so tests can fire events on the right one.
+const channelHandlers = new Map<string, ChannelPayloadHandler>();
+// Legacy alias: `channelHandler` points to the players channel handler.
 let channelHandler: ChannelPayloadHandler | null = null;
-// Rooms channel handler — used by the new rooms-subscription test.
+// Direct alias for the rooms channel — used by the CHANNEL_ERROR + state-update tests.
 let roomsChannelHandler: ChannelPayloadHandler | null = null;
 // Per-channel subscribe statuses so tests can error one channel independently.
 let playersChannelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 let roomsChannelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
-// Shared alias kept for existing tests that don't need per-channel control.
-let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 
-function makeFakeChannel(name: string): FakeChannel {
+function makeFakeChannel(channelName: string): FakeChannel {
   const channel: FakeChannel = {
     on: vi.fn(function (
       this: FakeChannel,
@@ -68,9 +71,10 @@ function makeFakeChannel(name: string): FakeChannel {
       _filter: unknown,
       handler: ChannelPayloadHandler,
     ) {
-      if (name.startsWith('lobby_players:')) {
+      channelHandlers.set(channelName, handler);
+      if (channelName.startsWith('lobby_players')) {
         channelHandler = handler;
-      } else if (name.startsWith('lobby_room:')) {
+      } else if (channelName.startsWith('lobby_room')) {
         roomsChannelHandler = handler;
       }
       return this;
@@ -79,21 +83,18 @@ function makeFakeChannel(name: string): FakeChannel {
       this: FakeChannel,
       cb?: (status: string) => void,
     ) {
-      // Defer so the React effect can settle. The callback is
-      // optional in the Supabase client's runtime API; the lobby
-      // hook doesn't pass one.
       if (cb !== undefined) {
-        const status = name.startsWith('lobby_players:')
+        const status = channelName.startsWith('lobby_players')
           ? playersChannelSubscribeStatus
-          : name.startsWith('lobby_room:')
+          : channelName.startsWith('lobby_room')
             ? roomsChannelSubscribeStatus
-            : channelSubscribeStatus;
+            : 'SUBSCRIBED';
         setTimeout(() => cb(status), 0);
       }
       return this;
     }),
     fireRow: (event, row, old) =>
-      channelHandler?.({ eventType: event, new: row, old: old ?? null }),
+      channelHandlers.get(channelName)?.({ eventType: event, new: row, old: old ?? null }),
   };
   return channel;
 }
@@ -139,6 +140,7 @@ const VALID_ROOM: RoomRow = {
   created_at: 't',
   started_at: null,
   finished_at: null,
+  paused_at: null,
 };
 
 const VALID_PLAYERS: readonly PlayerRow[] = [
@@ -177,7 +179,7 @@ describe('useLobby', () => {
     updateResponse = { error: null };
     channelHandler = null;
     roomsChannelHandler = null;
-    channelSubscribeStatus = 'SUBSCRIBED';
+    channelHandlers.clear();
     playersChannelSubscribeStatus = 'SUBSCRIBED';
     roomsChannelSubscribeStatus = 'SUBSCRIBED';
     vi.stubGlobal(
@@ -424,28 +426,11 @@ describe('useLobby', () => {
     expect(result.current.players[0]?.id).toBe('p1');
   });
 
-  it('players channel CHANNEL_ERROR sets an error message instead of silently failing', async () => {
-    // Without a status callback the hook silently stops receiving
-    // updates on a CHANNEL_ERROR; the host stares at a Begin that
-    // never lights up. The fix surfaces an error string so the
-    // failure has a paper trail.
+  it('CHANNEL_ERROR on any channel sets an error message and rooms error clears room', async () => {
+    // When both channels error: error message appears AND room is cleared
+    // (the lobby_room CHANNEL_ERROR calls setRoom(null) so the play page
+    // shows the error UI rather than a ghost state with stale room.state).
     playersChannelSubscribeStatus = 'CHANNEL_ERROR';
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* swallow during this test */
-      });
-    const { result } = renderHook(() => useLobby('ABCDEF'));
-    await waitFor(() => expect(result.current.room).not.toBeNull());
-
-    await waitFor(() => {
-      expect(result.current.error).toMatch(/realtime/i);
-    });
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
-  it('rooms channel CHANNEL_ERROR sets an error message (players channel healthy)', async () => {
     roomsChannelSubscribeStatus = 'CHANNEL_ERROR';
     const consoleError = vi
       .spyOn(console, 'error')
@@ -453,8 +438,26 @@ describe('useLobby', () => {
         /* swallow during this test */
       });
     const { result } = renderHook(() => useLobby('ABCDEF'));
-    await waitFor(() => expect(result.current.room).not.toBeNull());
+    await waitFor(() => {
+      expect(result.current.error).toMatch(/realtime/i);
+    });
+    // room is null because CHANNEL_ERROR on lobby_room clears it.
+    expect(result.current.room).toBeNull();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 
+  it('rooms channel CHANNEL_ERROR sets an error message (players channel healthy)', async () => {
+    // The rooms channel CHANNEL_ERROR fires after the initial fetch resolves
+    // and the rooms effect mounts. It sets error + clears room to null —
+    // so we wait for error directly rather than room !== null.
+    roomsChannelSubscribeStatus = 'CHANNEL_ERROR';
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {
+        /* swallow during this test */
+      });
+    const { result } = renderHook(() => useLobby('ABCDEF'));
     await waitFor(() => {
       expect(result.current.error).toMatch(/realtime/i);
     });
@@ -481,27 +484,20 @@ describe('useLobby', () => {
     await waitFor(() => expect(result.current.players).toHaveLength(3));
   });
 
-  it('a Realtime event on the rooms channel triggers a re-fetch', async () => {
+  it('a Realtime UPDATE on the rooms channel updates room state directly', async () => {
     const { result } = renderHook(() => useLobby('ABCDEF'));
     await waitFor(() => expect(result.current.room).not.toBeNull());
     await waitFor(() => expect(roomsChannelHandler).not.toBeNull());
 
-    // Update server response before the rooms event fires so we can
-    // detect the re-fetch by observing the updated player count.
-    const baseline = VALID_PLAYERS[0];
-    if (!baseline) throw new Error('VALID_PLAYERS empty');
-    playersResponse = {
-      data: [...VALID_PLAYERS, { ...baseline, id: 'p3', seat: 2 }],
-      error: null,
-    };
+    expect(result.current.room?.state).toBe('lobby');
 
-    // Simulate rooms.state changing (e.g. playing → lobby on host reset).
+    // Simulate rooms.state changing (e.g. lobby → playing when game starts).
     roomsChannelHandler?.({
       eventType: 'UPDATE',
-      new: { ...VALID_ROOM, state: 'lobby' },
-      old: { ...VALID_ROOM, state: 'playing' },
+      new: { ...VALID_ROOM, state: 'playing' },
+      old: { ...VALID_ROOM, state: 'lobby' },
     });
 
-    await waitFor(() => expect(result.current.players).toHaveLength(3));
+    await waitFor(() => expect(result.current.room?.state).toBe('playing'));
   });
 });

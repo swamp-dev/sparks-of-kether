@@ -100,15 +100,15 @@ test('meditate-over-cap discards populate the pile and the overlay shows the dis
   await page.locator('[data-action="meditate"]').click();
   await page.locator('[data-action="end-turn"]').click();
 
-  // DiscardPrompt is up. Two discards required.
-  const prompt = page.locator('[data-discard-prompt]');
-  await expect(prompt).toBeVisible();
-  // First discard. The button list re-renders after each click as
-  // the engine snapshot updates; pick the first remaining option
-  // each time rather than caching a locator across renders.
-  await page.locator('[data-action="discard"]').first().click();
+  // Discard status bar is up. Two discards required (#90).
+  const statusBar = page.locator('[data-discard-status]');
+  await expect(statusBar).toBeVisible();
+  // First discard. Hover the hand to reveal icons, then click the
+  // first visible icon. The hand re-renders after each discard as the
+  // engine snapshot updates.
+  await page.locator('[data-discard-icon]').first().click();
   await expect(page.locator('[data-discard-count]')).toHaveText('1');
-  await page.locator('[data-action="discard"]').first().click();
+  await page.locator('[data-discard-icon]').first().click();
   await expect(page.locator('[data-discard-count]')).toHaveText('2');
 
   // The pile is now populated. The button is enabled and labelled

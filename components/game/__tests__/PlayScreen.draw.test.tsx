@@ -71,21 +71,21 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
       fireEvent.click(meditateBtn);
     });
 
-    // Post-Meditate: 8 cards, NO DiscardPrompt yet.
+    // Post-Meditate: 8 cards, NO discard UI yet.
     let slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(8);
-    expect(document.querySelector('[data-discard-prompt]')).toBeNull();
+    expect(document.querySelector('[data-discard-status]')).toBeNull();
 
-    // Click End turn — cap check fires; DiscardPrompt appears.
+    // Click End turn — cap check fires; discard status bar + icons appear.
     const endBtn = screen.getByRole('button', { name: /end turn/i });
     act(() => {
       fireEvent.click(endBtn);
     });
     slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(8); // hand still 8 — no rotation yet
-    const prompt = document.querySelector('[data-discard-prompt]');
-    expect(prompt).not.toBeNull();
-    expect(prompt?.textContent ?? '').toMatch(/2/);
+    const status = document.querySelector('[data-discard-status]');
+    expect(status).not.toBeNull();
+    expect(status?.textContent ?? '').toMatch(/2/);
   });
 });
 
