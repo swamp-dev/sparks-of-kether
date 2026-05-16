@@ -14,8 +14,8 @@ function makeLocalStorage(initial: Record<string, string> = {}): Storage {
   return {
     getItem: (k: string) => store[k] ?? null,
     setItem: (k: string, v: string) => { store[k] = v; },
-    removeItem: (k: string) => { delete store[k]; },
-    clear: () => { Object.keys(store).forEach((k) => delete store[k]); },
+    removeItem: (k: string) => { Reflect.deleteProperty(store, k); },
+    clear: () => { Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k)); },
     key: (i: number) => Object.keys(store)[i] ?? null,
     get length() { return Object.keys(store).length; },
   };
@@ -29,7 +29,7 @@ describe('ContinueGame', () => {
 
   it('renders nothing when no saved game exists', async () => {
     const { container } = render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
     expect(container.firstChild).toBeNull();
   });
 
@@ -43,7 +43,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', makeLocalStorage({ [LAST_GAME_KEY]: JSON.stringify(stale) }));
 
     const { container } = render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
     expect(container.firstChild).toBeNull();
   });
 
@@ -57,7 +57,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', makeLocalStorage({ [LAST_GAME_KEY]: JSON.stringify(entry) }));
 
     render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
 
     expect(screen.getByText(/Miriam/)).toBeInTheDocument();
     expect(screen.getByText(/KETHER/)).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', makeLocalStorage({ [LAST_GAME_KEY]: JSON.stringify(entry) }));
 
     render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
 
     expect(screen.getByRole('button', { name: /resume/i })).toBeInTheDocument();
   });
@@ -88,7 +88,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', makeLocalStorage({ [LAST_GAME_KEY]: JSON.stringify(entry) }));
 
     render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
 
     fireEvent.click(screen.getByRole('button', { name: /resume/i }));
     expect(mockPush).toHaveBeenCalledWith('/rooms/LOBBY1/lobby');
@@ -104,7 +104,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', makeLocalStorage({ [LAST_GAME_KEY]: JSON.stringify(entry) }));
 
     render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
 
     fireEvent.click(screen.getByRole('button', { name: /resume/i }));
     expect(mockPush).toHaveBeenCalledWith('/rooms/PLAY12/play');
@@ -120,7 +120,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', makeLocalStorage({ [LAST_GAME_KEY]: JSON.stringify(entry) }));
 
     render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
 
     fireEvent.click(screen.getByRole('button', { name: /resume/i }));
     expect(mockPush).toHaveBeenCalledWith('/rooms/PAUSE1/play');
@@ -137,7 +137,7 @@ describe('ContinueGame', () => {
     vi.stubGlobal('localStorage', storage);
 
     render(<ContinueGame />);
-    await act(async () => {});
+    await act(() => Promise.resolve());
 
     expect(screen.getByText(/Dan/)).toBeInTheDocument();
 

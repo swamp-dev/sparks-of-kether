@@ -40,7 +40,7 @@ function makeServiceClient() {
       if (table === 'players') {
         return {
           select: () => ({
-            eq: (col: string, val: string) => ({
+            eq: (_col: string, _val: string) => ({
               eq: () => ({
                 maybeSingle: async () => membershipResponse,
               }),

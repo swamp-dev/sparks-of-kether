@@ -13,8 +13,8 @@ function makeLocalStorage(): Storage {
   return {
     getItem: (k: string) => store[k] ?? null,
     setItem: (k: string, v: string) => { store[k] = v; },
-    removeItem: (k: string) => { delete store[k]; },
-    clear: () => { Object.keys(store).forEach((k) => delete store[k]); },
+    removeItem: (k: string) => { Reflect.deleteProperty(store, k); },
+    clear: () => { Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k)); },
     key: (i: number) => Object.keys(store)[i] ?? null,
     get length() { return Object.keys(store).length; },
   };
