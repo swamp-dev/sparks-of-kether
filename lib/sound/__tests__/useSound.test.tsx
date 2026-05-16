@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { SoundSettingsProvider } from '../settings';
+import { SoundSettingsProvider, SFX_ENABLED_STORAGE_KEY } from '../settings';
 import { useSound, MAX_REPEATS_PER_WINDOW, REPEAT_WINDOW_MS } from '../useSound';
 
 /**
@@ -79,7 +79,7 @@ function withSoundEnabled(enabled: boolean) {
   // its very first render (the value the call sites actually depend on).
   return function Wrapper({ children }: { children: ReactNode }): JSX.Element {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('sok.soundEnabled', enabled ? 'true' : 'false');
+      window.localStorage.setItem(SFX_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
     }
     return <SoundSettingsProvider>{children}</SoundSettingsProvider>;
   };

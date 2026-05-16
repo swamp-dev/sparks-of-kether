@@ -392,8 +392,8 @@ export function TreeBoard({
             // `isValid` is still computed above because it gates
             // `clickable` (clicks only dispatch on legal moves).
             const stroke = isCardLit ? `url(#card-lit-${path.number}-${reactId})` : VEIL;
-            const strokeOpacity = isCardLit ? 0.85 : 0.45;
-            const strokeWidth = isCardLit ? 2.5 : 1.5;
+            const strokeOpacity = isCardLit ? 0.95 : 0.45;
+            const strokeWidth = isCardLit ? 3.5 : 1.5;
             return (
               <g
                 key={path.number}
@@ -445,6 +445,21 @@ export function TreeBoard({
                   strokeWidth={PATH_HIT_WIDTH}
                   strokeLinecap="butt"
                 />
+                {/* #75: gold backing glow when a card illuminates this path */}
+                {isCardLit ? (
+                  <line
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke="#d4a017"
+                    strokeWidth={6}
+                    strokeOpacity={0.45}
+                    strokeLinecap="round"
+                    pointerEvents="none"
+                    style={{ transition: 'stroke-opacity 300ms ease-out' }}
+                  />
+                ) : null}
                 <line
                   x1={a.x}
                   y1={a.y}
@@ -454,13 +469,6 @@ export function TreeBoard({
                   strokeOpacity={strokeOpacity}
                   strokeWidth={strokeWidth}
                   pointerEvents="none"
-                  // #206: smooth the stroke / opacity / width transition
-                  // when validity flips (e.g. after a card play changes
-                  // which paths are reachable). 200 ms sits below the
-                  // perceived-delay threshold but above "snap."
-                  // #312: the same easing handles the card-lit ↔
-                  // baseline crossfade — hovering a card makes the
-                  // path bloom into colour rather than snapping.
                   style={{
                     transition:
                       'stroke 300ms ease-out, stroke-opacity 300ms ease-out, stroke-width 300ms ease-out',
