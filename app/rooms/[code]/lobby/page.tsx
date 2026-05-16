@@ -64,8 +64,10 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
     error,
     loading,
     beginning,
+    resetting,
     refresh,
     beginGame,
+    resetGame,
     setZodiacSign,
     setReady,
   } = useLobby(code);
@@ -120,6 +122,48 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
       : null;
   const needsSignPick =
     currentPlayer !== null && currentPlayer.zodiac_sign === null;
+
+  // Room is in a non-lobby state (playing or finished). Show a recovery
+  // screen: the host can reset back to lobby so players can start again.
+  if (room !== null && room.state !== 'lobby') {
+    const isHost = room.host_id === currentPlayerId;
+    return (
+      <main className="min-h-screen p-8 text-center text-veil">
+        <h1 className="font-display text-3xl tracking-widest">Lobby — {code}</h1>
+        <p className="mx-auto mt-6 max-w-md text-sm opacity-70">
+          {room.state === 'playing'
+            ? 'A game is in progress.'
+            : 'The game has ended.'}
+        </p>
+        {isHost ? (
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={resetGame}
+              disabled={resetting}
+              data-action="reset-room"
+              className="rounded border border-veil/30 px-6 py-2 font-display tracking-widest disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {resetting ? 'Resetting…' : 'Play Again'}
+            </button>
+            <p className="text-xs uppercase tracking-widest opacity-50">
+              Resets the room so everyone can set up and begin a new game
+            </p>
+          </div>
+        ) : (
+          <p className="mt-6 text-xs uppercase tracking-widest opacity-50">
+            Waiting for the host to reset the room
+          </p>
+        )}
+        <Link
+          href="/"
+          className="mt-8 inline-block rounded border border-veil/30 px-4 py-2 text-xs uppercase tracking-widest"
+        >
+          Back to home
+        </Link>
+      </main>
+    );
+  }
 
   // `taken` mirrors the hot-seat picker's pattern (`app/play/page.tsx`):
   // a sign already chosen by another player renders disabled in the
