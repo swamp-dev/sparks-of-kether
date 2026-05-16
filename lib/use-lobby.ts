@@ -308,9 +308,7 @@ export function useLobby(code: string): UseLobbyReturn {
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
         };
-        setError(
-          `Could not reset room: ${body.error ?? `HTTP ${res.status}`}`,
-        );
+        setError(`Could not reset room: ${body.error ?? `HTTP ${res.status}`}`);
       } finally {
         resettingRef.current = false;
         setResetting(false);

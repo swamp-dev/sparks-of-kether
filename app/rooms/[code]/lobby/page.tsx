@@ -124,15 +124,16 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
 
   // Room is in a non-lobby state (playing or finished). Show a recovery
   // screen: the host can reset back to lobby so players can start again.
-  if (room !== null && room.state !== 'lobby') {
+  // Exclude 'paused' — the useEffect above already redirects paused rooms
+  // to /play; showing the reset UI here would let the host destroy an
+  // in-progress paused game before the redirect fires.
+  if (room !== null && room.state !== 'lobby' && room.state !== 'paused') {
     const isHost = room.host_id === currentPlayerId;
     return (
       <main className="min-h-screen p-8 text-center text-veil">
         <h1 className="font-display text-3xl tracking-widest">Lobby — {code}</h1>
         <p className="mx-auto mt-6 max-w-md text-sm opacity-70">
-          {room.state === 'playing'
-            ? 'A game is in progress.'
-            : 'The game has ended.'}
+          {room.state === 'playing' ? 'A game is in progress.' : 'The game has ended.'}
         </p>
         {isHost ? (
           <div className="mt-6 flex flex-col items-center gap-3">

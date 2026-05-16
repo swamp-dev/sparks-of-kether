@@ -23,16 +23,10 @@ interface RouteParams {
   readonly params: { readonly code: string };
 }
 
-export async function POST(
-  request: Request,
-  { params }: RouteParams,
-): Promise<NextResponse> {
+export async function POST(request: Request, { params }: RouteParams): Promise<NextResponse> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
-    return NextResponse.json(
-      { error: 'missing-bearer-token' },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: 'missing-bearer-token' }, { status: 401 });
   }
   const token = authHeader.slice('bearer '.length).trim();
 
@@ -67,9 +61,7 @@ export async function POST(
   // /start can't win the lobby check and then have its game_states row
   // deleted out from under it. Each write is checked; a failure here means
   // the room is still in its prior state and the host can retry.
-  const eventsDelete = await query(serviceClient, 'game_events')
-    .delete()
-    .eq('room_id', room.id);
+  const eventsDelete = await query(serviceClient, 'game_events').delete().eq('room_id', room.id);
   if (eventsDelete.error) {
     return NextResponse.json(
       { error: 'reset-failed', cause: eventsDelete.error.message },
@@ -77,9 +69,7 @@ export async function POST(
     );
   }
 
-  const snapshotDelete = await query(serviceClient, 'game_states')
-    .delete()
-    .eq('room_id', room.id);
+  const snapshotDelete = await query(serviceClient, 'game_states').delete().eq('room_id', room.id);
   if (snapshotDelete.error) {
     return NextResponse.json(
       { error: 'reset-failed', cause: snapshotDelete.error.message },
