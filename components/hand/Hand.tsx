@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { arcanumByNumber } from '@/data';
 import { ArcanumCard } from '@/components/cards/ArcanumCard';
 import { useCardDrag } from '@/lib/hooks/useCardDrag';
 import { useReduceMotion } from '@/lib/hooks/useReduceMotion';
@@ -77,6 +78,19 @@ interface HandProps {
    */
   readonly layout?: 'floating' | 'inline';
   readonly className?: string;
+  /**
+   * #90 — when true, each face-up card shows a translucent discard
+   * icon overlay. Clicking the icon fires `onDiscard`. Hovering the
+   * card still fires `onCardHover` so Tree paths light up before the
+   * player commits to discarding.
+   */
+  readonly discardMode?: boolean;
+  /**
+   * #90 — fires with the arcanum when the player clicks a card's
+   * discard icon during `discardMode`. Supply together with
+   * `discardMode={true}`.
+   */
+  readonly onDiscard?: (arcanum: number) => void;
 }
 
 const MAX_FAN_DEG = 12;
@@ -154,6 +168,8 @@ export function Hand({
   onCardDragCancel,
   layout = 'floating',
   className,
+  discardMode = false,
+  onDiscard,
 }: HandProps): JSX.Element {
   const [focusIndex, setFocusIndex] = useState(0);
   // Peek-shelf expand/hide state. False = peeking (only PEEK_HEIGHT_PX
@@ -377,7 +393,10 @@ export function Hand({
           const offsetFromCenter = i - (hand.length - 1) / 2;
           const fanDeg =
             hand.length > 1 ? (offsetFromCenter / Math.max(hand.length - 1, 1)) * MAX_FAN_DEG : 0;
-          const interactive = visible && onCardSelect !== undefined;
+          const interactive = visible && onCardSelect !== undefined && !discardMode;
+          // Drag is allowed in normal interactive mode OR in discardMode
+          // (drag-to-discard-pile is an alternative to clicking the icon).
+          const draggable = interactive || (visible && discardMode);
           const isSelected = selectedArcanum !== undefined && selectedArcanum === arcanum;
           // #412: dragging the card visually lifts it. The same magnify
           // primitive used for hover/focus drives the lift — keeping
@@ -464,7 +483,11 @@ export function Hand({
           // the AT tree as a readable element. `disabled` removes the
           // node from the accessibility tree — fine for face-down
           // cards (nothing to read), wrong for face-up cards.
-          const ariaDisabled = !interactive;
+          // In discard mode the card button is not selectable, but the sibling
+          // discard icon IS the active affordance — aria-disabled should be
+          // false so screen readers don't announce the card as "dimmed" when
+          // the icon is the thing to interact with.
+          const ariaDisabled = !visible || (!interactive && !discardMode);
           const htmlDisabled = !visible;
           // #463: zIndex tiers — magnified > selected > unselected stack
           // (left over right). With HAND_CAP=6 the magnified ceiling is
@@ -497,64 +520,23 @@ export function Hand({
               magnifyTransform = ` translateX(${(sign * NEAR_NEIGHBOUR_NUDGE_REM).toFixed(2)}rem)`;
             }
           }
+          // #90: wrap each card slot in a <div> so the discard icon can be
+          // a sibling <button> (HTML disallows nested interactive elements).
+          // Layout transforms, zIndex, and hover handlers live on the wrapper;
+          // the inner card button retains focus/keyboard handlers.
+          // The `group` class enables group-hover:opacity-100 on the icon.
           return (
-            <button
+            <div
               key={`${i}-${arcanum}`}
-              type="button"
-              ref={(el) => {
-                cardRefs.current[i] = el;
-              }}
-              data-card-slot={i}
-              data-arcanum={visible ? arcanum : undefined}
-              data-selected={isSelected ? 'true' : 'false'}
-              data-magnified={isMagnified ? 'true' : 'false'}
-              data-dragging={isDragging ? 'true' : 'false'}
-              disabled={htmlDisabled}
-              aria-disabled={ariaDisabled}
-              // #412 — pointer events drive drag-to-play. The native
-              // click event still fires after pointer-up (one of the
-              // browser's mouse-event compatibility layers), and is
-              // routed through React's onClick to onCardSelect — same
-              // path the keyboard Enter / Space activation uses, so
-              // tap and keyboard share one click site. Drag completion
-              // sets `suppressNextClickRef`; the onClick handler skips
-              // the post-drop synthesized click on its first
-              // invocation, then resets.
-              onClick={handleClick}
-              onPointerDown={(e) => {
-                if (interactive) cardDrag.handlers.onPointerDown(e, arcanum);
-              }}
-              onPointerMove={cardDrag.handlers.onPointerMove}
-              onPointerUp={cardDrag.handlers.onPointerUp}
-              onPointerCancel={cardDrag.handlers.onPointerCancel}
               onMouseEnter={handleHoverEnter}
               onMouseLeave={handleHoverLeave}
-              onFocus={handleFocusIn}
-              onBlur={handleFocusOut}
-              onKeyDown={(e) => handleKey(e, i, arcanum)}
-              tabIndex={i === focusIndex ? 0 : -1}
               style={{
                 // #340: `position: relative` on every card so `zIndex`
                 // takes effect predictably (without it, the property is
-                // ignored on a static button and the selected card stays
+                // ignored on a static element and the selected card stays
                 // buried under its right-hand neighbour in DOM order).
                 //
                 // #368: stack the fan so left cards paint over right cards.
-                // The fan overlaps each card by ~55% with later DOM-order
-                // cards rendering on top by default — that put card 0's
-                // bounding-box centre under card 1's SVG, so a pointer
-                // click at card 0's centre dispatched to card 1. Inverting
-                // the stacking with `hand.length - i` makes the leftmost
-                // card the topmost, decreasing rightward; the rightmost
-                // card stays at the bottom of the stack but is fully
-                // visible (nothing overlaps its right edge), so this
-                // doesn't trade one occlusion for another.
-                //
-                // Selected lifts one above the highest unselected slot
-                // (`hand.length`) regardless of its own index, so #340
-                // holds for any selection. #463: magnified lifts one
-                // higher still so a hovered selected card stays on top
-                // of its neighbours.
                 position: 'relative',
                 zIndex,
                 transform: baseTransform + magnifyTransform,
@@ -602,11 +584,6 @@ export function Hand({
                 // object); every subsequent card overlaps by 55% of
                 // card width via the responsive base/sm pair below.
                 ...(i === 0 ? {} : { marginLeft: CARD_OVERLAP_REM_BASE }),
-                padding: 0,
-                border: isSelected ? '2px solid #d4af37' : 'none',
-                borderRadius: 12,
-                background: 'transparent',
-                cursor: interactive ? 'pointer' : 'default',
               }}
               // sm: breakpoint widens the card from w-24 (6 rem) to
               // w-36 (9 rem). The overlap must scale with it; the
@@ -617,25 +594,97 @@ export function Hand({
               // matchMedia subscription. Tailwind's JIT needs the class
               // to be a literal string; `-4.32rem` is 9rem × 0.48 (see
               // overlap doc above the constant).
-              //
-              // #463: focus-visible ring is the load-bearing keyboard
-              // focus indicator, applied independently of the scale
-              // transform — it remains visible under
-              // `prefers-reduced-motion` even when the magnify is off.
-              className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 ${i === 0 ? '' : 'sm:!ml-[-4.32rem]'}`.trim()}
+              className={`group${i === 0 ? '' : 'sm:!ml-[-4.32rem]'}`.trim()}
             >
-              {visible ? (
-                // #38: responsive width — `w-24` on narrow (96 px),
-                // `w-36` on `sm:` and up (144 px). Combined with the
-                // `-2.88rem` / `sm:-4.32rem` overlap (#290), a 6-card
-                // fan sits inside the desktop `max-w-xl` container and
-                // overflows a 320 px mobile viewport by ~26 px (clipped
-                // at viewport edge — see CARD_OVERLAP doc above).
-                <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
-              ) : (
-                <CardBack className="w-24 sm:w-36" />
-              )}
-            </button>
+              <button
+                ref={(el) => {
+                  cardRefs.current[i] = el;
+                }}
+                type="button"
+                data-card-slot={i}
+                data-arcanum={visible ? arcanum : undefined}
+                data-selected={isSelected ? 'true' : 'false'}
+                data-magnified={isMagnified ? 'true' : 'false'}
+                data-dragging={isDragging ? 'true' : 'false'}
+                disabled={htmlDisabled}
+                aria-disabled={ariaDisabled}
+                // #412 — pointer events drive drag-to-play. The native
+                // click event still fires after pointer-up (one of the
+                // browser's mouse-event compatibility layers), and is
+                // routed through React's onClick to onCardSelect — same
+                // path the keyboard Enter / Space activation uses, so
+                // tap and keyboard share one click site. Drag completion
+                // sets `suppressNextClickRef`; the onClick handler skips
+                // the post-drop synthesized click on its first
+                // invocation, then resets.
+                onClick={handleClick}
+                onPointerDown={(e) => {
+                  if (draggable) cardDrag.handlers.onPointerDown(e, arcanum);
+                }}
+                onPointerMove={cardDrag.handlers.onPointerMove}
+                onPointerUp={cardDrag.handlers.onPointerUp}
+                onPointerCancel={cardDrag.handlers.onPointerCancel}
+                onFocus={handleFocusIn}
+                onBlur={handleFocusOut}
+                onKeyDown={(e) => handleKey(e, i, arcanum)}
+                tabIndex={i === focusIndex ? 0 : -1}
+                style={{
+                  padding: 0,
+                  border: isSelected ? '2px solid #d4af37' : 'none',
+                  borderRadius: 12,
+                  background: 'transparent',
+                  cursor: interactive ? 'pointer' : 'default',
+                  display: 'block',
+                }}
+                // #463: focus-visible ring is the load-bearing keyboard
+                // focus indicator, applied independently of the scale
+                // transform — it remains visible under
+                // `prefers-reduced-motion` even when the magnify is off.
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              >
+                {visible ? (
+                  // #38: responsive width — `w-24` on narrow (96 px),
+                  // `w-36` on `sm:` and up (144 px). Combined with the
+                  // `-2.88rem` / `sm:-4.32rem` overlap (#290), a 6-card
+                  // fan sits inside the desktop `max-w-xl` container and
+                  // overflows a 320 px mobile viewport by ~26 px (clipped
+                  // at viewport edge — see CARD_OVERLAP doc above).
+                  <ArcanumCard number={arcanum} className="w-24 sm:w-36" />
+                ) : (
+                  <CardBack className="w-24 sm:w-36" />
+                )}
+              </button>
+              {discardMode && onDiscard && visible ? (
+                // #90: Translucent discard icon overlay. Appears on
+                // group-hover so hovering anywhere in the card area
+                // reveals it. Positioned absolute over the card; the
+                // wrapper <div> is `position: relative`.
+                // HTML requires this to be a sibling, not a child of
+                // the card <button> — nested interactive elements are
+                // invalid HTML and cause accessibility issues.
+                <button
+                  type="button"
+                  data-discard-icon={arcanum}
+                  aria-label={`Discard ${arcanumByNumber(arcanum).name}`}
+                  tabIndex={0}
+                  onClick={() => onDiscard(arcanum)}
+                  className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-ground/60 opacity-0 transition-opacity duration-150 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-veil/80 group-hover:opacity-100"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                    className="h-8 w-8 text-veil/90"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <polyline points="3,6 5,6 21,6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
           );
         })}
       </div>

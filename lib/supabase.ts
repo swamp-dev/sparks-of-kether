@@ -10,10 +10,11 @@ export interface RoomRow {
   readonly id: string;
   readonly code: string;
   readonly host_id: string;
-  readonly state: 'lobby' | 'playing' | 'finished';
+  readonly state: 'lobby' | 'playing' | 'paused' | 'finished';
   readonly created_at: string;
   readonly started_at: string | null;
   readonly finished_at: string | null;
+  readonly paused_at: string | null;
 }
 
 export interface PlayerRow {
@@ -57,7 +58,7 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 interface RoomInsert extends Omit<
   Mutable<RoomRow>,
-  'id' | 'created_at' | 'started_at' | 'finished_at' | 'state'
+  'id' | 'created_at' | 'started_at' | 'finished_at' | 'paused_at' | 'state'
 > {
   id?: string;
   state?: RoomRow['state'];

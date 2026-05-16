@@ -18,3 +18,10 @@ on this branch.
 **Why:** Original CI run (2026-05-15) used `supabase/setup-cli@v1` at a pinned old action SHA that installs CLI `1.226.4` instead of `2.98.2`. CLI `1.226.4` rejects `db.major_version = 17` in `supabase/config.toml` with `Invalid db.major_version: 17`. Re-running the original workflow job reuses the same old action SHA. A fresh push triggers the workflow from the current `setup-cli@v1` action state, which correctly installs `2.98.2`.
 **Notes:** No code changes. Integration test expected to pass with current action version.
 **Commit(s):** `a43e525`
+
+## 2026-05-16T17:30:00+00:00 — rebase onto main + conflict resolution
+
+**Pushed:** Rebased format pass onto current main (which includes save-resume #91, discard-icons #94, lightbox #88, lobby-reset #89). Resolved 17 merge conflicts by taking main's version for all non-format files, then re-running `pnpm format` to reapply prettier + tailwind class sort. `components/game/DiscardPrompt.tsx` deleted (main removed it). All 2931 tests pass, typecheck green, lint green.
+**Why:** Code-review found that the branch was cut before the `supabase/setup-cli` version bump in save-resume (#91) landed on main. The branch's `ci.yml` still pinned CLI `1.226.4`, which rejects `db.major_version = 17`. Rebase onto main picks up the `2.98.2` pin.
+**Notes:** The previous entry's explanation ("fresh CI run picks up current action state") was wrong — the `version:` field in the workflow overrides action-level defaults; only a rebase picks up `2.98.2`.
+**Commit(s):** TBD

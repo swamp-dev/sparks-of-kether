@@ -31,7 +31,7 @@ describe('AvatarPortrait', () => {
       expect(document.querySelector('[data-avatar-placeholder-letter]')).toBeNull();
     });
 
-    it('falls back to Hebrew-letter placeholder when the image fails to load', () => {
+    it('falls back to AvatarSilhouette when the image fails to load', () => {
       render(<AvatarPortrait sefirah="hod" state="prep" size="stage" />);
       const img = document.querySelector('[data-avatar-portrait-image]');
       expect(img).not.toBeNull();
@@ -43,18 +43,20 @@ describe('AvatarPortrait', () => {
         fireEvent.error(img);
       }
       expect(document.querySelector('[data-avatar-portrait-image]')).toBeNull();
-      const placeholder = document.querySelector('[data-avatar-placeholder-letter]');
-      expect(placeholder).not.toBeNull();
-      // Hod's Hebrew letter mark is ה (per data/sefirah-glyphs.ts).
-      expect(placeholder?.textContent).toBe('ה');
+      // Stage size uses AvatarSilhouette as the fallback — not the
+      // Hebrew letter (that's reserved for small size).
+      expect(document.querySelector('[data-avatar-silhouette]')).not.toBeNull();
+      expect(document.querySelector('[data-avatar-placeholder-letter]')).toBeNull();
     });
 
-    it('renders Hebrew-letter placeholder for Sefirot without a commissioned portrait (kether, malkuth)', () => {
+    it('renders AvatarSilhouette for Sefirot without a commissioned portrait (kether, malkuth)', () => {
       render(<AvatarPortrait sefirah="kether" state="prep" size="stage" />);
       // Kether and Malkuth have no avatar character mapping, so no
-      // image renders even at stage size.
+      // image renders even at stage size. The silhouette placeholder
+      // is shown instead (Hebrew letter is only for small size).
       expect(document.querySelector('[data-avatar-portrait-image]')).toBeNull();
-      expect(document.querySelector('[data-avatar-placeholder-letter]')).not.toBeNull();
+      expect(document.querySelector('[data-avatar-silhouette]')).not.toBeNull();
+      expect(document.querySelector('[data-avatar-placeholder-letter]')).toBeNull();
     });
   });
 
@@ -116,6 +118,79 @@ describe('AvatarPortrait', () => {
       const innerFrame = portrait?.firstElementChild as HTMLElement | null;
       expect(innerFrame?.className).toContain('motion-safe:animate-breath');
       expect(innerFrame?.className).not.toContain('motion-safe:animate-avatar-emerge');
+    });
+  });
+
+  describe('pose prop', () => {
+    it('surfaces data-avatar-pose on the wrapper', () => {
+      render(<AvatarPortrait sefirah="kether" state="prep" size="stage" pose="speaking" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('speaking');
+    });
+
+    it('defaults to data-avatar-pose="idle" when pose is omitted', () => {
+      render(<AvatarPortrait sefirah="kether" state="prep" size="stage" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-pose')).toBe('idle');
+    });
+
+    it('passes pose to AvatarSilhouette at stage size', () => {
+      render(<AvatarPortrait sefirah="kether" state="prep" size="stage" pose="pass" />);
+      const silhouette = document.querySelector('[data-avatar-silhouette]');
+      expect(silhouette?.getAttribute('data-pose')).toBe('pass');
+    });
+  });
+
+  describe('per-Sefirah idle motion (#22)', () => {
+    it('labels Hermes (hod) stage+idle as jitter', () => {
+      render(<AvatarPortrait sefirah="hod" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('jitter');
+    });
+
+    it('labels Selene (yesod) stage+idle as drift', () => {
+      render(<AvatarPortrait sefirah="yesod" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('drift');
+    });
+
+    it('labels Ares (gevurah) stage+idle as still', () => {
+      render(<AvatarPortrait sefirah="gevurah" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('still');
+    });
+
+    it('labels all other encounter sefirot stage+idle as breath', () => {
+      for (const sefirah of ['chokmah', 'binah', 'chesed', 'tiferet', 'netzach'] as const) {
+        render(<AvatarPortrait sefirah={sefirah} state="prep" size="stage" pose="idle" />);
+        const portrait = document.querySelector('[data-avatar-portrait]');
+        expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('breath');
+        document.body.innerHTML = '';
+      }
+    });
+
+    it('does not apply idle motion at non-idle poses (speaking, watching, pass, fail)', () => {
+      for (const pose of ['speaking', 'watching', 'pass', 'fail'] as const) {
+        render(<AvatarPortrait sefirah="hod" state="prep" size="stage" pose={pose} />);
+        const portrait = document.querySelector('[data-avatar-portrait]');
+        // Non-idle poses always fall back to breath — never jitter/drift/still
+        expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('breath');
+        document.body.innerHTML = '';
+      }
+    });
+
+    it('suppresses breath animation on the frame for Ares (gevurah) at stage+idle', () => {
+      render(<AvatarPortrait sefirah="gevurah" state="prep" size="stage" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      const innerFrame = portrait?.firstElementChild as HTMLElement | null;
+      // Dead still — frame must NOT breathe.
+      expect(innerFrame?.className).not.toContain('animate-breath');
+    });
+
+    it('small size always uses breath regardless of sefirah', () => {
+      render(<AvatarPortrait sefirah="gevurah" state="prep" size="small" pose="idle" />);
+      const portrait = document.querySelector('[data-avatar-portrait]');
+      expect(portrait?.getAttribute('data-avatar-idle-motion')).toBe('breath');
     });
   });
 

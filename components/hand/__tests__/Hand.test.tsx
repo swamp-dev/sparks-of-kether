@@ -211,9 +211,10 @@ describe('Hand — interaction', () => {
     }
     // zIndex must strictly decrease left → right so the leftmost
     // card's centre is not occluded by its right-hand neighbour.
-    const z0 = parseInt(first.style.zIndex || '0', 10);
-    const z1 = parseInt(middle.style.zIndex || '0', 10);
-    const z2 = parseInt(last.style.zIndex || '0', 10);
+    // Style lives on the wrapper div (parentElement) since #90.
+    const z0 = parseInt((first.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const z1 = parseInt((middle.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const z2 = parseInt((last.parentElement as HTMLElement).style.zIndex || '0', 10);
     expect(z0).toBeGreaterThan(z1);
     expect(z1).toBeGreaterThan(z2);
   });
@@ -236,10 +237,11 @@ describe('Hand — interaction', () => {
     if (!first || !middle || !last) return;
     // The selected card needs both `position: relative` (so zIndex
     // takes effect) and a zIndex strictly greater than its siblings.
-    expect(middle.style.position).toBe('relative');
-    const selectedZ = parseInt(middle.style.zIndex || '0', 10);
-    const firstZ = parseInt(first.style.zIndex || '0', 10);
-    const lastZ = parseInt(last.style.zIndex || '0', 10);
+    // Style lives on the wrapper div (parentElement) since #90.
+    expect((middle.parentElement as HTMLElement).style.position).toBe('relative');
+    const selectedZ = parseInt((middle.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const firstZ = parseInt((first.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const lastZ = parseInt((last.parentElement as HTMLElement).style.zIndex || '0', 10);
     expect(selectedZ).toBeGreaterThan(firstZ);
     expect(selectedZ).toBeGreaterThan(lastZ);
   });
@@ -261,9 +263,10 @@ describe('Hand — interaction', () => {
     if (!first || !middle || !last) {
       throw new Error('expected three slots in the rendered hand');
     }
-    const selectedZ = parseInt(first.style.zIndex || '0', 10);
-    const middleZ = parseInt(middle.style.zIndex || '0', 10);
-    const lastZ = parseInt(last.style.zIndex || '0', 10);
+    // Style lives on the wrapper div (parentElement) since #90.
+    const selectedZ = parseInt((first.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const middleZ = parseInt((middle.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const lastZ = parseInt((last.parentElement as HTMLElement).style.zIndex || '0', 10);
     expect(selectedZ).toBeGreaterThan(middleZ);
     expect(selectedZ).toBeGreaterThan(lastZ);
   });
@@ -388,10 +391,11 @@ describe('Hand — full hand at HAND_CAP (#290)', () => {
     // First card has no marginLeft inline style at all (anchors the
     // fan). Asserting the empty string instead of '0px' avoids
     // brittleness around how React/jsdom serialise a numeric `0`.
-    expect(slots[0]?.style.marginLeft).toBe('');
+    // Style lives on the wrapper div (parentElement) since #90.
+    expect((slots[0]?.parentElement as HTMLElement | null)?.style.marginLeft).toBe('');
     // Every subsequent card has a non-percentage negative margin.
     for (let i = 1; i < slots.length; i++) {
-      const ml = slots[i]?.style.marginLeft ?? '';
+      const ml = (slots[i]?.parentElement as HTMLElement | null)?.style.marginLeft ?? '';
       expect(ml.endsWith('%'), `slot ${i} marginLeft "${ml}" must not be a percentage`).toBe(false);
       expect(ml.startsWith('-')).toBe(true);
     }
@@ -441,9 +445,9 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     if (!first || !middle || !last) throw new Error('expected three slots');
     // Hover the middle (unselected) card. Last is the selected one.
     fireEvent.mouseEnter(middle);
-    const middleZ = parseInt(middle.style.zIndex || '0', 10);
-    const lastZ = parseInt(last.style.zIndex || '0', 10);
-    const firstZ = parseInt(first.style.zIndex || '0', 10);
+    const middleZ = parseInt((middle.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const lastZ = parseInt((last.parentElement as HTMLElement).style.zIndex || '0', 10);
+    const firstZ = parseInt((first.parentElement as HTMLElement).style.zIndex || '0', 10);
     expect(middleZ).toBeGreaterThan(lastZ);
     expect(middleZ).toBeGreaterThan(firstZ);
   });
@@ -452,17 +456,19 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
-    expect(middle.style.transform).toMatch(/scale\(1\.12\)/);
-    expect(middle.style.transform).toMatch(/translateY\(-18px\)/);
-    expect(middle.style.transform).not.toMatch(/translateX\([^)]+px\)/);
+    expect((middle.parentElement as HTMLElement).style.transform).toMatch(/scale\(1\.12\)/);
+    expect((middle.parentElement as HTMLElement).style.transform).toMatch(/translateY\(-18px\)/);
+    expect((middle.parentElement as HTMLElement).style.transform).not.toMatch(
+      /translateX\([^)]+px\)/,
+    );
   });
 
   it('hovered card runs at ~75% opacity so the matching Tree path glow shows through (#579)', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
-    expect(middle.style.opacity).toBe('');
+    expect((middle.parentElement as HTMLElement).style.opacity).toBe('');
     fireEvent.mouseEnter(middle);
-    expect(middle.style.opacity).toBe('0.75');
+    expect((middle.parentElement as HTMLElement).style.opacity).toBe('0.75');
   });
 
   it('open hand mounts as a position-fixed overlay anchored to the viewport bottom (#579)', () => {
@@ -580,8 +586,10 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     fireEvent.mouseEnter(middle);
     // Left neighbour should translateX in the negative direction (push
     // left); right neighbour should translateX positive (push right).
-    expect(left.style.transform).toMatch(/translateX\(-/);
-    expect(right.style.transform).toMatch(/translateX\(0?\.?\d+rem\)/);
+    expect((left.parentElement as HTMLElement).style.transform).toMatch(/translateX\(-/);
+    expect((right.parentElement as HTMLElement).style.transform).toMatch(
+      /translateX\(0?\.?\d+rem\)/,
+    );
   });
 
   it('magnified card gets a box-shadow lift; siblings do not', () => {
@@ -590,8 +598,8 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const [first, middle] = slots;
     if (!first || !middle) throw new Error('expected slots');
     fireEvent.mouseEnter(middle);
-    expect(middle.style.boxShadow).not.toBe('');
-    expect(first.style.boxShadow).toBe('');
+    expect((middle.parentElement as HTMLElement).style.boxShadow).not.toBe('');
+    expect((first.parentElement as HTMLElement).style.boxShadow).toBe('');
   });
 
   it('hover on a hidden hand does NOT magnify (face-down, no visual lift)', () => {
@@ -640,8 +648,8 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const farLast = slots[5];
     if (!first || !farLast) throw new Error('expected six slots');
     fireEvent.mouseEnter(first);
-    expect(first.style.transition).not.toBe('');
-    expect(farLast.style.transition).toBe('');
+    expect((first.parentElement as HTMLElement).style.transition).not.toBe('');
+    expect((farLast.parentElement as HTMLElement).style.transition).toBe('');
   });
 
   it('exit transition persists for one render after mouseLeave (no snap-back)', () => {
@@ -657,12 +665,12 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
-    expect(middle.style.transition).not.toBe('');
+    expect((middle.parentElement as HTMLElement).style.transition).not.toBe('');
     fireEvent.mouseLeave(middle);
     // Critical assertion: even after the active state has cleared,
     // the previously-active card still carries the transition so the
     // scale(1.3) → scale(1.0) drop animates rather than snaps.
-    expect(middle.style.transition).not.toBe('');
+    expect((middle.parentElement as HTMLElement).style.transition).not.toBe('');
   });
 
   it('exit transition is cleared one render after mouseLeave when another card becomes active (#558)', () => {
@@ -693,13 +701,13 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const farLast = slots[5];
     if (!first || !farLast) throw new Error('expected six slots');
     fireEvent.mouseEnter(first);
-    expect(first.style.transition).not.toBe('');
+    expect((first.parentElement as HTMLElement).style.transition).not.toBe('');
     fireEvent.mouseLeave(first);
     // Persists-for-one-render contract still holds at this point —
     // covered by the test above. Now force a fresh render with a
     // different active card whose magnify set excludes slot 0.
     fireEvent.mouseEnter(farLast);
-    expect(first.style.transition).toBe('');
+    expect((first.parentElement as HTMLElement).style.transition).toBe('');
   });
 
   it('focus-visible ring class is present on every slot (load-bearing under reduce-motion)', () => {
@@ -773,10 +781,10 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const middle = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
     fireEvent.mouseEnter(middle);
-    expect(middle.style.transition).toBe('');
+    expect((middle.parentElement as HTMLElement).style.transition).toBe('');
     // Opacity value is still preserved — the path-through-card
     // visual is a11y-load-bearing.
-    expect(middle.style.opacity).toBe('0.75');
+    expect((middle.parentElement as HTMLElement).style.opacity).toBe('0.75');
   });
 
   it('layout="inline" renders the open hand without the position-fixed overlay (#579 review)', () => {
