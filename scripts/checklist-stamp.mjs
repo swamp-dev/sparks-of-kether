@@ -369,10 +369,12 @@ async function hookMode() {
     return;
   }
 
-  // Cross-validate the payload against the session transcript. This
-  // catches payloads constructed by an agent piping JSON to the
-  // script with a synthetic tool_use_id — the harness-written
-  // transcript only contains tool_use_ids it actually dispatched.
+  // Sanity-check the payload looks like a real harness hook fire.
+  // tool_use_id is checked for presence only (not cross-validated against
+  // transcript content — the harness flushes transcript entries after the
+  // hook fires, so the entry isn't there to check). The primary fabrication
+  // barrier is the harness controlling when PostToolUse fires; the
+  // script-level check catches accidental or trivially-malformed payloads.
   const verify = verifyTranscript(payload);
   if (!verify.ok) {
     console.error(`checklist-stamp[hook]: refusing fabricated payload — ${verify.reason}`);
