@@ -594,7 +594,7 @@ export function Hand({
               // matchMedia subscription. Tailwind's JIT needs the class
               // to be a literal string; `-4.32rem` is 9rem × 0.48 (see
               // overlap doc above the constant).
-              className={`group${i === 0 ? '' : 'sm:!ml-[-4.32rem]'}`.trim()}
+              className={i === 0 ? 'group' : 'group sm:!ml-[-4.32rem]'}
             >
               <button
                 ref={(el) => {
