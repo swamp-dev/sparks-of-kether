@@ -130,7 +130,7 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
     );
   });
 
-  it('the supabase_realtime publication includes `players`', async () => {
+  it('the supabase_realtime publication includes `players`, `game_states`, and `rooms`', async () => {
     // The Realtime container only broadcasts INSERT/UPDATE/DELETE on
     // tables present in `supabase_realtime`. The 0001..0004 baseline
     // shipped without adding `players` (or `game_states`); migration
@@ -169,5 +169,6 @@ describe('integration: setZodiacSign / setReady (real Supabase)', () => {
     );
     expect(tables).toContain('players');
     expect(tables).toContain('game_states');
+    expect(tables).toContain('rooms');
   });
 });

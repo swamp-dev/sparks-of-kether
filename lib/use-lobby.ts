@@ -18,9 +18,9 @@ import type { PlayerRow, RoomRow } from './supabase';
  *     thin wrappers around `lib/rooms.ts` that target the current
  *     player's row. The Realtime subscription propagates the write to
  *     other tabs, so callers do not need to manually refresh.
- *   - Realtime subscription on the `players` table filtered to this
- *     room. Patches `players` state in place on UPDATE, appends on
- *     INSERT (a new joiner), and removes on DELETE (a kick).
+ *   - Realtime subscriptions on the `players` table (for in-lobby updates)
+ *     and the `rooms` table (for state changes — e.g. host reset). Player
+ *     events patch state in place; room events trigger a full re-fetch.
  *
  * Why a hook: the page component had three useState calls + one
  * useEffect + one fire-and-forget begin-game closure all colliding

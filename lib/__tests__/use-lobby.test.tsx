@@ -54,6 +54,10 @@ type ChannelPayloadHandler = (payload: {
 let channelHandler: ChannelPayloadHandler | null = null;
 // Rooms channel handler — used by the new rooms-subscription test.
 let roomsChannelHandler: ChannelPayloadHandler | null = null;
+// Per-channel subscribe statuses so tests can error one channel independently.
+let playersChannelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
+let roomsChannelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
+// Shared alias kept for existing tests that don't need per-channel control.
 let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 
 function makeFakeChannel(name: string): FakeChannel {
@@ -79,7 +83,12 @@ function makeFakeChannel(name: string): FakeChannel {
       // optional in the Supabase client's runtime API; the lobby
       // hook doesn't pass one.
       if (cb !== undefined) {
-        setTimeout(() => cb(channelSubscribeStatus), 0);
+        const status = name.startsWith('lobby_players:')
+          ? playersChannelSubscribeStatus
+          : name.startsWith('lobby_room:')
+            ? roomsChannelSubscribeStatus
+            : channelSubscribeStatus;
+        setTimeout(() => cb(status), 0);
       }
       return this;
     }),
@@ -169,6 +178,8 @@ describe('useLobby', () => {
     channelHandler = null;
     roomsChannelHandler = null;
     channelSubscribeStatus = 'SUBSCRIBED';
+    playersChannelSubscribeStatus = 'SUBSCRIBED';
+    roomsChannelSubscribeStatus = 'SUBSCRIBED';
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
@@ -413,12 +424,12 @@ describe('useLobby', () => {
     expect(result.current.players[0]?.id).toBe('p1');
   });
 
-  it('Realtime CHANNEL_ERROR sets an error message instead of silently failing', async () => {
+  it('players channel CHANNEL_ERROR sets an error message instead of silently failing', async () => {
     // Without a status callback the hook silently stops receiving
     // updates on a CHANNEL_ERROR; the host stares at a Begin that
     // never lights up. The fix surfaces an error string so the
     // failure has a paper trail.
-    channelSubscribeStatus = 'CHANNEL_ERROR';
+    playersChannelSubscribeStatus = 'CHANNEL_ERROR';
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {
@@ -431,6 +442,25 @@ describe('useLobby', () => {
       expect(result.current.error).toMatch(/realtime/i);
     });
     expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('rooms channel CHANNEL_ERROR sets an error message (players channel healthy)', async () => {
+    roomsChannelSubscribeStatus = 'CHANNEL_ERROR';
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {
+        /* swallow during this test */
+      });
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    await waitFor(() => {
+      expect(result.current.error).toMatch(/realtime/i);
+    });
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringMatching(/lobby_room:/),
+    );
     consoleError.mockRestore();
   });
 
