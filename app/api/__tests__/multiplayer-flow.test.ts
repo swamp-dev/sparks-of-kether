@@ -338,7 +338,7 @@ describe('multiplayer flow — start → events integration', () => {
     expect(original).toBeDefined();
     if (!original) return;
     const players = original.snapshot.players.map((p) =>
-      p.id === 'p1' ? { ...p, hand: [0, 1, 2, 3, 4, 5] } : p,
+      p.id === 'p1' ? { ...p, hand: [0, 1, 2, 3, 4] } : p,
     );
     db.game_states[0] = {
       ...original,
@@ -354,7 +354,7 @@ describe('multiplayer flow — start → events integration', () => {
     // Hand grew by exactly MEDITATE_DRAW (2) cards; pendingDiscard NOT
     // set yet (the cap check defers to end-turn).
     const afterMeditate = db.game_states[0]?.snapshot.players.find((p) => p.id === 'p1');
-    expect(afterMeditate?.hand).toHaveLength(8);
+    expect(afterMeditate?.hand).toHaveLength(7);
     expect(db.game_states[0]?.snapshot.pendingDiscard).toBeUndefined();
     expect(db.game_events).toHaveLength(1);
     expect(db.game_events[0]?.event_type).toBe('meditate');

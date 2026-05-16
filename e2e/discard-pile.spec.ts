@@ -5,7 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
  *
  * Walks setup at the fast-path (skip-rolls), then drives the
  * meditate-over-cap flow from `DiscardPrompt` (#291): the player
- * meditates twice across turns, lands at 8 cards (cap is 6), the
+ * meditates twice across turns, lands at 7 cards (cap is 5), the
  * prompt asks them to shed 2, and each "Discard X" click sends a
  * card to the live discard pile. The pile + overlay must reflect
  * those discards.
@@ -78,14 +78,14 @@ test('meditate-over-cap discards populate the pile and the overlay shows the dis
   await expect(page.locator('[data-discard-pile]')).toHaveAttribute('data-discard-empty', 'true');
   await expect(page.locator('[data-discard-count]')).toHaveText('0');
 
-  // STARTING_HAND_SIZE = 4, HAND_CAP = 6. The flow that drives a
+  // STARTING_HAND_SIZE = 3, HAND_CAP = 5. The flow that drives a
   // player into the over-cap DiscardPrompt — note that the cap check
   // fires on END-TURN (not on Meditate), per the post-#503 reducer
   // (turn-machine.ts § "case 'end-turn'"):
   //
-  //   P1 turn 1: meditate (4 → 6 cards), end turn (at cap; no prompt).
-  //   P2 turn 1: meditate (4 → 6 cards), end turn (at cap; no prompt).
-  //   P1 turn 2: meditate (6 → 8 cards), end turn → over cap by 2 →
+  //   P1 turn 1: meditate (3 → 5 cards), end turn (at cap; no prompt).
+  //   P2 turn 1: meditate (3 → 5 cards), end turn (at cap; no prompt).
+  //   P1 turn 2: meditate (5 → 7 cards), end turn → over cap by 2 →
   //              DiscardPrompt asks the player to shed 2 cards.
   //   Each "Discard X" click sends one card to the live pile.
   for (const _player of [1, 2]) {
@@ -96,7 +96,7 @@ test('meditate-over-cap discards populate the pile and the overlay shows the dis
     await page.locator('[data-action="end-turn"]').click();
   }
 
-  // P1 turn 2 — meditate to 8 cards, then end-turn surfaces the prompt.
+  // P1 turn 2 — meditate to 7 cards, then end-turn surfaces the prompt.
   await page.locator('[data-action="meditate"]').click();
   await page.locator('[data-action="end-turn"]').click();
 

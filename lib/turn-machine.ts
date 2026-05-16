@@ -303,6 +303,24 @@ export type TurnReducerError =
     }
   | {
       /**
+       * Difficulty increase: at Tiferet (DC 14), `prep-confirm` requires
+       * the active player to have staged at least one card-burn. Mirrors
+       * the Gevurah gate. Empty-hand waiver applies — a player who spent
+       * all cards moving to Tiferet may confirm with no burn.
+       */
+      readonly kind: 'tiferet-requires-burn';
+    }
+  | {
+      /**
+       * Difficulty increase: at Binah (DC 16), `prep-confirm` requires
+       * the active player to have staged at least one card-burn. Mirrors
+       * the Gevurah gate. Orthogonal to `binah-no-assists`, which fires
+       * at `prep-add-modifier`. Empty-hand waiver applies.
+       */
+      readonly kind: 'binah-requires-burn';
+    }
+  | {
+      /**
        * #486 — design § 3.3 edge case: when the Shell of Chesed
        * (Hoarding) is `active`, gift-card modifiers are blocked at
        * `prep-add-modifier` for the duration of the Shell's one-round
@@ -1281,6 +1299,25 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
         state.pendingModifiers.cardBurns.length === 0
       ) {
         return { ok: false, reason: { kind: 'gevurah-requires-burn' } };
+      }
+      // Difficulty increase: Tiferet (DC 14) requires at least one staged
+      // card-burn. Same pattern as Gevurah; empty-hand waiver applies.
+      if (
+        state.encounter?.sefirah === 'tiferet' &&
+        player.hand.length > 0 &&
+        state.pendingModifiers.cardBurns.length === 0
+      ) {
+        return { ok: false, reason: { kind: 'tiferet-requires-burn' } };
+      }
+      // Difficulty increase: Binah (DC 16) requires at least one staged
+      // card-burn. Orthogonal to binah-no-assists (which fires earlier,
+      // at prep-add-modifier). Empty-hand waiver applies.
+      if (
+        state.encounter?.sefirah === 'binah' &&
+        player.hand.length > 0 &&
+        state.pendingModifiers.cardBurns.length === 0
+      ) {
+        return { ok: false, reason: { kind: 'binah-requires-burn' } };
       }
       const {
         modifiers: translated,

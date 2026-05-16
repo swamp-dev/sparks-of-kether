@@ -149,12 +149,12 @@ describe('useSpark — Chesed (Grace)', () => {
   });
 
   // #56: design/mechanics.md § Drawing & gift handling — hand-size
-  // cap is HAND_CAP=6. Gifts that would push the receiver past the
+  // cap is HAND_CAP=5. Gifts that would push the receiver past the
   // cap are rejected so the giver can choose a different target or
   // hold the card.
   it('rejects when receiver hand is already at HAND_CAP', () => {
     const giver = playerWithSpark('chesed', { id: 'p1', hand: [5] });
-    const receiver = makePlayer({ id: 'p2', hand: [10, 11, 12, 13, 14, 15] });
+    const receiver = makePlayer({ id: 'p2', hand: [10, 11, 12, 13, 14] });
     const state = makeState({}, { players: [giver, receiver] });
     const result = useSpark(
       state,
