@@ -45,12 +45,21 @@ interface FakeChannel {
   subscribe: ReturnType<typeof vi.fn>;
   fireRow: (event: 'INSERT' | 'UPDATE' | 'DELETE', row: unknown, old?: unknown) => void;
 }
+
+// useLobby now subscribes to two channels: lobby_players and lobby_room.
+// Track each handler separately so tests can fire events on the right one.
+const channelHandlers = new Map<
+  string,
+  (payload: { eventType: string; new: unknown; old: unknown }) => void
+>();
+// Legacy alias: `channelHandler` points to the players channel handler for
+// backward-compatible test assertions.
 let channelHandler:
   | ((payload: { eventType: string; new: unknown; old: unknown }) => void)
   | null = null;
 let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 
-function makeFakeChannel(): FakeChannel {
+function makeFakeChannel(channelName: string): FakeChannel {
   const channel: FakeChannel = {
     on: vi.fn(function (
       this: FakeChannel,
@@ -62,23 +71,24 @@ function makeFakeChannel(): FakeChannel {
         old: unknown;
       }) => void,
     ) {
-      channelHandler = handler;
+      channelHandlers.set(channelName, handler);
+      // Keep legacy alias pointed at the players channel.
+      if (channelName.startsWith('lobby_players')) {
+        channelHandler = handler;
+      }
       return this;
     }),
     subscribe: vi.fn(function (
       this: FakeChannel,
       cb?: (status: string) => void,
     ) {
-      // Defer so the React effect can settle. The callback is
-      // optional in the Supabase client's runtime API; the lobby
-      // hook doesn't pass one.
       if (cb !== undefined) {
         setTimeout(() => cb(channelSubscribeStatus), 0);
       }
       return this;
     }),
     fireRow: (event, row, old) =>
-      channelHandler?.({ eventType: event, new: row, old: old ?? null }),
+      channelHandlers.get(channelName)?.({ eventType: event, new: row, old: old ?? null }),
   };
   return channel;
 }
@@ -92,7 +102,7 @@ vi.mock('../supabase', async (importActual) => {
         getUser: vi.fn(async () => userResult),
         getSession: vi.fn(async () => sessionResult),
       },
-      channel: () => makeFakeChannel(),
+      channel: (name: string) => makeFakeChannel(name),
       removeChannel: vi.fn(),
       from: (table: string) => ({
         select: () => ({
@@ -124,6 +134,7 @@ const VALID_ROOM: RoomRow = {
   created_at: 't',
   started_at: null,
   finished_at: null,
+  paused_at: null,
 };
 
 const VALID_PLAYERS: readonly PlayerRow[] = [
@@ -161,6 +172,7 @@ describe('useLobby', () => {
     updateCalls = [];
     updateResponse = { error: null };
     channelHandler = null;
+    channelHandlers.clear();
     channelSubscribeStatus = 'SUBSCRIBED';
     vi.stubGlobal(
       'fetch',

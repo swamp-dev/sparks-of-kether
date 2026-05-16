@@ -11,6 +11,7 @@ function makeRoom(overrides: Partial<RoomRow> = {}): RoomRow {
     created_at: 't',
     started_at: null,
     finished_at: null,
+    paused_at: null,
     ...overrides,
   };
 }
