@@ -45,24 +45,30 @@ interface FakeChannel {
   subscribe: ReturnType<typeof vi.fn>;
   fireRow: (event: 'INSERT' | 'UPDATE' | 'DELETE', row: unknown, old?: unknown) => void;
 }
-let channelHandler:
-  | ((payload: { eventType: string; new: unknown; old: unknown }) => void)
-  | null = null;
+type ChannelPayloadHandler = (payload: {
+  eventType: string;
+  new: unknown;
+  old: unknown;
+}) => void;
+// Players channel handler — referenced by existing tests via `channelHandler`.
+let channelHandler: ChannelPayloadHandler | null = null;
+// Rooms channel handler — used by the new rooms-subscription test.
+let roomsChannelHandler: ChannelPayloadHandler | null = null;
 let channelSubscribeStatus: 'SUBSCRIBED' | 'CHANNEL_ERROR' = 'SUBSCRIBED';
 
-function makeFakeChannel(): FakeChannel {
+function makeFakeChannel(name: string): FakeChannel {
   const channel: FakeChannel = {
     on: vi.fn(function (
       this: FakeChannel,
       _event: string,
       _filter: unknown,
-      handler: (payload: {
-        eventType: string;
-        new: unknown;
-        old: unknown;
-      }) => void,
+      handler: ChannelPayloadHandler,
     ) {
-      channelHandler = handler;
+      if (name.startsWith('lobby_players:')) {
+        channelHandler = handler;
+      } else if (name.startsWith('lobby_room:')) {
+        roomsChannelHandler = handler;
+      }
       return this;
     }),
     subscribe: vi.fn(function (
@@ -92,7 +98,7 @@ vi.mock('../supabase', async (importActual) => {
         getUser: vi.fn(async () => userResult),
         getSession: vi.fn(async () => sessionResult),
       },
-      channel: () => makeFakeChannel(),
+      channel: (name: string) => makeFakeChannel(name),
       removeChannel: vi.fn(),
       from: (table: string) => ({
         select: () => ({
@@ -161,6 +167,7 @@ describe('useLobby', () => {
     updateCalls = [];
     updateResponse = { error: null };
     channelHandler = null;
+    roomsChannelHandler = null;
     channelSubscribeStatus = 'SUBSCRIBED';
     vi.stubGlobal(
       'fetch',
@@ -441,6 +448,30 @@ describe('useLobby', () => {
     act(() => {
       result.current.refresh();
     });
+    await waitFor(() => expect(result.current.players).toHaveLength(3));
+  });
+
+  it('a Realtime event on the rooms channel triggers a re-fetch', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+    await waitFor(() => expect(roomsChannelHandler).not.toBeNull());
+
+    // Update server response before the rooms event fires so we can
+    // detect the re-fetch by observing the updated player count.
+    const baseline = VALID_PLAYERS[0];
+    if (!baseline) throw new Error('VALID_PLAYERS empty');
+    playersResponse = {
+      data: [...VALID_PLAYERS, { ...baseline, id: 'p3', seat: 2 }],
+      error: null,
+    };
+
+    // Simulate rooms.state changing (e.g. playing → lobby on host reset).
+    roomsChannelHandler?.({
+      eventType: 'UPDATE',
+      new: { ...VALID_ROOM, state: 'lobby' },
+      old: { ...VALID_ROOM, state: 'playing' },
+    });
+
     await waitFor(() => expect(result.current.players).toHaveLength(3));
   });
 });

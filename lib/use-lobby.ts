@@ -178,9 +178,42 @@ export function useLobby(code: string): UseLobbyReturn {
         }
       });
 
+    // #95: Second subscription on `rooms` filtered to this room. When the
+    // host resets (playing → lobby) the rooms.state change never reached
+    // non-hosts because only the players table was subscribed. We call
+    // setRefreshTick to re-fetch room + players on any rooms event —
+    // the same re-fetch path used by `refresh()`. This handles future
+    // rooms mutations (e.g. host-transfer) correctly too.
+    const roomChannel = client
+      .channel(`lobby_room:${roomId}`)
+      .on(
+        'postgres_changes' as 'system',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rooms',
+          filter: `id=eq.${roomId}`,
+        },
+        () => {
+          if (cancelled) return;
+          setRefreshTick((n) => n + 1);
+        },
+      )
+      .subscribe((status) => {
+        if (cancelled) return;
+        if (status === 'CHANNEL_ERROR') {
+          // eslint-disable-next-line no-console
+          console.error(
+            `[useLobby] Realtime channel error on lobby_room:${roomId}`,
+          );
+          setError('Realtime sync error. Refresh to retry.');
+        }
+      });
+
     return () => {
       cancelled = true;
       void client.removeChannel(channel);
+      void client.removeChannel(roomChannel);
     };
   }, [roomId]);
 
