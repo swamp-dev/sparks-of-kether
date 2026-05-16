@@ -23,7 +23,7 @@ interface SupabaseStubs {
       data: { user: { id: string } | null };
       error: { message: string } | null;
     }>;
-    readonly signOut?: () => Promise<{ error: null }>;
+    readonly signOut?: () => Promise<{ error: { message: string } | null }>;
   };
   readonly tableHandlers?: Partial<Record<'rooms' | 'players' | 'game_states' | 'game_events', TableHandler>>;
   // RPC handler for `join_room_next_seat` (and any future RPC the
@@ -97,7 +97,7 @@ function makeClient(stubs: SupabaseStubs): SupabaseClient {
       signInAnonymously:
         stubs.auth?.signInAnonymously ??
         vi.fn(async () => ({ data: { user: { id: 'auth-user-1' } }, error: null })),
-      signOut: stubs.auth?.signOut ?? vi.fn(async () => ({ error: null })),
+      signOut: stubs.auth?.signOut ?? vi.fn(async () => ({ error: null as null })),
     },
     from: (table: string) => {
       const handler = stubs.tableHandlers?.[table as 'rooms' | 'players' | 'game_states' | 'game_events'];
