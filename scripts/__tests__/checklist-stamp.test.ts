@@ -185,11 +185,29 @@ describe('verifyTranscript', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('rejects payload without transcript_path', () => {
+  it('accepts payload without transcript_path when tool_use_id is present', () => {
+    // The Claude Code harness does not include transcript_path in PostToolUse
+    // payloads (empirically confirmed). The check is gracefully skipped when
+    // absent; tool_use_id is the fallback anti-fabrication guard.
+    const result = verifyTranscript({ tool_use_id: 'toolu_abc' });
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects payload with neither transcript_path nor tool_use_id', () => {
     const result = verifyTranscript({});
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('unreachable: just asserted ok=false');
-    expect(result.reason).toMatch(/missing transcript_path/);
+    expect(result.reason).toMatch(/missing tool_use_id/);
+  });
+
+  it('rejects payload with falsy tool_use_id (empty string)', () => {
+    // `!payload.tool_use_id` catches '', 0, null, undefined.
+    // tool_use_id is the sole required field when transcript_path is absent,
+    // so empty-string fabrication must be caught.
+    const result = verifyTranscript({ tool_use_id: '' });
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable: just asserted ok=false');
+    expect(result.reason).toMatch(/missing tool_use_id/);
   });
 
   it('rejects payload when transcript file does not exist', () => {
