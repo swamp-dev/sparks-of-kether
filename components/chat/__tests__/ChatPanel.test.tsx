@@ -71,10 +71,7 @@ describe('<ChatPanel>', () => {
   });
 
   it('displays messages in the list when expanded', async () => {
-    mockMessages = [
-      makeMessage(1, 'Alex', 'hello'),
-      makeMessage(2, 'Bea', 'world'),
-    ];
+    mockMessages = [makeMessage(1, 'Alex', 'hello'), makeMessage(2, 'Bea', 'world')];
     const user = userEvent.setup();
     render(<ChatPanel {...DEFAULT_PROPS} />);
     await user.click(screen.getByTestId('chat-toggle'));

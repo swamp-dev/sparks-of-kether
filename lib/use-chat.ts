@@ -90,7 +90,7 @@ export function useChat(
           setError(`Chat history unavailable: ${result.error.message}`);
           return;
         }
-        setMessages(([...(result.data ?? [])].reverse() as ChatMessageRow[]));
+        setMessages([...(result.data ?? [])].reverse() as ChatMessageRow[]);
         setError(null);
       } catch (err) {
         if (!cancelled) {

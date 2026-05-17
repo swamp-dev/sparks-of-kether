@@ -39,7 +39,12 @@ interface FakeChannel {
 
 function makeFakeChannel(channelName: string): FakeChannel {
   const channel: FakeChannel = {
-    on: vi.fn(function (this: FakeChannel, _event: string, _filter: unknown, handler: InsertHandler) {
+    on: vi.fn(function (
+      this: FakeChannel,
+      _event: string,
+      _filter: unknown,
+      handler: InsertHandler,
+    ) {
       if (channelName.startsWith('chat:')) {
         chatInsertHandler = handler;
       }
