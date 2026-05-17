@@ -108,9 +108,16 @@ describe('useChat', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
+  it('loading=false immediately when roomId is null', async () => {
+    const { result } = renderHook(() => useChat(null, PLAYER_ID, NICKNAME));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(chatInsertHandler).toBeNull();
+  });
+
   it('hydrates messages from the initial history fetch', async () => {
+    // DB returns DESC order; hook reverses to restore chronological display order.
     historyResponse = {
-      data: [makeMessage(1, 'hello'), makeMessage(2, 'world')],
+      data: [makeMessage(2, 'world'), makeMessage(1, 'hello')],
       error: null,
     };
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
@@ -120,20 +127,27 @@ describe('useChat', () => {
     expect(result.current.messages[1]?.body).toBe('world');
   });
 
+  it('history fetch returns newest 50 in chronological order', async () => {
+    // The mock returns data in whatever order it is declared. The hook
+    // requests DESC + reverses, so if the mock returns [newest, oldest]
+    // (DESC order) the hook should restore [oldest, newest] display order.
+    historyResponse = {
+      data: [makeMessage(50, 'newest'), makeMessage(1, 'oldest')],
+      error: null,
+    };
+    const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    // After the DESC→reverse pass, oldest should be first (chronological).
+    expect(result.current.messages[0]?.body).toBe('oldest');
+    expect(result.current.messages[1]?.body).toBe('newest');
+  });
+
   it('reports error when history fetch fails', async () => {
     historyResponse = { data: null, error: { message: 'permission denied' } };
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toContain('permission denied');
     expect(result.current.messages).toHaveLength(0);
-  });
-
-  it('is a no-op when roomId is null — no channel opened, no fetch', async () => {
-    const { result } = renderHook(() => useChat(null, PLAYER_ID, NICKNAME));
-    // Give a tick for any async effect to fire
-    await new Promise((r) => setTimeout(r, 10));
-    expect(result.current.loading).toBe(true); // no fetch ever resolves
-    expect(chatInsertHandler).toBeNull();
   });
 
   it('Realtime INSERT appends the new message to state', async () => {
@@ -149,14 +163,29 @@ describe('useChat', () => {
     expect(result.current.messages[1]?.body).toBe('second');
   });
 
-  it('sendMessage inserts with correct shape', async () => {
+  it('Realtime INSERT is deduplicated if message already in history', async () => {
+    // Simulates the race: message 1 arrives via history AND Realtime echo.
+    historyResponse = { data: [makeMessage(1, 'first')], error: null };
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await act(async () => {
-      await result.current.sendMessage('Hello, room!');
+    act(() => {
+      chatInsertHandler?.({ new: makeMessage(1, 'first') }); // duplicate echo
     });
 
+    expect(result.current.messages).toHaveLength(1);
+  });
+
+  it('sendMessage inserts with correct shape and returns true on success', async () => {
+    const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.sendMessage('Hello, room!');
+    });
+
+    expect(ok).toBe(true);
     expect(insertCalls).toHaveLength(1);
     expect(insertCalls[0]).toMatchObject({
       room_id: ROOM_ID,
@@ -177,48 +206,56 @@ describe('useChat', () => {
     expect(insertCalls[0]?.body).toBe('trimmed');
   });
 
-  it('sendMessage is a no-op for blank input', async () => {
+  it('sendMessage returns false and does not insert for blank input', async () => {
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
+    let ok = true;
     await act(async () => {
-      await result.current.sendMessage('   ');
+      ok = await result.current.sendMessage('   ');
     });
 
+    expect(ok).toBe(false);
     expect(insertCalls).toHaveLength(0);
   });
 
-  it('sendMessage rejects body over 280 chars', async () => {
+  it('sendMessage returns false and does not insert for body over 280 chars', async () => {
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
+    let ok = true;
     await act(async () => {
-      await result.current.sendMessage('x'.repeat(281));
+      ok = await result.current.sendMessage('x'.repeat(281));
     });
 
+    expect(ok).toBe(false);
     expect(insertCalls).toHaveLength(0);
   });
 
-  it('sendMessage is a no-op when roomId is null', async () => {
+  it('sendMessage returns false when roomId is null', async () => {
     const { result } = renderHook(() => useChat(null, PLAYER_ID, NICKNAME));
-    await new Promise((r) => setTimeout(r, 10));
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
+    let ok = true;
     await act(async () => {
-      await result.current.sendMessage('hello');
+      ok = await result.current.sendMessage('hello');
     });
 
+    expect(ok).toBe(false);
     expect(insertCalls).toHaveLength(0);
   });
 
-  it('sendMessage sets error when insert fails', async () => {
+  it('sendMessage sets error and returns false when insert fails', async () => {
     insertResponse = { data: null, error: { message: 'RLS violation' } };
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
+    let ok = true;
     await act(async () => {
-      await result.current.sendMessage('hello');
+      ok = await result.current.sendMessage('hello');
     });
 
+    expect(ok).toBe(false);
     expect(result.current.error).toContain('RLS violation');
   });
 
@@ -228,7 +265,6 @@ describe('useChat', () => {
 
     const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
     await waitFor(() => expect(result.current.loading).toBe(false));
-    // Wait for the subscribe callback to fire
     await waitFor(() => expect(result.current.error).not.toBeNull());
 
     expect(result.current.error).toContain('Chat sync error');
