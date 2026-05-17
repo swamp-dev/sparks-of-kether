@@ -657,9 +657,7 @@ export function PlayScreen({
             {...(isMyTurn && pendingDiscardCount === 0
               ? { onCardSelect: (n: number) => setSelectedCard(n) }
               : {})}
-            {...(isMyTurn
-              ? { onCardHover: (n: number | undefined) => setHoveredCard(n) }
-              : {})}
+            {...(isMyTurn ? { onCardHover: (n: number | undefined) => setHoveredCard(n) } : {})}
             // #412: drag-to-play wiring. drag-start lights the path
             // beneath the gesture; drag-end runs the drop handler;
             // drag-cancel clears the highlight without dispatching.

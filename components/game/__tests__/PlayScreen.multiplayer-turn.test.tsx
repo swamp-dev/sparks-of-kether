@@ -27,7 +27,7 @@ function buildEndPhaseState(): GameState {
 }
 
 describe('PlayScreen — multiplayer turn gating', () => {
-  it('non-active player sees their own hand, not the active player\'s', () => {
+  it("non-active player sees their own hand, not the active player's", () => {
     const initial = buildTwoPlayerState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
 
@@ -41,7 +41,7 @@ describe('PlayScreen — multiplayer turn gating', () => {
     expect(document.querySelector('[data-arcanum="11"]')).toBeNull();
   });
 
-  it('non-active player\'s cards are aria-disabled (read-only hand)', () => {
+  it("non-active player's cards are aria-disabled (read-only hand)", () => {
     const initial = buildTwoPlayerState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
 
@@ -51,7 +51,7 @@ describe('PlayScreen — multiplayer turn gating', () => {
     expect(card20?.getAttribute('aria-disabled')).toBe('true');
   });
 
-  it('non-active player\'s cards do not change selected state when clicked', () => {
+  it("non-active player's cards do not change selected state when clicked", () => {
     const initial = buildTwoPlayerState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
 
@@ -68,7 +68,7 @@ describe('PlayScreen — multiplayer turn gating', () => {
     expect(card20.getAttribute('data-selected')).toBe('false');
   });
 
-  it('non-active player\'s End Turn button is disabled', () => {
+  it("non-active player's End Turn button is disabled", () => {
     const initial = buildEndPhaseState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
 
@@ -90,7 +90,7 @@ describe('PlayScreen — multiplayer turn gating', () => {
     expect(document.querySelector('[data-arcanum="21"]')).toBeNull();
   });
 
-  it('active player\'s cards are interactive (not aria-disabled)', () => {
+  it("active player's cards are interactive (not aria-disabled)", () => {
     const initial = buildTwoPlayerState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p1" />);
 
@@ -100,7 +100,7 @@ describe('PlayScreen — multiplayer turn gating', () => {
     expect(card10?.getAttribute('aria-disabled')).not.toBe('true');
   });
 
-  it('active player\'s End Turn button is enabled (phase=end)', () => {
+  it("active player's End Turn button is enabled (phase=end)", () => {
     const initial = buildEndPhaseState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p1" />);
 
@@ -109,7 +109,7 @@ describe('PlayScreen — multiplayer turn gating', () => {
     expect(endBtn?.disabled).toBe(false);
   });
 
-  it('hot-seat mode (no currentPlayerId) shows active player\'s hand', () => {
+  it("hot-seat mode (no currentPlayerId) shows active player's hand", () => {
     const initial = buildTwoPlayerState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} />);
 
