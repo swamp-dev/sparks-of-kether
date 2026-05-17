@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { PlayScreen } from '@/components/game/PlayScreen';
 import { ColorBloom } from '@/components/atmosphere/ColorBloom';
 import { SettingsButton } from '@/components/play/SettingsButton';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useLobby } from '@/lib/use-lobby';
 import { useRoomState } from '@/lib/realtime';
 import { usePresence } from '@/lib/presence';
@@ -182,6 +183,11 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
           onLeave={handleLeave}
         />
       ) : null}
+      <ChatPanel
+        roomId={room.id}
+        currentPlayerId={currentPlayerId}
+        nickname={currentPlayer?.nickname ?? null}
+      />
     </main>
   );
 }
