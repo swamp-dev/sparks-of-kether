@@ -172,7 +172,12 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
       <ColorBloom color="#ffd700" position="bottom" intensity={0.12} />
       <SettingsButton />
 
-      <PlayScreen initialState={gameState} rng={rng} roomCode={code} />
+      <PlayScreen
+        initialState={gameState}
+        rng={rng}
+        roomCode={code}
+        {...(currentPlayerId !== null ? { currentPlayerId } : {})}
+      />
 
       {isPaused ? (
         <PauseOverlay
