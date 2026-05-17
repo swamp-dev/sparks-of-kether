@@ -62,9 +62,10 @@ function Toggle({
  *     (the close button anchors the front of the loop).
  */
 
-export function SettingsButton(): JSX.Element {
+export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
   const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
   const [open, setOpen] = useState(false);
+  const [confirmingQuit, setConfirmingQuit] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -84,6 +85,7 @@ export function SettingsButton(): JSX.Element {
 
   const close = useCallback(() => {
     setOpen(false);
+    setConfirmingQuit(false);
     // Return focus to the trigger for screen-reader / keyboard users
     // — without this, focus would land on document.body after the
     // dialog unmounts.
@@ -210,6 +212,43 @@ export function SettingsButton(): JSX.Element {
             </span>
           </div>
           <p className="text-xs italic opacity-60">Reduced motion follows your system setting.</p>
+
+          {onQuit !== undefined ? (
+            <div className="mt-4 border-t border-veil/20 pt-3">
+              {confirmingQuit ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-center text-xs opacity-60">Leave this game?</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onQuit()}
+                      data-action="confirm-quit"
+                      className="flex-1 rounded bg-pillar-severity/80 px-3 py-2 text-xs uppercase tracking-widest text-ground hover:bg-pillar-severity focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-pillar-severity"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingQuit(false)}
+                      data-action="cancel-quit"
+                      className="flex-1 rounded border border-veil/30 px-3 py-2 text-xs uppercase tracking-widest opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-illumination"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingQuit(true)}
+                  data-action="leave-game"
+                  className="w-full rounded border border-veil/30 px-3 py-2 text-xs uppercase tracking-widest opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-illumination"
+                >
+                  Leave Game
+                </button>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

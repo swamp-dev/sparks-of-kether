@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlayScreen } from '@/components/game/PlayScreen';
 import { ColorBloom } from '@/components/atmosphere/ColorBloom';
-import { SettingsButton } from '@/components/play/SettingsButton';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useLobby } from '@/lib/use-lobby';
 import { useRoomState } from '@/lib/realtime';
@@ -170,12 +169,11 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
   return (
     <main className="relative min-h-screen text-veil">
       <ColorBloom color="#ffd700" position="bottom" intensity={0.12} />
-      <SettingsButton />
-
       <PlayScreen
         initialState={gameState}
         rng={rng}
         roomCode={code}
+        onQuit={handleLeave}
         {...(currentPlayerId !== null ? { currentPlayerId } : {})}
       />
 
