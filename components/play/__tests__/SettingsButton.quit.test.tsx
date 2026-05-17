@@ -1,8 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { axe } from 'vitest-axe';
+import type { AxeResults } from 'axe-core';
 import { SettingsButton } from '../SettingsButton';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
+
+function expectNoViolations(results: AxeResults): void {
+  if (results.violations.length === 0) return;
+  const summary = results.violations
+    .map((v) => `  - [${v.id}] ${v.help} (${v.nodes.length} nodes)`)
+    .join('\n');
+  throw new Error(`axe found ${results.violations.length} violation(s):\n${summary}`);
+}
 
 function renderWithQuit(onQuit?: () => void): ReturnType<typeof render> {
   return render(
@@ -73,5 +83,13 @@ describe('SettingsButton — quit flow', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('button', { name: /leave game/i })).toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+  });
+
+  it('confirmation state has no axe violations', async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithQuit(vi.fn());
+    await user.click(screen.getByRole('button', { name: /settings/i }));
+    await user.click(screen.getByRole('button', { name: /leave game/i }));
+    expectNoViolations(await axe(container) as AxeResults);
   });
 });
