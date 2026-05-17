@@ -10,7 +10,8 @@ import type { ChatMessage } from '@/lib/use-chat';
  * lib/__tests__/use-chat.test.ts.
  */
 
-const mockSendMessage = vi.fn();
+// sendMessage returns true (success) by default so input-clear tests work correctly.
+const mockSendMessage = vi.fn().mockResolvedValue(true);
 let mockMessages: ChatMessage[] = [];
 let mockError: string | null = null;
 
@@ -44,7 +45,8 @@ describe('<ChatPanel>', () => {
   beforeEach(() => {
     mockMessages = [];
     mockError = null;
-    mockSendMessage.mockReset();
+    // Preserve the default resolved(true) return so input-clear tests work.
+    mockSendMessage.mockReset().mockResolvedValue(true);
   });
 
   it('renders collapsed toggle button by default — no panel in DOM', () => {
@@ -123,6 +125,7 @@ describe('<ChatPanel>', () => {
     await user.click(screen.getByTestId('chat-toggle'));
     const input = screen.getByTestId('chat-input');
     await user.type(input, '  hello  {Enter}');
+    // Component passes raw inputValue; trimming is useChat's responsibility.
     expect(mockSendMessage).toHaveBeenCalledWith('  hello  ');
   });
 
@@ -174,12 +177,22 @@ describe('<ChatPanel>', () => {
     expect(screen.getByRole('alert').textContent).toContain('Chat sync error');
   });
 
-  it('input clears after Send is clicked', async () => {
+  it('input clears after Send is clicked on success', async () => {
     const user = userEvent.setup();
     render(<ChatPanel {...DEFAULT_PROPS} />);
     await user.click(screen.getByTestId('chat-toggle'));
     await user.type(screen.getByTestId('chat-input'), 'test message');
     await user.click(screen.getByRole('button', { name: /send message/i }));
     expect(screen.getByTestId('chat-input')).toHaveValue('');
+  });
+
+  it('input is NOT cleared when sendMessage returns false (failure)', async () => {
+    mockSendMessage.mockResolvedValue(false);
+    const user = userEvent.setup();
+    render(<ChatPanel {...DEFAULT_PROPS} />);
+    await user.click(screen.getByTestId('chat-toggle'));
+    await user.type(screen.getByTestId('chat-input'), 'important message');
+    await user.click(screen.getByRole('button', { name: /send message/i }));
+    expect(screen.getByTestId('chat-input')).toHaveValue('important message');
   });
 });

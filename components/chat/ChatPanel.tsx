@@ -45,8 +45,10 @@ export function ChatPanel({ roomId, currentPlayerId, nickname }: ChatPanelProps)
 
   const handleSend = useCallback(() => {
     if (inputValue.trim() === '') return;
-    void sendMessage(inputValue);
-    setInputValue('');
+    void (async () => {
+      const ok = await sendMessage(inputValue);
+      if (ok) setInputValue('');
+    })();
   }, [inputValue, sendMessage]);
 
   const handleKeyDown = useCallback(
@@ -129,7 +131,7 @@ export function ChatPanel({ roomId, currentPlayerId, nickname }: ChatPanelProps)
               : 'Open chat'
         }
         aria-expanded={expanded}
-        aria-controls="chat-panel"
+        aria-controls={expanded ? 'chat-panel' : undefined}
         data-action="chat-toggle"
         data-testid="chat-toggle"
         className="relative flex h-10 w-10 items-center justify-center rounded-full border border-veil/20 bg-ground/90 text-base shadow-md"
