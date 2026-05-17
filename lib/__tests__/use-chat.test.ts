@@ -264,6 +264,25 @@ describe('useChat', () => {
     expect(result.current.error).toContain('RLS violation');
   });
 
+  it('sendMessage clears error state on successful retry after a failure', async () => {
+    insertResponse = { data: null, error: { message: 'RLS violation' } };
+    const { result } = renderHook(() => useChat(ROOM_ID, PLAYER_ID, NICKNAME));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // First send fails — error is set.
+    await act(async () => {
+      await result.current.sendMessage('hello');
+    });
+    expect(result.current.error).toContain('RLS violation');
+
+    // Retry succeeds — error should clear.
+    insertResponse = { data: null, error: null };
+    await act(async () => {
+      await result.current.sendMessage('hello');
+    });
+    expect(result.current.error).toBeNull();
+  });
+
   it('CHANNEL_ERROR sets error state and calls console.error', async () => {
     chatChannelSubscribeStatus = 'CHANNEL_ERROR';
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
