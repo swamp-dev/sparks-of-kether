@@ -90,6 +90,6 @@ describe('SettingsButton — quit flow', () => {
     const { container } = renderWithQuit(vi.fn());
     await user.click(screen.getByRole('button', { name: /settings/i }));
     await user.click(screen.getByRole('button', { name: /leave game/i }));
-    expectNoViolations(await axe(container) as AxeResults);
+    expectNoViolations((await axe(container)) as AxeResults);
   });
 });
