@@ -7,7 +7,7 @@ import { SoundSettingsProvider } from '@/lib/sound/settings';
 function renderWithQuit(onQuit?: () => void): ReturnType<typeof render> {
   return render(
     <SoundSettingsProvider>
-      <SettingsButton onQuit={onQuit} />
+      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
     </SoundSettingsProvider>,
   );
 }

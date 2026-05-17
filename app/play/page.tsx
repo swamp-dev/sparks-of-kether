@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ZodiacSignKey } from '@/data';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
@@ -46,6 +47,7 @@ type Phase =
   | { readonly kind: 'play'; readonly setupComplete: PlayerSetup[] };
 
 export default function PlayPage(): JSX.Element {
+  const router = useRouter();
   // #255 reorder: sign-pick happens BEFORE the blessing ritual so
   // BlessingRitual can render per-sign blessing quotes (Voices Epic
   // T4). The sign is the player's astrological "class" — natural to
@@ -185,7 +187,11 @@ export default function PlayPage(): JSX.Element {
   return (
     <main className="min-h-screen text-veil">
       <ColorBloom color="#ffd700" position="bottom" intensity={0.12} />
-      <PlaySession setupComplete={phase.setupComplete} playRng={playRng} />
+      <PlaySession
+        setupComplete={phase.setupComplete}
+        playRng={playRng}
+        onQuit={() => router.push('/')}
+      />
     </main>
   );
 }
@@ -193,15 +199,17 @@ export default function PlayPage(): JSX.Element {
 function PlaySession({
   setupComplete,
   playRng,
+  onQuit,
 }: {
   setupComplete: PlayerSetup[];
   playRng: ReturnType<typeof seededRng>;
+  onQuit: () => void;
 }): JSX.Element {
   const initialState = useMemo(
     () => initializeGame({ players: setupComplete, rng: playRng }),
     [setupComplete, playRng],
   );
-  return <PlayScreen initialState={initialState} rng={playRng} />;
+  return <PlayScreen initialState={initialState} rng={playRng} onQuit={onQuit} />;
 }
 
 function PhaseHeader({ title }: { title: string }): JSX.Element {

@@ -176,6 +176,7 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
         initialState={gameState}
         rng={rng}
         roomCode={code}
+        onQuit={handleLeave}
         {...(currentPlayerId !== null ? { currentPlayerId } : {})}
       />
 

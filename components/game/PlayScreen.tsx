@@ -82,6 +82,12 @@ interface PlayScreenProps {
    * and disables actions when it is not their turn.
    */
   readonly currentPlayerId?: string;
+  /**
+   * Called when the player confirms leaving the game. When provided,
+   * a "Leave Game" affordance with inline confirmation appears in the
+   * Settings popover. Absent in hot-seat mode (no session to leave).
+   */
+  readonly onQuit?: () => void;
 }
 
 /**
@@ -101,6 +107,7 @@ export function PlayScreen({
   className,
   roomCode,
   currentPlayerId,
+  onQuit,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
@@ -817,7 +824,7 @@ export function PlayScreen({
           the game. Renders fixed bottom-right; the inline div keeps
           it inside the main layout for SR ordering, but the
           component itself uses `position: fixed` so it floats. */}
-      <SettingsButton />
+      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
       {/* #384: in-game Sefirah info popover. Mounted at the play-
           screen root so the backdrop covers the full viewport, but
           inside <main> so accessibility-tree ordering keeps it
