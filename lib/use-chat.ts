@@ -125,6 +125,7 @@ export function useChat(
       }
       // No optimistic local append — the Realtime INSERT echo delivers
       // the message to setMessages sub-second, avoiding duplicate render.
+      setError(null);
       return true;
     },
     [roomId, currentPlayerId, nickname],
