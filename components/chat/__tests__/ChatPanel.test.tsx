@@ -95,10 +95,12 @@ describe('<ChatPanel>', () => {
   });
 
   it('unread count resets to 0 on expand', async () => {
-    mockMessages = [makeMessage(1, 'Bea', 'hey!')];
+    // Start with no messages so prevCount begins at 0.
+    mockMessages = [];
     const user = userEvent.setup();
     const { rerender } = render(<ChatPanel {...DEFAULT_PROPS} />);
-    // Re-render to trigger the unread increment
+    // A new message arrives while the panel is still collapsed.
+    mockMessages = [makeMessage(1, 'Bea', 'hey!')];
     rerender(<ChatPanel {...DEFAULT_PROPS} />);
     expect(screen.getByTestId('unread-badge')).toBeInTheDocument();
 
