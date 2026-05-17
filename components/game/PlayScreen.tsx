@@ -243,7 +243,7 @@ export function PlayScreen({
   // In hot-seat (currentPlayerId undefined) the viewer IS the active player.
   const viewerPlayer =
     currentPlayerId !== undefined
-      ? (turn.state.players.find((p) => p.id === currentPlayerId) ?? activePlayer)
+      ? turn.state.players.find((p) => p.id === currentPlayerId)
       : activePlayer;
   const isMyTurn = currentPlayerId === undefined || currentPlayerId === activePlayer?.id;
   const endgame = checkEndgame(turn.state);
@@ -344,13 +344,13 @@ export function PlayScreen({
   // caused the modal to disappear mid-react with no UI to advance.
   // Now that `react-continue` exists, trust the engine: the phase
   // check alone is sufficient.
-  const showChallenge = turn.phase === 'challenge' && activePlayer !== undefined;
+  const showChallenge = turn.phase === 'challenge' && activePlayer !== undefined && isMyTurn;
 
   const challengeContext: ChallengeContext | null =
     showChallenge && activePlayer ? buildChallengeContext(turn.state, activePlayer.id) : null;
 
   const handlePathClick = (pathNumber: number): void => {
-    if (!activePlayer) return;
+    if (!activePlayer || !isMyTurn) return;
     if (selectedCard === undefined) {
       // No card selected — short-circuit. Phase 6 polish: surface a
       // hint that the player must select a card first.
@@ -388,7 +388,7 @@ export function PlayScreen({
     position: { readonly x: number; readonly y: number },
   ): void => {
     setDraggingCard(undefined);
-    if (!activePlayer) return;
+    if (!activePlayer || !isMyTurn) return;
     const target = document.elementFromPoint(position.x, position.y);
     const dropZone = target?.closest('[data-drop-zone]');
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
@@ -552,7 +552,7 @@ export function PlayScreen({
           <TreeBoard
             state={turn.state}
             {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
-            onPathClick={handlePathClick}
+            {...(isMyTurn ? { onPathClick: handlePathClick } : {})}
             // #384: opens an inline popover instead of navigating to
             // the Codex detail page (which would strand the player
             // off-game with no return-to-game affordance).
