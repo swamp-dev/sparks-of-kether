@@ -81,8 +81,8 @@ describe('turnReducer — phase transitions', () => {
     // #128 fix: meditate is a complete turn-action that draws 2 cards
     // (capped at HAND_CAP). The pre-#128 contract — `phase: 'draw'`,
     // state unchanged — was broken: the 'draw' handler only refilled
-    // toward STARTING_HAND_SIZE so a meditating player at 4 cards saw
-    // nothing happen.
+    // toward STARTING_HAND_SIZE so a meditating player at STARTING_HAND_SIZE
+    // cards saw nothing happen.
     //
     // #503: post-#503 Meditate stays in `'move'` (pre-#503 it
     // transitioned to `'end'`) so the player may still play a card
@@ -1731,7 +1731,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
   // turn via pendingDiscard). Pre-#128 the reducer advanced to 'draw'
   // phase without changing state; players who meditated then clicked
   // Draw saw nothing because drawToHand only refills toward
-  // STARTING_HAND_SIZE (4) which they already had.
+  // STARTING_HAND_SIZE (3) which they already had.
   //
   // #503: post-#503 Meditate stays at `'move'` so the player may
   // still play a card the same turn — the cards drawn by Meditate
@@ -1781,7 +1781,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
-    // Hand was 5, cap is 6: meditate draws BOTH cards (not just one).
+    // Hand was 5 (= HAND_CAP): meditate draws BOTH cards (not just one).
     expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11, 12]);
     // #503: pendingDiscard NOT set on Meditate; it fires on end-turn.
     expect(result.value.next.state.pendingDiscard).toBeUndefined();
@@ -1791,7 +1791,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
-      hand: [1, 2, 3, 4, 5, 6],
+      hand: [1, 2, 3, 4, 5],
     });
     const state = makeState(
       {},
@@ -1806,7 +1806,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state.players.find((p) => p.id === 'p1');
-    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 6, 11, 12]);
+    expect(after?.hand).toEqual([1, 2, 3, 4, 5, 11, 12]);
     // #503: pendingDiscard is NOT set immediately. The cap check
     // fires on end-turn instead.
     expect(result.value.next.state.pendingDiscard).toBeUndefined();
@@ -1827,8 +1827,8 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     const p1 = makePlayer({
       id: 'p1',
       position: 'malkuth',
-      // 7 cards = 1 over HAND_CAP (6).
-      hand: [1, 2, 3, 4, 5, 6, 7],
+      // 6 cards = 1 over HAND_CAP (5).
+      hand: [1, 2, 3, 4, 5, 6],
     });
     const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [] });
     const stateWithStaleDiscard: GameState = {
@@ -1878,7 +1878,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     const p1 = makePlayer({
       id: 'p1',
       position: 'malkuth',
-      hand: [1, 2, 3, 4, 5, 6],
+      hand: [1, 2, 3, 4, 5],
     });
     const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [] });
     const state = makeState(
@@ -1897,7 +1897,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     );
     expect(meditated.ok).toBe(true);
     if (!meditated.ok) return;
-    // Hand is now 8 (over cap by 2). Try to end the turn.
+    // Hand is now 7 (over cap by 2). Try to end the turn.
     const ended = turnReducer(meditated.value.next, { kind: 'end-turn' }, RNG);
     expect(ended.ok).toBe(true);
     if (!ended.ok) return;
@@ -1911,14 +1911,14 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
   });
 
   it('meditate-then-move that drops back to cap rotates without any prompt (#503)', () => {
-    // #503 user-facing acceptance: Meditate from 5 → 7 cards, then
-    // play a Move card (drops to 6), then End turn — no DiscardPrompt
+    // #503 user-facing acceptance: Meditate from 4 → 6 cards, then
+    // play a Move card (drops to 5), then End turn — no DiscardPrompt
     // ever fires. Pre-fix, Meditate set pendingDiscard immediately
     // even though the player was about to drop back under cap.
     const p1 = makePlayer({
       id: 'p1',
       position: 'malkuth',
-      hand: [1, 2, 3, 4, 21], // 5 cards including The World (path 32)
+      hand: [1, 2, 3, 21], // 4 cards including The World (path 32)
       clearedSefirot: new Set(['yesod']), // skip challenge for clarity
     });
     const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [] });
@@ -1938,15 +1938,15 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     );
     expect(meditated.ok).toBe(true);
     if (!meditated.ok) return;
-    // Hand grew to 7 (over cap), but no pendingDiscard.
-    expect(meditated.value.next.state.players[0]?.hand.length).toBe(7);
+    // Hand grew to 6 (over cap), but no pendingDiscard.
+    expect(meditated.value.next.state.players[0]?.hand.length).toBe(6);
     expect(meditated.value.next.state.pendingDiscard).toBeUndefined();
     // Play card 21 (path 32: malkuth ↔ yesod) — already cleared so
-    // no challenge fires. Hand drops to 6 (back at cap).
+    // no challenge fires. Hand drops to 5 (back at cap).
     const moved = turnReducer(meditated.value.next, { kind: 'move', pathNumber: 32 }, RNG);
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
-    expect(moved.value.next.state.players[0]?.hand.length).toBe(6);
+    expect(moved.value.next.state.players[0]?.hand.length).toBe(5);
     expect(moved.value.next.state.phase).toBe('end');
     // End turn — cap check sees hand at 6 (not over), so no prompt;
     // seat rotates cleanly.
@@ -2112,7 +2112,7 @@ describe('turnReducer — start-of-turn refill on end-turn (#502)', () => {
   // moment (pre-#502 the new card sat in the just-played player's
   // hand for an entire seat rotation before they could act on it).
   it("refills the new active player's hand toward STARTING_HAND_SIZE", () => {
-    const p1 = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3, 4] });
+    const p1 = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3] });
     const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [5, 6] });
     const state = makeState(
       {},
@@ -2127,17 +2127,17 @@ describe('turnReducer — start-of-turn refill on end-turn (#502)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.next.state.activePlayerId).toBe('p2');
-    // p2's hand was 2 → STARTING_HAND_SIZE (4). p1's hand untouched.
+    // p2's hand was 2 → STARTING_HAND_SIZE (3). p1's hand untouched.
     const newP2 = result.value.next.state.players.find((p) => p.id === 'p2');
     const newP1 = result.value.next.state.players.find((p) => p.id === 'p1');
-    expect(newP2?.hand).toHaveLength(4);
-    expect(newP1?.hand).toEqual([1, 2, 3, 4]);
+    expect(newP2?.hand).toHaveLength(3);
+    expect(newP1?.hand).toEqual([1, 2, 3]);
     expect(result.value.next.state.phase).toBe('move');
   });
 
   it('a hand already at STARTING_HAND_SIZE is left untouched (no double-draw)', () => {
     const p1 = makePlayer({ id: 'p1', position: 'malkuth', hand: [1] });
-    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [5, 6, 7, 8] });
+    const p2 = makePlayer({ id: 'p2', position: 'malkuth', hand: [5, 6, 7] });
     const state = makeState(
       {},
       {
@@ -2151,7 +2151,7 @@ describe('turnReducer — start-of-turn refill on end-turn (#502)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const newP2 = result.value.next.state.players.find((p) => p.id === 'p2');
-    expect(newP2?.hand).toEqual([5, 6, 7, 8]);
+    expect(newP2?.hand).toEqual([5, 6, 7]);
     // Deck untouched — refill was a no-op for the at-cap player.
     expect(result.value.next.state.deck).toEqual([11, 12, 13]);
   });
@@ -2162,7 +2162,7 @@ describe('turnReducer — start-of-turn refill on end-turn (#502)', () => {
     // STARTING_HAND_SIZE on the very first move.
     const initial = makeFullGame({ playerCount: 2, seed: 7 });
     const firstActive = initial.players.find((p) => p.id === initial.activePlayerId);
-    expect(firstActive?.hand).toHaveLength(4);
+    expect(firstActive?.hand).toHaveLength(3);
   });
 });
 
@@ -3927,8 +3927,8 @@ describe('turnReducer — Chesed Overflow (#486)', () => {
     const recipient = makePlayer({
       id: 'p2',
       position: 'hod',
-      // Six cards = HAND_CAP. Lowest is 2.
-      hand: [2, 5, 8, 11, 14, 18],
+      // Five cards = HAND_CAP. Lowest is 2.
+      hand: [2, 5, 8, 11, 14],
     });
     const state = makeState(
       {},
@@ -3953,7 +3953,7 @@ describe('turnReducer — Chesed Overflow (#486)', () => {
     // Recipient discarded arcanum 2 (lowest), received 17.
     expect(nextRecipient?.hand).not.toContain(2);
     expect(nextRecipient?.hand).toContain(17);
-    expect(nextRecipient?.hand.length).toBe(6); // still at HAND_CAP
+    expect(nextRecipient?.hand.length).toBe(5); // still at HAND_CAP
     expect(result.value.next.state.discardPile).toContain(2);
   });
 
@@ -4305,5 +4305,276 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
     if (!result.ok) return;
     // Stale field passes through unchanged — Hod retry doesn't touch it.
     expect(result.value.next.state.encounter?.chokmahPriorAttempts).toBe(5);
+  });
+});
+
+describe('turnReducer — Tiferet required burn (difficulty increase)', () => {
+  // Difficulty change: Tiferet (DC 14) requires at least one staged
+  // card-burn before prep-confirm, same gate pattern as Gevurah (#487).
+  // Empty-hand waiver applies: a player who spent all cards moving to
+  // Tiferet must not be hardlocked.
+
+  const passOutcome: CheckOutcome = {
+    rolled: 18,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 28,
+    effectiveDC: 14,
+    pass: true,
+  };
+
+  function teferetStats() {
+    return {
+      unity: 10,
+      insight: 10,
+      understanding: 10,
+      lovingkindness: 10,
+      strength: 10,
+      harmony: 10,
+      passion: 10,
+      intellect: 10,
+      intuition: 10,
+      body: 10,
+    };
+  }
+
+  it('rejects prep-confirm at Tiferet with non-empty hand and no staged card-burns', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [10, 5, 3],
+      stats: teferetStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'tiferet', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'tiferet', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('tiferet-requires-burn');
+  });
+
+  it('allows prep-confirm at Tiferet with empty hand (waiver: no hardlock)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [],
+      stats: teferetStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'tiferet', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'tiferet', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('allows prep-confirm at Tiferet when at least one card-burn is staged', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'tiferet',
+      hand: [10, 5, 3],
+      stats: teferetStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'tiferet', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [5] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'tiferet', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('Chokmah has no mandatory-burn gate (prep-confirm succeeds with 0 burns)', () => {
+    // Chokmah is intentionally excluded: Act-Before-Thought rewards the
+    // zero-burn flash for fire signs. A mandatory-burn gate would kill
+    // that path. Pin: if someone accidentally adds a chokmah gate, this
+    // test catches it.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'chokmah',
+      hand: [10, 5, 3],
+      stats: teferetStats(),
+    });
+    const chokmahPassOutcome: CheckOutcome = {
+      rolled: 18,
+      statContribution: 10,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 28,
+      effectiveDC: 16,
+      pass: true,
+    };
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'chokmah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'chokmah', outcome: chokmahPassOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe('turnReducer — Binah required burn (difficulty increase)', () => {
+  // Difficulty change: Binah (DC 16) requires at least one staged
+  // card-burn before prep-confirm, same gate pattern as Gevurah (#487).
+  // This is orthogonal to the existing binah-no-assists gate:
+  // - binah-no-assists fires at prep-add-modifier (earlier in the flow)
+  // - binah-requires-burn fires at prep-confirm (later, on confirm attempt)
+  // Both must be satisfied independently.
+
+  const passOutcome: CheckOutcome = {
+    rolled: 20,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 30,
+    effectiveDC: 16,
+    pass: true,
+  };
+
+  function binahStats() {
+    return {
+      unity: 10,
+      insight: 10,
+      understanding: 10,
+      lovingkindness: 10,
+      strength: 10,
+      harmony: 10,
+      passion: 10,
+      intellect: 10,
+      intuition: 10,
+      body: 10,
+    };
+  }
+
+  it('rejects prep-confirm at Binah with non-empty hand and no staged card-burns', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [15, 8, 2],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('binah-requires-burn');
+  });
+
+  it('allows prep-confirm at Binah with empty hand (waiver: no hardlock)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('allows prep-confirm at Binah when at least one card-burn is staged', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [15, 8, 2],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [8] },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('binah-requires-burn is orthogonal to binah-no-assists (both gate independently)', () => {
+    // binah-no-assists fires at prep-add-modifier; binah-requires-burn
+    // fires at prep-confirm. This test verifies that binah-requires-burn
+    // fires even when no assist was attempted (the assists gate is not
+    // a prerequisite for the burns gate).
+    const player = makePlayer({
+      id: 'p1',
+      position: 'binah',
+      hand: [15, 8, 2],
+      stats: binahStats(),
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        encounter: { sefirah: 'binah', seed: 1, retryCount: 0 },
+        // No assists staged, no burns staged — both gates apply independently.
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-confirm', sefirah: 'binah', outcome: passOutcome },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('binah-requires-burn');
   });
 });

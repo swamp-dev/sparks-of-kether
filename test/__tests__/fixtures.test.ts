@@ -34,7 +34,7 @@ describe('makeFullGame', () => {
     // Every player at malkuth, dealt the standard hand size.
     for (const p of state.players) {
       expect(p.position).toBe('malkuth');
-      expect(p.hand).toHaveLength(4);
+      expect(p.hand).toHaveLength(3);
     }
     expect(state.activePlayerId).toBe(state.players[0]?.id);
     // Counters start at zero.
