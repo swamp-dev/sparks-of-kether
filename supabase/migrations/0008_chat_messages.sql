@@ -18,8 +18,9 @@ create table if not exists public.chat_messages (
   room_id    uuid not null references public.rooms(id) on delete cascade,
   -- player_id MUST equal auth.uid() for every insert. RLS enforces it
   -- via the INSERT policy; we do NOT use gen_random_uuid() here for the
-  -- same reason as players.id (see 0001_init.sql).
-  player_id  uuid not null,
+  -- same reason as players.id (see 0001_init.sql). ON DELETE CASCADE
+  -- mirrors game_events so messages are cleaned up when a player is removed.
+  player_id  uuid not null references public.players(id) on delete cascade,
   -- Denormalized from players.nickname at insert time so the client
   -- doesn't need a join for rendering. Acceptable tradeoff: nickname
   -- changes are not supported post-join, so old messages always show
