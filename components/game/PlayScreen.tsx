@@ -110,6 +110,23 @@ export function PlayScreen({
   onQuit,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
+
+  // Sync Realtime state pushes into the turn machine (multiplayer only).
+  // In hot-seat mode `initialState` is static after mount; the `roomCode`
+  // guard keeps this a no-op in that case. We keep a ref to `turn.setState`
+  // because its identity changes on every snapshot update (it closes over
+  // the current snapshot via useCallback). The ref pattern avoids including
+  // it in the effect's dep array, which would re-fire the effect after every
+  // setState call and create a loop.
+  const setTurnStateRef = useRef(turn.setState);
+  useLayoutEffect(() => {
+    setTurnStateRef.current = turn.setState;
+  });
+  useEffect(() => {
+    if (roomCode === undefined) return;
+    setTurnStateRef.current(initialState);
+  }, [initialState, roomCode]);
+
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
   // #405: separate hover state, so path-light fires on card hover/focus
   // BEFORE the player commits to a click. Hovered takes precedence over
@@ -593,11 +610,11 @@ export function PlayScreen({
             className="w-full"
           />
         </div>
-        <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+        <div className="relative z-40 flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
           <span className="text-xs uppercase tracking-widest opacity-60" data-phase-hint>
             {phaseHint(turn.phase)}
           </span>
-          <span className="font-display tracking-widest">
+          <span className="font-display tracking-widest" data-turn-indicator>
             {activePlayer?.name ?? '—'}&apos;s turn
           </span>
           <div className="flex gap-2">

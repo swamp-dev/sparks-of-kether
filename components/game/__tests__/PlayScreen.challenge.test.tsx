@@ -149,4 +149,48 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
       vi.useRealTimers();
     }
   });
+
+  it('End Turn button is enabled and advances phase after Continue (regression: z-index overlap)', () => {
+    // Regression guard for the floating Hand z-index bug: the Hand's
+    // inner div (pointer-events: auto, z-30 fixed) overlapped the
+    // action bar in the viewport, swallowing clicks on End Turn.
+    // The fix adds `relative z-40` to the action bar so it stacks
+    // above the Hand. This test verifies the button is not disabled
+    // and that clicking it advances the phase out of 'end'.
+    vi.useFakeTimers();
+    try {
+      const initial = makePassReadyState({ destination: 'yesod' });
+      const rng = seededRng(1);
+      render(<PlayScreen initialState={initial} rng={rng} />);
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
+      const continueBtn = document.querySelector('[data-action="continue"]');
+      if (!continueBtn) {
+        throw new Error('test setup: expected pass branch but no Continue button rendered.');
+      }
+      act(() => {
+        fireEvent.click(continueBtn as HTMLButtonElement);
+      });
+
+      // Phase is now 'end' — End Turn button should be present and enabled.
+      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('end');
+      const endTurnBtn = document.querySelector<HTMLButtonElement>('[data-action="end-turn"]');
+      expect(endTurnBtn).not.toBeNull();
+      expect(endTurnBtn?.disabled).toBe(false);
+
+      // Clicking End Turn advances to the next turn ('move').
+      act(() => {
+        fireEvent.click(endTurnBtn as HTMLButtonElement);
+      });
+      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('move');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

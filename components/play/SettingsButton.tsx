@@ -62,7 +62,7 @@ function Toggle({
  *     (the close button anchors the front of the loop).
  */
 
-export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
+export function SettingsButton({ onQuit }: { readonly onQuit?: () => void }): JSX.Element {
   const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
   const [open, setOpen] = useState(false);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
