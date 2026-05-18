@@ -726,11 +726,11 @@ export function PlayScreen({
             className="w-full"
           />
         </div>
-        <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+        <div className="relative z-40 flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
           <span className="text-xs uppercase tracking-widest opacity-60" data-phase-hint>
             {phaseHint(turn.phase)}
           </span>
-          <span className="font-display tracking-widest">
+          <span className="font-display tracking-widest" data-turn-indicator>
             {activePlayer?.name ?? '—'}&apos;s turn
           </span>
           <div className="flex gap-2">
