@@ -18,3 +18,10 @@ on this branch.
 **Why:** Reviewer (SIGNIFICANT): `toHaveClass` splits on `\s+` internally and cannot detect double-spaces or leading/trailing spaces — the exact defects the tests claimed to guard. Switched both assertions to `getAttribute('class')` with explicit regex checks.
 **Notes:** re-review required (fix landed in SIGNIFICANT-flagged area)
 **Commit(s):** `5de818a`
+
+## 2026-05-20T17:51:30-04:00 — second fix push after re-review
+
+**Pushed:** fix(test): add absent-className case to pin the trailing-space regression
+**Why:** Reviewer (SIGNIFICANT × 2): tests only exercised the truthy-className path; the original bug (trailing space when className is absent) went untested. Added no-className render assertions to both tests to make the regression guard complete.
+**Notes:** re-review required (second SIGNIFICANT finding addressed)
+**Commit(s):** `85b119a`
