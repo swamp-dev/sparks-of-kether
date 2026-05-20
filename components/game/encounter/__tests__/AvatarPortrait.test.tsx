@@ -194,6 +194,46 @@ describe('AvatarPortrait', () => {
     });
   });
 
+  describe('malkuth / Hestia companion silhouette (#69)', () => {
+    it('renders a distinct Hestia silhouette at stage size', () => {
+      render(<AvatarPortrait sefirah="malkuth" state="prep" size="stage" />);
+      // Hestia has no commissioned portrait — silhouette always shown
+      expect(document.querySelector('[data-avatar-portrait-image]')).toBeNull();
+      expect(document.querySelector('[data-avatar-placeholder-letter]')).toBeNull();
+      // The Hestia variant is marked to distinguish it from the standing
+      // humanoid used by the 8 encounter avatars
+      expect(document.querySelector('[data-silhouette-variant="malkuth"]')).not.toBeNull();
+    });
+
+    it('malkuth silhouette includes the hearth flame element', () => {
+      render(<AvatarPortrait sefirah="malkuth" state="prep" size="stage" />);
+      expect(document.querySelector('[data-hestia-flame]')).not.toBeNull();
+    });
+
+    it('encounter Sefirot do not render the Hestia variant', () => {
+      for (const sefirah of [
+        'chokmah',
+        'binah',
+        'chesed',
+        'gevurah',
+        'tiferet',
+        'netzach',
+        'hod',
+        'yesod',
+      ] as const) {
+        render(<AvatarPortrait sefirah={sefirah} state="prep" size="stage" />);
+        expect(document.querySelector('[data-silhouette-variant="malkuth"]')).toBeNull();
+        document.body.innerHTML = '';
+      }
+    });
+
+    it('kether silhouette is not the Hestia variant', () => {
+      render(<AvatarPortrait sefirah="kether" state="prep" size="stage" />);
+      expect(document.querySelector('[data-avatar-silhouette]')).not.toBeNull();
+      expect(document.querySelector('[data-silhouette-variant="malkuth"]')).toBeNull();
+    });
+  });
+
   describe('caption + name label', () => {
     it('renders avatarName label when supplied', () => {
       render(<AvatarPortrait sefirah="hod" state="prep" size="stage" avatarName="Hermes" />);
