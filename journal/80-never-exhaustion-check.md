@@ -18,3 +18,10 @@ on this branch.
 **Why:** Reviewer found SIGNIFICANT issue: UiSubPhase was duplicated in EncounterScreen.tsx; never check only guarded the local copy. Exported the type and imported it in EncounterScreen.tsx to eliminate the duplication.
 **Notes:** New exported symbol introduced (UiSubPhase); re-review required.
 **Commit(s):** `33f6c5b`
+
+## 2026-05-20T14:32:00-04:00 — minor cleanup push
+
+**Pushed:** style(encounter): remove redundant comment after UiSubPhase import
+**Why:** Re-review (ship) noted dangling `// UiSubPhase imported above` comment was redundant noise since the import on line 35 is self-documenting.
+**Notes:** One-line deletion, no logic change, no re-review required. Re-review verdict: ship.
+**Commit(s):** `747e382`
