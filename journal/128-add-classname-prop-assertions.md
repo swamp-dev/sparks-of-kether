@@ -11,3 +11,10 @@ on this branch.
 **Why:** Locks in the className separator fix from #102: regression guards on AvatarStack and OrreryBackdrop assert a passed className lands on the root element without double-spaces or leading/trailing spaces.
 **Notes:** none
 **Commit(s):** `5674f83`
+
+## 2026-05-20T17:44:49-04:00 — fix push after review
+
+**Pushed:** fix(test): inspect raw class attribute to catch whitespace regressions
+**Why:** Reviewer (SIGNIFICANT): `toHaveClass` splits on `\s+` internally and cannot detect double-spaces or leading/trailing spaces — the exact defects the tests claimed to guard. Switched both assertions to `getAttribute('class')` with explicit regex checks.
+**Notes:** re-review required (fix landed in SIGNIFICANT-flagged area)
+**Commit(s):** `5de818a`
