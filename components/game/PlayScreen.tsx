@@ -662,11 +662,7 @@ export function PlayScreen({
           </div>
         ) : null}
         {turn.phase === 'end' && activePlayer?.position === 'malkuth' ? (
-          <HestiaCompanionLine
-            sign={activePlayer.zodiacSign}
-            pantheon={pantheon}
-            rng={rng}
-          />
+          <HestiaCompanionLine sign={activePlayer.zodiacSign} pantheon={pantheon} rng={rng} />
         ) : null}
         {viewerPlayer ? (
           <Hand
