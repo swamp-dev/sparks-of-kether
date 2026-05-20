@@ -18,3 +18,10 @@ on this branch.
 **Why:** Two significant findings from code-reviewer: (1) useMemo is not a semantic guarantee of single-execution, use useState lazy initializer instead; (2) direct greco-roman import should use quoteForBlessing from engine/sefirah-quote for correct abstraction boundary
 **Notes:** re-reviewed after fixes; changes were mechanical (< 10 lines, same file) — re-review threshold not met. Stamp hook silently did not fire (known issue).
 **Commit(s):** `5b4ddff`
+
+## 2026-05-20T15:42:41-04:00 — format fix (push 3)
+
+**Pushed:** style: format PlayScreen.tsx (prettier)
+**Why:** CI format-check step failed — prettier reformatted the import block added in this PR
+**Notes:** none
+**Commit(s):** `329b6e4`
