@@ -2,7 +2,7 @@ import type { CheckOutcome } from '@/engine/checks';
 
 export type AvatarPose = 'idle' | 'speaking' | 'watching' | 'pass' | 'fail';
 
-type UiSubPhase = 'prep' | 'resolve' | 'react';
+export type UiSubPhase = 'prep' | 'resolve' | 'react';
 
 /**
  * Derive the avatar's pose from the current UI sub-phase and encounter
