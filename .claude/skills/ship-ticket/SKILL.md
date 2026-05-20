@@ -80,7 +80,7 @@ with `{ branch, head_sha, ran_at, verdict, written_via: "agent" }`.
 ```bash
 # Variables: $PR_NUMBER and $headRefName were captured in step 2.
 branch_safe=$(printf '%s' "$headRefName" | tr -c 'a-zA-Z0-9._-' '_')
-stamp=".claude/state/checklist-${branch_safe}.json"
+stamp="$(git rev-parse --show-toplevel)/.claude/state/checklist-${branch_safe}.json"
 
 if [ ! -f "$stamp" ]; then
   echo "Refusing merge: no checklist stamp at $stamp. Run /finish-ticket for this branch first (step 8.5 writes the stamp after code-reviewer runs)."

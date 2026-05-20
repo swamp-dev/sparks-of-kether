@@ -188,8 +188,9 @@ branch_safe=$(printf '%s' "$branch" | tr -c 'a-zA-Z0-9._-' '_')
 head_sha=$(git rev-parse HEAD)
 verdict=<ship|fix|block|rework>   # from the reviewer's ## Verdict section
 ran_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-mkdir -p .claude/state
-cat > ".claude/state/checklist-${branch_safe}.json" <<EOF
+main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
+mkdir -p "${main_repo}/.claude/state"
+cat > "${main_repo}/.claude/state/checklist-${branch_safe}.json" <<EOF
 {
   "branch": "$branch",
   "head_sha": "$head_sha",
@@ -203,7 +204,8 @@ EOF
 Verify it was written:
 
 ```bash
-jq '{verdict, head_sha, written_via}' .claude/state/checklist-*.json
+main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
+jq '{verdict, head_sha, written_via}' "${main_repo}/.claude/state/checklist-${branch_safe}.json"
 ```
 
 Expected: `verdict` matches what the reviewer returned (`ship`, `fix`,
