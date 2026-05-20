@@ -57,6 +57,9 @@ describe('OrreryBackdrop', () => {
 
   it('forwards className to the root element without double-spaces or leading/trailing spaces', () => {
     const { container } = render(<OrreryBackdrop className="my-test-class" />);
-    expect(container.firstChild).toHaveClass('my-test-class');
+    const cls = (container.firstChild as Element).getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+    expect(cls).toContain('my-test-class');
   });
 });

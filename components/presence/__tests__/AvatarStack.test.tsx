@@ -129,7 +129,7 @@ describe('<AvatarStack>', () => {
   });
 
   it('forwards className to the root element without double-spaces or leading/trailing spaces', () => {
-    const { container } = render(
+    render(
       <AvatarStack
         peers={[peer({ playerId: 'p1' })]}
         viewerPlayerId="p1"
@@ -137,6 +137,9 @@ describe('<AvatarStack>', () => {
         className="my-test-class"
       />,
     );
-    expect(container.firstChild).toHaveClass('my-test-class');
+    const cls = screen.getByTestId('avatar-stack').getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+    expect(cls).toContain('my-test-class');
   });
 });
