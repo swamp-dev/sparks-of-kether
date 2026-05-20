@@ -54,4 +54,19 @@ describe('OrreryBackdrop', () => {
     expect(saturnRing).not.toBeNull();
     expect(saturnRing?.tagName.toLowerCase()).toBe('ellipse');
   });
+
+  it('forwards className to the root element without double-spaces or leading/trailing spaces', () => {
+    const { container } = render(<OrreryBackdrop className="my-test-class" />);
+    const cls = (container.firstChild as Element).getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+    expect(cls).toContain('my-test-class');
+  });
+
+  it('does not produce a trailing space when no className is provided', () => {
+    const { container } = render(<OrreryBackdrop />);
+    const cls = (container.firstChild as Element).getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+  });
 });
