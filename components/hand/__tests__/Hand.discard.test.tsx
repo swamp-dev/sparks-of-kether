@@ -124,4 +124,13 @@ describe('Hand — discard mode', () => {
     expect(icon?.tagName).toBe('BUTTON');
     expect(icon?.getAttribute('tabindex')).toBe('0');
   });
+
+  it('card button is not aria-disabled when discardMode=true', () => {
+    const { container } = render(
+      <Hand hand={[0]} visible={true} discardMode={true} onDiscard={vi.fn()} />,
+    );
+    const slot = container.querySelector('[data-card-slot]');
+    expect(slot).not.toBeNull();
+    expect(slot?.getAttribute('aria-disabled')).toBe('false');
+  });
 });
