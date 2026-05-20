@@ -54,4 +54,9 @@ describe('OrreryBackdrop', () => {
     expect(saturnRing).not.toBeNull();
     expect(saturnRing?.tagName.toLowerCase()).toBe('ellipse');
   });
+
+  it('forwards className to the root element without double-spaces or leading/trailing spaces', () => {
+    const { container } = render(<OrreryBackdrop className="my-test-class" />);
+    expect(container.firstChild).toHaveClass('my-test-class');
+  });
 });

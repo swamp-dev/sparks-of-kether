@@ -127,4 +127,16 @@ describe('<AvatarStack>', () => {
     );
     expect(container.firstChild).toBeNull();
   });
+
+  it('forwards className to the root element without double-spaces or leading/trailing spaces', () => {
+    const { container } = render(
+      <AvatarStack
+        peers={[peer({ playerId: 'p1' })]}
+        viewerPlayerId="p1"
+        activePlayerId="p1"
+        className="my-test-class"
+      />,
+    );
+    expect(container.firstChild).toHaveClass('my-test-class');
+  });
 });
