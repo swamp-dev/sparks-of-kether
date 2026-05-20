@@ -14,11 +14,16 @@ import { seededRng } from '@/engine/rng';
  *
  * Tests are phase- and position-gated: the line must NOT appear when
  * the player is at a different Sefirah or in the wrong phase.
+ *
+ * All states include a card in the deck so `checkEndgame` doesn't
+ * return 'stranded' (no cards anywhere → immediate loss screen).
  */
+
+const withCard = { deck: [1] } as const;
 
 describe('PlayScreen — Hestia companion line at Malkuth (#68)', () => {
   it('renders companion line when active player is at malkuth in end phase', () => {
-    const state = makeState({ position: 'malkuth' }, { phase: 'end' });
+    const state = makeState({ position: 'malkuth' }, { phase: 'end', ...withCard });
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(1)} />);
 
     const line = container.querySelector('[data-hestia-companion-line]');
@@ -26,7 +31,7 @@ describe('PlayScreen — Hestia companion line at Malkuth (#68)', () => {
   });
 
   it('does not render companion line when active player is at a different sefirah', () => {
-    const state = makeState({ position: 'yesod' }, { phase: 'end' });
+    const state = makeState({ position: 'yesod' }, { phase: 'end', ...withCard });
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(1)} />);
 
     const line = container.querySelector('[data-hestia-companion-line]');
@@ -34,7 +39,7 @@ describe('PlayScreen — Hestia companion line at Malkuth (#68)', () => {
   });
 
   it('does not render companion line in move phase even at malkuth', () => {
-    const state = makeState({ position: 'malkuth' }, { phase: 'move' });
+    const state = makeState({ position: 'malkuth' }, { phase: 'move', ...withCard });
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(1)} />);
 
     const line = container.querySelector('[data-hestia-companion-line]');
@@ -42,7 +47,7 @@ describe('PlayScreen — Hestia companion line at Malkuth (#68)', () => {
   });
 
   it('companion line text is non-empty', () => {
-    const state = makeState({ position: 'malkuth' }, { phase: 'end' });
+    const state = makeState({ position: 'malkuth' }, { phase: 'end', ...withCard });
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(1)} />);
 
     const line = container.querySelector('[data-hestia-companion-line]');
