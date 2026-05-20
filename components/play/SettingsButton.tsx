@@ -118,9 +118,10 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
   // Minimal focus trap: Tab from the last focusable element loops
   // back to the close button; Shift+Tab from the close button loops
   // to the last focusable element. The selector captures all buttons
-  // and switches dynamically (1–5 elements depending on whether onQuit
-  // is provided and confirmingQuit is active), so a full focus-trap
-  // library would be overkill but the count must not be hardcoded.
+  // and switches dynamically (3–5 elements: always close + sfx + music;
+  // +1 Leave Game when onQuit is provided; +2 Confirm + Cancel when
+  // confirmingQuit is active), so a full focus-trap library would be
+  // overkill but the count must not be hardcoded.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'Tab') return;
     if (!dialogRef.current) return;
