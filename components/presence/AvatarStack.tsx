@@ -54,7 +54,7 @@ export function AvatarStack({
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-2 ${className ?? ''}`}
+      className={`pointer-events-auto flex items-center gap-2${className ? ` ${className}` : ''}`}
       data-testid="avatar-stack"
     >
       {visible.map((peer) => (
