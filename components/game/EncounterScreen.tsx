@@ -146,7 +146,6 @@ export type EncounterScreenProps = EncounterScreenHotSeatProps | EncounterScreen
  * on `prep-confirm`, but we want the d20 spin to show before the react
  * choices appear.
  */
-// UiSubPhase imported above from encounter-pose.ts
 
 const RESOLVE_ANIMATION_MS = 800;
 
