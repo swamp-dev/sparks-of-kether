@@ -56,6 +56,12 @@ describe('SettingsButton — quit flow', () => {
     await user.click(screen.getByRole('button', { name: /leave game/i }));
     await user.click(screen.getByRole('button', { name: /confirm/i }));
     expect(onQuit).toHaveBeenCalledOnce();
+    // The popover deliberately stays open after onQuit fires — the component
+    // does not call close() itself. In production onQuit triggers navigation
+    // which unmounts the whole component. If the quit behaviour ever changes
+    // to a soft transition (fade, dialog) where the component remains mounted,
+    // add an assertion here that the confirm/cancel buttons are no longer
+    // visible to catch dangling confirm-state regressions.
   });
 
   it('returns to normal state when Cancel is clicked', async () => {
