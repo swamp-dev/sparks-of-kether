@@ -77,6 +77,8 @@ function makeFakeChannel(channelName: string): FakeChannel {
     }),
     subscribe: vi.fn(function (this: FakeChannel, cb?: (status: string) => void) {
       if (cb !== undefined) {
+        // useLobby only ever creates lobby_players:* and lobby_room:* channels,
+        // so the fallback branch is unreachable in practice.
         const status = channelName.startsWith('lobby_players')
           ? playersChannelSubscribeStatus
           : channelName.startsWith('lobby_room')
