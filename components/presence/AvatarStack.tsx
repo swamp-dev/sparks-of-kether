@@ -54,7 +54,7 @@ export function AvatarStack({
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-2 ${className ?? ''}`}
+      className={`pointer-events-auto flex items-center gap-2${className ? ` ${className}` : ''}`}
       data-testid="avatar-stack"
     >
       {visible.map((peer) => (
@@ -113,7 +113,11 @@ function AvatarToken({ peer, isActive, isViewer, onClick }: AvatarTokenProps): J
       onClick={onClick === undefined ? undefined : () => onClick(peer.playerId)}
       aria-label={labelParts.join(' — ')}
       style={style}
-      className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 bg-ground/80 font-display text-xs uppercase tracking-wider text-veil transition-all duration-300 ease-emerge focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination data-[online=false]:border-dashed data-[online=false]:opacity-60 data-[active=true]:shadow-glow-tiferet data-[active=true]:motion-safe:animate-breath ${onClick === undefined ? '' : 'hover:scale-105'} `}
+      className={
+        onClick === undefined
+          ? 'relative flex h-9 w-9 items-center justify-center rounded-full border-2 bg-ground/80 font-display text-xs uppercase tracking-wider text-veil transition-all duration-300 ease-emerge focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination data-[online=false]:border-dashed data-[online=false]:opacity-60 data-[active=true]:shadow-glow-tiferet data-[active=true]:motion-safe:animate-breath'
+          : 'relative flex h-9 w-9 items-center justify-center rounded-full border-2 bg-ground/80 font-display text-xs uppercase tracking-wider text-veil transition-all duration-300 ease-emerge hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination data-[online=false]:border-dashed data-[online=false]:opacity-60 data-[active=true]:shadow-glow-tiferet data-[active=true]:motion-safe:animate-breath'
+      }
     >
       <span aria-hidden="true">{center}</span>
       {isActive && (
