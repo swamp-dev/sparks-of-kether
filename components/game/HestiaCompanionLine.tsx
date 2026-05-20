@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import type { ZodiacSignKey } from '@/data';
 import type { Pantheon } from '@/data/pantheons';
-import { pickBlessing } from '@/data/pantheons/greco-roman/blessings';
+import { quoteForBlessing } from '@/engine/sefirah-quote';
 import type { Rng } from '@/engine/rng';
 
 interface HestiaCompanionLineProps {
@@ -23,10 +23,8 @@ export function HestiaCompanionLine({
   pantheon,
   rng,
 }: HestiaCompanionLineProps): JSX.Element {
-  const line = useMemo(
-    () => pickBlessing(pantheon.sefirahBlessings, 'malkuth', sign, rng),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pantheon, sign],
+  const [line] = useState<string>(() =>
+    quoteForBlessing(pantheon.sefirahBlessings, 'malkuth', sign, rng),
   );
 
   return (
