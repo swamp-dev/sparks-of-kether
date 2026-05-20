@@ -24,12 +24,25 @@ interface AvatarSilhouetteProps {
  * The halo ellipse brightens on pass and dims on fail. All transitions
  * are gated on the `reducedMotion` prop so reduced-motion users see
  * instant pose snaps.
+ *
+ * Malkuth (Hestia) gets a distinct seated variant — see `HestiaSilhouette`.
  */
 export function AvatarSilhouette({
   pose,
+  sefirah,
   reducedMotion,
   className,
 }: AvatarSilhouetteProps): JSX.Element {
+  if (sefirah === 'malkuth') {
+    return (
+      <HestiaSilhouette
+        pose={pose}
+        reducedMotion={reducedMotion}
+        {...(className !== undefined ? { className } : {})}
+      />
+    );
+  }
+
   const bodyTransform: Record<AvatarPose, string> = {
     idle: 'translate(0,0) rotate(0,50,80)',
     speaking: 'translate(0,-4) rotate(-5,50,80)',
@@ -149,6 +162,156 @@ export function AvatarSilhouette({
           data-pose-accent
         />
       )}
+    </svg>
+  );
+}
+
+/**
+ * Hestia / Malkuth companion silhouette (#69).
+ *
+ * Distinct from the standing encounter avatars: a seated figure tending a
+ * small hearth flame. Design per `design/avatars.md` § 7.10 — "hearth-keeper,
+ * seated or standing close to a flame, warm / low / constant energy."
+ *
+ * Pose states are used, but with companion-appropriate movement rather than
+ * encounter drama — no triumph arch on pass, no defeat slump on fail.
+ * The flame is always present (Hestia abides; the fire never goes out).
+ */
+function HestiaSilhouette({
+  pose,
+  reducedMotion,
+  className,
+}: Omit<AvatarSilhouetteProps, 'sefirah'>): JSX.Element {
+  const bodyTransform: Record<AvatarPose, string> = {
+    idle: 'translate(0,0) rotate(0,38,68)',
+    speaking: 'translate(0,-3) rotate(-4,38,68)',
+    watching: 'translate(2,-2) rotate(2,38,68)',
+    pass: 'translate(0,-4) rotate(0,38,68)',
+    fail: 'translate(1,3) rotate(4,38,68)',
+  };
+
+  // Companion halo stays warmer and more constant than encounter avatars
+  const haloOpacity: Record<AvatarPose, number> = {
+    idle: 0.45,
+    speaking: 0.5,
+    watching: 0.45,
+    pass: 0.6,
+    fail: 0.35,
+  };
+
+  const transitionClass = reducedMotion ? '' : 'transition-all duration-300 ease-in-out';
+  const bodyOpacity = pose === 'fail' ? 0.55 : 0.75;
+
+  return (
+    <svg
+      viewBox="0 0 100 160"
+      aria-hidden
+      data-avatar-silhouette
+      data-silhouette-variant="malkuth"
+      data-pose={pose}
+      className={className}
+      style={{ width: '100%', height: '100%' }}
+    >
+      {/* Halo — lower and wider than encounter avatars, centred on the seated form */}
+      <ellipse
+        cx="42"
+        cy="72"
+        rx="36"
+        ry="34"
+        fill="currentColor"
+        opacity={haloOpacity[pose]}
+        className={transitionClass}
+      />
+
+      {/* Body group — seated posture */}
+      <g
+        data-avatar-body
+        transform={bodyTransform[pose]}
+        opacity={bodyOpacity}
+        className={transitionClass}
+      >
+        {/* Head */}
+        <circle cx="38" cy="36" r="12" fill="currentColor" />
+
+        {/* Torso — rounder than the standing humanoid */}
+        <ellipse cx="38" cy="60" rx="11" ry="13" fill="currentColor" />
+
+        {/* Left arm — resting at side / lap */}
+        <line
+          x1="29"
+          y1="54"
+          x2="20"
+          y2="70"
+          stroke="currentColor"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+
+        {/* Right arm — reaching toward the flame to tend it */}
+        <line
+          x1="47"
+          y1="54"
+          x2="60"
+          y2="66"
+          stroke="currentColor"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+
+        {/* Left upper leg — horizontal, seated */}
+        <line
+          x1="30"
+          y1="72"
+          x2="16"
+          y2="76"
+          stroke="currentColor"
+          strokeWidth="7"
+          strokeLinecap="round"
+        />
+        {/* Left lower leg — bent down */}
+        <line
+          x1="16"
+          y1="76"
+          x2="14"
+          y2="100"
+          stroke="currentColor"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+
+        {/* Right upper leg — horizontal toward the flame side */}
+        <line
+          x1="46"
+          y1="72"
+          x2="58"
+          y2="78"
+          stroke="currentColor"
+          strokeWidth="7"
+          strokeLinecap="round"
+        />
+        {/* Right lower leg */}
+        <line
+          x1="58"
+          y1="78"
+          x2="56"
+          y2="102"
+          stroke="currentColor"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+      </g>
+
+      {/* Hearth flame — always present; Hestia's fire never goes out */}
+      <g data-hestia-flame className={transitionClass}>
+        {/* Outer flame body */}
+        <path
+          d="M76 96 C70 82 70 64 76 54 C82 64 82 82 76 96 Z"
+          fill="currentColor"
+          opacity={0.55}
+        />
+        {/* Inner core — brighter */}
+        <ellipse cx="76" cy="78" rx="3" ry="7" fill="currentColor" opacity={0.85} />
+      </g>
     </svg>
   );
 }
