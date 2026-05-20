@@ -62,4 +62,11 @@ describe('OrreryBackdrop', () => {
     expect(cls).not.toMatch(/^\s|\s$/);
     expect(cls).toContain('my-test-class');
   });
+
+  it('does not produce a trailing space when no className is provided', () => {
+    const { container } = render(<OrreryBackdrop />);
+    const cls = (container.firstChild as Element).getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+  });
 });
