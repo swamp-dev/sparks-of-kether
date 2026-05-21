@@ -60,7 +60,7 @@ export function DiscardPile({
       data-discard-pile
       data-discard-empty={count === 0 ? 'true' : 'false'}
       data-drag-active={dragActive ? 'true' : 'false'}
-      className={`flex flex-col items-center gap-1 ${className ?? ''}`}
+      className={`flex flex-col items-center gap-1${className ? ` ${className}` : ''}`}
     >
       <button
         type="button"

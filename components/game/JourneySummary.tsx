@@ -31,7 +31,7 @@ export function JourneySummary({
         data-journey-summary
         data-status="rejected"
         aria-label="Final Threshold ritual rejected"
-        className={`mx-auto max-w-md text-center ${className ?? ''}`}
+        className={`mx-auto max-w-md text-center${className ? ` ${className}` : ''}`}
       >
         <h2 className="font-display text-3xl tracking-widest">Not yet ready.</h2>
         <p className="mt-2 opacity-80">
@@ -49,7 +49,7 @@ export function JourneySummary({
       data-journey-summary
       data-status={status}
       aria-label={`Journey resolution: ${status}`}
-      className={`mx-auto max-w-2xl text-center text-veil ${className ?? ''}`}
+      className={`mx-auto max-w-2xl text-center text-veil${className ? ` ${className}` : ''}`}
     >
       {/* Title */}
       <h2 className="font-display text-4xl tracking-widest">

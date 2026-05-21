@@ -85,7 +85,7 @@ export function TeamMeters({
   }, [illumination, separation]);
 
   return (
-    <div data-team-meters className={`flex flex-col gap-3 ${className ?? ''}`}>
+    <div data-team-meters className={`flex flex-col gap-3${className ? ` ${className}` : ''}`}>
       <div data-meters-row className="flex justify-center gap-8">
         <div className="flex flex-col items-center gap-1">
           <span className="text-xs uppercase tracking-widest opacity-70">Illumination</span>

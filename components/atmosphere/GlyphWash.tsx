@@ -53,7 +53,7 @@ export function GlyphWash({
       data-atmosphere="glyph-wash"
       data-wash-side={side}
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-0 -z-10 overflow-hidden ${className ?? ''}`}
+      className={`pointer-events-none fixed inset-0 -z-10 overflow-hidden${className ? ` ${className}` : ''}`}
     >
       {WASH_POSITIONS.map((p, i) => (
         <span

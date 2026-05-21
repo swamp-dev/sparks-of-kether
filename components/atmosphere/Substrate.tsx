@@ -70,7 +70,7 @@ export function Substrate({ className }: SubstrateProps): JSX.Element {
     <div
       data-atmosphere="substrate"
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-0 -z-20 overflow-hidden ${className ?? ''}`}
+      className={`pointer-events-none fixed inset-0 -z-20 overflow-hidden${className ? ` ${className}` : ''}`}
     >
       {/* Layer 1: indigo void. The body itself paints this colour
           (see app/globals.css), but rendering it explicitly inside

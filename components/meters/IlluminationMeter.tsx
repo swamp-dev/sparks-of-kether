@@ -91,7 +91,7 @@ export function IlluminationMeter({
       aria-valuemin={0}
       aria-valuemax={max}
       data-meter-bar="illumination"
-      className={`relative h-32 w-12 ${className ?? ''}`}
+      className={`relative h-32 w-12${className ? ` ${className}` : ''}`}
     >
       {/* Trough — tiferet-gold rim, void interior. */}
       <div

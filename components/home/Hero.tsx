@@ -89,7 +89,7 @@ export function Hero({ className }: HeroProps): JSX.Element {
     <div
       data-home-hero
       aria-hidden="true"
-      className={`pointer-events-none relative w-full ${className ?? ''}`}
+      className={`pointer-events-none relative w-full${className ? ` ${className}` : ''}`}
     >
       <svg
         viewBox={`0 0 ${TREE_VIEW_W} ${TREE_VIEW_H}`}

@@ -75,7 +75,7 @@ export function ColorBloom({
       // so we cannot rely on `style.background` from a test.
       data-bloom-css={background}
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-0 -z-10 ${className ?? ''}`}
+      className={`pointer-events-none fixed inset-0 -z-10${className ? ` ${className}` : ''}`}
       style={{ background }}
     />
   );

@@ -704,7 +704,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // (`docs/motion.md` § Glow scale). The `bg-ground` keeps the
       // panel itself clearly differentiated from the void
       // substrate underneath.
-      className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow} ${className ?? ''}`}
+      className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow}${className ? ` ${className}` : ''}`}
     >
       {/*
         Header row: title block + small avatar. In `prep`, the avatar

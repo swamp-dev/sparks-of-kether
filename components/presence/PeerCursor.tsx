@@ -140,7 +140,7 @@ export function PeerCursor({
       data-y={String(position.y)}
       aria-hidden="true"
       style={style}
-      className={`pointer-events-none absolute z-30 -translate-x-1 -translate-y-1 ${className ?? ''} `}
+      className={`pointer-events-none absolute z-30 -translate-x-1 -translate-y-1${className ? ` ${className}` : ''}`}
     >
       {/* SVG arrow tinted via inline fill so per-peer color works
           without Tailwind class generation. */}

@@ -44,7 +44,7 @@ export function PresenceIndicator({
 }: PresenceIndicatorProps): JSX.Element {
   return (
     <ul
-      className={`flex flex-col gap-2 text-sm ${className ?? ''}`}
+      className={`flex flex-col gap-2 text-sm${className ? ` ${className}` : ''}`}
       data-testid="presence-indicator"
     >
       {players.map((p) => {

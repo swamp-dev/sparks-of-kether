@@ -2,7 +2,7 @@
 
 exports[`TreeBoard > matches snapshot (geometry stability guard) 1`] = `
 <div
-  class="relative inline-block "
+  class="relative inline-block"
   data-tree-root="true"
   style="width: 100%;"
 >
