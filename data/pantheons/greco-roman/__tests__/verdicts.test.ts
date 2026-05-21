@@ -204,7 +204,13 @@ describe('pickVerdict', () => {
       hod: { aries: { pass: ['ok'] } },
     } as unknown as Parameters<typeof pickVerdict>[0];
     expect(() =>
-      pickVerdict(sparseMatrix, 'hod' as EncounterAvatarKey, 'aries', 'fail' as ChallengeOutcome, rng),
+      pickVerdict(
+        sparseMatrix,
+        'hod' as EncounterAvatarKey,
+        'aries',
+        'fail' as ChallengeOutcome,
+        rng,
+      ),
     ).toThrow(/pickVerdict: no variants/);
   });
 });
