@@ -520,6 +520,16 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(fan.style.transform).toBe('translateY(0)');
   });
 
+  it('peek-shelf: reveal transition uses HAND_REVEAL_MS=280ms easing', () => {
+    // Default suite runs without reduced-motion (no matchMedia stub), so
+    // the transition string is set — not suppressed to 'none'.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    expect(fan.style.transition).not.toBe('none');
+    expect(fan.style.transition).toContain('280ms');
+  });
+
   it('peek-shelf: mouseleave does NOT immediately hide — grace-period timer not yet fired', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
@@ -573,6 +583,23 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     });
     // After grace period — fan slides back down.
     expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+    vi.useRealTimers();
+  });
+
+  it('peek-shelf: re-entry during grace period cancels the hide timer', () => {
+    // mouseEnter → mouseLeave → immediate mouseEnter must keep the fan
+    // expanded even after 120 ms — the second mouseEnter clears the timer.
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    fireEvent.mouseLeave(fan);
+    fireEvent.mouseEnter(fan); // re-entry clears the pending hide timer
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+    // Timer was cancelled — fan must still be expanded.
+    expect(fan.style.transform).toBe('translateY(0)');
     vi.useRealTimers();
   });
 
