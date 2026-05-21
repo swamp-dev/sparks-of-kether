@@ -340,8 +340,8 @@ export function Hand({
   // pass through empty space to the Tree while cards remain interactive.
   const isFloating = layout === 'floating';
   const outerClassName = isFloating
-    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center ${className ?? ''}`
-    : `${className ?? ''}`;
+    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center${className ? ` ${className}` : ''}`
+    : (className ?? '');
   const innerClassName = isFloating
     ? 'pointer-events-auto animate-hand-fade-in motion-reduce:animate-none'
     : 'animate-hand-fade-in overflow-x-clip motion-reduce:animate-none';
@@ -353,7 +353,7 @@ export function Hand({
       data-hand-state="open"
       data-visible={visible ? 'true' : 'false'}
       data-layout={layout}
-      className={outerClassName.trim()}
+      className={outerClassName}
     >
       <div
         data-hand-fan
