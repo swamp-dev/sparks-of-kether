@@ -11,3 +11,10 @@ on this branch.
 **Why:** Replaces `${className ?? ''}` (which produces a trailing space when className is absent) with `${className ? \` ${className}\` : ''}` across all remaining instances in the codebase. The separator space is moved inside the conditional so it only appears when className is defined. TreeBoard snapshot updated to reflect the correct (no trailing space) output.
 **Notes:** 28 files changed (27 components + 1 snapshot). Prettier check passed — only JS expression structure changed, not Tailwind class order.
 **Commit(s):** TBD
+
+## 2026-05-21T17:19:54-04:00 — push 2 review fixes
+
+**Pushed:** fix(tree): apply safe className separator to SefirahTooltip array-join (#126); rebased onto main
+**Why:** Code reviewer flagged SefirahTooltip.tsx using `className ?? ''` in array-join form (same trailing-space bug, different syntax). Added `...(className ? [className] : [])` spread to fix it. Branch also rebased onto current main to incorporate #193 (the code-reviewer.md clarification that was merged while this branch was in flight — the stale branch would have reverted it on merge).
+**Notes:** force-with-lease push required after rebase (user ran manually)
+**Commit(s):** `d986af9..c71045f`
