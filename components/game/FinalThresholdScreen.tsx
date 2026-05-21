@@ -125,7 +125,7 @@ export function FinalThresholdScreen(props: FinalThresholdScreenProps): JSX.Elem
       data-sub-phase={subPhase}
       data-mode={mode}
       aria-label="Final Threshold ritual"
-      className={`relative mx-auto max-w-3xl rounded-lg border border-illumination/40 bg-ground/80 p-6 text-veil shadow-glow-kether ${className ?? ''}`}
+      className={`relative mx-auto max-w-3xl rounded-lg border border-illumination/40 bg-ground/80 p-6 text-veil shadow-glow-kether${className ? ` ${className}` : ''}`}
     >
       <header className="mb-6 text-center">
         <h2 className="font-display text-3xl tracking-widest">The Final Threshold</h2>
@@ -163,7 +163,7 @@ function PreRitualHoldView(props: PreRitualHoldViewProps): JSX.Element {
       data-sub-phase="hold"
       data-mode={mode}
       aria-label="Waiting at the Crown"
-      className={`relative mx-auto max-w-3xl rounded-lg border border-illumination/30 bg-ground/80 p-6 text-veil shadow-glow-kether ${className ?? ''}`}
+      className={`relative mx-auto max-w-3xl rounded-lg border border-illumination/30 bg-ground/80 p-6 text-veil shadow-glow-kether${className ? ` ${className}` : ''}`}
     >
       <header className="mb-4 text-center">
         <h2 className="font-display text-3xl tracking-widest">You stand at the Crown</h2>

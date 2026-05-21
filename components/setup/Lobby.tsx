@@ -103,7 +103,7 @@ export function Lobby({
     <section
       data-lobby
       aria-label="Game lobby"
-      className={`relative flex min-h-[80vh] w-full items-center justify-center ${className ?? ''}`}
+      className={`relative flex min-h-[80vh] w-full items-center justify-center${className ? ` ${className}` : ''}`}
     >
       <LobbyBackdrop />
 

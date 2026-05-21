@@ -67,7 +67,7 @@ export function ActionToast({
       role="status"
       aria-live="polite"
       aria-atomic="false"
-      className={`pointer-events-none flex flex-col items-center gap-2 ${className ?? ''} `}
+      className={`pointer-events-none flex flex-col items-center gap-2${className ? ` ${className}` : ''}`}
     >
       {live.map((action) => (
         <div

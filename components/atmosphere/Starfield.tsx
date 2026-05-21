@@ -176,7 +176,7 @@ export function Starfield({
       data-density={density}
       data-twinkle={twinkle ? 'true' : 'false'}
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-0 -z-10 overflow-hidden ${className ?? ''}`}
+      className={`pointer-events-none fixed inset-0 -z-10 overflow-hidden${className ? ` ${className}` : ''}`}
     >
       {stars.map(([x, y, opacity, size], i) => (
         <span

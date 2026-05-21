@@ -331,7 +331,7 @@ export function PlayScreen({
       <section
         data-play-screen
         data-status="lost"
-        className={`mx-auto max-w-md p-8 text-center text-veil ${className ?? ''}`}
+        className={`mx-auto max-w-md p-8 text-center text-veil${className ? ` ${className}` : ''}`}
       >
         <h2 className="font-display text-3xl tracking-widest">The light fell.</h2>
         <p className="mt-2 italic opacity-80">
@@ -530,7 +530,7 @@ export function PlayScreen({
       // Below lg, the original gap-6 / p-6 is preserved — mobile
       // is explicitly out of scope for this ticket; mobile-tab
       // pattern is queued as #466.
-      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4 ${className ?? ''}`}
+      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4${className ? ` ${className}` : ''}`}
     >
       <section
         aria-label="Tree of Life board"

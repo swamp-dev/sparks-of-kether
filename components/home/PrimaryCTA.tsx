@@ -124,7 +124,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
     <div
       data-home-portal
       data-portal-state={isOpen ? 'open' : 'closed'}
-      className={`flex flex-col items-stretch ${className ?? ''}`}
+      className={`flex flex-col items-stretch${className ? ` ${className}` : ''}`}
     >
       {/* Closed state: the dramatic single button. The button stays
           mounted across state changes so focus management is stable
