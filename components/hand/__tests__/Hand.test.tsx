@@ -521,9 +521,12 @@ describe('Hand — Mac-dock magnification (#463)', () => {
   });
 
   it('peek-shelf: reveal transition uses HAND_REVEAL_MS=280ms easing', () => {
+    // Default suite runs without reduced-motion (no matchMedia stub), so
+    // the transition string is set — not suppressed to 'none'.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
     fireEvent.mouseEnter(fan);
+    expect(fan.style.transition).not.toBe('none');
     expect(fan.style.transition).toContain('280ms');
   });
 
