@@ -833,6 +833,25 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     expect(fan.style.transform ?? '').toBe('');
   });
 
+  it('floating mode: no trailing space in outerClassName when className prop is absent (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls.endsWith(' ')).toBe(false);
+  });
+
+  it('floating mode: single space before className when className prop is present (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} className="my-extra" />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/ my-extra$/);
+    expect(cls).not.toMatch(/  my-extra/);
+  });
+
+  it('inline mode: outerClassName is empty string when className prop is absent (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} layout="inline" />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toBe('');
+  });
+
   it('still renders the focus-visible ring class under reduced-motion', () => {
     restoreMatchMedia = stubMatchMedia(true);
     const { container } = render(<Hand hand={[2, 5]} visible={true} />);
