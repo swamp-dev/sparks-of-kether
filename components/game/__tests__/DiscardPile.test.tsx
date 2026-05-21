@@ -141,4 +141,23 @@ describe('DiscardPile', () => {
     rerender(<DiscardPile discardPile={[3, 4]} />);
     expect(screen.getByRole('button', { name: /discard pile, 2 cards/i })).toBeInTheDocument();
   });
+
+  it('transitions back to empty state when recycleDiscardIntoDeck empties the pile', () => {
+    // Simulates the recycle moment: discardPile goes from non-empty to [].
+    const { rerender } = render(<DiscardPile discardPile={[2, 8, 14]} />);
+    const root = document.querySelector<HTMLElement>('[data-discard-pile]');
+    expect(root?.getAttribute('data-discard-empty')).toBe('false');
+    expect(document.querySelector('[data-discard-count]')?.textContent).toBe('3');
+
+    rerender(<DiscardPile discardPile={[]} />);
+
+    expect(root?.getAttribute('data-discard-empty')).toBe('true');
+    expect(document.querySelector('[data-discard-count]')?.textContent).toBe('0');
+    expect(document.querySelector('[data-discard-empty-placeholder]')?.textContent).toMatch(
+      /no discards yet/i,
+    );
+    // Button must be disabled in empty state (no overlay to open).
+    const button = screen.getByRole('button', { name: /discard pile, empty/i });
+    expect(button).toBeDisabled();
+  });
 });
