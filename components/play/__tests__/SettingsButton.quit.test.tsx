@@ -59,7 +59,7 @@ describe('SettingsButton — quit flow', () => {
     // The popover deliberately stays open after onQuit fires — the component
     // does not call close() itself. In production onQuit triggers navigation
     // which unmounts the whole component. If the quit behaviour ever changes
-    // to a soft transition (fade, dialog) where the component remains mounted,
+    // to a soft transition (fade-out animation) where the component remains mounted,
     // add an assertion here that the confirm/cancel buttons are no longer
     // visible to catch dangling confirm-state regressions.
   });
