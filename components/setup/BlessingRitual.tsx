@@ -1,4 +1,5 @@
 'use client';
+// #11: orb h2 shows transliteration (Kether) primary, Hebrew secondary, English tertiary.
 import { useEffect, useRef, useState } from 'react';
 import { sefirot } from '@/data';
 import type { StatKey, ZodiacSignKey } from '@/data';
