@@ -1766,7 +1766,15 @@ export function pickVerdict(
   outcome: ChallengeOutcome,
   rng: Rng,
 ): string {
-  const variants = matrix[sefirah][sign][outcome];
+  const cell = matrix[sefirah];
+  if (cell === undefined) {
+    throw new Error(`pickVerdict: unknown sefirah=${sefirah}`);
+  }
+  const signCell = cell[sign];
+  if (signCell === undefined) {
+    throw new Error(`pickVerdict: unknown sign=${sign} for sefirah=${sefirah}`);
+  }
+  const variants = signCell[outcome];
   if (variants.length === 0) {
     throw new Error(
       `pickVerdict: no variants for sefirah=${sefirah} sign=${sign} outcome=${outcome}`,
@@ -1790,8 +1798,12 @@ export function pickPlayerResponse(
   sign: ZodiacSignKey,
   rng: Rng,
 ): string {
-  const variants = matrix[sefirah][sign];
-  if (variants.length === 0) {
+  const cell = matrix[sefirah];
+  if (cell === undefined) {
+    throw new Error(`pickPlayerResponse: unknown sefirah=${sefirah}`);
+  }
+  const variants = cell[sign];
+  if (variants === undefined || variants.length === 0) {
     throw new Error(`pickPlayerResponse: no variants for sefirah=${sefirah} sign=${sign}`);
   }
   const idx = rng.int(0, variants.length - 1);
