@@ -586,6 +586,23 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     vi.useRealTimers();
   });
 
+  it('peek-shelf: re-entry during grace period cancels the hide timer', () => {
+    // mouseEnter → mouseLeave → immediate mouseEnter must keep the fan
+    // expanded even after 120 ms — the second mouseEnter clears the timer.
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    fireEvent.mouseLeave(fan);
+    fireEvent.mouseEnter(fan); // re-entry clears the pending hide timer
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+    // Timer was cancelled — fan must still be expanded.
+    expect(fan.style.transform).toBe('translateY(0)');
+    vi.useRealTimers();
+  });
+
   it('immediate neighbours of the magnified card translate outward', () => {
     const { container } = render(<Hand hand={[2, 5, 13, 18, 21]} visible={true} />);
     const slots = container.querySelectorAll('[data-card-slot]') as NodeListOf<HTMLElement>;
