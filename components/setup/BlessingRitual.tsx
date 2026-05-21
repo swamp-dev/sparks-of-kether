@@ -402,7 +402,7 @@ export function BlessingRitual({
               type="button"
               onClick={handleSkipCeremony}
               data-action="skip-ceremony"
-              className="mt-4 cursor-pointer rounded border border-illumination/50 px-4 py-2 text-xs uppercase tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              className="mt-4 cursor-pointer rounded border border-illumination/50 px-4 py-2 text-xs uppercase tracking-widest hover:border-illumination hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
             >
               Hasten the rite — roll the rest at once
             </button>
