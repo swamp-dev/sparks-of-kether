@@ -11,3 +11,10 @@ on this branch.
 **Why:** Restyle skip affordance from unstyled text to secondary button shape with border, padding, and focus ring per #413 playtest finding
 **Notes:** none
 **Commit(s):** `bfb46ed`
+
+## 2026-05-21T17:28:00-04:00 — baseline update push
+
+**Pushed:** test(e2e): update demo-ritual-mobile baseline for styled skip button (#12)
+**Why:** CI visual-regression caught that the bordered skip button adds 34px height at mobile viewport; updated the Playwright snapshot to match the intentional layout change
+**Notes:** none
+**Commit(s):** `437f39f`
