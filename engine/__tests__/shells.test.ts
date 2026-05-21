@@ -336,7 +336,13 @@ describe('Shell banishment — wired via resolveChallenge', () => {
       state,
       playerId: 'p1',
       sefirah: 'yesod',
-      modifiers: { assistStats: [], cardBurns: 0, sparkBurns: 0, shortcutPenalty: false, soulDoorDelta: 0 },
+      modifiers: {
+        assistStats: [],
+        cardBurns: 0,
+        sparkBurns: 0,
+        shortcutPenalty: false,
+        soulDoorDelta: 0,
+      },
       rng: seededRng(1),
     });
     expect(result.ok).toBe(true);
