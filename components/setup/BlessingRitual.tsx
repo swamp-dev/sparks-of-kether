@@ -383,7 +383,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleRoll}
                 data-action="roll"
-                className="cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                className="cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
                 Roll 3d6
               </button>
@@ -392,7 +392,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleAdvance}
                 data-action="advance"
-                className="cursor-pointer rounded border border-illumination px-4 py-2 text-sm tracking-widest focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                className="cursor-pointer rounded border border-illumination px-4 py-2 text-sm tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
                 Next
               </button>
@@ -402,7 +402,7 @@ export function BlessingRitual({
               type="button"
               onClick={handleSkipCeremony}
               data-action="skip-ceremony"
-              className="mt-4 cursor-pointer text-xs uppercase tracking-widest opacity-50 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              className="mt-4 cursor-pointer text-xs uppercase tracking-widest opacity-50 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
             >
               Hasten the rite — roll the rest at once
             </button>
@@ -478,7 +478,7 @@ function Summary({
         type="button"
         onClick={onContinue}
         data-action="continue"
-        className="mt-6 cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+        className="mt-6 cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
       >
         Continue
       </button>
