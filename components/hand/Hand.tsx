@@ -460,14 +460,14 @@ export function Hand({
             : undefined;
           const handleFocusIn = visible
             ? (): void => {
-                expandHand();
+                if (isFloating) expandHand();
                 setFocusedIndex(i);
                 if (onCardHover) onCardHover(arcanum);
               }
             : undefined;
           const handleFocusOut = visible
             ? (): void => {
-                scheduleHide();
+                if (isFloating) scheduleHide();
                 setFocusedIndex((prev) => (prev === i ? undefined : prev));
                 if (onCardHover) onCardHover(undefined);
               }

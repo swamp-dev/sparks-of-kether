@@ -752,6 +752,39 @@ describe('Hand — Mac-dock magnification (#463)', () => {
       expect(cls).toMatch(/focus-visible:ring-illumination/);
     }
   });
+
+  it('floating mode: focus expands fan; blur starts hide timer (#54)', () => {
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+    // Fan starts collapsed.
+    expect(fan.style.transform).toMatch(/translateY\(calc/);
+    fireEvent.focus(card);
+    // Focus expands the fan.
+    expect(fan.style.transform).toBe('translateY(0)');
+    fireEvent.blur(card);
+    // Timer scheduled — fan still open during grace period.
+    expect(fan.style.transform).toBe('translateY(0)');
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+    // After grace period the fan collapses.
+    expect(fan.style.transform).toMatch(/translateY\(calc/);
+    vi.useRealTimers();
+  });
+
+  it('inline mode: focusout does not schedule a hide timer (#54)', () => {
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5]} visible={true} layout="inline" />);
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+    fireEvent.focus(card);
+    const countBeforeBlur = vi.getTimerCount();
+    fireEvent.blur(card);
+    // scheduleHide must not fire in inline mode — no new timer should be pending.
+    expect(vi.getTimerCount()).toBe(countBeforeBlur);
+    vi.useRealTimers();
+  });
 });
 
 describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
