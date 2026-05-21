@@ -188,7 +188,7 @@ export function BlessingRitual({
         data-status="hastening"
         data-blessing-state="null"
         aria-label="Hastening the rite — rolling all remaining blessings"
-        className={`mx-auto max-w-5xl text-center ${className ?? ''}`}
+        className={`mx-auto max-w-5xl text-center${className ? ` ${className}` : ''}`}
       >
         <p className="font-display text-2xl tracking-widest opacity-70">The rite quickens…</p>
         <div
@@ -235,7 +235,7 @@ export function BlessingRitual({
       data-status={stepStatus}
       data-blessing-state={blessing === null ? 'null' : 'set'}
       aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
-      className={`mx-auto max-w-5xl ${className ?? ''}`}
+      className={`mx-auto max-w-5xl${className ? ` ${className}` : ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
@@ -453,7 +453,7 @@ function Summary({
       data-status="complete"
       data-blessing-state={blessingState}
       aria-label="Blessing ritual complete; final stats"
-      className={`mx-auto max-w-md text-center ${className ?? ''}`}
+      className={`mx-auto max-w-md text-center${className ? ` ${className}` : ''}`}
     >
       <h2 className="font-display text-2xl tracking-widest">The Tree has spoken.</h2>
       <p className="mt-2 text-sm opacity-70">Your blessings:</p>

@@ -149,8 +149,8 @@ export function AvatarPortrait({
   // feel like re-arrival.
   const wrapperClass =
     size === 'stage'
-      ? `flex flex-col items-center gap-2 motion-safe:animate-avatar-emerge ${className ?? ''}`
-      : `flex flex-col items-center gap-2 ${className ?? ''}`;
+      ? `flex flex-col items-center gap-2 motion-safe:animate-avatar-emerge${className ? ` ${className}` : ''}`
+      : `flex flex-col items-center gap-2${className ? ` ${className}` : ''}`;
 
   return (
     <div

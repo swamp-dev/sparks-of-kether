@@ -59,7 +59,7 @@ export function SefirahTooltip({
         // node — the parent `<a>` owns navigation.
         'pointer-events-none flex flex-col gap-1 rounded-md border border-veil/25 bg-ground/95 px-3 py-2 text-veil shadow-lg',
         'min-w-[10rem] max-w-[14rem] text-xs leading-snug',
-        className ?? '',
+        ...(className ? [className] : []),
       ].join(' ')}
     >
       <div className="flex items-baseline justify-between gap-2">

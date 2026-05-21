@@ -293,7 +293,7 @@ export function TreeBoard({
   return (
     <div
       data-tree-root
-      className={`relative inline-block ${className ?? ''}`}
+      className={`relative inline-block${className ? ` ${className}` : ''}`}
       style={{ width: '100%' }}
     >
       <svg

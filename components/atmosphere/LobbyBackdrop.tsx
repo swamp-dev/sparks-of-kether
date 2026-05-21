@@ -39,7 +39,7 @@ export function LobbyBackdrop({ className }: LobbyBackdropProps): JSX.Element {
     <div
       data-atmosphere="lobby-backdrop"
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.12] ${className ?? ''}`}
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.12]${className ? ` ${className}` : ''}`}
     >
       <svg
         viewBox={`0 0 ${TREE_VIEW_W} ${TREE_VIEW_H}`}

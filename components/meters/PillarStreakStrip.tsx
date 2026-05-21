@@ -53,7 +53,7 @@ export function PillarStreakStrip({ state, className }: PillarStreakStripProps):
     <div
       data-pillar-streak
       data-streak-kind={dominant}
-      className={`flex flex-col items-center gap-1 ${className ?? ''}`}
+      className={`flex flex-col items-center gap-1${className ? ` ${className}` : ''}`}
       aria-label={`Pillar streak: ${current ?? 'none'}, ${dominant} count ${count} of ${PILLAR_STREAK_THRESHOLD}`}
     >
       <div className="flex items-end gap-3" data-pillar-chevrons>

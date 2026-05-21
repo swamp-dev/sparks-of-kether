@@ -208,7 +208,7 @@ export function ChallengeModal({
       aria-labelledby={`challenge-${context.sefirah}-title`}
       data-challenge-modal
       data-phase={phase}
-      className={`rounded-lg border border-veil/30 bg-ground p-6 text-veil ${className ?? ''}`}
+      className={`rounded-lg border border-veil/30 bg-ground p-6 text-veil${className ? ` ${className}` : ''}`}
     >
       <h2
         id={`challenge-${context.sefirah}-title`}
