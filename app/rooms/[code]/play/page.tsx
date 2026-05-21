@@ -173,6 +173,7 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
 
       <PlayScreen
         initialState={gameState}
+        remoteState={gameState}
         rng={rng}
         roomCode={code}
         {...(currentPlayerId !== null ? { currentPlayerId } : {})}
