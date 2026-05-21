@@ -160,6 +160,8 @@ The hand-size cap is **6**.
   still over. Rationale: meditation must always succeed — without it
   a player with no usable paths and a full hand softlocks. The once-
   per-turn cap stops Meditate from strictly dominating Move.
+  A confirmation step is required before the draw fires (UX gate only —
+  the rule itself is unchanged; see #24).
 - If the draw pile is empty when a card is needed, the discard pile is
   reshuffled face-down to become the new draw pile. The game runs as
   long as cards exist anywhere in the system.
