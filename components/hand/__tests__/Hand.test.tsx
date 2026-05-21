@@ -270,6 +270,25 @@ describe('Hand — interaction', () => {
     expect(selectedZ).toBeGreaterThan(middleZ);
     expect(selectedZ).toBeGreaterThan(lastZ);
   });
+
+  it('floating mode: no trailing space in outerClassName when className prop is absent (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls.endsWith(' ')).toBe(false);
+  });
+
+  it('floating mode: single space before className when className prop is present (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} className="my-extra" />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/ my-extra$/);
+    expect(cls).not.toMatch(/  my-extra/);
+  });
+
+  it('inline mode: outerClassName is empty string when className prop is absent (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} layout="inline" />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toBe('');
+  });
 });
 
 describe('isHandVisible', () => {
@@ -864,25 +883,6 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     // fully visible in inline layout (no fixed overlay, no slide animation).
     const fan = hand?.querySelector('[data-hand-fan]') as HTMLElement;
     expect(fan.style.transform ?? '').toBe('');
-  });
-
-  it('floating mode: no trailing space in outerClassName when className prop is absent (#127)', () => {
-    const { container } = render(<Hand hand={[2]} visible={true} />);
-    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
-    expect(cls.endsWith(' ')).toBe(false);
-  });
-
-  it('floating mode: single space before className when className prop is present (#127)', () => {
-    const { container } = render(<Hand hand={[2]} visible={true} className="my-extra" />);
-    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
-    expect(cls).toMatch(/ my-extra$/);
-    expect(cls).not.toMatch(/  my-extra/);
-  });
-
-  it('inline mode: outerClassName is empty string when className prop is absent (#127)', () => {
-    const { container } = render(<Hand hand={[2]} visible={true} layout="inline" />);
-    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
-    expect(cls).toBe('');
   });
 
   it('floating mode: className interior spaces are preserved — .trim() is not applied (#168)', () => {
