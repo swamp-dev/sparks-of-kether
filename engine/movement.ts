@@ -138,7 +138,7 @@ export interface ApplyMoveOptions {
  *     timestamp so the ritual's witness-order rule (§ 2.2) reads the
  *     true arrival, not a return.
  */
-/** Paths adjacent to Netzach. Traveling these is blocked by Obsession. */
+// Paths adjacent to Netzach. Traveling these is blocked by Obsession.
 const NETZACH_ADJACENT_PATHS = new Set([21, 24, 28, 29]);
 
 export function applyMove(
