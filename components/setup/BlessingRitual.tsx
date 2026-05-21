@@ -392,7 +392,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleAdvance}
                 data-action="advance"
-                className="cursor-pointer rounded border border-illumination px-4 py-2 text-sm tracking-widest"
+                className="cursor-pointer rounded border border-illumination px-4 py-2 text-sm tracking-widest focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
                 Next
               </button>
