@@ -383,7 +383,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleRoll}
                 data-action="roll"
-                className="cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground"
+                className="cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
                 Roll 3d6
               </button>
@@ -478,7 +478,7 @@ function Summary({
         type="button"
         onClick={onContinue}
         data-action="continue"
-        className="mt-6 cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground"
+        className="mt-6 cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
       >
         Continue
       </button>
