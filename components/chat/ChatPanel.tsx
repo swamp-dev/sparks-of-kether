@@ -98,7 +98,7 @@ export function ChatPanel({ roomId, currentPlayerId, nickname }: ChatPanelProps)
               placeholder="Message…"
               aria-label="Chat message"
               data-testid="chat-input"
-              className="flex-1 rounded border border-veil/20 bg-ground px-2 py-1 text-sm text-veil placeholder:text-veil/30 focus:outline-none focus-visible:ring-1 focus-visible:ring-illumination/60"
+              className="flex-1 rounded border border-veil/20 bg-ground px-2 py-1 text-sm text-veil placeholder:text-veil/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-illumination/60"
             />
             <button
               type="button"

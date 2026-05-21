@@ -92,7 +92,7 @@ export function DiscardBrowseOverlay({
           data-discard-browse-close
           aria-label="Close"
           onClick={onClose}
-          className="absolute right-2 top-2 z-10 rounded p-1 text-veil/70 hover:text-veil focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          className="absolute right-2 top-2 z-10 rounded p-1 text-veil/70 hover:text-veil focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           <span aria-hidden="true">×</span>
         </button>
