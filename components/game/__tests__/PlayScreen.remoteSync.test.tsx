@@ -27,12 +27,7 @@ describe('PlayScreen — remote Realtime state sync (multiplayer bug fix)', () =
     expect(state.activePlayerId).toBe('p1');
 
     render(
-      <PlayScreen
-        initialState={state}
-        rng={seededRng(1)}
-        roomCode="TEST"
-        currentPlayerId="p2"
-      />,
+      <PlayScreen initialState={state} rng={seededRng(1)} roomCode="TEST" currentPlayerId="p2" />,
     );
 
     expect(document.body.textContent).toContain("Player 1's turn");
