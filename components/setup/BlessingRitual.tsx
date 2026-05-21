@@ -383,7 +383,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleRoll}
                 data-action="roll"
-                className="rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground"
+                className="cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground"
               >
                 Roll 3d6
               </button>
@@ -392,7 +392,7 @@ export function BlessingRitual({
                 type="button"
                 onClick={handleAdvance}
                 data-action="advance"
-                className="rounded border border-illumination px-4 py-2 text-sm tracking-widest"
+                className="cursor-pointer rounded border border-illumination px-4 py-2 text-sm tracking-widest"
               >
                 Next
               </button>
@@ -402,7 +402,7 @@ export function BlessingRitual({
               type="button"
               onClick={handleSkipCeremony}
               data-action="skip-ceremony"
-              className="mt-4 text-xs uppercase tracking-widest opacity-50 hover:opacity-80"
+              className="mt-4 cursor-pointer text-xs uppercase tracking-widest opacity-50 hover:opacity-80"
             >
               Hasten the rite — roll the rest at once
             </button>
