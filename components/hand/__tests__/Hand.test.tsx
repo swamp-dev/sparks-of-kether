@@ -886,9 +886,10 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
   });
 
   it('floating mode: className interior spaces are preserved — .trim() is not applied (#168)', () => {
-    const { container } = render(<Hand hand={[2]} visible={true} className="padded" />);
+    const extra = '  padded  ';
+    const { container } = render(<Hand hand={[2]} visible={true} className={extra} />);
     const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
-    expect(cls).toContain('  padded  ');
+    expect(cls).toContain(extra);
   });
 
   it('still renders the focus-visible ring class under reduced-motion', () => {
