@@ -11,6 +11,7 @@ import { DiscardPile } from '@/components/game/DiscardPile';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
+import { HestiaCompanionLine } from '@/components/game/HestiaCompanionLine';
 import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
 import { isKetherHeld } from '@/engine/kether';
@@ -18,6 +19,7 @@ import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
 import { useSound } from '@/lib/sound/useSound';
 import { useMusic } from '@/lib/music/useMusic';
+import { usePantheon } from '@/lib/settings/pantheon';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -262,6 +264,8 @@ export function PlayScreen({
   useMusic(
     turn.phase === 'challenge' && activePlayer !== undefined ? activePlayer.position : 'play',
   );
+
+  const { pantheon } = usePantheon();
 
   // Final Threshold takeover: once the engine flips `phase: 'kether'`
   // (K1's `maybeTriggerKetherRitual` fires when every player has
@@ -656,6 +660,9 @@ export function PlayScreen({
           >
             You drew 2 cards. You may still play a card, or End your turn.
           </div>
+        ) : null}
+        {turn.phase === 'end' && activePlayer?.position === 'malkuth' ? (
+          <HestiaCompanionLine sign={activePlayer.zodiacSign} pantheon={pantheon} rng={rng} />
         ) : null}
         {viewerPlayer ? (
           <Hand
