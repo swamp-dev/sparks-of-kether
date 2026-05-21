@@ -766,7 +766,9 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     fireEvent.blur(card);
     // Timer scheduled — fan still open during grace period.
     expect(fan.style.transform).toBe('translateY(0)');
-    act(() => { vi.advanceTimersByTime(120); });
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
     // After grace period the fan collapses.
     expect(fan.style.transform).toMatch(/translateY\(calc/);
     vi.useRealTimers();
