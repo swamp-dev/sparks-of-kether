@@ -104,6 +104,10 @@ describe('PlayScreen — auto-advance turn', () => {
     act(() => {
       fireEvent.click(container.querySelector('[data-action="meditate"]') as HTMLButtonElement);
     });
+    // #24: confirm the dialog before the draw fires.
+    act(() => {
+      fireEvent.click(container.querySelector('[data-meditate-confirm-confirm]') as HTMLButtonElement);
+    });
     // Phase stays in move post-Meditate.
     expect(main?.getAttribute('data-phase')).toBe('move');
 

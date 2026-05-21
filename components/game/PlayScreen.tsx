@@ -145,6 +145,7 @@ export function PlayScreen({
   // doesn't lose game state. Closed via the X button, the backdrop,
   // or Escape.
   const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(undefined);
+  const [showMeditateConfirm, setShowMeditateConfirm] = useState(false);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -607,7 +608,7 @@ export function PlayScreen({
           <div className="flex gap-2">
             {turn.phase === 'move' ? (
               <MeditateButton
-                onMeditate={turn.meditate}
+                onMeditate={() => setShowMeditateConfirm(true)}
                 disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
               />
             ) : null}
@@ -844,6 +845,17 @@ export function PlayScreen({
           onClose={() => setOpenSefirah(undefined)}
         />
       ) : null}
+      {/* #24: Meditate confirm dialog — opens when the player clicks
+          Meditate, preventing accidental state mutation on misclick. */}
+      {showMeditateConfirm ? (
+        <MeditateConfirmDialog
+          onCancel={() => setShowMeditateConfirm(false)}
+          onConfirm={() => {
+            setShowMeditateConfirm(false);
+            turn.meditate();
+          }}
+        />
+      ) : null}
     </main>
   );
 }
@@ -933,6 +945,83 @@ function MeditateButton({
     >
       Meditate
     </button>
+  );
+}
+
+/**
+ * #24 — Confirmation dialog for the Meditate action. Prevents accidental
+ * state mutation: clicking the Meditate button opens this dialog; the
+ * player must explicitly Confirm before `turn.meditate()` fires.
+ *
+ * Follows the SefirahInfoPopover pattern: backdrop click closes, Escape
+ * closes via a document keydown listener, the dialog grabs focus on
+ * mount, and the Confirm button is auto-focused so Enter confirms.
+ */
+function MeditateConfirmDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}): JSX.Element {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  });
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === 'Escape') onCancelRef.current();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <div
+      data-meditate-confirm-backdrop
+      onClick={onCancel}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-ground/60 backdrop-blur-sm"
+    >
+      <div
+        ref={dialogRef}
+        data-meditate-confirm
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meditate-confirm-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-4 rounded-md border border-veil/30 bg-ground/95 px-5 py-4 text-veil shadow-2xl outline-none focus:outline-none"
+      >
+        <p id="meditate-confirm-title" className="text-sm font-medium">
+          Meditate?
+        </p>
+        <p className="text-xs opacity-70">
+          You&apos;ll draw up to 2 cards in exchange for your move. This cannot be undone.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            data-meditate-confirm-cancel
+            onClick={onCancel}
+            className="rounded border border-veil/30 px-4 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            Cancel
+          </button>
+          {/* autoFocus: Enter confirms when dialog has keyboard focus. */}
+          <button
+            type="button"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            data-meditate-confirm-confirm
+            onClick={onConfirm}
+            className="rounded border border-illumination/50 px-4 py-2 text-xs hover:border-illumination focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

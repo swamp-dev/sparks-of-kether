@@ -36,6 +36,10 @@ describe('PlayScreen — meditate updates the hand', () => {
     act(() => {
       fireEvent.click(meditateBtn);
     });
+    // #24: confirm the dialog before the draw fires.
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    });
 
     slots = document.querySelectorAll('[data-hand] [data-card-slot]');
     expect(slots.length).toBe(4);
@@ -65,6 +69,10 @@ describe('PlayScreen — Meditate at HAND_CAP defers DiscardPrompt to End turn (
 
     act(() => {
       fireEvent.click(meditateBtn);
+    });
+    // #24: confirm the dialog before the draw fires.
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     });
 
     // Post-Meditate: 7 cards, NO discard UI yet.
@@ -125,6 +133,10 @@ describe('PlayScreen — full hand visibility (#290)', () => {
     const meditateBtn = screen.getByRole('button', { name: /meditate/i });
     act(() => {
       fireEvent.click(meditateBtn);
+    });
+    // #24: confirm the dialog before the draw fires.
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     });
 
     // Post-meditate: all 5 must be in the DOM.
