@@ -478,7 +478,7 @@ function Summary({
         type="button"
         onClick={onContinue}
         data-action="continue"
-        className="mt-6 rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+        className="mt-6 cursor-pointer rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
       >
         Continue
       </button>
