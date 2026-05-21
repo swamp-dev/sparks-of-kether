@@ -646,3 +646,32 @@ describe('BlessingRitual — page layout (#413)', () => {
     expect(cls).toMatch(/md:grid-cols-\[1fr_2fr_1fr\]/);
   });
 });
+
+describe('BlessingRitual — orb label hierarchy (#11)', () => {
+  it('primary label is transliteration (Kether), not the English gloss (Crown)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const heading = container.querySelector('[data-sefirah-name]');
+    expect(heading?.textContent).toBe('Kether');
+  });
+
+  it('primary label is transliteration for Chokmah (second Sefirah after advancing)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    // Roll Kether and advance.
+    fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    const heading = container.querySelector('[data-sefirah-name]');
+    expect(heading?.textContent).toBe('Chokmah');
+  });
+
+  it('English gloss (Crown) appears as tertiary below the Hebrew', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const gloss = container.querySelector('[data-sefirah-gloss]');
+    expect(gloss?.textContent).toBe('Crown');
+  });
+});

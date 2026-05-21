@@ -305,7 +305,7 @@ export function BlessingRitual({
           </p>
 
           <h2 className="relative mt-3 font-display text-3xl tracking-widest" data-sefirah-name>
-            {currentSefirah.englishName}
+            {currentSefirah.transliteration}
           </h2>
           <p
             className="relative mt-1 font-hebrew text-2xl"
@@ -313,6 +313,9 @@ export function BlessingRitual({
             style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
           >
             {currentSefirah.hebrewName}
+          </p>
+          <p className="relative mt-0.5 text-sm opacity-60" data-sefirah-gloss>
+            {currentSefirah.englishName}
           </p>
 
           <p className="relative mt-4 italic opacity-80" data-essence>
