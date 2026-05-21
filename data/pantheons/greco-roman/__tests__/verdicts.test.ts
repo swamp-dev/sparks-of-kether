@@ -178,14 +178,21 @@ describe('pickVerdict', () => {
     expect(verdict).toBe(cell[cell.length - 1]);
   });
 
-  it('throws if the sign key is unrecognised', () => {
+  it('throws a named Error if the sefirah key is unrecognised (#28)', () => {
+    const rng = seededRng(1);
+    expect(() =>
+      pickVerdict(sefirahVerdicts, 'not-a-sefirah' as EncounterAvatarKey, 'aries', 'pass', rng),
+    ).toThrow(/pickVerdict: unknown sefirah=not-a-sefirah/);
+  });
+
+  it('throws a named Error if the sign key is unrecognised (#28)', () => {
     // Loud-fail-on-drift symmetry with `pickFraming`'s sign guard
     // (#497). The `ZodiacSignKey` narrow union prevents this at
     // compile time; the throw guards a forced cast or data drift.
     const rng = seededRng(1);
     expect(() =>
       pickVerdict(sefirahVerdicts, 'hod', 'not-a-sign' as ZodiacSignKey, 'pass', rng),
-    ).toThrow();
+    ).toThrow(/pickVerdict: unknown sign=not-a-sign/);
   });
 });
 
@@ -212,6 +219,19 @@ describe('pickPlayerResponse', () => {
     };
     const line = pickPlayerResponse(sefirahPlayerResponses, 'binah', 'capricorn', highRng);
     const cell = sefirahPlayerResponses.binah.capricorn;
+
     expect(line).toBe(cell[cell.length - 1]);
+  });
+
+  it('throws a named Error if the sefirah key is unrecognised (#28)', () => {
+    const rng = seededRng(1);
+    expect(() =>
+      pickPlayerResponse(
+        sefirahPlayerResponses,
+        'not-a-sefirah' as EncounterAvatarKey,
+        'aries',
+        rng,
+      ),
+    ).toThrow(/pickPlayerResponse: unknown sefirah=not-a-sefirah/);
   });
 });
