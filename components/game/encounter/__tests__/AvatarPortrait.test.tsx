@@ -234,6 +234,33 @@ describe('AvatarPortrait', () => {
     });
   });
 
+  describe('reducedMotion prop', () => {
+    it('passes reducedMotion=true to AvatarSilhouette — suppresses transition-all class', () => {
+      render(
+        <AvatarPortrait sefirah="kether" state="prep" size="stage" pose="idle" reducedMotion />,
+      );
+      const silhouette = document.querySelector('[data-avatar-silhouette]');
+      expect(silhouette).not.toBeNull();
+      // When reducedMotion=true, transitionClass is '' — no child element should carry
+      // transition-all. Use getAttribute('class') because SVG className is SVGAnimatedString.
+      silhouette?.querySelectorAll('*').forEach((el) => {
+        expect(el.getAttribute('class') ?? '').not.toContain('transition-all');
+      });
+    });
+
+    it('passes reducedMotion=false (default) to AvatarSilhouette — applies transition-all', () => {
+      render(<AvatarPortrait sefirah="kether" state="prep" size="stage" pose="idle" />);
+      const silhouette = document.querySelector('[data-avatar-silhouette]');
+      expect(silhouette).not.toBeNull();
+      // Without reducedMotion, at least one element should have the transition class.
+      // Use getAttribute('class') because SVG className is SVGAnimatedString.
+      const withTransition = Array.from(silhouette?.querySelectorAll('*') ?? []).some((el) =>
+        (el.getAttribute('class') ?? '').includes('transition-all'),
+      );
+      expect(withTransition).toBe(true);
+    });
+  });
+
   describe('caption + name label', () => {
     it('renders avatarName label when supplied', () => {
       render(<AvatarPortrait sefirah="hod" state="prep" size="stage" avatarName="Hermes" />);

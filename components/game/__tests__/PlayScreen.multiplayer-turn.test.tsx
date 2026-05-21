@@ -21,9 +21,23 @@ function buildTwoPlayerState(): GameState {
 }
 
 function buildEndPhaseState(): GameState {
-  const p1 = makePlayer({ id: 'p1', name: 'Alex', hand: [10, 11], position: 'malkuth' });
-  const p2 = makePlayer({ id: 'p2', name: 'Bea', hand: [20, 21], position: 'malkuth' });
+  // netzach has kind:'check' so it avoids the console noise the malkuth
+  // (kind:'no-check') position generates from the stat-check guard.
+  const p1 = makePlayer({ id: 'p1', name: 'Alex', hand: [10, 11], position: 'netzach' });
+  const p2 = makePlayer({ id: 'p2', name: 'Bea', hand: [20, 21], position: 'netzach' });
   return makeState({}, { players: [p1, p2], activePlayerId: 'p1', phase: 'end' });
+}
+
+function buildChallengePhaseState(): GameState {
+  // p1 (active) at yesod — a Sefirah with a stat check (kind:'check', dc:12)
+  // so challengeContext would be non-null for the active player. The non-active
+  // player must not see EncounterScreen despite the active player's challenge.
+  const p1 = makePlayer({ id: 'p1', name: 'Alex', hand: [10, 11], position: 'yesod' });
+  const p2 = makePlayer({ id: 'p2', name: 'Bea', hand: [20, 21], position: 'netzach' });
+  return makeState(
+    {},
+    { players: [p1, p2], activePlayerId: 'p1', phase: 'challenge', challengeSubPhase: 'prep' },
+  );
 }
 
 describe('PlayScreen — multiplayer turn gating', () => {
@@ -125,5 +139,22 @@ describe('PlayScreen — multiplayer turn gating', () => {
     const card10 = document.querySelector('[data-arcanum="10"]');
     expect(card10).not.toBeNull();
     expect(card10?.getAttribute('aria-disabled')).not.toBe('true');
+  });
+
+  it("non-active player's Meditate button is disabled", () => {
+    const initial = buildTwoPlayerState(); // phase: 'move', p1 active
+    render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
+    const meditateBtn = document.querySelector<HTMLButtonElement>('[data-action="meditate"]');
+    expect(meditateBtn).not.toBeNull();
+    expect(meditateBtn?.disabled).toBe(true);
+  });
+
+  it('non-active player does not see EncounterScreen in challenge phase', () => {
+    // isMyTurn=false → showChallenge=false → challengeContext=null → no overlay.
+    // p1 is at yesod (kind:'check') so the active player WOULD see EncounterScreen,
+    // making this test catch regressions where isMyTurn is dropped from showChallenge.
+    const initial = buildChallengePhaseState();
+    render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
+    expect(document.querySelector('[data-encounter-screen]')).toBeNull();
   });
 });
