@@ -194,6 +194,19 @@ describe('pickVerdict', () => {
       pickVerdict(sefirahVerdicts, 'hod', 'not-a-sign' as ZodiacSignKey, 'pass', rng),
     ).toThrow(/pickVerdict: unknown sign=not-a-sign/);
   });
+
+  it('throws a named Error if the outcome key is absent (#188)', () => {
+    // ChallengeOutcome is a 2-value union so this can't happen via
+    // the type system, but noUncheckedIndexedAccess makes signCell[outcome]
+    // typed as string[] | undefined — the guard closes the gap.
+    const rng = seededRng(1);
+    const sparseMatrix = {
+      hod: { aries: { pass: ['ok'] } },
+    } as unknown as Parameters<typeof pickVerdict>[0];
+    expect(() =>
+      pickVerdict(sparseMatrix, 'hod' as EncounterAvatarKey, 'aries', 'fail' as ChallengeOutcome, rng),
+    ).toThrow(/pickVerdict: no variants/);
+  });
 });
 
 describe('pickPlayerResponse', () => {
