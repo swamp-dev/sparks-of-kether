@@ -10,4 +10,4 @@ on this branch.
 **Pushed:** chore(workflow): remove stale checklist-stamp.mjs reference from full-send skill (#134)
 **Why:** scripts/checklist-stamp.mjs was deleted in #130; the "if present" qualifier made the reference technically safe but confusing — future readers would wonder what script is being referenced. One-word clause removal in the gate-introducing-PR definition.
 **Notes:** none
-**Commit(s):** TBD
+**Commit(s):** `7774533`
