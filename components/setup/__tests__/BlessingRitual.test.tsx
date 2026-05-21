@@ -646,3 +646,50 @@ describe('BlessingRitual — page layout (#413)', () => {
     expect(cls).toMatch(/md:grid-cols-\[1fr_2fr_1fr\]/);
   });
 });
+
+describe('BlessingRitual — focus-visible ring (#170 #178 #179)', () => {
+  it('Roll 3d6 button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const btn = container.querySelector('[data-action="roll"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+
+  it('Next button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    const btn = container.querySelector('[data-action="advance"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+
+  it('Hasten button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const btn = container.querySelector('[data-action="skip-ceremony"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+
+  it('Continue button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    for (const _ of sefirot) {
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    }
+    const btn = container.querySelector('[data-action="continue"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+});
