@@ -157,4 +157,13 @@ describe('PlayScreen — multiplayer turn gating', () => {
     render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p2" />);
     expect(document.querySelector('[data-encounter-screen]')).toBeNull();
   });
+
+  it('active player sees EncounterScreen in challenge phase', () => {
+    // Positive-case pair for the test above. Renders with currentPlayerId="p1"
+    // (the active player at yesod) and asserts the overlay IS present — so the
+    // suite fails if EncounterScreen is broken for everyone, not just for p2.
+    const initial = buildChallengePhaseState();
+    render(<PlayScreen initialState={initial} rng={seededRng(1)} currentPlayerId="p1" />);
+    expect(document.querySelector('[data-encounter-screen]')).not.toBeNull();
+  });
 });
