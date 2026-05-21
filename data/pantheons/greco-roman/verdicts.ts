@@ -1775,7 +1775,7 @@ export function pickVerdict(
     throw new Error(`pickVerdict: unknown sign=${sign} for sefirah=${sefirah}`);
   }
   const variants = signCell[outcome];
-  if (variants.length === 0) {
+  if (variants === undefined || variants.length === 0) {
     throw new Error(
       `pickVerdict: no variants for sefirah=${sefirah} sign=${sign} outcome=${outcome}`,
     );
