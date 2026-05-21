@@ -35,7 +35,7 @@ source of truth for the actual procedure (which evolves over time).
 
 `/ship-ticket` is one PR per invocation. Never sweep multiple PRs in one shot — that's the explicit anti-11-PR-incident guardrail in the skill, and bypassing it loses the self-merge authority the project grants.
 
-**Gate-introducing PRs** (anything that changes the per-PR checklist's mechanism — `.claude/settings.json` hooks, `scripts/checklist-stamp.mjs` if present, `/finish-ticket` review-stamp wiring, or `/ship-ticket`'s checklist-verification step) are a structural exception: they require human merge because the agent satisfying the gate's input itself is indistinguishable from the bypass pattern that got #437 reverted. Ship the PR, hand off to the user.
+**Gate-introducing PRs** (anything that changes the per-PR checklist's mechanism — `.claude/settings.json` hooks, `/finish-ticket` review-stamp wiring, or `/ship-ticket`'s checklist-verification step) are a structural exception: they require human merge because the agent satisfying the gate's input itself is indistinguishable from the bypass pattern that got #437 reverted. Ship the PR, hand off to the user.
 
 ## When to stop
 
