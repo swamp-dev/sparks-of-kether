@@ -10,4 +10,4 @@ on this branch.
 **Pushed:** feat(blessing): add cursor-pointer to BlessingRitual buttons (#171)
 **Why:** Browser default may not render pointer cursor on `<button>` in all Tailwind reset configs; cursor-pointer makes the interactive affordance explicit on Roll 3d6, Next, and Hasten buttons.
 **Notes:** none
-**Commit(s):** TBD
+**Commit(s):** `b12ce0a`
