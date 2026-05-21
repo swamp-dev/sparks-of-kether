@@ -59,7 +59,38 @@ export function AvatarSilhouette({
     fail: 0.15,
   };
 
-  const showRaisedArm = pose === 'speaking' || pose === 'pass';
+  const leftArmX2: Record<AvatarPose, string> = {
+    idle: '30',
+    speaking: '30',
+    watching: '30',
+    pass: '30',
+    fail: '28',
+  };
+
+  const leftArmY2: Record<AvatarPose, string> = {
+    idle: '72',
+    speaking: '72',
+    watching: '72',
+    pass: '72',
+    fail: '78',
+  };
+
+  const rightArmX2: Record<AvatarPose, string> = {
+    idle: '70',
+    speaking: '70',
+    watching: '70',
+    pass: '74',
+    fail: '70',
+  };
+
+  const rightArmY2: Record<AvatarPose, string> = {
+    idle: '72',
+    speaking: '42',
+    watching: '72',
+    pass: '38',
+    fail: '78',
+  };
+
   const transitionClass = reducedMotion ? '' : 'transition-all duration-300 ease-in-out';
   const bodyOpacity = pose === 'fail' ? 0.45 : 0.75;
 
@@ -100,8 +131,8 @@ export function AvatarSilhouette({
         <line
           x1="43"
           y1="58"
-          x2={pose === 'fail' ? '28' : '30'}
-          y2={pose === 'fail' ? '78' : '72'}
+          x2={leftArmX2[pose]}
+          y2={leftArmY2[pose]}
           stroke="currentColor"
           strokeWidth="7"
           strokeLinecap="round"
@@ -111,8 +142,8 @@ export function AvatarSilhouette({
         <line
           x1="57"
           y1="58"
-          x2={showRaisedArm ? (pose === 'pass' ? '74' : '70') : '70'}
-          y2={showRaisedArm ? (pose === 'pass' ? '38' : '42') : pose === 'fail' ? '78' : '72'}
+          x2={rightArmX2[pose]}
+          y2={rightArmY2[pose]}
           stroke="currentColor"
           strokeWidth="7"
           strokeLinecap="round"
