@@ -892,7 +892,6 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     expect(cls).toContain(extra);
   });
 
-
   it('still renders the focus-visible ring class under reduced-motion', () => {
     restoreMatchMedia = stubMatchMedia(true);
     const { container } = render(<Hand hand={[2, 5]} visible={true} />);
