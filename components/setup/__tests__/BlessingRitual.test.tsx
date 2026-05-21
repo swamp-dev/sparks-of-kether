@@ -576,6 +576,53 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
 // right) so the player can see their full BLESSINGS RECEIVED ledger
 // at desktop 1280×800 without scrolling. At mobile the grid collapses
 // back to a single column. These tests assert the layout *structure*
+describe('BlessingRitual — focus-visible ring (#170 #178 #179)', () => {
+  it('Roll 3d6 button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const btn = container.querySelector('[data-action="roll"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+
+  it('Next button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    const btn = container.querySelector('[data-action="advance"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+
+  it('Hasten button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const btn = container.querySelector('[data-action="skip-ceremony"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+
+  it('Continue button has explicit focus ring', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    for (const _ of sefirot) {
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    }
+    const btn = container.querySelector('[data-action="continue"]');
+    expect(btn?.getAttribute('class')).toMatch(/focus:outline-none/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
+    expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+});
+
 // at the className level — actual viewport-conditional rendering is
 // validated by the Playwright visual-regression spec on the same
 // branch. Unit tests here guard the structural contract.
