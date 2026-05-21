@@ -73,12 +73,17 @@ function makeFakeChannel(channelName: string): FakeChannel {
       } else if (channelName.startsWith('lobby_room')) {
         roomsChannelHandler = handler;
       }
+      // useLobby only ever registers handlers for 'lobby_players:*' or
+      // 'lobby_room:*' channels — no else branch needed. If a third channel
+      // type is added, add a new handler var here.
       return this;
     }),
     subscribe: vi.fn(function (this: FakeChannel, cb?: (status: string) => void) {
       if (cb !== undefined) {
-        // useLobby only ever creates lobby_players:* and lobby_room:* channels,
-        // so the fallback branch is unreachable in practice.
+        // useLobby only ever calls .channel() with 'lobby_players:*' or
+        // 'lobby_room:*' prefixes, so this else-branch is dead. If a third
+        // channel type is added to useLobby, it would receive 'SUBSCRIBED'
+        // silently — add a new status var instead.
         const status = channelName.startsWith('lobby_players')
           ? playersChannelSubscribeStatus
           : channelName.startsWith('lobby_room')
