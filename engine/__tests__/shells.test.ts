@@ -780,6 +780,10 @@ describe('Shell awakening integration — four Separation thresholds', () => {
     // Drive separation to each threshold manually via makeState overrides,
     // then call maybeActivateShell directly to verify that exactly the
     // expected number of Shells wake (independent of the +2 bonus compounding).
+    function decidedCount(s: GameState) {
+      return countShellsBy(s.shells, 'active') + countShellsBy(s.shells, 'banished');
+    }
+
     const thresholds = [3, 6, 9, 12];
     for (const sep of thresholds) {
       const expectedDecided = sep / SHELL_THRESHOLD_STEP;
@@ -787,10 +791,6 @@ describe('Shell awakening integration — four Separation thresholds', () => {
       const fresh = makeState({}, { separation: sep, shells: EMPTY_SHELL_STATE });
       const after = maybeActivateShell(fresh);
       expect(decidedCount(after)).toBe(expectedDecided);
-    }
-
-    function decidedCount(s: GameState) {
-      return countShellsBy(s.shells, 'active') + countShellsBy(s.shells, 'banished');
     }
   });
 });
