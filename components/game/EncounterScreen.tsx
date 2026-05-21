@@ -380,6 +380,14 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const cumulativeSparkBurns = (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
   const isRetry = (turn.pendingModifiers?.cardBurns.length ?? 0) > 0;
 
+  // Mirror the engine's `prep-confirm` gate (turn-machine.ts:1278-1283):
+  // Gevurah requires at least one staged card burn when the player has cards.
+  // We read from `turn.state.encounter` (not just `context.sefirah`) to match
+  // the engine condition exactly — test fixtures that manually construct
+  // challenge states without setting `encounter` are unaffected.
+  const gevurahRequiresBurn =
+    turn.state.encounter?.sefirah === 'gevurah' && cumulativeCardBurns === 0 && maxCardBurns > 0;
+
   const assistTotal = useMemo(() => {
     return allies
       .filter((a) => stagedAssistIds.has(a.id))
@@ -862,6 +870,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             onRoll={awaitingBurnDiscard ? undefined : handleRoll}
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
+            gevurahRequiresBurn={gevurahRequiresBurn}
           />
           {awaitingBurnDiscard && player ? (
             <div
@@ -943,6 +952,13 @@ interface PrepPanelProps {
    * parent's `SEFIRAH_FRAME_TOKENS[context.sefirah].buttonGlow`.
    */
   readonly glowClass: string;
+  /**
+   * When true, the Roll button is disabled and an explanatory hint is
+   * shown — Gevurah requires at least one staged card burn before
+   * `prep-confirm` will accept the roll. Mirrors the engine's gate in
+   * `turn-machine.ts` so the player sees why clicking does nothing.
+   */
+  readonly gevurahRequiresBurn?: boolean;
 }
 
 function PrepPanel(props: PrepPanelProps): JSX.Element {
@@ -969,6 +985,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     onRoll,
     onCancel,
     glowClass,
+    gevurahRequiresBurn,
   } = props;
   return (
     <div className="mt-4 space-y-4" data-encounter-prep>
@@ -1039,11 +1056,20 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         onChange={adjustSparkBurns}
       />
 
+      {gevurahRequiresBurn === true ? (
+        <p
+          data-gevurah-burn-required
+          className="rounded border border-veil/30 px-3 py-2 text-center text-xs opacity-80"
+        >
+          Gevurah demands a sacrifice — burn at least one card before you roll.
+        </p>
+      ) : null}
       <div className="flex items-center justify-center gap-4 pt-2">
         <D20Button
           state="idle"
           glowClass={glowClass}
-          {...(onRoll !== undefined ? { onClick: onRoll } : {})}
+          {...(onRoll !== undefined && gevurahRequiresBurn !== true ? { onClick: onRoll } : {})}
+          disabled={gevurahRequiresBurn === true}
           caption="Roll"
         />
         {onCancel ? (
