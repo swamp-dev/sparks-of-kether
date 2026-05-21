@@ -234,8 +234,8 @@ export function BlessingRitual({
       data-sefirah={currentSefirah.key}
       data-status={stepStatus}
       data-blessing-state={blessing === null ? 'null' : 'set'}
-      aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
-      className={`mx-auto max-w-5xl${className ? ` ${className}` : ''}`}
+      aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.transliteration} (${currentSefirah.englishName})`}
+      className={`mx-auto max-w-5xl ${className ?? ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
