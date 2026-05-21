@@ -317,13 +317,32 @@ describe('Shell banishment — wired via resolveChallenge', () => {
     //
     // Direct unit test: build a state with an active Yesod Shell, then
     // manually trigger the Sefirah-clear path to confirm banishShell fires.
-    // The resolveChallenge integration is covered in checks.test.ts.
+    // The resolveChallenge integration is covered below.
     const withActiveShell = makeState({}, { shells: { ...EMPTY_SHELL_STATE, yesod: 'active' } });
     const banished = banishShell(withActiveShell, 'yesod');
     expect(banished.shells.yesod).toBe('banished');
     // Once banished it cannot go back to active or dormant
     const again = banishShell(banished, 'yesod');
     expect(again).toBe(banished); // reference equality — no change
+  });
+
+  it('banishes the Shell via resolveChallenge when the player passes a Yesod challenge', () => {
+    // Yesod: stat=intuition, DC=12. intuition=20 guarantees a pass on any d20.
+    const state = makeState(
+      { position: 'yesod', stats: { ...makePlayer().stats, intuition: 20 } },
+      { shells: { ...EMPTY_SHELL_STATE, yesod: 'active' } },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'yesod',
+      modifiers: { assistStats: [], cardBurns: 0, sparkBurns: 0, shortcutPenalty: false },
+      rng: seededRng(1),
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.newState.shells.yesod).toBe('banished');
   });
 });
 
