@@ -122,7 +122,8 @@ line must contain exactly one of `ship`, `fix`, `rework`, or `block`
 
 Verdict semantics:
 - **ship** — no Critical, no Significant marked `[high]`. Improvements
-  may exist.
+  may exist. (`[medium]` and `[low]` Significant findings land here —
+  they do not block a ship verdict.)
 - **fix** — has blockers (Critical, or `[high]` Significant). Address
   before merge.
 - **rework** — design or approach is wrong; fixes won't be small.
