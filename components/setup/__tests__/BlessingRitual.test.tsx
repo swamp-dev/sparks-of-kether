@@ -254,6 +254,15 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
   // Playtest finding: the 10-step sequential ceremony is slow on
   // repeat plays. Provide a "Hasten the rite" affordance that fills
   // the remaining stats in one click and advances to the summary.
+
+  it('skip affordance is a button with accessible name describing the consequence (#12)', () => {
+    const noop = (): void => undefined;
+    render(<BlessingRitual sign="aries" rng={seededRng(7)} onComplete={noop} />);
+    const skip = screen.getByRole('button', { name: /hasten the rite — roll the rest at once/i });
+    expect(skip).toBeDefined();
+    expect(skip.tagName).toBe('BUTTON');
+  });
+
   it('renders a Hasten button that rolls all remaining stats at once', () => {
     vi.useFakeTimers();
     try {
