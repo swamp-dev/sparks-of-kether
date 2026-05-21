@@ -10,4 +10,4 @@ on this branch.
 **Pushed:** test(shells): add resolveChallenge integration test for banishment (#62)
 **Why:** The existing banishment describe block claimed "The resolveChallenge integration is covered in checks.test.ts" but no such test existed there. This adds the actual integration test directly — builds a state with an active Yesod Shell, calls resolveChallenge with intuition=20 (guarantees pass at DC 12), and asserts shells.yesod transitions to 'banished'. Also fixes the misleading comment to "covered below".
 **Notes:** none
-**Commit(s):** `HEAD`
+**Commit(s):** `6c02fa7`
