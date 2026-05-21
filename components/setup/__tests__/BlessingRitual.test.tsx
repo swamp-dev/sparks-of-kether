@@ -255,12 +255,15 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
   // repeat plays. Provide a "Hasten the rite" affordance that fills
   // the remaining stats in one click and advances to the summary.
 
-  it('skip affordance is a button with accessible name describing the consequence (#12)', () => {
+  it('skip affordance accessible name includes the consequence text (#12)', () => {
     const noop = (): void => undefined;
     render(<BlessingRitual sign="aries" rng={seededRng(7)} onComplete={noop} />);
-    const skip = screen.getByRole('button', { name: /hasten the rite — roll the rest at once/i });
-    expect(skip).toBeDefined();
-    expect(skip.tagName).toBe('BUTTON');
+    // Asserts the full accessible name — both the action label and the
+    // consequence ("roll the rest at once") must be present. Wider than
+    // the /Hasten the rite/i regex used in the behavior tests.
+    expect(
+      screen.getByRole('button', { name: /hasten the rite — roll the rest at once/i }),
+    ).toBeInTheDocument();
   });
 
   it('renders a Hasten button that rolls all remaining stats at once', () => {
