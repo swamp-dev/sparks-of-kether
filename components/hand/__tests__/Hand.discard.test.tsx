@@ -133,4 +133,30 @@ describe('Hand — discard mode', () => {
     expect(slot).not.toBeNull();
     expect(slot?.getAttribute('aria-disabled')).toBe('false');
   });
+
+  it('multi-card hand: every card slot is aria-disabled=false when discardMode=true', () => {
+    // aria-disabled is computed per-card (line 490 of Hand.tsx). Verifies
+    // the formula applies to all slots, not just the first.
+    const { container } = render(
+      <Hand hand={[0, 1, 2]} visible={true} discardMode={true} onDiscard={vi.fn()} />,
+    );
+    const slots = container.querySelectorAll('[data-card-slot]');
+    expect(slots.length).toBe(3);
+    slots.forEach((slot) => {
+      expect(slot.getAttribute('aria-disabled')).toBe('false');
+    });
+  });
+
+  it('aria-disabled=true when visible=false even in discardMode', () => {
+    // !visible short-circuits ariaDisabled to true (Hand.tsx:490),
+    // regardless of discardMode.
+    const { container } = render(
+      <Hand hand={[0, 1]} visible={false} discardMode={true} onDiscard={vi.fn()} />,
+    );
+    const slots = container.querySelectorAll('[data-card-slot]');
+    expect(slots.length).toBe(2);
+    slots.forEach((slot) => {
+      expect(slot.getAttribute('aria-disabled')).toBe('true');
+    });
+  });
 });
