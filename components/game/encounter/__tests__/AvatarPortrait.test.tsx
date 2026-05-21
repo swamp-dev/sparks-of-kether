@@ -243,7 +243,9 @@ describe('AvatarPortrait', () => {
       expect(silhouette).not.toBeNull();
       // When reducedMotion=true, transitionClass is '' — no child element should carry
       // transition-all. Use getAttribute('class') because SVG className is SVGAnimatedString.
-      silhouette?.querySelectorAll('*').forEach((el) => {
+      const children = Array.from(silhouette?.querySelectorAll('*') ?? []);
+      expect(children.length).toBeGreaterThan(0);
+      children.forEach((el) => {
         expect(el.getAttribute('class') ?? '').not.toContain('transition-all');
       });
     });
