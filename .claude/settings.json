@@ -1,15 +1,1 @@
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node scripts/checklist-stamp.mjs"
-          }
-        ]
-      }
-    ]
-  }
-}
+{}

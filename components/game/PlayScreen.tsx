@@ -11,6 +11,7 @@ import { DiscardPile } from '@/components/game/DiscardPile';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
+import { HestiaCompanionLine } from '@/components/game/HestiaCompanionLine';
 import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
 import { isKetherHeld } from '@/engine/kether';
@@ -18,6 +19,7 @@ import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
 import { useSound } from '@/lib/sound/useSound';
 import { useMusic } from '@/lib/music/useMusic';
+import { usePantheon } from '@/lib/settings/pantheon';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -92,6 +94,12 @@ interface PlayScreenProps {
    * exactly for this out-of-band server-push scenario.
    */
   readonly remoteState?: GameState;
+  /**
+   * Called when the player confirms leaving the game. When provided,
+   * a "Leave Game" affordance with inline confirmation appears in the
+   * Settings popover. Absent in hot-seat mode (no session to leave).
+   */
+  readonly onQuit?: () => void;
 }
 
 /**
@@ -112,6 +120,7 @@ export function PlayScreen({
   roomCode,
   currentPlayerId,
   remoteState,
+  onQuit,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
@@ -274,7 +283,7 @@ export function PlayScreen({
   // In hot-seat (currentPlayerId undefined) the viewer IS the active player.
   const viewerPlayer =
     currentPlayerId !== undefined
-      ? (turn.state.players.find((p) => p.id === currentPlayerId) ?? activePlayer)
+      ? turn.state.players.find((p) => p.id === currentPlayerId)
       : activePlayer;
   const isMyTurn = currentPlayerId === undefined || currentPlayerId === activePlayer?.id;
   const endgame = checkEndgame(turn.state);
@@ -286,6 +295,8 @@ export function PlayScreen({
   useMusic(
     turn.phase === 'challenge' && activePlayer !== undefined ? activePlayer.position : 'play',
   );
+
+  const { pantheon } = usePantheon();
 
   // Final Threshold takeover: once the engine flips `phase: 'kether'`
   // (K1's `maybeTriggerKetherRitual` fires when every player has
@@ -375,13 +386,13 @@ export function PlayScreen({
   // caused the modal to disappear mid-react with no UI to advance.
   // Now that `react-continue` exists, trust the engine: the phase
   // check alone is sufficient.
-  const showChallenge = turn.phase === 'challenge' && activePlayer !== undefined;
+  const showChallenge = turn.phase === 'challenge' && activePlayer !== undefined && isMyTurn;
 
   const challengeContext: ChallengeContext | null =
     showChallenge && activePlayer ? buildChallengeContext(turn.state, activePlayer.id) : null;
 
   const handlePathClick = (pathNumber: number): void => {
-    if (!activePlayer) return;
+    if (!activePlayer || !isMyTurn) return;
     if (selectedCard === undefined) {
       // No card selected — short-circuit. Phase 6 polish: surface a
       // hint that the player must select a card first.
@@ -419,7 +430,7 @@ export function PlayScreen({
     position: { readonly x: number; readonly y: number },
   ): void => {
     setDraggingCard(undefined);
-    if (!activePlayer) return;
+    if (!activePlayer || !isMyTurn) return;
     const target = document.elementFromPoint(position.x, position.y);
     const dropZone = target?.closest('[data-drop-zone]');
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
@@ -583,7 +594,7 @@ export function PlayScreen({
           <TreeBoard
             state={turn.state}
             {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
-            onPathClick={handlePathClick}
+            {...(isMyTurn ? { onPathClick: handlePathClick } : {})}
             // #384: opens an inline popover instead of navigating to
             // the Codex detail page (which would strand the player
             // off-game with no return-to-game affordance).
@@ -681,11 +692,16 @@ export function PlayScreen({
             You drew 2 cards. You may still play a card, or End your turn.
           </div>
         ) : null}
+        {turn.phase === 'end' && activePlayer?.position === 'malkuth' ? (
+          <HestiaCompanionLine sign={activePlayer.zodiacSign} pantheon={pantheon} rng={rng} />
+        ) : null}
         {viewerPlayer ? (
           <Hand
             hand={viewerPlayer.hand}
             visible={isHandVisible(turn.state, viewerPlayer.id, viewerPlayer.id)}
-            {...(isMyTurn && pendingDiscardCount === 0 ? { onCardSelect: (n: number) => setSelectedCard(n) } : {})}
+            {...(isMyTurn && pendingDiscardCount === 0
+              ? { onCardSelect: (n: number) => setSelectedCard(n) }
+              : {})}
             {...(isMyTurn ? { onCardHover: (n: number | undefined) => setHoveredCard(n) } : {})}
             // #412: drag-to-play wiring. drag-start lights the path
             // beneath the gesture; drag-end runs the drop handler;
@@ -697,7 +713,9 @@ export function PlayScreen({
                   onCardDragCancel: () => setDraggingCard(undefined),
                 }
               : {})}
-            {...(isMyTurn && selectedCard !== undefined && pendingDiscardCount === 0 ? { selectedArcanum: selectedCard } : {})}
+            {...(isMyTurn && selectedCard !== undefined && pendingDiscardCount === 0
+              ? { selectedArcanum: selectedCard }
+              : {})}
             {...(isMyTurn && pendingDiscardCount > 0
               ? {
                   discardMode: true as const,
@@ -844,7 +862,7 @@ export function PlayScreen({
           the game. Renders fixed bottom-right; the inline div keeps
           it inside the main layout for SR ordering, but the
           component itself uses `position: fixed` so it floats. */}
-      <SettingsButton />
+      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
       {/* #384: in-game Sefirah info popover. Mounted at the play-
           screen root so the backdrop covers the full viewport, but
           inside <main> so accessibility-tree ordering keeps it

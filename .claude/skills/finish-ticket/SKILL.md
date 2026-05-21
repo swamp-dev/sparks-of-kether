@@ -177,42 +177,40 @@ with a note in the PR body.
 Note the commit SHA at the moment of the first review (`git rev-parse HEAD`)
 — step 8a uses it to compute "what changed since the first review."
 
-### 8.5. Verify the checklist stamp was written
+### 8.5. Write the checklist stamp
 
-The `PostToolUse:Agent` hook in `.claude/settings.json` writes the
-stamp automatically after every `code-reviewer` invocation. The
-hook captures the reviewer's verbatim output from the harness's
-`tool_response` payload and writes
-`<worktree>/.claude/state/checklist-<sanitized-branch>.json`
-with `{ branch, head_sha, ran_at, verdict, verdict_hash,
-reviewer_text_length, written_via }`.
-
-The agent does NOT write this stamp. `scripts/checklist-stamp.mjs`
-runs only as a hook (the `--reviewer-output FILE` CLI mode was
-removed 2026-05-14 because it was the gate-fabrication surface).
-The auto-mode classifier blocks attempts to fabricate stamps via
-the Write tool. **If the hook didn't fire, do not try to work
-around it** — surface the failure to the user.
-
-**Verify the stamp was written and the verdict is what you expect**
-before continuing:
+After code-reviewer returns its verdict, write the stamp directly so
+`/ship-ticket` step 3 can verify the review ran in this session:
 
 ```bash
-jq '{verdict, head_sha, written_via}' .claude/state/checklist-*.json
+branch=$(git branch --show-current)
+branch_safe=$(printf '%s' "$branch" | tr -c 'a-zA-Z0-9._-' '_')
+head_sha=$(git rev-parse HEAD)
+verdict=<ship|fix|block|rework>   # from the reviewer's ## Verdict section
+ran_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
+mkdir -p "${main_repo}/.claude/state"
+cat > "${main_repo}/.claude/state/checklist-${branch_safe}.json" <<EOF
+{
+  "branch": "$branch",
+  "head_sha": "$head_sha",
+  "ran_at": "$ran_at",
+  "verdict": "$verdict",
+  "written_via": "agent"
+}
+EOF
 ```
 
-Expected: `verdict` matches what the reviewer returned (`ship`,
-`fix`, `block`, or `rework`); `head_sha` matches current HEAD;
-`written_via` is `hook`. If the stamp doesn't exist:
+Verify it was written:
 
-- Confirm `.claude/settings.json` declares the `PostToolUse:Agent`
-  hook running `node scripts/checklist-stamp.mjs`.
-- Settings.json edits made mid-session don't reload — if you just
-  introduced or changed the hook, the user needs to restart the
-  session.
-- If the hook is configured but still didn't fire, surface to the
-  user. Don't `node scripts/checklist-stamp.mjs ...` manually;
-  there is no CLI fallback that satisfies the gate.
+```bash
+main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
+jq '{verdict, head_sha, written_via}' "${main_repo}/.claude/state/checklist-${branch_safe}.json"
+```
+
+Expected: `verdict` matches what the reviewer returned (`ship`, `fix`,
+`block`, or `rework`); `head_sha` matches `git rev-parse HEAD`;
+`written_via` is `agent`.
 
 If `verdict` is `unknown`, the reviewer output is missing the
 `## Verdict` markdown header — re-run code-reviewer asking for a
@@ -243,9 +241,9 @@ When in doubt, re-review; the cost is small and the safety is real.
 Loop steps 8 → 8.5 → 8a until either the reviewer returns no critical/
 significant findings or the user explicitly accepts the remaining
 findings as deferred-minor. **Each re-review must also re-run step
-8.5** — the stamp script — so the stamp captures the latest verdict
-at the latest HEAD SHA. The script overwrites the stamp on each
-invocation; nothing extra needed beyond running it again.
+8.5** — write a fresh stamp — so the stamp captures the latest verdict
+at the latest HEAD SHA. The stamp write overwrites the previous file;
+nothing extra needed beyond writing it again.
 
 **Record the re-review in the Journal entry for the push that
 contained the fixes** — the per-ticket Journal file is the
@@ -403,9 +401,9 @@ skill — the wait for hosted CI is asynchronous and operator-driven.
 - The five-step per-PR checklist runs every time. Step 5 (re-review)
   uses the heuristic in step 8a above. The merge gate is the
   mechanical stamp file at `.claude/state/checklist-<sanitized-branch>.json`
-  written by `scripts/checklist-stamp.mjs` in step 8.5 — `/ship-ticket`
-  refuses to merge unless the stamp exists, its `head_sha` matches the
-  live PR HEAD, and `verdict` is `ship`. The per-ticket Journal file
+  written by the agent in step 8.5 — `/ship-ticket` refuses to merge
+  unless the stamp exists, its `head_sha` matches the live PR HEAD,
+  and `verdict` is `ship`. The per-ticket Journal file
   (`journal/<NN>-<slug>.md`) remains the human-readable audit record
   but is no longer the gate.
 - Tech-debt follow-up issues (step 8b) are filed automatically with

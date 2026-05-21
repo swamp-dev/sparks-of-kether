@@ -107,7 +107,7 @@ export function OrreryBackdrop({ className }: OrreryBackdropProps): JSX.Element 
     <div
       data-atmosphere="orrery-backdrop"
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-0 -z-[15] overflow-hidden ${className ?? ''}`.trim()}
+      className={`pointer-events-none fixed inset-0 -z-[15] overflow-hidden${className ? ` ${className}` : ''}`}
     >
       <svg
         viewBox={`-${VIEWBOX_HALF} -${VIEWBOX_HALF} ${VIEWBOX_HALF * 2} ${VIEWBOX_HALF * 2}`}

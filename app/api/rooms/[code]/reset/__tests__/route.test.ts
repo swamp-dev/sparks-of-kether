@@ -167,6 +167,7 @@ describe('POST /api/rooms/[code]/reset', () => {
     expect(body.error).toBe('not-host');
     expect(gameEventsDeletes).toBe(0);
     expect(gameStatesDeletes).toBe(0);
+    expect(playersUpdates).toHaveLength(0);
     expect(roomUpdates).toHaveLength(0);
   });
 

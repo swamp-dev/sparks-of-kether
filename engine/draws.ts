@@ -145,6 +145,7 @@ export function drawNCards(
   // #17: Paralysis (Shell of Chokmah) — track which arcanum numbers
   // were drawn this turn so canTravelPath can block them from being
   // played for movement on the same turn they were drawn.
+  // pHand grows only by appending, so slicing from the original length gives the delta.
   const newlyDrawn = pHand.slice(player.hand.length);
   const drawnThisTurn =
     isParalysisActive(state) && newlyDrawn.length > 0

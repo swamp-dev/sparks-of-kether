@@ -340,8 +340,8 @@ export function Hand({
   // pass through empty space to the Tree while cards remain interactive.
   const isFloating = layout === 'floating';
   const outerClassName = isFloating
-    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center ${className ?? ''}`
-    : `${className ?? ''}`;
+    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center${className ? ` ${className}` : ''}`
+    : (className ?? '');
   const innerClassName = isFloating
     ? 'pointer-events-auto animate-hand-fade-in motion-reduce:animate-none'
     : 'animate-hand-fade-in overflow-x-clip motion-reduce:animate-none';
@@ -353,7 +353,7 @@ export function Hand({
       data-hand-state="open"
       data-visible={visible ? 'true' : 'false'}
       data-layout={layout}
-      className={outerClassName.trim()}
+      className={outerClassName}
     >
       <div
         data-hand-fan
@@ -460,14 +460,14 @@ export function Hand({
             : undefined;
           const handleFocusIn = visible
             ? (): void => {
-                expandHand();
+                if (isFloating) expandHand();
                 setFocusedIndex(i);
                 if (onCardHover) onCardHover(arcanum);
               }
             : undefined;
           const handleFocusOut = visible
             ? (): void => {
-                scheduleHide();
+                if (isFloating) scheduleHide();
                 setFocusedIndex((prev) => (prev === i ? undefined : prev));
                 if (onCardHover) onCardHover(undefined);
               }
@@ -490,9 +490,9 @@ export function Hand({
           const ariaDisabled = !visible || (!interactive && !discardMode);
           const htmlDisabled = !visible;
           // #463: zIndex tiers — magnified > selected > unselected stack
-          // (left over right). With HAND_CAP=6 the magnified ceiling is
-          // `hand.length + 2` = 8; the over-cap Meditate path (#291,
-          // hand size up to 8) raises it to 10.
+          // (left over right). With HAND_CAP=5 the magnified ceiling is
+          // `hand.length + 2` = 7; the over-cap Meditate path (#291,
+          // hand size up to 7) raises it to 9.
           let zIndex: number;
           if (isMagnified) {
             zIndex = hand.length + 2;

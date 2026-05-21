@@ -32,7 +32,7 @@ import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor } from '@/lib/sound/cues';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
-import { derivePose } from './encounter/encounter-pose';
+import { derivePose, type UiSubPhase } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
 import { RevealLine } from './encounter/RevealLine';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
@@ -140,12 +140,12 @@ interface EncounterScreenMultiplayerProps extends EncounterScreenCommonProps {
 export type EncounterScreenProps = EncounterScreenHotSeatProps | EncounterScreenMultiplayerProps;
 
 /**
- * Local UI sub-phase. Lags the engine's `challengeSubPhase` by one
- * tick during the resolve animation: the engine sets sub-phase to
- * `'react'` immediately on `prep-confirm`, but we want the d20 spin to
- * show before the react choices appear.
+ * Local UI sub-phase (imported from encounter-pose.ts — single source of
+ * truth). Lags the engine's `challengeSubPhase` by one tick during the
+ * resolve animation: the engine sets sub-phase to `'react'` immediately
+ * on `prep-confirm`, but we want the d20 spin to show before the react
+ * choices appear.
  */
-type UiSubPhase = 'prep' | 'resolve' | 'react';
 
 const RESOLVE_ANIMATION_MS = 800;
 

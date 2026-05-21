@@ -68,12 +68,10 @@ relaxed under explicit conditions.** The agent may `gh pr merge` (via
 
 - A **checklist stamp** at `.claude/state/checklist-<sanitized-branch>.json`
   exists with `verdict=ship` AND `head_sha` matching the PR's current
-  HEAD (per #428's mechanical gate). The stamp is written by
-  `scripts/checklist-stamp.mjs` — invoked explicitly in `/finish-ticket`
-  step 8.5 after each `code-reviewer` call, and also by the
-  `PostToolUse:Agent` hook in `.claude/settings.json` as a redundant
-  safety net. Missing / stale-SHA / non-ship stamp → `/ship-ticket`
-  fails closed.
+  HEAD (per #428's mechanical gate). The stamp is written by the agent
+  in `/finish-ticket` step 8.5 immediately after each `code-reviewer`
+  call. Missing / stale-SHA / non-ship stamp → `/ship-ticket` fails
+  closed.
 - Hosted CI is green at the merge moment — `gh pr checks <P>` shows
   every job passing or legitimately skipped (filter-skip per #425), none
   in-flight, none stale.

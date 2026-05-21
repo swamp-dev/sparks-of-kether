@@ -7,6 +7,7 @@ import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { AvatarStack, type PresencePeer } from '@/components/presence/AvatarStack';
 import { useLobby } from '@/lib/use-lobby';
 import { usePresence } from '@/lib/presence';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 import { sefirot, zodiacSigns } from '@/data';
 import type { ZodiacSignKey } from '@/data';
 
@@ -214,6 +215,11 @@ export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
 
   return (
     <main className="relative min-h-screen p-8 text-veil">
+      <ChatPanel
+        roomId={room?.id ?? null}
+        currentPlayerId={currentPlayerId}
+        nickname={currentPlayer?.nickname ?? null}
+      />
       {/*
         #322 — Figma-style avatar stack. Top-right of the lobby so
         players see their party assemble in real time as peers join,

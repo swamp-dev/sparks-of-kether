@@ -34,29 +34,19 @@ function portraitPath(character: string, size: 'small' | 'large'): string {
 // TODO(#556): When Phase B ships the Egyptian pantheon portraits, loop over all
 // PantheonId values (not just 'greco-roman') so missing Egyptian assets are caught.
 describe('portrait assets', () => {
-  it('every encounter avatar has large.webp in public/portraits/<character>/', () => {
-    const missing: string[] = [];
-    const avatarNames = pantheons['greco-roman'].avatarNames;
-    for (const sefirah of ENCOUNTER_AVATAR_KEYS) {
-      const character = avatarNames[sefirah].primary.toLowerCase();
-      const path = portraitPath(character, 'large');
-      if (!existsSync(path)) {
-        missing.push(`${sefirah} (${character}) → /portraits/${character}/large.webp`);
+  it.each(['large', 'small'] as const)(
+    'every encounter avatar has %s.webp in public/portraits/<character>/',
+    (size) => {
+      const missing: string[] = [];
+      const avatarNames = pantheons['greco-roman'].avatarNames;
+      for (const sefirah of ENCOUNTER_AVATAR_KEYS) {
+        const character = avatarNames[sefirah].primary.toLowerCase();
+        const path = portraitPath(character, size);
+        if (!existsSync(path)) {
+          missing.push(`${sefirah} (${character}) → /portraits/${character}/${size}.webp`);
+        }
       }
-    }
-    expect(missing, `Missing portrait assets:\n  ${missing.join('\n  ')}`).toEqual([]);
-  });
-
-  it('every encounter avatar has small.webp in public/portraits/<character>/', () => {
-    const missing: string[] = [];
-    const avatarNames = pantheons['greco-roman'].avatarNames;
-    for (const sefirah of ENCOUNTER_AVATAR_KEYS) {
-      const character = avatarNames[sefirah].primary.toLowerCase();
-      const path = portraitPath(character, 'small');
-      if (!existsSync(path)) {
-        missing.push(`${sefirah} (${character}) → /portraits/${character}/small.webp`);
-      }
-    }
-    expect(missing, `Missing portrait assets:\n  ${missing.join('\n  ')}`).toEqual([]);
-  });
+      expect(missing, `Missing portrait assets:\n  ${missing.join('\n  ')}`).toEqual([]);
+    },
+  );
 });

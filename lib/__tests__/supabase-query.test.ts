@@ -36,6 +36,7 @@ describe('query', () => {
       players: true,
       game_states: true,
       game_events: true,
+      chat_messages: true,
     };
     const fromSpy = vi.fn().mockReturnValue({});
     const client = { from: fromSpy } as unknown as SupabaseClient<Database>;

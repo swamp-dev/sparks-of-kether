@@ -138,7 +138,7 @@ export interface ApplyMoveOptions {
  *     timestamp so the ritual's witness-order rule (§ 2.2) reads the
  *     true arrival, not a return.
  */
-/** Paths adjacent to Netzach. Traveling these is blocked by Obsession. */
+// Paths adjacent to Netzach. Traveling these is blocked by Obsession.
 const NETZACH_ADJACENT_PATHS = new Set([21, 24, 28, 29]);
 
 export function applyMove(
@@ -160,6 +160,8 @@ export function applyMove(
   // #17: Shell of Netzach (Obsession) — playing a card on a Netzach-adjacent
   // path burns the card with no movement. The card can still count for
   // assists / card-burn bonuses, but `applyMove`'s position logic is skipped.
+  // Obsession takes precedence over Inertia: card burned, no movement, so
+  // Inertia's 2-card cost does not apply (no movement occurs).
   if (isObsessionActive(state) && NETZACH_ADJACENT_PATHS.has(pathNumber)) {
     return {
       ok: true,

@@ -72,6 +72,19 @@ interface GameStateInsert extends Omit<Mutable<GameStateRow>, 'id' | 'updated_at
 
 type GameEventInsert = Omit<Mutable<GameEventRow>, 'id' | 'created_at'>;
 
+export interface ChatMessageRow {
+  readonly id: number;
+  readonly room_id: string;
+  /** player_id = auth.uid() by RLS contract — enforced on INSERT. */
+  readonly player_id: string;
+  /** Denormalized from players.nickname at insert time. */
+  readonly nickname: string;
+  readonly body: string;
+  readonly created_at: string;
+}
+
+type ChatMessageInsert = Omit<Mutable<ChatMessageRow>, 'id' | 'created_at'>;
+
 /**
  * Database type passed to `createClient` so its `from()` calls return
  * the right row shape. This is the canonical place to wire new tables
@@ -102,6 +115,11 @@ export interface Database {
         Row: GameEventRow;
         Insert: GameEventInsert;
         Update: Partial<Mutable<GameEventRow>>;
+      };
+      chat_messages: {
+        Row: ChatMessageRow;
+        Insert: ChatMessageInsert;
+        Update: Partial<Mutable<ChatMessageRow>>;
       };
     };
     // Postgres functions exposed via PostgREST `/rpc/*`. The typed

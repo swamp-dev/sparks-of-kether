@@ -33,8 +33,8 @@ function trackUrl(track: AmbientTrack): string {
  *
  * Call once per screen with the appropriate track key. PlayScreen owns
  * the music for both the board view ('play') and the encounter overlay
- * (the sefirah key) — switching the `track` argument crossfades by
- * pausing the old element and starting a new one. EncounterScreen does
+ * (the sefirah key) — a track change pauses the old element and starts
+ * a new one (hard cutover, not a crossfade). EncounterScreen does
  * not call this hook; PlayScreen selects the track based on phase.
  *
  * Behaviours:

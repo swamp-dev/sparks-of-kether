@@ -270,6 +270,25 @@ describe('Hand — interaction', () => {
     expect(selectedZ).toBeGreaterThan(middleZ);
     expect(selectedZ).toBeGreaterThan(lastZ);
   });
+
+  it('floating mode: no trailing space in outerClassName when className prop is absent (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls.endsWith(' ')).toBe(false);
+  });
+
+  it('floating mode: single space before className when className prop is present (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} className="my-extra" />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/ my-extra$/);
+    expect(cls).not.toMatch(/  my-extra/);
+  });
+
+  it('inline mode: outerClassName is empty string when className prop is absent (#127)', () => {
+    const { container } = render(<Hand hand={[2]} visible={true} layout="inline" />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toBe('');
+  });
 });
 
 describe('isHandVisible', () => {
@@ -349,32 +368,32 @@ describe('Hand — empty state (#208)', () => {
 });
 
 describe('Hand — full hand at HAND_CAP (#290)', () => {
-  // #290: when a player draws beyond STARTING_HAND_SIZE (4) — e.g.
-  // via Meditate while already holding 4 cards — the new cards must
+  // #290: when a player draws beyond STARTING_HAND_SIZE (3) — e.g.
+  // via Meditate while already holding 3 cards — the new cards must
   // render. The bug report: "all cards in hand must be visible
-  // (currently caps at 4)". HAND_CAP is 6, so the fan must render
-  // every slot up to 6.
-  it('renders all 6 cards when the hand is at HAND_CAP=6', () => {
-    const sixCards = [0, 2, 5, 13, 18, 21] as const;
-    const { container } = render(<Hand hand={sixCards} visible={true} />);
+  // (currently caps at 3)". HAND_CAP is 5, so the fan must render
+  // every slot up to 5.
+  it('renders all 5 cards when the hand is at HAND_CAP=5', () => {
+    const fiveCards = [0, 2, 5, 13, 18] as const;
+    const { container } = render(<Hand hand={fiveCards} visible={true} />);
     const slots = container.querySelectorAll('[data-card-slot]');
-    expect(slots.length).toBe(6);
+    expect(slots.length).toBe(5);
     // Every arcanum number is exposed on its slot — no quiet drop
-    // of the 5th and 6th cards.
+    // of the 4th and 5th cards.
     const arcana = Array.from(slots).map((s) => s.getAttribute('data-arcanum'));
-    expect(arcana).toEqual(['0', '2', '5', '13', '18', '21']);
+    expect(arcana).toEqual(['0', '2', '5', '13', '18']);
   });
 
-  it('renders all 5 cards at hand size 5 (between starting size and cap)', () => {
+  it('renders all 5 cards at HAND_CAP', () => {
     const { container } = render(<Hand hand={[0, 2, 5, 13, 21]} visible={true} />);
     const slots = container.querySelectorAll('[data-card-slot]');
     expect(slots.length).toBe(5);
   });
 
-  it('renders all 6 cards face-down when hidden at HAND_CAP', () => {
-    const { container } = render(<Hand hand={[0, 2, 5, 13, 18, 21]} visible={false} />);
+  it('renders all 5 cards face-down when hidden at HAND_CAP', () => {
+    const { container } = render(<Hand hand={[0, 2, 5, 13, 18]} visible={false} />);
     const backs = container.querySelectorAll('[data-card="back"]');
-    expect(backs.length).toBe(6);
+    expect(backs.length).toBe(5);
   });
 
   it('overlap is sized to card width, not parent width (no % marginLeft)', () => {
@@ -520,6 +539,16 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(fan.style.transform).toBe('translateY(0)');
   });
 
+  it('peek-shelf: reveal transition uses HAND_REVEAL_MS=280ms easing', () => {
+    // Default suite runs without reduced-motion (no matchMedia stub), so
+    // the transition string is set — not suppressed to 'none'.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    expect(fan.style.transition).not.toBe('none');
+    expect(fan.style.transition).toContain('280ms');
+  });
+
   it('peek-shelf: mouseleave does NOT immediately hide — grace-period timer not yet fired', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
@@ -573,6 +602,23 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     });
     // After grace period — fan slides back down.
     expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+    vi.useRealTimers();
+  });
+
+  it('peek-shelf: re-entry during grace period cancels the hide timer', () => {
+    // mouseEnter → mouseLeave → immediate mouseEnter must keep the fan
+    // expanded even after 120 ms — the second mouseEnter clears the timer.
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    fireEvent.mouseEnter(fan);
+    fireEvent.mouseLeave(fan);
+    fireEvent.mouseEnter(fan); // re-entry clears the pending hide timer
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+    // Timer was cancelled — fan must still be expanded.
+    expect(fan.style.transform).toBe('translateY(0)');
     vi.useRealTimers();
   });
 
@@ -725,6 +771,39 @@ describe('Hand — Mac-dock magnification (#463)', () => {
       expect(cls).toMatch(/focus-visible:ring-illumination/);
     }
   });
+
+  it('floating mode: focus expands fan; blur starts hide timer (#54)', () => {
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5]} visible={true} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+    // Fan starts collapsed.
+    expect(fan.style.transform).toMatch(/translateY\(calc/);
+    fireEvent.focus(card);
+    // Focus expands the fan.
+    expect(fan.style.transform).toBe('translateY(0)');
+    fireEvent.blur(card);
+    // Timer scheduled — fan still open during grace period.
+    expect(fan.style.transform).toBe('translateY(0)');
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+    // After grace period the fan collapses.
+    expect(fan.style.transform).toMatch(/translateY\(calc/);
+    vi.useRealTimers();
+  });
+
+  it('inline mode: focusout does not schedule a hide timer (#54)', () => {
+    vi.useFakeTimers();
+    const { container } = render(<Hand hand={[2, 5]} visible={true} layout="inline" />);
+    const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
+    fireEvent.focus(card);
+    const countBeforeBlur = vi.getTimerCount();
+    fireEvent.blur(card);
+    // scheduleHide must not fire in inline mode — no new timer should be pending.
+    expect(vi.getTimerCount()).toBe(countBeforeBlur);
+    vi.useRealTimers();
+  });
 });
 
 describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
@@ -804,6 +883,13 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     // fully visible in inline layout (no fixed overlay, no slide animation).
     const fan = hand?.querySelector('[data-hand-fan]') as HTMLElement;
     expect(fan.style.transform ?? '').toBe('');
+  });
+
+  it('floating mode: className interior spaces are preserved — .trim() is not applied (#168)', () => {
+    const extra = '  padded  ';
+    const { container } = render(<Hand hand={[2]} visible={true} className={extra} />);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toContain(extra);
   });
 
   it('still renders the focus-visible ring class under reduced-motion', () => {

@@ -122,18 +122,18 @@ line must contain exactly one of `ship`, `fix`, `rework`, or `block`
 
 Verdict semantics:
 - **ship** — no Critical, no Significant marked `[high]`. Improvements
-  may exist.
+  may exist. (`[medium]` and `[low]` Significant findings land here —
+  they do not block a ship verdict.)
 - **fix** — has blockers (Critical, or `[high]` Significant). Address
   before merge.
 - **rework** — design or approach is wrong; fixes won't be small.
 - **block** — must not merge as-is (security, data-loss, gate-bypass).
 
-The verdict line is parsed mechanically by
-`scripts/checklist-stamp.mjs` (word-boundary regex; precedence
-block > rework > fix > ship). Keep the line clean — one verb, then a
-short reason. Don't write "no blockers" inside a fix/block verdict
-line; the parser respects word boundaries but ambiguous prose still
-costs you.
+The verdict line is read by `/finish-ticket` step 8.5 (word-boundary
+match; precedence block > rework > fix > ship). Keep the line clean —
+one verb, then a short reason. Don't write "no blockers" inside a
+fix/block verdict line; word-boundary matching still trips on ambiguous
+prose.
 
 # Handling incomplete context
 

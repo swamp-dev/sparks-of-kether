@@ -127,4 +127,28 @@ describe('<AvatarStack>', () => {
     );
     expect(container.firstChild).toBeNull();
   });
+
+  it('forwards className to the root element without double-spaces or leading/trailing spaces', () => {
+    render(
+      <AvatarStack
+        peers={[peer({ playerId: 'p1' })]}
+        viewerPlayerId="p1"
+        activePlayerId="p1"
+        className="my-test-class"
+      />,
+    );
+    const cls = screen.getByTestId('avatar-stack').getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+    expect(cls).toContain('my-test-class');
+  });
+
+  it('does not produce a trailing space when no className is provided', () => {
+    render(
+      <AvatarStack peers={[peer({ playerId: 'p1' })]} viewerPlayerId="p1" activePlayerId="p1" />,
+    );
+    const cls = screen.getByTestId('avatar-stack').getAttribute('class') ?? '';
+    expect(cls).not.toMatch(/\s{2}/);
+    expect(cls).not.toMatch(/^\s|\s$/);
+  });
 });

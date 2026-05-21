@@ -828,7 +828,7 @@ describe('applyClientAction — meditate', () => {
     expect(result.error.cause).toBe('already-meditated');
   });
 
-  it('succeeds at HAND_CAP=6 — draws over the cap; cap check defers to end-turn (#503)', () => {
+  it('succeeds at HAND_CAP=5 — draws over the cap; cap check defers to end-turn (#503)', () => {
     // #291: meditate ALWAYS draws MEDITATE_DRAW (even past HAND_CAP).
     // Pre-#291 the dispatcher rejected with `hand-full`, softlocking
     // players who hit the cap with no usable paths.
@@ -837,12 +837,12 @@ describe('applyClientAction — meditate', () => {
     // cap check fires when the player tries to End the turn instead.
     // This lets a Meditate-then-Move flow that drops back under cap
     // proceed without any prompt.
-    const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
+    const player = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5] });
     const state = makeState({}, { players: [player], deck: [10, 11], discardPile: [] });
     const result = applyClientAction(state, { kind: 'meditate', playerId: 'p1' }, seededRng(1));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.newState.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 6, 10, 11]);
+    expect(result.newState.players[0]?.hand).toEqual([1, 2, 3, 4, 5, 10, 11]);
     expect(result.newState.pendingDiscard).toBeUndefined();
     // #503: at-cap meditate must also stay in `'move'` and set the
     // once-per-turn flag (mirrors the happy-path test above). Without
@@ -856,7 +856,7 @@ describe('applyClientAction — meditate', () => {
     // #503: the cap check belongs on `end-turn`, not on `meditate`.
     // Mirrors the engine reducer arm; server- and client-applied state
     // must agree on when the discard prompt fires.
-    const p1 = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5, 6] });
+    const p1 = makePlayer({ id: 'p1', hand: [1, 2, 3, 4, 5] });
     const p2 = makePlayer({ id: 'p2', hand: [] });
     const state = makeState(
       {},

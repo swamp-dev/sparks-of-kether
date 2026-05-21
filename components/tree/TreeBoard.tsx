@@ -685,7 +685,7 @@ export function TreeBoard({
                     aria-label={`Open ${sefirah.englishName} info`}
                     aria-describedby={tooltipId}
                     onClick={() => onSefirahClick(sefirah.key)}
-                    className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                    className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
                   />
                 ) : (
                   <a
@@ -693,7 +693,7 @@ export function TreeBoard({
                     href={`/sefirah/${sefirah.key}`}
                     aria-label={`Open ${sefirah.englishName} in the Codex`}
                     aria-describedby={tooltipId}
-                    className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                    className="peer pointer-events-auto absolute left-1/2 top-1/2 block h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
                   />
                 )}
                 {/*

@@ -101,7 +101,7 @@ export function SefirahInfoPopover({
           data-sefirah-popover-close
           aria-label="Close"
           onClick={onClose}
-          className="absolute right-2 top-2 z-10 rounded p-1 text-veil/70 hover:text-veil focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          className="absolute right-2 top-2 z-10 rounded p-1 text-veil/70 hover:text-veil focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -132,7 +132,7 @@ export function SefirahInfoPopover({
           href={`/sefirah/${sefirahKey}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 self-start text-xs text-illumination underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          className="mt-1 self-start text-xs text-illumination underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           Read more in Codex →
         </a>
