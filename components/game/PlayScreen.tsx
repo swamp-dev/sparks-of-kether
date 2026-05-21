@@ -85,6 +85,16 @@ interface PlayScreenProps {
    */
   readonly currentPlayerId?: string;
   /**
+   * Latest game snapshot pushed from the server via Supabase Realtime.
+   * When this prop changes, the local `useTurn` snapshot is replaced with
+   * the server's canonical state so non-active players see turn advances
+   * in real time. Undefined in hot-seat mode (no server sync needed).
+   *
+   * Uses the `replace-state` event in the turn machine, which was built
+   * exactly for this out-of-band server-push scenario.
+   */
+  readonly remoteState?: GameState;
+  /**
    * Called when the player confirms leaving the game. When provided,
    * a "Leave Game" affordance with inline confirmation appears in the
    * Settings popover. Absent in hot-seat mode (no session to leave).
@@ -109,6 +119,7 @@ export function PlayScreen({
   className,
   roomCode,
   currentPlayerId,
+  remoteState,
   onQuit,
 }: PlayScreenProps): JSX.Element {
   const turn = useTurn({ initialState, rng });
@@ -236,6 +247,26 @@ export function PlayScreen({
   useLayoutEffect(() => {
     endTurnRef.current = turn.endTurn;
   });
+
+  // Sync Realtime-pushed server state into the local turn machine.
+  // `remoteState` changes whenever `useRoomState` receives a Postgres
+  // UPDATE from Supabase — i.e. after any player's action is committed.
+  // Non-active-player clients have no local mutations so this is always
+  // safe to apply. The active player's local optimistic snapshot and the
+  // server's canonical result are produced by the same deterministic RNG
+  // seed, so overwriting is also safe for them.
+  //
+  // Stable-ref pattern mirrors endTurnRef above: `turn.setState` changes
+  // reference on every snapshot update; depending on it in the effect
+  // deps would cause spurious re-fires on every unrelated state change.
+  const setRemoteStateRef = useRef(turn.setState);
+  useLayoutEffect(() => {
+    setRemoteStateRef.current = turn.setState;
+  });
+  useEffect(() => {
+    if (remoteState === undefined) return;
+    setRemoteStateRef.current(remoteState);
+  }, [remoteState]);
   const pendingDiscardCount = turn.state.pendingDiscard?.count ?? 0;
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;

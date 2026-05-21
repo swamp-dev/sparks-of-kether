@@ -171,6 +171,7 @@ export default function RoomPlayPage({ params }: PlayPageProps): JSX.Element {
       <ColorBloom color="#ffd700" position="bottom" intensity={0.12} />
       <PlayScreen
         initialState={gameState}
+        remoteState={gameState}
         rng={rng}
         roomCode={code}
         onQuit={handleLeave}
