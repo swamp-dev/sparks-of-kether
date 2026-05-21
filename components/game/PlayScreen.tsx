@@ -964,7 +964,6 @@ function MeditateConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }): JSX.Element {
-  const dialogRef = useRef<HTMLDivElement>(null);
   const onCancelRef = useRef(onCancel);
   useEffect(() => {
     onCancelRef.current = onCancel;
@@ -984,7 +983,6 @@ function MeditateConfirmDialog({
       className="fixed inset-0 z-40 flex items-center justify-center bg-ground/60 backdrop-blur-sm"
     >
       <div
-        ref={dialogRef}
         data-meditate-confirm
         role="dialog"
         aria-modal="true"
