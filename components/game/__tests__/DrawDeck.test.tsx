@@ -61,16 +61,30 @@ describe('DrawDeck', () => {
     expect(document.querySelector('[data-deck-count]')?.textContent).toBe('0');
   });
 
-  it('has an accessible label describing the deck state', () => {
+  it('has an accessible label describing the deck state, including singular 1-card branch', () => {
     const { rerender } = render(<DrawDeck deck={[0, 1, 2]} />);
     const root = document.querySelector<HTMLElement>('[data-draw-deck]');
+    expect(root?.getAttribute('role')).toBe('group');
     const label = root?.getAttribute('aria-label') ?? '';
     expect(label).toMatch(/draw deck/i);
     expect(label).toMatch(/3/);
+
+    rerender(<DrawDeck deck={[5]} />);
+    const singleLabel = root?.getAttribute('aria-label') ?? '';
+    expect(singleLabel).toMatch(/1 card remaining/i);
+    expect(singleLabel).not.toMatch(/cards/i);
 
     rerender(<DrawDeck deck={[]} />);
     const emptyLabel = root?.getAttribute('aria-label') ?? '';
     expect(emptyLabel).toMatch(/draw deck/i);
     expect(emptyLabel).toMatch(/empty/i);
+  });
+
+  it('count <p> has aria-live so count changes are announced to screen readers', () => {
+    render(<DrawDeck deck={[0, 1, 2]} />);
+    const countP = document.querySelector('[data-draw-deck] p');
+    expect(countP?.getAttribute('aria-live')).toBe('polite');
+    expect(countP?.getAttribute('aria-atomic')).toBe('true');
+    expect(countP?.getAttribute('aria-hidden')).toBeNull();
   });
 });

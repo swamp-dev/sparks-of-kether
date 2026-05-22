@@ -29,20 +29,23 @@ export function DrawDeck({ deck, className }: DrawDeckProps): JSX.Element {
     <div
       data-draw-deck
       data-deck-empty={count === 0 ? 'true' : 'false'}
+      role="group"
       aria-label={ariaLabel}
       className={`flex flex-col items-center gap-1${className ? ` ${className}` : ''}`}
     >
-      <div className="relative block w-20 rounded border border-veil/30 bg-ground/40 p-1">
+      <div
+        aria-hidden="true"
+        className="relative block w-20 rounded border border-veil/30 bg-ground/40 p-1"
+      >
         {count === 0 ? (
           <div
             data-deck-empty-placeholder
-            aria-hidden="true"
             className="flex aspect-[5/8] w-full flex-col items-center justify-center rounded border border-dashed border-veil/20 px-1 text-center text-[10px] uppercase tracking-widest text-veil/40"
           >
             Empty
           </div>
         ) : (
-          <div data-deck-top aria-hidden="true" className="relative">
+          <div data-deck-top className="relative">
             {count > 1 ? (
               <div
                 data-deck-stack-shadow
@@ -53,7 +56,12 @@ export function DrawDeck({ deck, className }: DrawDeckProps): JSX.Element {
           </div>
         )}
       </div>
-      <p className="text-[10px] uppercase tracking-widest text-veil/60" aria-hidden="true">
+      {/* aria-live announces count changes to screen readers as the deck shrinks. */}
+      <p
+        aria-live="polite"
+        aria-atomic="true"
+        className="text-[10px] uppercase tracking-widest text-veil/60"
+      >
         <span data-deck-count>{count}</span> {count === 1 ? 'card' : 'cards'}
       </p>
     </div>
