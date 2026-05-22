@@ -154,6 +154,22 @@ describe('PrimaryCTA', () => {
     });
   });
 
+  describe('#9 — portal glow + surge', () => {
+    it('trigger button carries the stronger focus glow class', () => {
+      render(<PrimaryCTA />);
+      const trigger = screen.getByRole('button', { name: /begin the ascent/i });
+      expect(trigger.getAttribute('class') ?? '').toMatch(
+        /focus-visible:shadow-glow-tiferet-focus/,
+      );
+    });
+
+    it('trigger carries data-home-cta="begin" for CSS surge targeting', () => {
+      render(<PrimaryCTA />);
+      const trigger = screen.getByRole('button', { name: /begin the ascent/i });
+      expect(trigger.getAttribute('data-home-cta')).toBe('begin');
+    });
+  });
+
   it('focus is returned to the trigger after the panel closes', async () => {
     // The close-side focus-return runs in a useEffect (not synchronously
     // alongside setIsOpen(false)), because under React 18 automatic
