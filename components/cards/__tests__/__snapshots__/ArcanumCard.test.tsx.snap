@@ -13,7 +13,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 0 (The Fool) 1`
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1g:"
+      id="arcanum-bg-:r60:"
       x1="0"
       x2="0"
       y1="0"
@@ -28,9 +28,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 0 (The Fool) 1`
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r61:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r62:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r63:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#d4af37"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#d4af37"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1g:)"
+    fill="url(#arcanum-bg-:r60:)"
     height="318"
     rx="10"
     ry="10"
@@ -44,6 +101,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 0 (The Fool) 1`
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r63:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -63,67 +127,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 0 (The Fool) 1`
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100,34.01923788646684 70,85.98076211353316 130,85.98076211353316"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <circle
-      cx="100"
-      cy="18"
-      fill="none"
-      r="4"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r62:)"
+    filter="url(#arcanum-filt-:r61:)"
+    height="313"
+    href="/rider-waite-cards/TheFool.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r62:)"
+    fill="#d4af37"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#d4af37"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      00
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Fool
     </text>
@@ -136,7 +183,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 0 (The Fool) 1`
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Air
     </text>
@@ -165,7 +212,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 1 (The Magician
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1h:"
+      id="arcanum-bg-:r64:"
       x1="0"
       x2="0"
       y1="0"
@@ -180,9 +227,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 1 (The Magician
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r65:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r66:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r67:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#e07b00"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#e07b00"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1h:)"
+    fill="url(#arcanum-bg-:r64:)"
     height="318"
     rx="10"
     ry="10"
@@ -196,6 +300,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 1 (The Magician
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r67:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -215,97 +326,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 1 (The Magician
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <g>
-      <circle
-        cx="86"
-        cy="50"
-        fill="none"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <circle
-        cx="114"
-        cy="50"
-        fill="none"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-    </g>
-    <g>
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="65"
-        x2="135"
-        y1="50"
-        y2="50"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="15"
-        y2="85"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r66:)"
+    filter="url(#arcanum-filt-:r65:)"
+    height="313"
+    href="/rider-waite-cards/TheMagician.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r66:)"
+    fill="#e07b00"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#e07b00"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      01
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Magician
     </text>
@@ -318,7 +382,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 1 (The Magician
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Mercury
     </text>
@@ -347,7 +411,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 2 (The High Pri
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1i:"
+      id="arcanum-bg-:r68:"
       x1="0"
       x2="0"
       y1="0"
@@ -362,9 +426,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 2 (The High Pri
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r69:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r6a:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r6b:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#9b88c4"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#9b88c4"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1i:)"
+    fill="url(#arcanum-bg-:r68:)"
     height="318"
     rx="10"
     ry="10"
@@ -378,6 +499,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 2 (The High Pri
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r6b:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -397,84 +525,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 2 (The High Pri
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <path
-      d="
-    M 105.4,14
-    A 18,18 0 1 0 105.4,50
-    A 15.299999999999999,15.299999999999999 0 1 1 105.4,14
-    Z
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <g>
-      <circle
-        cx="90"
-        cy="70"
-        fill="none"
-        r="20"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <circle
-        cx="110"
-        cy="70"
-        fill="none"
-        r="20"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r6a:)"
+    filter="url(#arcanum-filt-:r69:)"
+    height="313"
+    href="/rider-waite-cards/TheHighPriestess.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r6a:)"
+    fill="#9b88c4"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#9b88c4"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      02
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The High Priestess
     </text>
@@ -487,7 +581,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 2 (The High Pri
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Moon
     </text>
@@ -516,7 +610,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 3 (The Empress)
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1j:"
+      id="arcanum-bg-:r6c:"
       x1="0"
       x2="0"
       y1="0"
@@ -531,9 +625,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 3 (The Empress)
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r6d:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r6e:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r6f:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#3a8f4a"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#3a8f4a"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1j:)"
+    fill="url(#arcanum-bg-:r6c:)"
     height="318"
     rx="10"
     ry="10"
@@ -547,6 +698,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 3 (The Empress)
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r6f:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -566,67 +724,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 3 (The Empress)
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <circle
-      cx="100"
-      cy="30"
-      fill="none"
-      r="20"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <polygon
-      fill="none"
-      points="100,56.411542731880104 82,87.5884572681199 118,87.5884572681199"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r6e:)"
+    filter="url(#arcanum-filt-:r6d:)"
+    height="313"
+    href="/rider-waite-cards/TheEmpress.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r6e:)"
+    fill="#3a8f4a"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#3a8f4a"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      03
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Empress
     </text>
@@ -639,7 +780,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 3 (The Empress)
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Venus
     </text>
@@ -668,7 +809,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 4 (The Emperor)
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1k:"
+      id="arcanum-bg-:r6g:"
       x1="0"
       x2="0"
       y1="0"
@@ -683,9 +824,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 4 (The Emperor)
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r6h:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r6i:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r6j:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#c0392b"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#c0392b"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1k:)"
+    fill="url(#arcanum-bg-:r6g:)"
     height="318"
     rx="10"
     ry="10"
@@ -699,6 +897,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 4 (The Emperor)
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r6j:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -718,77 +923,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 4 (The Emperor)
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <rect
-      fill="none"
-      height="50"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-      width="50"
-      x="75"
-      y="35"
-    />
-    <path
-      d="
-    M 82,31
-    L 82,22
-    L 91,26.5
-    L 100,13
-    L 109,26.5
-    L 118,22
-    L 118,31
-    Z
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r6i:)"
+    filter="url(#arcanum-filt-:r6h:)"
+    height="313"
+    href="/rider-waite-cards/TheEmperor.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r6i:)"
+    fill="#c0392b"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#c0392b"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      04
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Emperor
     </text>
@@ -801,7 +979,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 4 (The Emperor)
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Aries
     </text>
@@ -830,7 +1008,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 5 (The Hieropha
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1l:"
+      id="arcanum-bg-:r6k:"
       x1="0"
       x2="0"
       y1="0"
@@ -845,9 +1023,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 5 (The Hieropha
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r6l:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r6m:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r6n:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#3a8f4a"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#3a8f4a"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1l:)"
+    fill="url(#arcanum-bg-:r6k:)"
     height="318"
     rx="10"
     ry="10"
@@ -861,6 +1096,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 5 (The Hieropha
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r6n:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -880,82 +1122,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 5 (The Hieropha
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100,30.75128869403572 72,79.24871130596428 128,79.24871130596428"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <g>
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="0.7"
-        stroke-width="1.6"
-        x1="82"
-        x2="118"
-        y1="35"
-        y2="35"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="0.7"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="17"
-        y2="53"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r6m:)"
+    filter="url(#arcanum-filt-:r6l:)"
+    height="313"
+    href="/rider-waite-cards/TheHeirophant.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r6m:)"
+    fill="#3a8f4a"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#3a8f4a"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      05
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Hierophant
     </text>
@@ -968,7 +1178,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 5 (The Hieropha
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Taurus
     </text>
@@ -997,7 +1207,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 6 (The Lovers) 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1m:"
+      id="arcanum-bg-:r6o:"
       x1="0"
       x2="0"
       y1="0"
@@ -1012,9 +1222,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 6 (The Lovers) 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r6p:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r6q:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r6r:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#d4af37"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#d4af37"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1m:)"
+    fill="url(#arcanum-bg-:r6o:)"
     height="318"
     rx="10"
     ry="10"
@@ -1028,6 +1295,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 6 (The Lovers) 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r6r:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -1047,71 +1321,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 6 (The Lovers) 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <g>
-      <circle
-        cx="86"
-        cy="50"
-        fill="none"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <circle
-        cx="114"
-        cy="50"
-        fill="none"
-        r="28"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r6q:)"
+    filter="url(#arcanum-filt-:r6p:)"
+    height="313"
+    href="/rider-waite-cards/TheLovers.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r6q:)"
+    fill="#d4af37"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#d4af37"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      06
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Lovers
     </text>
@@ -1124,7 +1377,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 6 (The Lovers) 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Gemini
     </text>
@@ -1153,7 +1406,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 7 (The Chariot)
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1n:"
+      id="arcanum-bg-:r6s:"
       x1="0"
       x2="0"
       y1="0"
@@ -1168,9 +1421,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 7 (The Chariot)
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r6t:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r6u:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r6v:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#7fa6c2"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#7fa6c2"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1n:)"
+    fill="url(#arcanum-bg-:r6s:)"
     height="318"
     rx="10"
     ry="10"
@@ -1184,6 +1494,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 7 (The Chariot)
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r6v:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -1203,72 +1520,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 7 (The Chariot)
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <path
-      d="
-    M 104.8,12
-    A 16,16 0 1 0 104.8,44
-    A 13.6,13.6 0 1 1 104.8,12
-    Z
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <rect
-      fill="none"
-      height="36"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-      width="36"
-      x="82"
-      y="50"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r6u:)"
+    filter="url(#arcanum-filt-:r6t:)"
+    height="313"
+    href="/rider-waite-cards/TheChariot.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r6u:)"
+    fill="#7fa6c2"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#7fa6c2"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      07
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Chariot
     </text>
@@ -1281,7 +1576,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 7 (The Chariot)
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Cancer
     </text>
@@ -1310,7 +1605,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 8 (Strength) 1`
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1o:"
+      id="arcanum-bg-:r70:"
       x1="0"
       x2="0"
       y1="0"
@@ -1325,9 +1620,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 8 (Strength) 1`
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r71:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r72:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r73:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#e07b00"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#e07b00"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1o:)"
+    fill="url(#arcanum-bg-:r70:)"
     height="318"
     rx="10"
     ry="10"
@@ -1341,6 +1693,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 8 (Strength) 1`
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r73:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -1360,67 +1719,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 8 (Strength) 1`
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <g>
-      <polygon
-        fill="none"
-        points="100,25.75128869403572 72,74.24871130596428 128,74.24871130596428"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <polygon
-        fill="none"
-        points="100,74.24871130596428 72,25.75128869403572 128,25.75128869403572"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r72:)"
+    filter="url(#arcanum-filt-:r71:)"
+    height="313"
+    href="/rider-waite-cards/Strength.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r72:)"
+    fill="#e07b00"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#e07b00"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      08
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       Strength
     </text>
@@ -1433,7 +1775,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 8 (Strength) 1`
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Leo
     </text>
@@ -1462,7 +1804,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 9 (The Hermit) 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1p:"
+      id="arcanum-bg-:r74:"
       x1="0"
       x2="0"
       y1="0"
@@ -1477,9 +1819,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 9 (The Hermit) 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r75:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r76:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r77:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#7a8c5c"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#7a8c5c"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1p:)"
+    fill="url(#arcanum-bg-:r74:)"
     height="318"
     rx="10"
     ry="10"
@@ -1493,6 +1892,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 9 (The Hermit) 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r77:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -1512,56 +1918,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 9 (The Hermit) 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100.00,22.00 105.60,40.30 124.25,36.00 111.20,50.00 124.25,64.00 105.60,59.70 100.00,78.00 94.40,59.70 75.75,64.00 88.80,50.00 75.75,36.00 94.40,40.30"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r76:)"
+    filter="url(#arcanum-filt-:r75:)"
+    height="313"
+    href="/rider-waite-cards/TheHermit.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r76:)"
+    fill="#7a8c5c"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#7a8c5c"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      09
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Hermit
     </text>
@@ -1574,7 +1974,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 9 (The Hermit) 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Virgo
     </text>
@@ -1603,7 +2003,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 10 (Wheel of Fo
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1q:"
+      id="arcanum-bg-:r78:"
       x1="0"
       x2="0"
       y1="0"
@@ -1618,9 +2018,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 10 (Wheel of Fo
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r79:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r7a:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r7b:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#4169e1"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#4169e1"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1q:)"
+    fill="url(#arcanum-bg-:r78:)"
     height="318"
     rx="10"
     ry="10"
@@ -1634,6 +2091,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 10 (Wheel of Fo
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r7b:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -1653,108 +2117,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 10 (Wheel of Fo
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <g>
-      <circle
-        cx="100"
-        cy="50"
-        fill="none"
-        r="30"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="70"
-        x2="130"
-        y1="50"
-        y2="50"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="20"
-        y2="80"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="78.79"
-        x2="121.21"
-        y1="28.790000000000003"
-        y2="71.21"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="78.79"
-        x2="121.21"
-        y1="71.21"
-        y2="28.790000000000003"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r7a:)"
+    filter="url(#arcanum-filt-:r79:)"
+    height="313"
+    href="/rider-waite-cards/WheelOfFortune.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r7a:)"
+    fill="#4169e1"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#4169e1"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      10
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       Wheel of Fortune
     </text>
@@ -1767,7 +2173,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 10 (Wheel of Fo
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Jupiter
     </text>
@@ -1796,7 +2202,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 11 (Justice) 1`
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1r:"
+      id="arcanum-bg-:r7c:"
       x1="0"
       x2="0"
       y1="0"
@@ -1811,9 +2217,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 11 (Justice) 1`
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r7d:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r7e:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r7f:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#b8a3c2"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#b8a3c2"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1r:)"
+    fill="url(#arcanum-bg-:r7c:)"
     height="318"
     rx="10"
     ry="10"
@@ -1827,6 +2290,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 11 (Justice) 1`
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r7f:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -1846,115 +2316,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 11 (Justice) 1`
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <g>
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="18"
-        y2="36"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="79"
-        x2="121"
-        y1="36"
-        y2="36"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="79"
-        x2="79"
-        y1="36"
-        y2="44.4"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="121"
-        x2="121"
-        y1="36"
-        y2="44.4"
-      />
-      <path
-        d="M 69.4,44.4 A 9.6,6.72 0 0 1 88.6,44.4"
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <path
-        d="M 111.4,44.4 A 9.6,6.72 0 0 1 130.6,44.4"
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r7e:)"
+    filter="url(#arcanum-filt-:r7d:)"
+    height="313"
+    href="/rider-waite-cards/Justice.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r7e:)"
+    fill="#b8a3c2"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#b8a3c2"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      11
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       Justice
     </text>
@@ -1967,7 +2372,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 11 (Justice) 1`
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Libra
     </text>
@@ -1996,7 +2401,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 12 (The Hanged 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1s:"
+      id="arcanum-bg-:r7g:"
       x1="0"
       x2="0"
       y1="0"
@@ -2011,9 +2416,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 12 (The Hanged 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r7h:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r7i:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r7j:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#2980b9"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#2980b9"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1s:)"
+    fill="url(#arcanum-bg-:r7g:)"
     height="318"
     rx="10"
     ry="10"
@@ -2027,6 +2489,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 12 (The Hanged 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r7j:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2046,82 +2515,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 12 (The Hanged 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100,74.24871130596428 72,25.75128869403572 128,25.75128869403572"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <g>
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="0.5"
-        stroke-width="1.6"
-        x1="65"
-        x2="135"
-        y1="50"
-        y2="50"
-      />
-      <line
-        fill="none"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="0.5"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="15"
-        y2="85"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r7i:)"
+    filter="url(#arcanum-filt-:r7h:)"
+    height="313"
+    href="/rider-waite-cards/TheHangedMan.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r7i:)"
+    fill="#2980b9"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#2980b9"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      12
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Hanged Man
     </text>
@@ -2134,7 +2571,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 12 (The Hanged 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Water
     </text>
@@ -2163,7 +2600,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 13 (Death) 1`] 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1t:"
+      id="arcanum-bg-:r7k:"
       x1="0"
       x2="0"
       y1="0"
@@ -2178,9 +2615,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 13 (Death) 1`] 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r7l:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r7m:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r7n:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#5e2a4a"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#5e2a4a"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1t:)"
+    fill="url(#arcanum-bg-:r7k:)"
     height="318"
     rx="10"
     ry="10"
@@ -2194,6 +2688,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 13 (Death) 1`] 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r7n:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2213,55 +2714,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 13 (Death) 1`] 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <path
-      d="M 100.00,50.00 L 100.49,50.12 L 100.88,50.47 L 101.11,51.01 L 101.11,51.66 L 100.84,52.35 L 100.29,52.99 L 99.49,53.46 L 98.47,53.70 L 97.32,53.61 L 96.13,53.17 L 95.03,52.35 L 94.12,51.17 L 93.51,49.68 L 93.30,47.97 L 93.57,46.14 L 94.34,44.34 L 95.63,42.71 L 97.39,41.39 L 99.53,40.51 L 101.95,40.19 L 104.49,40.51 L 106.98,41.50 L 109.24,43.15 L 111.09,45.41 L 112.36,48.17 L 112.94,51.27 L 112.71,54.55 L 111.64,57.78 L 109.74,60.74 L 107.07,63.23 L 103.77,65.04 L 100.00,66.00 L 95.99,66.01 L 91.99,64.99 L 88.25,62.97 L 85.03,60.00 L 82.58,56.23 L 81.09,51.86 L 80.71,47.14 L 81.52,42.35 L 83.53,37.79 L 86.68,33.77 L 90.81,30.56 L 95.71,28.42 L 101.10,27.53 L 106.68,27.99 L 112.08,29.84 L 116.97,33.03 L 121.01,37.40 L 123.92,42.74 L 125.47,48.75 L 125.50,55.07 L 123.96,61.33 L 120.87,67.13 L 116.38,72.09 L 110.72,75.87 L 104.18,78.19 L 97.16,78.86 L 90.06,77.78 L 83.33,74.94 L 77.40,70.48 L 72.66,64.61 L 69.44,57.65 L 68.00,50.00"
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r7m:)"
+    filter="url(#arcanum-filt-:r7l:)"
+    height="313"
+    href="/rider-waite-cards/Death.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r7m:)"
+    fill="#5e2a4a"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#5e2a4a"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      13
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       Death
     </text>
@@ -2274,7 +2770,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 13 (Death) 1`] 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Scorpio
     </text>
@@ -2303,7 +2799,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 14 (Temperance)
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1u:"
+      id="arcanum-bg-:r7o:"
       x1="0"
       x2="0"
       y1="0"
@@ -2318,9 +2814,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 14 (Temperance)
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r7p:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r7q:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r7r:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#b86e2a"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#b86e2a"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1u:)"
+    fill="url(#arcanum-bg-:r7o:)"
     height="318"
     rx="10"
     ry="10"
@@ -2334,6 +2887,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 14 (Temperance)
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r7r:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2353,78 +2913,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 14 (Temperance)
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <circle
-      cx="100"
-      cy="50"
-      fill="none"
-      r="35"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="0.5"
-      stroke-width="1.6"
-    />
-    <g>
-      <polygon
-        fill="none"
-        points="100,30.94744111674235 78,69.05255888325765 122,69.05255888325765"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <polygon
-        fill="none"
-        points="100,69.05255888325765 78,30.94744111674235 122,30.94744111674235"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r7q:)"
+    filter="url(#arcanum-filt-:r7p:)"
+    height="313"
+    href="/rider-waite-cards/Temperance.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r7q:)"
+    fill="#b86e2a"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#b86e2a"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      14
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       Temperance
     </text>
@@ -2437,7 +2969,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 14 (Temperance)
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Sagittarius
     </text>
@@ -2466,7 +2998,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 15 (The Devil) 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r1v:"
+      id="arcanum-bg-:r7s:"
       x1="0"
       x2="0"
       y1="0"
@@ -2481,9 +3013,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 15 (The Devil) 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r7t:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r7u:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r7v:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#2a3a4a"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#2a3a4a"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r1v:)"
+    fill="url(#arcanum-bg-:r7s:)"
     height="318"
     rx="10"
     ry="10"
@@ -2497,6 +3086,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 15 (The Devil) 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r7v:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2516,56 +3112,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 15 (The Devil) 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100.00,78.00 93.42,59.06 73.37,58.65 89.35,46.54 83.54,27.35 100.00,38.80 116.46,27.35 110.65,46.54 126.63,58.65 106.58,59.06"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r7u:)"
+    filter="url(#arcanum-filt-:r7t:)"
+    height="313"
+    href="/rider-waite-cards/TheDevil.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r7u:)"
+    fill="#2a3a4a"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#2a3a4a"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      15
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Devil
     </text>
@@ -2578,7 +3168,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 15 (The Devil) 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Capricorn
     </text>
@@ -2607,7 +3197,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 16 (The Tower) 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r20:"
+      id="arcanum-bg-:r80:"
       x1="0"
       x2="0"
       y1="0"
@@ -2622,9 +3212,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 16 (The Tower) 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r81:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r82:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r83:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#a82323"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#a82323"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r20:)"
+    fill="url(#arcanum-bg-:r80:)"
     height="318"
     rx="10"
     ry="10"
@@ -2638,6 +3285,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 16 (The Tower) 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r83:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2657,73 +3311,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 16 (The Tower) 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <rect
-      fill="none"
-      height="52"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-      width="52"
-      x="74"
-      y="29"
-    />
-    <path
-      d="
-    M 90.4,18
-    L 106.4,43.6
-    L 96.8,48.4
-    L 109.6,82
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r82:)"
+    filter="url(#arcanum-filt-:r81:)"
+    height="313"
+    href="/rider-waite-cards/TheTower.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r82:)"
+    fill="#a82323"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#a82323"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      16
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Tower
     </text>
@@ -2736,7 +3367,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 16 (The Tower) 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Mars
     </text>
@@ -2765,7 +3396,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 17 (The Star) 1
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r21:"
+      id="arcanum-bg-:r84:"
       x1="0"
       x2="0"
       y1="0"
@@ -2780,9 +3411,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 17 (The Star) 1
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r85:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r86:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r87:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#5fb8c2"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#5fb8c2"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r21:)"
+    fill="url(#arcanum-bg-:r84:)"
     height="318"
     rx="10"
     ry="10"
@@ -2796,6 +3484,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 17 (The Star) 1
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r87:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2815,56 +3510,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 17 (The Star) 1
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100.00,20.00 104.59,38.91 121.21,28.79 111.09,45.41 130.00,50.00 111.09,54.59 121.21,71.21 104.59,61.09 100.00,80.00 95.41,61.09 78.79,71.21 88.91,54.59 70.00,50.00 88.91,45.41 78.79,28.79 95.41,38.91"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r86:)"
+    filter="url(#arcanum-filt-:r85:)"
+    height="313"
+    href="/rider-waite-cards/TheStar.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r86:)"
+    fill="#5fb8c2"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#5fb8c2"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      17
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Star
     </text>
@@ -2877,7 +3566,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 17 (The Star) 1
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Aquarius
     </text>
@@ -2906,7 +3595,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 18 (The Moon) 1
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r22:"
+      id="arcanum-bg-:r88:"
       x1="0"
       x2="0"
       y1="0"
@@ -2921,9 +3610,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 18 (The Moon) 1
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r89:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r8a:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r8b:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#5c7a9c"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#5c7a9c"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r22:)"
+    fill="url(#arcanum-bg-:r88:)"
     height="318"
     rx="10"
     ry="10"
@@ -2937,6 +3683,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 18 (The Moon) 1
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r8b:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -2956,72 +3709,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 18 (The Moon) 1
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <path
-      d="
-    M 106,12
-    A 20,20 0 1 0 106,52
-    A 17,17 0 1 1 106,12
-    Z
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <path
-      d="
-    M 60,72
-    Q 80,58.666666666666664 100,72
-    T 140,72
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r8a:)"
+    filter="url(#arcanum-filt-:r89:)"
+    height="313"
+    href="/rider-waite-cards/TheMoon.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r8a:)"
+    fill="#5c7a9c"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#5c7a9c"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      18
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Moon
     </text>
@@ -3034,7 +3765,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 18 (The Moon) 1
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Pisces
     </text>
@@ -3063,7 +3794,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 19 (The Sun) 1`
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r23:"
+      id="arcanum-bg-:r8c:"
       x1="0"
       x2="0"
       y1="0"
@@ -3078,9 +3809,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 19 (The Sun) 1`
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r8d:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r8e:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r8f:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#d4af37"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#d4af37"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r23:)"
+    fill="url(#arcanum-bg-:r8c:)"
     height="318"
     rx="10"
     ry="10"
@@ -3094,6 +3882,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 19 (The Sun) 1`
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r8f:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -3113,140 +3908,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 19 (The Sun) 1`
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <g>
-      <circle
-        cx="100"
-        cy="50"
-        fill="none"
-        r="21.333333333333332"
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="123.33333333333333"
-        x2="132"
-        y1="50"
-        y2="50"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="116.49915822768611"
-        x2="122.62741699796952"
-        y1="66.49915822768611"
-        y2="72.62741699796952"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="73.33333333333333"
-        y2="82"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="83.50084177231389"
-        x2="77.37258300203048"
-        y1="66.49915822768611"
-        y2="72.62741699796952"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="76.66666666666667"
-        x2="68"
-        y1="50"
-        y2="50.00000000000001"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="83.50084177231389"
-        x2="77.37258300203047"
-        y1="33.50084177231389"
-        y2="27.37258300203048"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="100"
-        x2="100"
-        y1="26.666666666666668"
-        y2="18"
-      />
-      <line
-        stroke="#f8f8ff"
-        stroke-linecap="round"
-        stroke-opacity="1"
-        stroke-width="1.6"
-        x1="116.49915822768611"
-        x2="122.62741699796952"
-        y1="33.50084177231389"
-        y2="27.372583002030474"
-      />
-    </g>
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r8e:)"
+    filter="url(#arcanum-filt-:r8d:)"
+    height="313"
+    href="/rider-waite-cards/TheSun.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r8e:)"
+    fill="#d4af37"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#d4af37"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      19
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The Sun
     </text>
@@ -3259,7 +3964,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 19 (The Sun) 1`
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Sun
     </text>
@@ -3288,7 +3993,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 20 (Judgement) 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r24:"
+      id="arcanum-bg-:r8g:"
       x1="0"
       x2="0"
       y1="0"
@@ -3303,9 +4008,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 20 (Judgement) 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r8h:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r8i:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r8j:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#c0392b"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#c0392b"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r24:)"
+    fill="url(#arcanum-bg-:r8g:)"
     height="318"
     rx="10"
     ry="10"
@@ -3319,6 +4081,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 20 (Judgement) 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r8j:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -3338,70 +4107,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 20 (Judgement) 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <polygon
-      fill="none"
-      points="100,30.75128869403572 72,79.24871130596428 128,79.24871130596428"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <path
-      d="
-    M 90.4,18
-    L 106.4,43.6
-    L 96.8,48.4
-    L 109.6,82
-  "
-      fill="none"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r8i:)"
+    filter="url(#arcanum-filt-:r8h:)"
+    height="313"
+    href="/rider-waite-cards/Judgement.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r8i:)"
+    fill="#c0392b"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#c0392b"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      20
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       Judgement
     </text>
@@ -3414,7 +4163,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 20 (Judgement) 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Fire
     </text>
@@ -3443,7 +4192,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 21 (The World) 
   </title>
   <defs>
     <lineargradient
-      id="arcanum-bg-:r25:"
+      id="arcanum-bg-:r8k:"
       x1="0"
       x2="0"
       y1="0"
@@ -3458,9 +4207,66 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 21 (The World) 
         stop-color="#0e0a1f"
       />
     </lineargradient>
+    <filter
+      color-interpolation-filters="sRGB"
+      height="1"
+      id="arcanum-filt-:r8l:"
+      width="1"
+      x="0"
+      y="0"
+    >
+      <fecolormatrix
+        result="desat"
+        type="saturate"
+        values="0.2"
+      />
+      <fecomponenttransfer
+        in="desat"
+      >
+        <fefuncr
+          slope="0.5"
+          type="linear"
+        />
+        <fefuncg
+          slope="0.48"
+          type="linear"
+        />
+        <fefuncb
+          slope="0.62"
+          type="linear"
+        />
+      </fecomponenttransfer>
+    </filter>
+    <clippath
+      id="arcanum-clip-:r8m:"
+    >
+      <rect
+        height="142"
+        width="180"
+        x="10"
+        y="88"
+      />
+    </clippath>
+    <radialgradient
+      cx="50%"
+      cy="50%"
+      id="arcanum-glow-:r8n:"
+      r="50%"
+    >
+      <stop
+        offset="0%"
+        stop-color="#5c4a78"
+        stop-opacity="0.22"
+      />
+      <stop
+        offset="100%"
+        stop-color="#5c4a78"
+        stop-opacity="0"
+      />
+    </radialgradient>
   </defs>
   <rect
-    fill="url(#arcanum-bg-:r25:)"
+    fill="url(#arcanum-bg-:r8k:)"
     height="318"
     rx="10"
     ry="10"
@@ -3474,6 +4280,13 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 21 (The World) 
   <g
     data-zone="letter"
   >
+    <ellipse
+      cx="100"
+      cy="48"
+      fill="url(#arcanum-glow-:r8n:)"
+      rx="56"
+      ry="44"
+    />
     <text
       fill="#f8f8ff"
       font-family="var(--font-hebrew), serif"
@@ -3493,70 +4306,50 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 21 (The World) 
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="107"
-    y2="107"
+    y1="88"
+    y2="88"
   />
-  <g
-    data-zone="glyphs"
-    transform="translate(0 107)"
-  >
-    <circle
-      cx="100"
-      cy="50"
-      fill="none"
-      r="35"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-    />
-    <rect
-      fill="none"
-      height="40"
-      stroke="#f8f8ff"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-opacity="1"
-      stroke-width="1.6"
-      width="40"
-      x="80"
-      y="30"
-    />
-  </g>
+  <image
+    clip-path="url(#arcanum-clip-:r8m:)"
+    filter="url(#arcanum-filt-:r8l:)"
+    height="313"
+    href="/rider-waite-cards/TheWorld.jpg"
+    preserveAspectRatio="xMidYMin slice"
+    width="180"
+    x="10"
+    y="78"
+  />
+  <rect
+    clip-path="url(#arcanum-clip-:r8m:)"
+    fill="#5c4a78"
+    fill-opacity="0.12"
+    height="142"
+    style="mix-blend-mode: screen;"
+    width="180"
+    x="10"
+    y="88"
+  />
   <line
     stroke="#5c4a78"
     stroke-opacity="0.4"
     stroke-width="0.8"
     x1="20"
     x2="180"
-    y1="213"
-    y2="213"
+    y1="230"
+    y2="230"
   />
   <g
     data-zone="footer"
   >
     <text
       fill="#f8f8ff"
-      fill-opacity="0.6"
-      font-family="var(--font-sans), sans-serif"
-      font-size="11"
-      letter-spacing="2"
-      text-anchor="middle"
-      x="100"
-      y="245"
-    >
-      21
-    </text>
-    <text
-      fill="#f8f8ff"
       font-family="var(--font-display), serif"
-      font-size="14"
+      font-size="15"
       letter-spacing="1.5"
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="272"
+      y="262"
     >
       The World
     </text>
@@ -3569,7 +4362,7 @@ exports[`ArcanumCard — snapshot per card > snapshot of arcanum 21 (The World) 
       style="text-transform: uppercase;"
       text-anchor="middle"
       x="100"
-      y="293"
+      y="284"
     >
       Saturn
     </text>

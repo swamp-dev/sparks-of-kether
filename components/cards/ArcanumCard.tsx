@@ -1,29 +1,32 @@
 import { useId } from 'react';
 import { arcanumByNumber, attributionColor, attributionLabel, letterByKey } from '@/data';
 import type { Arcanum } from '@/data';
-import { GLYPHS } from './glyphs';
-import { ARCANUM_GLYPHS } from './glyph-mapping';
 import { GROUND, VEIL } from '@/data/colors';
+import { RW_IMAGE_FILE } from './rw-image-map';
 
 /**
- * Single Arcanum card, symbolic-minimalist style.
+ * Single Arcanum card — Rider-Waite art, dark-filtered to the void aesthetic.
  *
  * Layout (200×320 viewBox, 5:8 portrait):
- *   - Top third (y 0..107): large Hebrew letter, centered.
- *   - Middle third (y 107..213): geometric glyph composition.
- *   - Bottom third (y 213..320): card number, name, attribution line.
- * A thin colored band at the very bottom is keyed to the card's
- * astrological attribution color.
+ *   - Top zone  (y 0..88):   large Hebrew letter with radial accent glow.
+ *   - Art zone  (y 88..230): Rider-Waite JPG, desaturated + darkened + accent tint.
+ *   - Footer    (y 230..320): card name (display font) + attribution (small-caps).
  *
- * No figurative art — every card is built from the same shared glyph
- * vocabulary in `glyphs.tsx`. The per-card composition lives in
- * `glyph-mapping.ts`. Adding/changing a card is one entry there.
+ * The arcana number is omitted — the Hebrew letter uniquely identifies each card
+ * and the card numbers (0–21) don't align with Kabbalistic path numbers (11–32).
  */
 
 const VIEW_W = 200;
 const VIEW_H = 320;
-const GLYPH_ZONE_X = 0;
-const GLYPH_ZONE_Y = 107;
+const LETTER_ZONE_BOTTOM = 88;
+const ART_ZONE_BOTTOM    = 230;
+const ART_ZONE_HEIGHT    = ART_ZONE_BOTTOM - LETTER_ZONE_BOTTOM; // 142px
+const ART_ZONE_W         = VIEW_W - 20;                          // 180px (10px margin each side)
+const ART_ZONE_X         = 10;
+
+// Amount to shift the RW image upward so the original card's top border and
+// roman numeral scroll out above the clip rect.
+const CROP_TOP_PX = 10;
 
 interface ArcanumCardProps {
   /** Either pass an arcanum number 0..21 or a full Arcanum record. */
@@ -33,13 +36,23 @@ interface ArcanumCardProps {
 }
 
 export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
-  const arcanum = resolveArcanum(props);
-  const letter = letterByKey(arcanum.letterKey);
-  const accent = attributionColor(arcanum.attribution);
+  const arcanum   = resolveArcanum(props);
+  const letter    = letterByKey(arcanum.letterKey);
+  const accent    = attributionColor(arcanum.attribution);
   const attrLabel = attributionLabel(arcanum.attribution);
-  const placements = ARCANUM_GLYPHS[arcanum.number] ?? [];
   const ariaLabel = `Arcanum ${arcanum.number}, ${arcanum.name} — Hebrew letter ${letter.name}, attribution ${attrLabel}`;
+
   const gradId = `arcanum-bg-${useId()}`;
+  const filtId = `arcanum-filt-${useId()}`;
+  const clipId = `arcanum-clip-${useId()}`;
+  const glowId = `arcanum-glow-${useId()}`;
+
+  const imageFile = RW_IMAGE_FILE[arcanum.number];
+  if (!imageFile) throw new Error(`No Rider-Waite image mapped for arcanum ${arcanum.number}`);
+
+  // Scale image so its width fills ART_ZONE_W; RW cards are ~1:1.74 (w:h).
+  const imgW = ART_ZONE_W;
+  const imgH = Math.round(ART_ZONE_W * 1.74);
 
   return (
     <svg
@@ -53,10 +66,37 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
       <title>{ariaLabel}</title>
 
       <defs>
+        {/* Card body gradient */}
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#1a1542" />
           <stop offset="100%" stopColor={GROUND} />
         </linearGradient>
+
+        {/* Dark duotone filter: near-monochrome + darken with cool blue tint */}
+        <filter id={filtId} colorInterpolationFilters="sRGB" x="0" y="0" width="1" height="1">
+          <feColorMatrix type="saturate" values="0.2" result="desat" />
+          <feComponentTransfer in="desat">
+            <feFuncR type="linear" slope="0.5" />
+            <feFuncG type="linear" slope="0.48" />
+            <feFuncB type="linear" slope="0.62" />
+          </feComponentTransfer>
+        </filter>
+
+        {/* Clip art zone to its rect */}
+        <clipPath id={clipId}>
+          <rect
+            x={ART_ZONE_X}
+            y={LETTER_ZONE_BOTTOM}
+            width={ART_ZONE_W}
+            height={ART_ZONE_HEIGHT}
+          />
+        </clipPath>
+
+        {/* Radial glow behind the Hebrew letter */}
+        <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={accent} stopOpacity={0.22} />
+          <stop offset="100%" stopColor={accent} stopOpacity={0} />
+        </radialGradient>
       </defs>
 
       {/* Card body */}
@@ -73,8 +113,15 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
         strokeWidth={1.5}
       />
 
-      {/* Top third: Hebrew letter */}
+      {/* Top zone: Hebrew letter with accent glow behind it */}
       <g data-zone="letter">
+        <ellipse
+          cx={VIEW_W / 2}
+          cy={48}
+          rx={56}
+          ry={44}
+          fill={`url(#${glowId})`}
+        />
         <text
           x={VIEW_W / 2}
           y={70}
@@ -92,67 +139,55 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
       {/* Divider 1 */}
       <line
         x1={20}
-        y1={GLYPH_ZONE_Y}
+        y1={LETTER_ZONE_BOTTOM}
         x2={VIEW_W - 20}
-        y2={GLYPH_ZONE_Y}
+        y2={LETTER_ZONE_BOTTOM}
         stroke={accent}
         strokeOpacity={0.4}
         strokeWidth={0.8}
       />
 
-      {/* Middle third: glyph composition */}
-      <g data-zone="glyphs" transform={`translate(${GLYPH_ZONE_X} ${GLYPH_ZONE_Y})`}>
-        {placements.map((p) => {
-          const Glyph = GLYPHS[p.glyph];
-          // Key: glyph name + index-in-list is unique within a card and
-          // stable as long as the static mapping isn't reordered. Plain
-          // index would also work today; this is forward-friendly for a
-          // future variant that might allow conditional placements.
-          return (
-            <Glyph
-              key={`${p.glyph}-${p.cx}-${p.cy}`}
-              cx={p.cx}
-              cy={p.cy}
-              size={p.size}
-              color={VEIL}
-              opacity={p.opacity ?? 1}
-              {...(p.points !== undefined ? { points: p.points } : {})}
-              {...(p.rotation !== undefined ? { rotation: p.rotation } : {})}
-            />
-          );
-        })}
-      </g>
+      {/* Art zone: Rider-Waite image, dark-filtered and tinted */}
+      <image
+        href={`/rider-waite-cards/${imageFile}`}
+        x={ART_ZONE_X}
+        y={LETTER_ZONE_BOTTOM - CROP_TOP_PX}
+        width={imgW}
+        height={imgH}
+        preserveAspectRatio="xMidYMin slice"
+        clipPath={`url(#${clipId})`}
+        filter={`url(#${filtId})`}
+      />
+      {/* Accent tint overlay — ties the image to this card's colour identity */}
+      <rect
+        x={ART_ZONE_X}
+        y={LETTER_ZONE_BOTTOM}
+        width={ART_ZONE_W}
+        height={ART_ZONE_HEIGHT}
+        fill={accent}
+        fillOpacity={0.12}
+        clipPath={`url(#${clipId})`}
+        style={{ mixBlendMode: 'screen' }}
+      />
 
       {/* Divider 2 */}
       <line
         x1={20}
-        y1={213}
+        y1={ART_ZONE_BOTTOM}
         x2={VIEW_W - 20}
-        y2={213}
+        y2={ART_ZONE_BOTTOM}
         stroke={accent}
         strokeOpacity={0.4}
         strokeWidth={0.8}
       />
 
-      {/* Bottom third: number, name, attribution */}
+      {/* Footer: name + attribution (number removed) */}
       <g data-zone="footer">
         <text
           x={VIEW_W / 2}
-          y={245}
+          y={262}
           textAnchor="middle"
-          fontSize={11}
-          fontFamily="var(--font-sans), sans-serif"
-          fill={VEIL}
-          fillOpacity={0.6}
-          letterSpacing={2}
-        >
-          {arcanum.number.toString().padStart(2, '0')}
-        </text>
-        <text
-          x={VIEW_W / 2}
-          y={272}
-          textAnchor="middle"
-          fontSize={14}
+          fontSize={15}
           fontFamily="var(--font-display), serif"
           fill={VEIL}
           letterSpacing={1.5}
@@ -162,7 +197,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
         </text>
         <text
           x={VIEW_W / 2}
-          y={293}
+          y={284}
           textAnchor="middle"
           fontSize={9}
           fontFamily="var(--font-sans), sans-serif"
