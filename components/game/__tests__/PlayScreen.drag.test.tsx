@@ -16,9 +16,8 @@ type DocWithEFP = Omit<Document, 'elementFromPoint'> & {
  * jsdom doesn't implement `document.elementFromPoint`. The drop
  * handler in PlayScreen calls it to find the topmost element under
  * the pointer-up coordinates. We stub it to return a chosen
- * element, run the drag gesture (with microtask flushes so the
- * queueMicrotask-deferred effects commit before assertions), then
- * restore the original.
+ * element, run the drag gesture (act() drains useEffect-deferred
+ * effects before assertions), then restore the original.
  *
  * Shared by both `drag-to-play` (#412) and `drag-to-discard` (#462)
  * describes — the gesture shape is identical; only the drop target
@@ -49,9 +48,8 @@ async function performDragWithDropTarget(
         clientX: 220,
         clientY: 300,
       });
-      // Two microtask flushes: the drop effect's queueMicrotask
-      // dispatches into the parent's onCardDragEnd, which itself
-      // queueMicrotasks the announcement.
+      // Two Promise ticks: the drop effect fires via useEffect, then
+      // the parent's onCardDragEnd queues the aria announcement.
       await Promise.resolve();
       await Promise.resolve();
     });

@@ -565,8 +565,7 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
 
     // Expand the hand, then trigger a drag (move > 5 px DRAG_THRESHOLD_PX).
-    // The drag-start effect is dispatched via queueMicrotask, so wrap in
-    // act(async) to flush the microtask before asserting.
+    // The drag-start effect fires via useEffect after commit; act(async) drains it.
     fireEvent.mouseEnter(fan);
     await act(async () => {
       fireEvent.pointerDown(card, { clientX: 0, clientY: 0, pointerId: 1 });

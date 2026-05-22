@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   initialCardDragState,
   reduceCardDrag,
@@ -81,22 +81,39 @@ export function useCardDrag(options: UseCardDragOptions): UseCardDragReturn {
   // event-listener churn even though semantically nothing changed.
   const onEffectRef = useRef(options.onEffect);
   onEffectRef.current = options.onEffect;
+  // Pending effect produced by the most recent dispatch. Written inside
+  // the setState updater (safe: ref mutation is idempotent under
+  // StrictMode double-invoke since both calls produce the same effect).
+  // Consumed and cleared in the useEffect below. (#36)
+  const pendingEffectRef = useRef<CardDragEffect | undefined>(undefined);
 
   const dispatch = useCallback((event: Parameters<typeof reduceCardDrag>[1]): void => {
     setState((prev) => {
       const step = reduceCardDrag(prev, event);
-      const effect = step.effect;
-      if (effect !== undefined) {
-        // Defer the effect to a microtask so the state update
-        // commits before the consumer's effect runs. Without this,
-        // a `click` effect that calls `onCardSelect` (which ends in
-        // a `setState` in the parent) would fire mid-reduce and
-        // batch unpredictably under React 18.
-        queueMicrotask(() => onEffectRef.current(effect));
-      }
+      // Unconditional write (even when `undefined`) keeps the invariant
+      // explicit: pendingEffectRef always reflects the latest step's effect.
+      pendingEffectRef.current = step.effect;
       return step.state;
     });
   }, []);
+
+  // Fire the effect after the state update commits. `state` is the dep
+  // (trigger only — not read in the body; pendingEffectRef carries the
+  // value). useEffect runs after React's commit phase, so state has
+  // already settled when the consumer callback fires — same timing
+  // guarantee as the old queueMicrotask, but StrictMode-safe: the
+  // updater double-invoke writes the same effect both times, so
+  // pendingEffectRef is idempotent and the effect fires exactly once.
+  // Note: rapid pointer-move batching could cause only the last
+  // drag-move effect to survive; drag-move has no active consumer
+  // today (#412) so this is not observable. (#36)
+  useEffect(() => {
+    const effect = pendingEffectRef.current;
+    if (effect !== undefined) {
+      pendingEffectRef.current = undefined;
+      onEffectRef.current(effect);
+    }
+  }, [state]);
 
   const onPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>, arcanum: number): void => {
