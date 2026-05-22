@@ -94,6 +94,18 @@ describe('SettingsButton — quit flow', () => {
     expect(within(dialog).queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
   });
 
+  it('quit confirmation paragraph has role="alert" so AT announces the state change on injection', async () => {
+    // role="alert" (implicit aria-live="assertive") triggers on element injection — reliable
+    // even when the text is already present on mount. aria-live="polite" on a freshly-injected
+    // node with pre-existing content is ignored by NVDA/Firefox and other AT combinations.
+    // jsdom only verifies attribute presence; real AT cross-testing is needed for announcement.
+    const user = userEvent.setup();
+    renderWithQuit(vi.fn());
+    await user.click(screen.getByRole('button', { name: /settings/i }));
+    await user.click(screen.getByRole('button', { name: /leave game/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/leave this game/i);
+  });
+
   it('confirmation state has no axe violations', async () => {
     const user = userEvent.setup();
     const { container } = renderWithQuit(vi.fn());

@@ -322,7 +322,9 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
             <div className="mt-4 border-t border-veil/20 pt-3">
               {confirmingQuit ? (
                 <div className="flex flex-col gap-2">
-                  <p className="text-center text-xs opacity-60">Leave this game?</p>
+                  <p role="alert" className="text-center text-xs opacity-60">
+                    Leave this game?
+                  </p>
                   <div className="flex gap-2">
                     <button
                       ref={confirmBtnRef}
