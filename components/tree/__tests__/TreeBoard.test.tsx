@@ -17,34 +17,28 @@ describe('TreeBoard', () => {
     expect(title?.textContent).toMatch(/tree of life/i);
   });
 
-  it('renders all 10 Sefirot — each labelled with the Hebrew-name transliteration (#214 + #401)', () => {
-    // #214 declutter pass: drop Hebrew script + position number from
-    // the visible disc; keep one short label.
-    // #401 content swap: that visible label is the Hebrew-name
-    // *transliteration* (Kether, Chokmah, Binah, Chesed, Gevurah,
-    // Tiferet, Netzach, Hod, Yesod, Malkuth) — the form by which
-    // each Sefirah is invoked in the tradition — rather than the
-    // English meaning-translation. The aria-label keeps the
+  it('renders all 10 Sefirot — each labelled with Hebrew script (#401 reversed)', () => {
+    // #401 reversed: the visible disc label is now the Hebrew script
+    // (כתר, חכמה, בינה, …) rendered in Frank Ruhl Libre, not the
+    // Latin transliteration. The aria-label on the <g> keeps the
     // englishName + position number for screen-reader gloss.
     const { container } = render(<TreeBoard />);
     // Precondition: with no `state` prop the player-token layer is
     // omitted entirely, so the only text descendants of each node
-    // <g> are the transliteration <text> elements. If a future
-    // change ever nests tokens under the node group, this assertion
-    // will fail loudly instead of leaking an initial into the
-    // visibleText comparison below.
+    // <g> are the Hebrew <text> elements. If a future change ever
+    // nests tokens under the node group, this assertion will fail
+    // loudly instead of leaking an initial into the visibleText
+    // comparison below.
     expect(container.querySelectorAll('[data-layer="players"]')).toHaveLength(0);
     for (const sefirah of sefirot) {
       const node = container.querySelector(`[data-sefirah="${sefirah.key}"]`);
       expect(node, `node for ${sefirah.key}`).not.toBeNull();
-      expect(node?.textContent).toContain(sefirah.transliteration);
-      expect(node?.textContent).not.toContain(sefirah.hebrewName);
-      // The visible textContent of the node is exactly the
-      // transliteration (whitespace-normalised; transliterations
-      // happen to be single tokens but the normalisation is kept
-      // for resilience).
+      expect(node?.textContent).toContain(sefirah.hebrewName);
+      expect(node?.textContent).not.toContain(sefirah.transliteration);
+      // The visible textContent of the node is exactly the Hebrew
+      // name (whitespace-normalised).
       const visibleText = (node?.textContent ?? '').replace(/\s+/g, '').trim();
-      expect(visibleText).toBe(sefirah.transliteration.replace(/\s+/g, ''));
+      expect(visibleText).toBe(sefirah.hebrewName.replace(/\s+/g, ''));
     }
   });
 
@@ -64,13 +58,12 @@ describe('TreeBoard', () => {
     }
   });
 
-  it('the nodes layer renders no Hebrew text — lang="he" is reserved for other surfaces (#214)', () => {
-    // Scoped to data-layer="nodes" so a future feature (e.g. a
-    // legend or hover tooltip elsewhere in the SVG) can legitimately
-    // include Hebrew text without breaking this regression-pin.
+  it('the nodes layer renders Hebrew text with lang="he" on each Sefirah (#401 reversed)', () => {
+    // Each Sefirah <text> carries lang="he" for correct semantic
+    // marking of the Hebrew script. Scoped to data-layer="nodes".
     const { container } = render(<TreeBoard />);
     const hebrewInNodes = container.querySelectorAll('[data-layer="nodes"] [lang="he"]');
-    expect(hebrewInNodes.length).toBe(0);
+    expect(hebrewInNodes.length).toBe(10);
   });
 
   it('renders all 22 paths with labels carrying number, letter, and arcanum', () => {
