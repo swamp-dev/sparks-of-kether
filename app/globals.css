@@ -28,24 +28,29 @@ body {
    PrimaryCTA are siblings inside [data-home-hero-band].
 
    Stagger: path 32 (bottom) fires first, 25 (middle) at 150 ms,
-   13 (top) at 300 ms — ascending "serpent" timing. */
+   13 (top) at 300 ms — ascending "serpent" timing.
 
-@keyframes path-surge {
-  0% {
-    stroke: #f8f8ff;
-    stroke-opacity: 0.22;
-  }
-  40% {
-    stroke: #ffd700;
-    stroke-opacity: 0.9;
-  }
-  100% {
-    stroke: #f8f8ff;
-    stroke-opacity: 0.22;
-  }
-}
+   Fire-once by design: the animation runs once (800 ms) then returns
+   paths to their resting dim state. The surge is a visual metaphor for
+   lightning ascending the pillar — it passes rather than holding a
+   sustained lit state on long hover. */
 
 @media (prefers-reduced-motion: no-preference) {
+  @keyframes path-surge {
+    0% {
+      stroke: #f8f8ff;
+      stroke-opacity: 0.22;
+    }
+    40% {
+      stroke: #ffd700;
+      stroke-opacity: 0.9;
+    }
+    100% {
+      stroke: #f8f8ff;
+      stroke-opacity: 0.22;
+    }
+  }
+
   [data-home-hero-band]:has([data-home-cta='begin']:hover) [data-surge-path],
   [data-home-hero-band]:has([data-home-cta='begin']:focus-visible) [data-surge-path] {
     animation: path-surge 800ms cubic-bezier(0.22, 1, 0.36, 1) both;

@@ -94,9 +94,12 @@ describe('Hero', () => {
       expect(numbers).toEqual(new Set(['13', '25', '32']));
     });
 
-    it('surge paths are inside the paths layer (not outside the SVG)', () => {
+    it('surge paths are inside the SVG paths layer (not outside the SVG)', () => {
       const { container } = render(<Hero />);
-      const pathsLayer = container.querySelector('[data-layer="paths"]');
+      // Scope to `svg [data-layer="paths"]` so the assertion actually
+      // verifies the paths are inside the <svg> element — not just inside
+      // any element named data-layer="paths" elsewhere in the DOM.
+      const pathsLayer = container.querySelector('svg [data-layer="paths"]');
       expect(pathsLayer?.querySelectorAll('[data-surge-path]').length).toBe(3);
     });
   });
