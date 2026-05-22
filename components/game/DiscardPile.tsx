@@ -109,7 +109,11 @@ export function DiscardPile({
           </div>
         )}
       </button>
-      <p className="text-[10px] uppercase tracking-widest text-veil/60">
+      <p
+        aria-live="polite"
+        aria-atomic="true"
+        className="text-[10px] uppercase tracking-widest text-veil/60"
+      >
         <span data-discard-count>{count}</span> {count === 1 ? 'card' : 'cards'}
       </p>
       {open ? (

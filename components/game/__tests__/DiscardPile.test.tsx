@@ -177,4 +177,12 @@ describe('DiscardPile', () => {
     const button = screen.getByRole('button', { name: /discard pile, empty/i });
     expect(button).toBeDisabled();
   });
+
+  it('count label has aria-live="polite" and aria-atomic="true" for AT parity with DrawDeck', () => {
+    const { container } = render(<DiscardPile discardPile={[3, 7]} />);
+    const countLabel = container.querySelector<HTMLElement>('[data-discard-count]')?.closest('p');
+    expect(countLabel).not.toBeNull();
+    expect(countLabel).toHaveAttribute('aria-live', 'polite');
+    expect(countLabel).toHaveAttribute('aria-atomic', 'true');
+  });
 });
