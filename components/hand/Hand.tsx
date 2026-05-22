@@ -576,7 +576,7 @@ export function Hand({
                   !reduceMotion && (inMagnifySet || prevInMagnifySet)
                     ? MAGNIFY_TRANSITION
                     : undefined,
-                boxShadow: isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
+                boxShadow: !reduceMotion && isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
                 // #579: 75% opacity while magnified so the matching Tree
                 // path's per-Sefirah glow shows THROUGH the card. The
                 // opacity is preserved under `prefers-reduced-motion`
