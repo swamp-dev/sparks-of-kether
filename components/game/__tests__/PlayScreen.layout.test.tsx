@@ -60,10 +60,10 @@ describe('PlayScreen — fit-on-screen layout (#411)', () => {
     expect(cls).toMatch(/lg:gap-3/);
 
     // Each panel inside the aside drops from p-4 → p-3 at lg+.
-    // Four panels expected: DiscardPile (#507; mounted at the top of
-    // the aside), StatSheet (conditional on activePlayer being non-
-    // null — `makeFullGame({ playerCount: 2 })` always satisfies
-    // that), TeamMeters, ShellPanel.
+    // Four panels expected: deck/discard cluster (#25 + #507; mounted
+    // at the top of the aside as a flex row), StatSheet (conditional
+    // on activePlayer being non-null — `makeFullGame({ playerCount: 2 })`
+    // always satisfies that), TeamMeters, ShellPanel.
     const panels = aside?.querySelectorAll(':scope > div') ?? [];
     expect(panels.length).toBe(4);
     panels.forEach((panel) => {

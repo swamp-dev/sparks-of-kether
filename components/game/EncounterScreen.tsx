@@ -712,7 +712,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // (`docs/motion.md` § Glow scale). The `bg-ground` keeps the
       // panel itself clearly differentiated from the void
       // substrate underneath.
-      className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow} ${className ?? ''}`}
+      className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow}${className ? ` ${className}` : ''}`}
     >
       {/*
         Header row: title block + small avatar. In `prep`, the avatar
@@ -1251,7 +1251,7 @@ function ReactPanel({
           data-action="continue"
           // Pass action: bright Tiferet-gold button so the success
           // path reads as the rewarded one.
-          className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground shadow-glow-tiferet"
+          className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground shadow-glow-tiferet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           Continue
         </button>

@@ -124,7 +124,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
     <div
       data-home-portal
       data-portal-state={isOpen ? 'open' : 'closed'}
-      className={`flex flex-col items-stretch ${className ?? ''}`}
+      className={`flex flex-col items-stretch${className ? ` ${className}` : ''}`}
     >
       {/* Closed state: the dramatic single button. The button stays
           mounted across state changes so focus management is stable
@@ -147,7 +147,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
         // content even though the user can't see or focus it; this
         // is allowed by the ARIA spec.)
         hidden={isOpen}
-        className="group mx-auto inline-flex items-center justify-center gap-3 rounded-full border-2 border-illumination/70 bg-ground/40 px-10 py-5 font-display text-xl tracking-widest text-illumination shadow-glow-tiferet transition-all duration-300 ease-emerge hover:border-illumination hover:bg-ground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination focus-visible:ring-offset-2 focus-visible:ring-offset-void motion-safe:animate-breath"
+        className="group mx-auto inline-flex items-center justify-center gap-3 rounded-full border-2 border-illumination/70 bg-ground/40 px-10 py-5 font-display text-xl tracking-widest text-illumination shadow-glow-tiferet transition-all duration-300 ease-emerge hover:border-illumination hover:bg-ground/60 focus-visible:shadow-glow-tiferet-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination focus-visible:ring-offset-2 focus-visible:ring-offset-void motion-safe:animate-breath"
       >
         <span aria-hidden="true" className="text-2xl">
           ✦
@@ -165,7 +165,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
           role="region"
           aria-labelledby={TRIGGER_ID}
           data-home-portal-panel
-          className="mx-auto w-full max-w-md rounded-lg border border-veil/15 bg-ground/60 p-6 backdrop-blur-sm transition-opacity duration-300 ease-emerge"
+          className="mx-auto w-full max-w-md rounded-lg border border-veil/15 bg-ground/60 p-6 backdrop-blur-sm motion-safe:animate-portal-emerge"
           // No `aria-hidden` here — the panel is the active region.
         >
           {/* Header inside the open panel — affords a way back to the

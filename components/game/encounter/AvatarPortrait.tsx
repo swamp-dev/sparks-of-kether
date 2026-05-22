@@ -149,8 +149,8 @@ export function AvatarPortrait({
   // feel like re-arrival.
   const wrapperClass =
     size === 'stage'
-      ? `flex flex-col items-center gap-2 motion-safe:animate-avatar-emerge ${className ?? ''}`
-      : `flex flex-col items-center gap-2 ${className ?? ''}`;
+      ? `flex flex-col items-center gap-2 motion-safe:animate-avatar-emerge${className ? ` ${className}` : ''}`
+      : `flex flex-col items-center gap-2${className ? ` ${className}` : ''}`;
 
   return (
     <div
@@ -181,11 +181,9 @@ export function AvatarPortrait({
             className={`absolute inset-0 h-full w-full object-cover ${contentIdleClass}`}
             style={{ objectPosition: 'center 25%' }}
             onError={() => {
-              if (typeof console !== 'undefined' && console.warn) {
-                console.warn(
-                  `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to AvatarSilhouette placeholder`,
-                );
-              }
+              console.warn(
+                `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to AvatarSilhouette placeholder`,
+              );
               setImageFailed(true);
             }}
           />

@@ -284,6 +284,25 @@ describe('Hand — interaction', () => {
     expect(cls).not.toMatch(/  my-extra/);
   });
 
+  it('floating mode: className lands on outer wrapper; width classes are a no-op due to inset-x-0 (#41)', () => {
+    // inset-x-0 forces the fixed overlay to full viewport width, so
+    // layout-constraining classes like max-w-xl have no visual effect.
+    // Consumers should not pass width classes in floating mode.
+    const { container } = render(<Hand hand={[2]} visible={true} className="max-w-xl" />);
+    const outer = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    const fan = container.querySelector('[data-hand-fan]')?.getAttribute('class') ?? '';
+    expect(outer).toContain('max-w-xl');
+    expect(fan).not.toContain('max-w-xl');
+  });
+
+  it('inline mode: className lands on outer [data-hand] wrapper (#41)', () => {
+    const { container } = render(
+      <Hand hand={[2]} visible={true} layout="inline" className="my-custom-class" />,
+    );
+    const outer = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(outer).toContain('my-custom-class');
+  });
+
   it('inline mode: outerClassName is empty string when className prop is absent (#127)', () => {
     const { container } = render(<Hand hand={[2]} visible={true} layout="inline" />);
     const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
@@ -539,6 +558,19 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(fan.style.transform).toBe('translateY(0)');
   });
 
+  it('peek-shelf: mouseenter on a card directly expands the fan (not via bubbling)', () => {
+    // mouseenter never bubbles (DOM spec), so the fan's own onMouseEnter
+    // handler never fires when the pointer enters a card-wrapper child.
+    // handleHoverEnter must call expandHand() directly to cover that gap.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} onCardSelect={vi.fn()} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const cardBtn = container.querySelector('[data-card-slot="0"]') as HTMLElement;
+    const cardWrapper = cardBtn.parentElement as HTMLElement;
+    expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+    fireEvent.mouseEnter(cardWrapper);
+    expect(fan.style.transform).toBe('translateY(0)');
+  });
+
   it('peek-shelf: reveal transition uses HAND_REVEAL_MS=280ms easing', () => {
     // Default suite runs without reduced-motion (no matchMedia stub), so
     // the transition string is set — not suppressed to 'none'.
@@ -565,8 +597,7 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     const card = container.querySelector('[data-card-slot="0"]') as HTMLButtonElement;
 
     // Expand the hand, then trigger a drag (move > 5 px DRAG_THRESHOLD_PX).
-    // The drag-start effect is dispatched via queueMicrotask, so wrap in
-    // act(async) to flush the microtask before asserting.
+    // The drag-start effect fires via useEffect after commit; act(async) drains it.
     fireEvent.mouseEnter(fan);
     await act(async () => {
       fireEvent.pointerDown(card, { clientX: 0, clientY: 0, pointerId: 1 });
@@ -636,6 +667,25 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect((right.parentElement as HTMLElement).style.transform).toMatch(
       /translateX\(0?\.?\d+rem\)/,
     );
+  });
+
+  it('transformOrigin is always "center" regardless of magnification state (#42)', () => {
+    // Holding transformOrigin at "center" always avoids the discrete
+    // bottom-center → center snap that occurs at magnify start/end.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const slots = container.querySelectorAll('[data-card-slot]') as NodeListOf<HTMLElement>;
+    const [first, middle] = slots;
+    if (!first || !middle) throw new Error('expected slots');
+    const firstWrapper = first.parentElement as HTMLElement;
+    const middleWrapper = middle.parentElement as HTMLElement;
+    // At rest (not magnified)
+    expect(firstWrapper.style.transformOrigin).toBe('center');
+    // Magnified
+    fireEvent.mouseEnter(middle);
+    expect(middleWrapper.style.transformOrigin).toBe('center');
+    // Back to rest
+    fireEvent.mouseLeave(middle);
+    expect(middleWrapper.style.transformOrigin).toBe('center');
   });
 
   it('magnified card gets a box-shadow lift; siblings do not', () => {
@@ -864,6 +914,15 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     // Opacity value is still preserved — the path-through-card
     // visual is a11y-load-bearing.
     expect((middle.parentElement as HTMLElement).style.opacity).toBe('0.75');
+  });
+
+  it('omits box-shadow on hover under reduced-motion (#40)', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    expect((middle.parentElement as HTMLElement).style.boxShadow).toBe('');
   });
 
   it('layout="inline" renders the open hand without the position-fixed overlay (#579 review)', () => {

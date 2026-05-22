@@ -90,6 +90,8 @@ test('meditate-over-cap discards populate the pile and the overlay shows the dis
   //   Each "Discard X" click sends one card to the live pile.
   for (const _player of [1, 2]) {
     await page.locator('[data-action="meditate"]').click();
+    // #24: confirm the dialog before turn.meditate() fires.
+    await page.locator('[data-meditate-confirm-confirm]').click();
     // After meditate the End-turn button shows up because
     // `meditatedThisTurn === true` (still in `'move'` phase per
     // #503). Click it to rotate to the other seat.
@@ -98,6 +100,8 @@ test('meditate-over-cap discards populate the pile and the overlay shows the dis
 
   // P1 turn 2 — meditate to 7 cards, then end-turn surfaces the prompt.
   await page.locator('[data-action="meditate"]').click();
+  // #24: confirm the dialog.
+  await page.locator('[data-meditate-confirm-confirm]').click();
   await page.locator('[data-action="end-turn"]').click();
 
   // Discard status bar is up. Two discards required (#90).

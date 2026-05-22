@@ -1,5 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
+// #12: demo-ritual-mobile baseline updated for styled skip button (+34px height).
+// #11: demo-ritual baselines updated for gloss label addition (mobile and tablet re-rendered).
 /**
  * Visual regression — pixel-diff every public route at three viewport
  * sizes against committed baselines. A future "tighten this padding by

@@ -63,23 +63,22 @@ export interface CheckOutcome {
 export type TurnPhase = 'move' | 'challenge' | 'end' | 'kether';
 
 /**
- * Active sub-phase WITHIN the Final Threshold ritual (#335;
+ * Active sub-phase WITHIN the Final Threshold ritual (#232;
  * `design/final-threshold.md` § 3.2). Defined when (and only when)
  * `phase === 'kether'`.
  *
  *   gather   — team has converged; hands revealed, Sparks pooled,
- *              `witnessOrder` and `personalQueueLengths` frozen.
- *              Transient — the reducer immediately moves to `'witness'`
- *              once gather init completes. NOT a durable sub-state in
- *              K1: `initKetherRitual` writes `subPhase: 'witness'`
- *              directly. The literal exists in the type for spec-
- *              alignment with `design/final-threshold.md` § 3.2 so a
- *              future ticket can introduce a discrete gather pause
- *              (e.g. for a "ready up" UI step) without re-widening
+ *              trial deck assembled. Transient — `initKetherRitual`
+ *              writes `subPhase: 'trial'` directly. The literal
+ *              exists for spec-alignment so a future ticket can
+ *              introduce a discrete gather pause without re-widening
  *              the union.
- *   witness  — round-robin contribution. Each turn one player plays or
- *              passes one card. The reducer transitions to `'close'`
- *              when every queue has emptied.
+ *   trial    — cooperative gauntlet. Each player resolves one
+ *              challenge (d20 + stat vs DC) in `trialOrder` sequence.
+ *              Optionally burns Sparks from the shared Threshold
+ *              Reserve before rolling. Passing increments illumination
+ *              by 1. The reducer transitions to `'close'` when every
+ *              challenge has been resolved.
  *   close    — closure window. Players stage held Sparks; the first
  *              `threshold-confirm` consumes the staged set, evaluates
  *              the gap, sets `EndgameStatus`, and exits `phase` to
@@ -87,7 +86,7 @@ export type TurnPhase = 'move' | 'challenge' | 'end' | 'kether';
  *
  * Cleared (`undefined`) outside `phase === 'kether'`.
  */
-export type KetherSubPhase = 'gather' | 'witness' | 'close';
+export type KetherSubPhase = 'gather' | 'trial' | 'close';
 
 /**
  * Active sub-phase WITHIN a challenge encounter. Defined when (and only
@@ -744,22 +743,29 @@ export const EMPTY_SHELL_STATE: ShellStateMap = {
 // ──────────────── Final Threshold ritual ────────────────
 
 /**
- * One step in the Kether witness round-robin (#335;
- * `design/final-threshold.md` § 5.1). Discriminated by an explicit
- * `kind` literal — `'played'` carries the contributed `arcanum`,
- * `'passed'` records the refusal. The discriminant matches the design
- * doc's specified shape verbatim so K2 (multiplayer wire) and K3
- * (`FinalThresholdScreen` UI) can pattern-match exhaustively without
- * relying on a structural `passed: true` test.
+ * One challenge in the Kether cooperative gauntlet (#232;
+ * `design/final-threshold.md` § Act 1). Each player resolves one
+ * challenge against a specific Sefirah stat. `roll` and `passed` are
+ * null until the challenge is resolved.
  */
-export type KetherWitnessLogEntry =
-  | { readonly kind: 'played'; readonly playerId: string; readonly arcanum: number }
-  | { readonly kind: 'passed'; readonly playerId: string };
+export interface KetherTrialChallenge {
+  /** Which Sefirah's stat this challenge tests. */
+  readonly sefirahKey: SefirahKey;
+  /** The stat key to look up on the active player's stat sheet. */
+  readonly stat: StatKey;
+  /** Difficulty class for this challenge. */
+  readonly dc: number;
+  /** The raw d20 result. Null until resolved. */
+  readonly roll: number | null;
+  /** Whether the challenge was passed. Null until resolved. */
+  readonly passed: boolean | null;
+}
 
 /**
- * One Spark staged for the closure window (`design/final-threshold.md`
- * § 5.1). Modifiers are visible-to-all but not consumed until
- * `threshold-confirm`; un-stage is symmetrical.
+ * One Spark staged for a trial challenge or the closure window
+ * (`design/final-threshold.md`). Modifiers are visible-to-all but
+ * not consumed until the action that locks them; un-stage is
+ * symmetrical.
  */
 export interface KetherStagedSpark {
   readonly playerId: string;
@@ -767,8 +773,8 @@ export interface KetherStagedSpark {
 }
 
 /**
- * Per-ritual scratch state for the Final Threshold (#335;
- * `design/final-threshold.md` § 5.1). Lives on `GameState` (not
+ * Per-ritual scratch state for the Final Threshold (#232;
+ * `design/final-threshold.md`). Lives on `GameState` (not
  * `TurnSnapshot`) for the same reason as `phase` and
  * `pendingModifiers`: the multiplayer Realtime channel needs all
  * players to see the ritual state, which means it must persist on
@@ -777,51 +783,50 @@ export interface KetherStagedSpark {
  * the phase exits.
  */
 export interface KetherRitualState {
-  /** Where in gather → witness → close the ritual is. */
+  /** Where in gather → trial → close the ritual is. */
   readonly subPhase: KetherSubPhase;
   /**
-   * Player IDs in round-robin order, last-arrived first per § 2.2's
-   * deterministic rule. Frozen at gather time and never mutated.
+   * Player IDs in challenge order, last-arrived first (same
+   * deterministic rule as the old witnessOrder). Frozen at gather
+   * time and never mutated. `trialChallenges[i]` is resolved by
+   * `trialOrder[i]`.
    */
-  readonly witnessOrder: readonly string[];
+  readonly trialOrder: readonly string[];
   /**
-   * Index into `witnessOrder` of whose turn it currently is. Advances
-   * on each `kether-witness-play` / `kether-witness-pass`, skipping empty
-   * queues per § 5.3. Frozen when `subPhase === 'close'`.
+   * Index into `trialOrder` / `trialChallenges` of whose challenge is
+   * currently active. Advances on each `kether-trial-resolve`.
+   * Frozen when `subPhase === 'close'`.
    */
-  readonly witnessTurnIndex: number;
+  readonly trialTurnIndex: number;
   /**
-   * Hand size per player at gather time, frozen on entry. Used to
-   * compute the per-player pass cap (`⌈n / 2⌉`) per § 2.3 — the cap
-   * is from the original hand size, not the running hand.
+   * One challenge per player, assembled at gather time. Each holds
+   * the sefirah stat, DC, and (after resolution) the roll result.
    */
-  readonly personalQueueLengths: Readonly<Record<string, number>>;
-  /** Pass count per player so far in this ritual. Checked vs the cap. */
-  readonly passCounts: Readonly<Record<string, number>>;
+  readonly trialChallenges: readonly KetherTrialChallenge[];
   /**
-   * Per-step narration log; one entry per witness step. Plays carry
-   * `kind: 'played'` + `arcanum`; passes carry `kind: 'passed'`. The
-   * free-form sentence text is the UI's concern (the engine just
-   * records the step).
+   * Sparks staged by the current trial player from the shared
+   * Threshold Reserve. Consumed (burned) when `kether-trial-resolve`
+   * fires; cleared between challenges. Each staged Spark adds
+   * `SPARK_BURN_BONUS` (+5) to the roll.
    */
-  readonly witnessLog: readonly KetherWitnessLogEntry[];
+  readonly trialStagedSparks: readonly KetherStagedSpark[];
   /**
-   * Recorded arrival timestamps used to derive `witnessOrder`. ms
+   * Recorded arrival timestamps used to derive `trialOrder`. ms
    * since epoch (Realtime server-side timestamp in multiplayer; engine
    * call-time `Date.now()` in hot-seat). Stored for replay/audit.
    */
   readonly arrivalTimestamps: Readonly<Record<string, number>>;
   /**
-   * Sparks staged for the closure window (post-witness only). Order
+   * Sparks staged for the closure window (post-trial only). Order
    * preserved so the UI's "your stage" panel renders deterministically.
    */
   readonly stagedClosureSparks: readonly KetherStagedSpark[];
   /**
    * Set true by the first `threshold-confirm` so subsequent
-   * `kether-close-stage-spark` / `kether-close-unstage-spark` / `threshold-confirm`
-   * actions are rejected (§ 2.4 first-confirm-wins). Persists on the
-   * post-ritual state (the phase has exited to `'end'`) so a stale
-   * client can read why their action was rejected.
+   * `kether-close-stage-spark` / `kether-close-unstage-spark` /
+   * `threshold-confirm` actions are rejected (first-confirm-wins).
+   * Persists on the post-ritual state so a stale client can read why
+   * their action was rejected.
    */
   readonly closureLocked: boolean;
 }

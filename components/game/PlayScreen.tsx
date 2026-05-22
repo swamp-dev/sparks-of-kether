@@ -1,19 +1,23 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
+import { NODE_RADIUS, TREE_VIEW_W } from '@/data/tree-layout';
 import type { SefirahKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
-import { ShellPanel } from '@/components/shells/ShellPanel';
+import { ShellStrip } from '@/components/shells/ShellStrip';
 import { DiscardPile } from '@/components/game/DiscardPile';
+import { DrawDeck } from '@/components/game/DrawDeck';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
 import { HestiaCompanionLine } from '@/components/game/HestiaCompanionLine';
 import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
+import { KetherCelebration } from '@/components/game/KetherCelebration';
+import { JourneySummary } from '@/components/game/JourneySummary';
 import { isKetherHeld } from '@/engine/kether';
 import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
@@ -40,7 +44,7 @@ import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
  *   - Hand (visibility-aware, owner sees own; others by upper-Tree rule)
  *   - StatSheet for the active player (active stat highlighted during a check)
  *   - TeamMeters (Illumination / Separation / pillar streak)
- *   - ShellPanel
+ *   - ShellStrip (active Shells full-size; dormant/banished compact strip)
  *   - EncounterScreen opens automatically when the active player arrives at
  *     an uncleared `'check'`-kind Sefirah (replaces the prior ChallengeModal
  *     in #228; ChallengeModal stays alive for `/demo/challenge` only).
@@ -97,7 +101,9 @@ interface PlayScreenProps {
   /**
    * Called when the player confirms leaving the game. When provided,
    * a "Leave Game" affordance with inline confirmation appears in the
-   * Settings popover. Absent in hot-seat mode (no session to leave).
+   * Settings popover. Should be provided on all active play surfaces —
+   * hot-seat passes `() => router.push('/')`, multiplayer passes the
+   * handleLeave handler.
    */
   readonly onQuit?: () => void;
 }
@@ -156,6 +162,10 @@ export function PlayScreen({
   // doesn't lose game state. Closed via the X button, the backdrop,
   // or Escape.
   const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(undefined);
+  const [showMeditateConfirm, setShowMeditateConfirm] = useState(false);
+  // Tracks whether the KetherCelebration "Continue" has been clicked.
+  // When true, the win path advances to JourneySummary.
+  const [celebrationDone, setCelebrationDone] = useState(false);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -308,18 +318,18 @@ export function PlayScreen({
   // Seat derivation (#562): during the witness sub-phase, the rendered
   // seat must follow `currentWitnessPlayerId` — the engine reducers
   // rotate `witnessTurnIndex` independently of `activePlayerIndex`,
-  // so pinning to `activePlayer` would freeze the chorus on the first
-  // witness handoff. The close sub-phase exposes a null witness pointer
-  // (`currentWitnessPlayerId` returns null once every queue is empty);
+  // so pinning to `activePlayer` would freeze the trial on the first
+  // handoff. The close sub-phase exposes a null trial pointer
+  // (`currentTrialPlayerId` returns null once all challenges resolve);
   // fall back to `activePlayer` then so the closure-window UI still
   // mounts. Multiplayer's per-client seat derivation (each client
   // renders for its own selfPlayerId) is deferred to the
   // `/rooms/[code]/play` route landing per #325.
   if (turn.phase === 'kether') {
-    const witnessId = turn.currentWitnessPlayerId;
+    const trialId = turn.currentTrialPlayerId;
     const seatPlayer =
-      witnessId !== null
-        ? turn.state.players.find((p) => p.id === witnessId)
+      trialId !== null
+        ? turn.state.players.find((p) => p.id === trialId)
         : // TODO(#325): close sub-phase needs per-player rotation in
           // hot-seat (each player stages their own Sparks). Falling
           // back to activePlayer here means only one seat surfaces
@@ -362,7 +372,7 @@ export function PlayScreen({
       <section
         data-play-screen
         data-status="lost"
-        className={`mx-auto max-w-md p-8 text-center text-veil ${className ?? ''}`}
+        className={`mx-auto max-w-md p-8 text-center text-veil${className ? ` ${className}` : ''}`}
       >
         <h2 className="font-display text-3xl tracking-widest">The light fell.</h2>
         <p className="mt-2 italic opacity-80">
@@ -371,6 +381,29 @@ export function PlayScreen({
             : 'The team is stranded.'}
         </p>
       </section>
+    );
+  }
+
+  // Win path: phase transitions 'kether' → 'end' on threshold-confirm.
+  // checkEndgame returns 'won' once closureLocked && illumination margin met.
+  // Route through KetherCelebration (Act 3) before the JourneySummary.
+  if (endgame.status === 'won') {
+    if (!celebrationDone) {
+      return (
+        <KetherCelebration
+          state={turn.state}
+          onContinue={() => setCelebrationDone(true)}
+          {...(className !== undefined ? { className } : {})}
+        />
+      );
+    }
+    return (
+      <JourneySummary
+        state={turn.state}
+        outcome={{ ok: true, value: { state: turn.state, status: 'won' } }}
+        reflections={{}}
+        {...(className !== undefined ? { className } : {})}
+      />
     );
   }
 
@@ -432,7 +465,15 @@ export function PlayScreen({
     setDraggingCard(undefined);
     if (!activePlayer || !isMyTurn) return;
     const target = document.elementFromPoint(position.x, position.y);
-    const dropZone = target?.closest('[data-drop-zone]');
+    // Sefirah-node HTML buttons (h-12 w-12, pointer-events-auto) sit above
+    // the SVG path hit-lines. #213 trims hit-lines back by NODE_RADIUS, so
+    // drops near a node can miss the path. When the topmost element is a
+    // Sefirah button, probe nearby pixels to find the hit-line below.
+    const dropZone =
+      target?.closest('[data-drop-zone]') ??
+      (target?.closest('[data-sefirah-link]') != null
+        ? findDropZoneNear(position.x, position.y)
+        : null);
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
 
     // #462: drag-to-discard-pile branch. Routes to `turn.discard`,
@@ -561,7 +602,7 @@ export function PlayScreen({
       // Below lg, the original gap-6 / p-6 is preserved — mobile
       // is explicitly out of scope for this ticket; mobile-tab
       // pattern is queued as #466.
-      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4 ${className ?? ''}`}
+      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4${className ? ` ${className}` : ''}`}
     >
       <section
         aria-label="Tree of Life board"
@@ -638,7 +679,7 @@ export function PlayScreen({
           <div className="flex gap-2">
             {turn.phase === 'move' ? (
               <MeditateButton
-                onMeditate={turn.meditate}
+                onMeditate={() => setShowMeditateConfirm(true)}
                 disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
               />
             ) : null}
@@ -664,7 +705,7 @@ export function PlayScreen({
                 onClick={() => turn.endTurn()}
                 disabled={!isMyTurn}
                 data-action="end-turn"
-                className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground"
+                className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
                 End turn
               </button>
@@ -743,19 +784,19 @@ export function PlayScreen({
         and per-panel padding drops to p-3 (was p-4) — reclaims
         ~48 px of aside height so the right column stops dominating
         the document height at 1280×800. Mobile (gap-6 / p-4) is
-        preserved unchanged. ShellPanel collapse-to-strip remains a
-        separate ticket (#464) that can layer further compaction.
+        preserved unchanged. ShellPanel collapse-to-strip shipped in
+        #14 — active Shells show full-size, dormant/banished collapse.
       */}
       <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
         {/*
-         * #507: visible discard pile. Mounted at the top of the right-
-         * column aside so the deck/discard cluster lives on the same
-         * side as the rest of the game-state surfaces (StatSheet,
-         * meters, shells). The pile is informational and not phase-
-         * gated — it stays mounted across `move` / `challenge` / `end`
-         * and reflects engine state live.
+         * #507 + #25: deck/discard cluster. Both are informational and
+         * not phase-gated — they stay mounted across `move` /
+         * `challenge` / `end` and reflect engine state live.
+         * DrawDeck is visualization-only since #502 folded the discrete
+         * 'draw' phase into end-turn / Meditate.
          */}
-        <div className="flex justify-center rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+        <div className="flex justify-center gap-4 rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+          <DrawDeck deck={turn.state.deck} />
           <DiscardPile
             discardPile={turn.state.discardPile}
             dragActive={draggingCard !== undefined}
@@ -780,12 +821,9 @@ export function PlayScreen({
           />
         </div>
         <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
-          <ShellPanel
+          <ShellStrip
             shells={turn.state.shells}
             headingLevel={3}
-            // #321: same wiring pattern. ShellPanel fires the
-            // callback once per state transition; throttle still
-            // covers the multi-Shell-banished-in-one-tick case.
             onShellAwakened={() => playSound('shell-awakened')}
             onShellBanished={() => playSound('shell-banished')}
           />
@@ -873,6 +911,17 @@ export function PlayScreen({
           teamSparks={turn.state.players.filter((p) => p.sparksHeld.has(openSefirah)).length}
           activePlayerSign={activePlayer?.zodiacSign}
           onClose={() => setOpenSefirah(undefined)}
+        />
+      ) : null}
+      {/* #24: Meditate confirm dialog — opens when the player clicks
+          Meditate, preventing accidental state mutation on misclick. */}
+      {showMeditateConfirm ? (
+        <MeditateConfirmDialog
+          onCancel={() => setShowMeditateConfirm(false)}
+          onConfirm={() => {
+            setShowMeditateConfirm(false);
+            turn.meditate();
+          }}
         />
       ) : null}
     </main>
@@ -968,6 +1017,81 @@ function MeditateButton({
 }
 
 /**
+ * #24 — Confirmation dialog for the Meditate action. Prevents accidental
+ * state mutation: clicking the Meditate button opens this dialog; the
+ * player must explicitly Confirm before `turn.meditate()` fires.
+ *
+ * Follows the SefirahInfoPopover pattern: backdrop click closes, Escape
+ * closes via a document keydown listener, the dialog grabs focus on
+ * mount, and the Confirm button is auto-focused so Enter confirms.
+ */
+function MeditateConfirmDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}): JSX.Element {
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  });
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === 'Escape') onCancelRef.current();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <div
+      data-meditate-confirm-backdrop
+      onClick={onCancel}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-ground/60 backdrop-blur-sm"
+    >
+      <div
+        data-meditate-confirm
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meditate-confirm-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-4 rounded-md border border-veil/30 bg-ground/95 px-5 py-4 text-veil shadow-2xl outline-none focus:outline-none"
+      >
+        <p id="meditate-confirm-title" className="text-sm font-medium">
+          Meditate?
+        </p>
+        <p className="text-xs opacity-70">
+          You&apos;ll draw up to 2 cards in exchange for your move. This cannot be undone.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            data-meditate-confirm-cancel
+            onClick={onCancel}
+            className="rounded border border-veil/30 px-4 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            Cancel
+          </button>
+          {/* autoFocus: Enter confirms when dialog has keyboard focus. */}
+          <button
+            type="button"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            data-meditate-confirm-confirm
+            onClick={onConfirm}
+            className="rounded border border-illumination/50 px-4 py-2 text-xs hover:border-illumination focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Plain-English phase hint shown next to the active player's name.
  * Replaces the raw enum value (`Phase: end`) so a first-time player
  * can read the panel and know what they're allowed to do without
@@ -991,4 +1115,42 @@ function phaseHint(phase: TurnPhase): string {
       // exhaustive so a future routing bug surfaces at compile time.
       return 'Final Threshold ritual';
   }
+}
+
+/**
+ * When a drag ends on a Sefirah-node HTML button (which sits above the SVG
+ * path hit-lines in z-order), `elementFromPoint` returns the button and
+ * misses the path. Probe a ring of 8 neighbouring pixels — 4 cardinal and
+ * 4 diagonal — offset to land just past NODE_RADIUS scaled to screen pixels.
+ *
+ * Cardinal step: just past the trim point in each axis direction.
+ * Diagonal step: cardinal_step / √2 per axis, so each diagonal probe lands
+ * at roughly the same Euclidean distance from the node center as a cardinal
+ * probe. Without this, diagonal probes at (±step, ±step) sit √2 × further
+ * out and can miss the short trimmed segment near the path endpoint.
+ *
+ * Scale is derived from the SVG's actual rendered width. Falls back to
+ * scale=1 when the SVG is not yet laid out (jsdom, server-side).
+ */
+function findDropZoneNear(cx: number, cy: number): Element | null {
+  const svgWidth =
+    document.querySelector('[data-tree-root] svg')?.getBoundingClientRect().width ?? 0;
+  const scale = svgWidth > 0 ? svgWidth / TREE_VIEW_W : 1;
+  const stepC = Math.ceil(NODE_RADIUS * scale) + 4; // +4px sub-pixel margin
+  const stepD = Math.ceil((NODE_RADIUS * scale) / Math.SQRT2) + 4;
+  const probes: [number, number][] = [
+    [stepC, 0],
+    [-stepC, 0],
+    [0, stepC],
+    [0, -stepC],
+    [stepD, stepD],
+    [-stepD, stepD],
+    [stepD, -stepD],
+    [-stepD, -stepD],
+  ];
+  for (const [dx, dy] of probes) {
+    const zone = document.elementFromPoint(cx + dx, cy + dy)?.closest('[data-drop-zone]');
+    if (zone) return zone;
+  }
+  return null;
 }

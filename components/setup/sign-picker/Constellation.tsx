@@ -40,7 +40,7 @@ export function Constellation({ sign, className }: ConstellationProps): JSX.Elem
       aria-hidden="true"
       viewBox={`0 0 ${VIEW} ${VIEW}`}
       xmlns="http://www.w3.org/2000/svg"
-      className={`pointer-events-none motion-safe:animate-constellation-rotate ${className ?? ''}`}
+      className={`pointer-events-none motion-safe:animate-constellation-rotate${className ? ` ${className}` : ''}`}
     >
       <g stroke="currentColor" strokeWidth={1} strokeOpacity={0.18} fill="none">
         {edges.map(([from, to], i) => {

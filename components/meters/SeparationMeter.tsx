@@ -116,7 +116,7 @@ export function SeparationMeter({
       aria-valuemin={0}
       aria-valuemax={max}
       data-meter-bar="separation"
-      className={`relative h-32 w-12 ${className ?? ''}`}
+      className={`relative h-32 w-12${className ? ` ${className}` : ''}`}
     >
       {/* Trough — gevurah-red rim, void interior with inner shadow. */}
       <div

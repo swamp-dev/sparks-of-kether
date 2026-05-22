@@ -19,10 +19,10 @@ import { RW_IMAGE_FILE } from './rw-image-map';
 const VIEW_W = 200;
 const VIEW_H = 320;
 const LETTER_ZONE_BOTTOM = 88;
-const ART_ZONE_BOTTOM    = 230;
-const ART_ZONE_HEIGHT    = ART_ZONE_BOTTOM - LETTER_ZONE_BOTTOM; // 142px
-const ART_ZONE_W         = VIEW_W - 20;                          // 180px (10px margin each side)
-const ART_ZONE_X         = 10;
+const ART_ZONE_BOTTOM = 230;
+const ART_ZONE_HEIGHT = ART_ZONE_BOTTOM - LETTER_ZONE_BOTTOM; // 142px
+const ART_ZONE_W = VIEW_W - 20; // 180px (10px margin each side)
+const ART_ZONE_X = 10;
 
 // Amount to shift the RW image upward so the original card's top border and
 // roman numeral scroll out above the clip rect.
@@ -36,9 +36,9 @@ interface ArcanumCardProps {
 }
 
 export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
-  const arcanum   = resolveArcanum(props);
-  const letter    = letterByKey(arcanum.letterKey);
-  const accent    = attributionColor(arcanum.attribution);
+  const arcanum = resolveArcanum(props);
+  const letter = letterByKey(arcanum.letterKey);
+  const accent = attributionColor(arcanum.attribution);
   const attrLabel = attributionLabel(arcanum.attribution);
   const ariaLabel = `Arcanum ${arcanum.number}, ${arcanum.name} — Hebrew letter ${letter.name}, attribution ${attrLabel}`;
 
@@ -84,12 +84,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
 
         {/* Clip art zone to its rect */}
         <clipPath id={clipId}>
-          <rect
-            x={ART_ZONE_X}
-            y={LETTER_ZONE_BOTTOM}
-            width={ART_ZONE_W}
-            height={ART_ZONE_HEIGHT}
-          />
+          <rect x={ART_ZONE_X} y={LETTER_ZONE_BOTTOM} width={ART_ZONE_W} height={ART_ZONE_HEIGHT} />
         </clipPath>
 
         {/* Radial glow behind the Hebrew letter */}
@@ -115,13 +110,7 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
 
       {/* Top zone: Hebrew letter with accent glow behind it */}
       <g data-zone="letter">
-        <ellipse
-          cx={VIEW_W / 2}
-          cy={48}
-          rx={56}
-          ry={44}
-          fill={`url(#${glowId})`}
-        />
+        <ellipse cx={VIEW_W / 2} cy={48} rx={56} ry={44} fill={`url(#${glowId})`} />
         <text
           x={VIEW_W / 2}
           y={70}

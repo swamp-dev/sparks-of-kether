@@ -142,6 +142,23 @@ describe('DiscardPile', () => {
     expect(screen.getByRole('button', { name: /discard pile, 2 cards/i })).toBeInTheDocument();
   });
 
+  it('dragActive=true: drop prompt leads, click-to-browse omitted', () => {
+    render(<DiscardPile discardPile={[3, 7]} dragActive />);
+    const btn = screen.getByRole('button');
+    expect(btn).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('Drop a card here to discard'),
+    );
+    expect(btn).not.toHaveAttribute('aria-label', expect.stringContaining('Click to browse'));
+  });
+
+  it('dragActive=true on empty pile: drop prompt present, no click-to-browse', () => {
+    render(<DiscardPile discardPile={[]} dragActive />);
+    const btn = screen.getByRole('button');
+    expect(btn).toHaveAttribute('aria-label', 'Discard pile, empty. Drop a card here to discard.');
+    expect(btn).not.toHaveAttribute('aria-label', expect.stringContaining('Click to browse'));
+  });
+
   it('transitions back to empty state when recycleDiscardIntoDeck empties the pile', () => {
     // Simulates the recycle moment: discardPile goes from non-empty to [].
     const { rerender } = render(<DiscardPile discardPile={[2, 8, 14]} />);
@@ -159,5 +176,13 @@ describe('DiscardPile', () => {
     // Button must be disabled in empty state (no overlay to open).
     const button = screen.getByRole('button', { name: /discard pile, empty/i });
     expect(button).toBeDisabled();
+  });
+
+  it('count label has aria-live="polite" and aria-atomic="true" for AT parity with DrawDeck', () => {
+    const { container } = render(<DiscardPile discardPile={[3, 7]} />);
+    const countLabel = container.querySelector<HTMLElement>('[data-discard-count]')?.closest('p');
+    expect(countLabel).not.toBeNull();
+    expect(countLabel).toHaveAttribute('aria-live', 'polite');
+    expect(countLabel).toHaveAttribute('aria-atomic', 'true');
   });
 });

@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { BlessingRitual } from '../BlessingRitual';
 import { seededRng } from '@/engine/rng';
 import { sefirot } from '@/data';
-import { sefirahBlessings } from '@/data/pantheons/greco-roman/blessings';
+import { sefirahBlessingsCeremony } from '@/data/sefirah-blessings-ceremony';
 import type { StatSheet } from '@/engine/types';
 
 const STAT_KEYS = sefirot.map((s) => s.stat);
@@ -254,6 +254,18 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
   // Playtest finding: the 10-step sequential ceremony is slow on
   // repeat plays. Provide a "Hasten the rite" affordance that fills
   // the remaining stats in one click and advances to the summary.
+
+  it('skip affordance accessible name includes the consequence text (#12)', () => {
+    const noop = (): void => undefined;
+    render(<BlessingRitual sign="aries" rng={seededRng(7)} onComplete={noop} />);
+    // Asserts the full accessible name — both the action label and the
+    // consequence ("roll the rest at once") must be present. Wider than
+    // the /Hasten the rite/i regex used in the behavior tests.
+    expect(
+      screen.getByRole('button', { name: /hasten the rite — roll the rest at once/i }),
+    ).toBeInTheDocument();
+  });
+
   it('renders a Hasten button that rolls all remaining stats at once', () => {
     vi.useFakeTimers();
     try {
@@ -340,6 +352,23 @@ describe('BlessingRitual — scene polish (#156)', () => {
     expect(portrait?.getAttribute('data-avatar-size')).toBe('stage');
   });
 
+  it('avatar portrait uses pose="speaking" to suppress idle jitter/drift in ceremony (#85)', () => {
+    // Advance 7 steps to land on Hod — the jitter character (Hermes), the primary regression target.
+    const { container } = render(
+      <BlessingRitual rng={seededRng(3)} sign="pisces" onComplete={vi.fn()} />,
+    );
+    for (let i = 0; i < 7; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    }
+    expect(container.querySelector('[data-avatar-portrait]')?.getAttribute('data-sefirah')).toBe(
+      'hod',
+    );
+    expect(
+      container.querySelector('[data-avatar-portrait]')?.getAttribute('data-avatar-pose'),
+    ).toBe('speaking');
+  });
+
   it('avatar portrait is well above the 80 px ticket threshold (stage: h-60 = 240 px)', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
@@ -389,8 +418,8 @@ describe('BlessingRitual — scene polish (#156)', () => {
 // ──────────────── #255 / T4 — sign-aware blessing quote ────────────────
 //
 // The Voices Epic adds a per-Sefirah blessing quote rendered after each
-// roll. Quote text comes from `data/pantheons/greco-roman/blessings.ts`
-// (T2) via `engine/sefirah-quote.ts:quoteForBlessing` (T3). Every cell offers
+// roll. Quote text comes from `data/sefirah-blessings-ceremony.ts` (#13)
+// via `engine/sefirah-quote.ts:quoteForCeremony`. Every cell offers
 // 3 variants; the selector picks one uniformly via the seeded `Rng` so
 // the same game-seed always renders the same line.
 //
@@ -418,7 +447,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.kether.aries).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.kether.aries).toContain(quote?.textContent?.trim());
   });
 
   it('Aries player at Gevurah → ruler tier (Mars rules Aries)', () => {
@@ -434,7 +463,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.gevurah.aries).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.gevurah.aries).toContain(quote?.textContent?.trim());
     expect(quote?.getAttribute('data-dignity-tier')).toBe('ruler');
   });
 
@@ -451,7 +480,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.hod.pisces).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.hod.pisces).toContain(quote?.textContent?.trim());
     expect(quote?.getAttribute('data-dignity-tier')).toBe('fall');
   });
 
@@ -468,7 +497,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.chesed.cancer).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.chesed.cancer).toContain(quote?.textContent?.trim());
   });
 
   it('Aries player at Netzach → detriment tier (Venus detriment in Aries)', () => {
@@ -484,7 +513,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.netzach.aries).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.netzach.aries).toContain(quote?.textContent?.trim());
   });
 
   it('any sign at Malkuth → neutral tier (Hestia warmth-only)', () => {
@@ -500,7 +529,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.malkuth.taurus).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.malkuth.taurus).toContain(quote?.textContent?.trim());
   });
 
   it('Hasten the rite mid-roll clears blessing state (state-machine invariant, #380)', () => {
@@ -691,5 +720,34 @@ describe('BlessingRitual — focus-visible ring (#170 #178 #179)', () => {
     expect(btn?.getAttribute('class')).toMatch(/focus-visible:outline-none/);
     expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-2/);
     expect(btn?.getAttribute('class')).toMatch(/focus-visible:ring-illumination\/80/);
+  });
+});
+
+describe('BlessingRitual — orb label hierarchy (#11)', () => {
+  it('primary label is transliteration (Kether), not the English gloss (Crown)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const heading = container.querySelector('[data-sefirah-name]');
+    expect(heading?.textContent).toBe('Kether');
+  });
+
+  it('primary label is transliteration for Chokmah (second Sefirah after advancing)', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    // Roll Kether and advance.
+    fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    const heading = container.querySelector('[data-sefirah-name]');
+    expect(heading?.textContent).toBe('Chokmah');
+  });
+
+  it('English gloss (Crown) appears as tertiary below the Hebrew', () => {
+    const { container } = render(
+      <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
+    );
+    const gloss = container.querySelector('[data-sefirah-gloss]');
+    expect(gloss?.textContent).toBe('Crown');
   });
 });

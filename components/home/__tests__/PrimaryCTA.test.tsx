@@ -140,6 +140,36 @@ describe('PrimaryCTA', () => {
     expect(trigger).not.toHaveAttribute('hidden');
   });
 
+  describe('#16 — expand-in-place transition', () => {
+    it('panel carries motion-safe:animate-portal-emerge for the mount reveal', () => {
+      // The panel is conditionally mounted (isOpen ? <div> : null).
+      // A CSS transition on the element has no starting state to
+      // animate FROM — so we use a keyframe animation that fires on
+      // mount instead. Gate it under motion-safe: so reduced-motion
+      // users see an instant reveal without the translate-up effect.
+      render(<PrimaryCTA defaultOpen />);
+      const panel = document.querySelector('[data-home-portal-panel]');
+      expect(panel).not.toBeNull();
+      expect(panel?.getAttribute('class') ?? '').toMatch(/motion-safe:animate-portal-emerge/);
+    });
+  });
+
+  describe('#9 — portal glow + surge', () => {
+    it('trigger button carries the stronger focus glow class', () => {
+      render(<PrimaryCTA />);
+      const trigger = screen.getByRole('button', { name: /begin the ascent/i });
+      expect(trigger.getAttribute('class') ?? '').toMatch(
+        /focus-visible:shadow-glow-tiferet-focus/,
+      );
+    });
+
+    it('trigger carries data-home-cta="begin" for CSS surge targeting', () => {
+      render(<PrimaryCTA />);
+      const trigger = screen.getByRole('button', { name: /begin the ascent/i });
+      expect(trigger.getAttribute('data-home-cta')).toBe('begin');
+    });
+  });
+
   it('focus is returned to the trigger after the panel closes', async () => {
     // The close-side focus-return runs in a useEffect (not synchronously
     // alongside setIsOpen(false)), because under React 18 automatic

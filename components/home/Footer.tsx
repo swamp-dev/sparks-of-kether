@@ -20,7 +20,7 @@ export function Footer({ className }: FooterProps): JSX.Element {
   return (
     <footer
       data-home-footer
-      className={`mx-auto flex max-w-4xl flex-col items-center gap-4 text-sm text-veil/60 sm:flex-row sm:justify-center sm:gap-8 ${className ?? ''}`}
+      className={`mx-auto flex max-w-4xl flex-col items-center gap-4 text-sm text-veil/60 sm:flex-row sm:justify-center sm:gap-8${className ? ` ${className}` : ''}`}
     >
       <Link
         href="/about"

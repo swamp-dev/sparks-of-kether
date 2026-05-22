@@ -24,7 +24,7 @@ import { CardBack } from './CardBack';
  * other players, but if it ever did, the UI doesn't leak the data.
  */
 
-interface HandProps {
+interface HandBaseProps {
   readonly hand: readonly number[];
   readonly visible: boolean;
   readonly onCardSelect?: (arcanumNumber: number) => void;
@@ -77,21 +77,34 @@ interface HandProps {
    * them all collide at the same viewport position.
    */
   readonly layout?: 'floating' | 'inline';
+  /**
+   * Applied to the outer wrapper in both modes. In floating mode the
+   * wrapper has `position:fixed; left:0; right:0` (`inset-x-0`). Width
+   * classes like `max-w-xl` are honoured (they cap the wrapper and
+   * left-align it), but centering or `width` classes may not behave as
+   * expected — test on a wide viewport before relying on them.
+   */
   readonly className?: string;
-  /**
-   * #90 — when true, each face-up card shows a translucent discard
-   * icon overlay. Clicking the icon fires `onDiscard`. Hovering the
-   * card still fires `onCardHover` so Tree paths light up before the
-   * player commits to discarding.
-   */
-  readonly discardMode?: boolean;
-  /**
-   * #90 — fires with the arcanum when the player clicks a card's
-   * discard icon during `discardMode`. Supply together with
-   * `discardMode={true}`.
-   */
-  readonly onDiscard?: (arcanum: number) => void;
 }
+
+/**
+ * #90/#93 — discriminated union enforces that `onDiscard` is required
+ * whenever `discardMode={true}`. Passing `discardMode` without `onDiscard`
+ * is a compile-time error; the silent no-op is impossible.
+ */
+type HandProps = HandBaseProps &
+  (
+    | {
+        /** #90 — shows a discard icon on each visible card; `onDiscard` is required. */
+        readonly discardMode: true;
+        /** #90 — fires with the arcanum when the discard icon is clicked. */
+        readonly onDiscard: (arcanum: number) => void;
+      }
+    | {
+        readonly discardMode?: false;
+        readonly onDiscard?: never;
+      }
+  );
 
 const MAX_FAN_DEG = 12;
 /**
@@ -448,6 +461,7 @@ export function Hand({
           // whether onCardHover is set; the callback is opt-in.
           const handleHoverEnter = visible
             ? (): void => {
+                if (isFloating) expandHand();
                 setHoveredIndex(i);
                 if (onCardHover) onCardHover(arcanum);
               }
@@ -540,10 +554,7 @@ export function Hand({
                 position: 'relative',
                 zIndex,
                 transform: baseTransform + magnifyTransform,
-                // Magnified cards scale from center so the lift is symmetric;
-                // non-magnified cards anchor at bottom-center to keep the
-                // fan's curve on a horizontal baseline.
-                transformOrigin: isMagnified ? 'center' : 'bottom center',
+                transformOrigin: 'center',
                 // Transition is scoped to cards participating in the magnify
                 // *now or on the previous render*. The `inMagnifySet` half
                 // covers entry; the `prevInMagnifySet` half covers exit
@@ -569,7 +580,7 @@ export function Hand({
                   !reduceMotion && (inMagnifySet || prevInMagnifySet)
                     ? MAGNIFY_TRANSITION
                     : undefined,
-                boxShadow: isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
+                boxShadow: !reduceMotion && isMagnified ? MAGNIFY_BOX_SHADOW : undefined,
                 // #579: 75% opacity while magnified so the matching Tree
                 // path's per-Sefirah glow shows THROUGH the card. The
                 // opacity is preserved under `prefers-reduced-motion`
@@ -618,12 +629,12 @@ export function Hand({
                 // the post-drop synthesized click on its first
                 // invocation, then resets.
                 onClick={handleClick}
-                onPointerDown={(e) => {
-                  if (draggable) cardDrag.handlers.onPointerDown(e, arcanum);
-                }}
-                onPointerMove={cardDrag.handlers.onPointerMove}
-                onPointerUp={cardDrag.handlers.onPointerUp}
-                onPointerCancel={cardDrag.handlers.onPointerCancel}
+                onPointerDown={
+                  draggable ? (e) => cardDrag.handlers.onPointerDown(e, arcanum) : undefined
+                }
+                onPointerMove={draggable ? cardDrag.handlers.onPointerMove : undefined}
+                onPointerUp={draggable ? cardDrag.handlers.onPointerUp : undefined}
+                onPointerCancel={draggable ? cardDrag.handlers.onPointerCancel : undefined}
                 onFocus={handleFocusIn}
                 onBlur={handleFocusOut}
                 onKeyDown={(e) => handleKey(e, i, arcanum)}
@@ -662,6 +673,10 @@ export function Hand({
                 // HTML requires this to be a sibling, not a child of
                 // the card <button> — nested interactive elements are
                 // invalid HTML and cause accessibility issues.
+                // onDiscard guard: technically guaranteed by HandProps union
+                // (#93) but kept here so TypeScript can narrow onDiscard to
+                // non-null — the destructuring default `discardMode=false`
+                // loses the discriminant information.
                 <button
                   type="button"
                   data-discard-icon={arcanum}

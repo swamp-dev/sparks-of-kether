@@ -1,4 +1,5 @@
 'use client';
+// #11: orb h2 shows transliteration (Kether) primary, Hebrew secondary, English tertiary.
 import { useEffect, useRef, useState } from 'react';
 import { sefirot } from '@/data';
 import type { StatKey, ZodiacSignKey } from '@/data';
@@ -7,7 +8,7 @@ import type { Rng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 import {
   dignityRelationship,
-  quoteForBlessing,
+  quoteForCeremony,
   type DignityRelationship,
 } from '@/engine/sefirah-quote';
 import { usePantheon } from '@/lib/settings/pantheon';
@@ -103,7 +104,7 @@ export function BlessingRitual({
     if (currentSefirah) {
       setStats((prev) => ({ ...prev, [currentSefirah.stat]: a + b + c }));
       setBlessing({
-        quote: quoteForBlessing(pantheon.sefirahBlessings, currentSefirah.key, sign, rng),
+        quote: quoteForCeremony(currentSefirah.key, sign, rng),
         tier: dignityRelationship(currentSefirah.key, sign),
       });
     }
@@ -188,7 +189,7 @@ export function BlessingRitual({
         data-status="hastening"
         data-blessing-state="null"
         aria-label="Hastening the rite — rolling all remaining blessings"
-        className={`mx-auto max-w-5xl text-center ${className ?? ''}`}
+        className={`mx-auto max-w-5xl text-center${className ? ` ${className}` : ''}`}
       >
         <p className="font-display text-2xl tracking-widest opacity-70">The rite quickens…</p>
         <div
@@ -234,7 +235,7 @@ export function BlessingRitual({
       data-sefirah={currentSefirah.key}
       data-status={stepStatus}
       data-blessing-state={blessing === null ? 'null' : 'set'}
-      aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
+      aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.transliteration} (${currentSefirah.englishName})`}
       className={`mx-auto max-w-5xl ${className ?? ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
@@ -274,6 +275,7 @@ export function BlessingRitual({
             {...(avatarName !== undefined ? { avatarName } : {})}
             state={stepStatus === 'awaiting' ? 'prep' : 'pass'}
             size="stage"
+            pose="speaking"
           />
           <span
             data-sefirah-stat-label
@@ -305,7 +307,7 @@ export function BlessingRitual({
           </p>
 
           <h2 className="relative mt-3 font-display text-3xl tracking-widest" data-sefirah-name>
-            {currentSefirah.englishName}
+            {currentSefirah.transliteration}
           </h2>
           <p
             className="relative mt-1 font-hebrew text-2xl"
@@ -313,6 +315,9 @@ export function BlessingRitual({
             style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
           >
             {currentSefirah.hebrewName}
+          </p>
+          <p className="relative mt-0.5 text-sm opacity-60" data-sefirah-gloss>
+            {currentSefirah.englishName}
           </p>
 
           <p className="relative mt-4 italic opacity-80" data-essence>
@@ -402,7 +407,7 @@ export function BlessingRitual({
               type="button"
               onClick={handleSkipCeremony}
               data-action="skip-ceremony"
-              className="mt-4 cursor-pointer text-xs uppercase tracking-widest opacity-50 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              className="mt-4 cursor-pointer rounded border border-illumination/50 px-4 py-2 text-xs uppercase tracking-widest hover:border-illumination hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
             >
               Hasten the rite — roll the rest at once
             </button>
@@ -453,7 +458,7 @@ function Summary({
       data-status="complete"
       data-blessing-state={blessingState}
       aria-label="Blessing ritual complete; final stats"
-      className={`mx-auto max-w-md text-center ${className ?? ''}`}
+      className={`mx-auto max-w-md text-center${className ? ` ${className}` : ''}`}
     >
       <h2 className="font-display text-2xl tracking-widest">The Tree has spoken.</h2>
       <p className="mt-2 text-sm opacity-70">Your blessings:</p>

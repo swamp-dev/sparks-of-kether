@@ -261,8 +261,8 @@ describe('turnReducer — phase transitions', () => {
     if (!result.ok) return;
     expect(result.value.next.state.phase).toBe('kether');
     expect(result.value.next.state.ketherRitual).toBeDefined();
-    expect(result.value.next.state.ketherRitual?.subPhase).toBe('witness');
-    expect(result.value.next.state.ketherRitual?.witnessOrder[0]).toBe('p2');
+    expect(result.value.next.state.ketherRitual?.subPhase).toBe('trial');
+    expect(result.value.next.state.ketherRitual?.trialOrder[0]).toBe('p2');
   });
 });
 

@@ -55,7 +55,7 @@ export function ContinueGame(): JSX.Element | null {
           type="button"
           onClick={handleResume}
           aria-label="Resume game"
-          className="flex-1 rounded bg-illumination px-4 py-2 font-display text-xs uppercase tracking-widest text-ground"
+          className="flex-1 rounded bg-illumination px-4 py-2 font-display text-xs uppercase tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           Resume →
         </button>

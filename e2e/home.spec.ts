@@ -54,3 +54,21 @@ test('PrimaryCTA: Escape and Close return focus to the trigger', async ({ page }
   await expect(trigger).toBeVisible();
   await expect(trigger).toBeFocused();
 });
+
+test('PrimaryCTA: expand → Hot-seat option → navigates to /play', async ({ page }) => {
+  // #16 AC: picking an option routes to the corresponding downstream
+  // flow. Hot-seat is the simplest to verify (direct link to /play,
+  // no room creation or form submission needed).
+  await page.goto('/');
+
+  const trigger = page.getByRole('button', { name: /begin the ascent/i });
+  await trigger.click();
+
+  // Panel is now open. Hot-seat link should be visible.
+  const hotseat = page.getByRole('link', { name: /hot-seat/i });
+  await expect(hotseat).toBeVisible();
+
+  // Clicking routes to the play screen — Next.js client navigation.
+  await hotseat.click();
+  await expect(page).toHaveURL(/\/play/);
+});

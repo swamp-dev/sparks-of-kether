@@ -51,6 +51,12 @@ interface HeroProps {
 // LobbyBackdrop all read from one source. Drift between hero and
 // gameplay used to require manual three-way synchronization.
 
+// #9: Middle Pillar paths (Kether–Tiferet–Yesod–Malkuth). These are
+// the paths that carry the "serpent ascending" surge animation when the
+// home CTA is hovered or focused. Targeted by the `:has()` rule in
+// `app/globals.css`.
+const SURGE_PATH_NUMBERS = new Set([13, 25, 32]);
+
 // Tailwind class for each Sefirah's glow shadow. Pre-mapped so the
 // JIT picks them up — Tailwind's content scanner needs the literal
 // classnames in the source, not built dynamically by string concat.
@@ -89,7 +95,7 @@ export function Hero({ className }: HeroProps): JSX.Element {
     <div
       data-home-hero
       aria-hidden="true"
-      className={`pointer-events-none relative w-full ${className ?? ''}`}
+      className={`pointer-events-none relative w-full${className ? ` ${className}` : ''}`}
     >
       <svg
         viewBox={`0 0 ${TREE_VIEW_W} ${TREE_VIEW_H}`}
@@ -114,6 +120,9 @@ export function Hero({ className }: HeroProps): JSX.Element {
             return (
               <line
                 key={path.number}
+                data-surge-path={
+                  SURGE_PATH_NUMBERS.has(path.number) ? String(path.number) : undefined
+                }
                 x1={a.x}
                 y1={a.y}
                 x2={b.x}

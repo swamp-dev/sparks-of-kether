@@ -46,21 +46,21 @@ export function DiscardPile({
   const [open, setOpen] = useState(false);
   const count = discardPile.length;
   const top = count > 0 ? discardPile[count - 1] : undefined;
-  const label =
-    count === 0
-      ? 'Discard pile, empty'
-      : `Discard pile, ${count} ${count === 1 ? 'card' : 'cards'}. Click to browse.`;
-  // #462: when a drag is live, append a "drop a card here to discard"
-  // prompt to the AT label so screen-reader users hear the affordance
-  // without needing to navigate to a separate aria-live region.
-  const ariaLabel = dragActive ? `${label} Drop a card here to discard.` : label;
+  const baseLabel = `Discard pile, ${count === 0 ? 'empty' : `${count} ${count === 1 ? 'card' : 'cards'}`}`;
+  // #462: when a drag is live, swap "Click to browse" for the drop
+  // prompt so AT users hear only the relevant affordance.
+  const ariaLabel = dragActive
+    ? `${baseLabel}. Drop a card here to discard.`
+    : count === 0
+      ? baseLabel
+      : `${baseLabel}. Click to browse.`;
 
   return (
     <div
       data-discard-pile
       data-discard-empty={count === 0 ? 'true' : 'false'}
       data-drag-active={dragActive ? 'true' : 'false'}
-      className={`flex flex-col items-center gap-1 ${className ?? ''}`}
+      className={`flex flex-col items-center gap-1${className ? ` ${className}` : ''}`}
     >
       <button
         type="button"
@@ -109,7 +109,11 @@ export function DiscardPile({
           </div>
         )}
       </button>
-      <p className="text-[10px] uppercase tracking-widest text-veil/60">
+      <p
+        aria-live="polite"
+        aria-atomic="true"
+        className="text-[10px] uppercase tracking-widest text-veil/60"
+      >
         <span data-discard-count>{count}</span> {count === 1 ? 'card' : 'cards'}
       </p>
       {open ? (
