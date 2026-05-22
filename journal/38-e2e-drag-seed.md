@@ -21,4 +21,4 @@ on this branch.
 
 **Why:** Hosted CI failure on test 1 after push 1. Tests 2 and 3 were green; they use `.first()` (always near the fan centre, so the cross-boundary move was short and safe) while test 1 targets a specific arcanum card that may be further from fan centre.
 
-**Commit(s):** TBD
+**Commit(s):** `f9ba3d1`
