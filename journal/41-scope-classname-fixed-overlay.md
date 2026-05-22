@@ -12,3 +12,11 @@ Tests updated:
 - Added: inline-mode regression (className still on outer wrapper)
 
 Reviewer found significant gap (missing fan trailing-space test) and minor nits (test placement, JSDoc). All addressed in this commit.
+
+## Push 2 — fcd4c0f
+
+Revised approach after E2E regression. First approach (routing className to inner fan) changed the hand's position from left-aligned to centered, causing pointer-events-auto cards to block button clicks.
+
+Correct fix: keep className on the outer wrapper (runtime unchanged), remove the misleading `className="w-full max-w-xl"` from PlayScreen (it was a no-op due to `inset-x-0`), update JSDoc to document the limitation. Tests updated to reflect actual routing (outer wrapper).
+
+Reviewer finding: JSDoc suggestion to use `layout="inline"` was misleading — removed.
