@@ -736,6 +736,7 @@ export function PlayScreen({
                 }
               : {})}
             ariaLabel={`${viewerPlayer.name}'s hand`}
+            className="w-full max-w-xl"
           />
         ) : null}
         {/* #412: aria-live region for invalid drag-to-play attempts. */}
