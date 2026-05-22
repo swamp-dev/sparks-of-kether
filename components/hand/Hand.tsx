@@ -77,6 +77,13 @@ interface HandBaseProps {
    * them all collide at the same viewport position.
    */
   readonly layout?: 'floating' | 'inline';
+  /**
+   * Applied to the outer wrapper in both modes. In floating mode the
+   * wrapper has `position:fixed; left:0; right:0` (`inset-x-0`). Width
+   * classes like `max-w-xl` are honoured (they cap the wrapper and
+   * left-align it), but centering or `width` classes may not behave as
+   * expected — test on a wide viewport before relying on them.
+   */
   readonly className?: string;
 }
 

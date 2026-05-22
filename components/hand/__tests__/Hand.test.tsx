@@ -284,6 +284,25 @@ describe('Hand — interaction', () => {
     expect(cls).not.toMatch(/  my-extra/);
   });
 
+  it('floating mode: className lands on outer wrapper; width classes are a no-op due to inset-x-0 (#41)', () => {
+    // inset-x-0 forces the fixed overlay to full viewport width, so
+    // layout-constraining classes like max-w-xl have no visual effect.
+    // Consumers should not pass width classes in floating mode.
+    const { container } = render(<Hand hand={[2]} visible={true} className="max-w-xl" />);
+    const outer = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    const fan = container.querySelector('[data-hand-fan]')?.getAttribute('class') ?? '';
+    expect(outer).toContain('max-w-xl');
+    expect(fan).not.toContain('max-w-xl');
+  });
+
+  it('inline mode: className lands on outer [data-hand] wrapper (#41)', () => {
+    const { container } = render(
+      <Hand hand={[2]} visible={true} layout="inline" className="my-custom-class" />,
+    );
+    const outer = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(outer).toContain('my-custom-class');
+  });
+
   it('inline mode: outerClassName is empty string when className prop is absent (#127)', () => {
     const { container } = render(<Hand hand={[2]} visible={true} layout="inline" />);
     const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
