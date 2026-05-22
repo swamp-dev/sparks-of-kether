@@ -1,0 +1,31 @@
+{
+  "service": "elevenlabs",
+  "model": "eleven_multilingual_v2",
+  "outputFormat": "mp3_44100_96",
+  "avatars": {
+    "athena":    { "voiceId": "", "name": "", "notes": "" },
+    "demeter":   { "voiceId": "", "name": "", "notes": "" },
+    "zeus":      { "voiceId": "", "name": "", "notes": "" },
+    "ares":      { "voiceId": "", "name": "", "notes": "" },
+    "apollo":    { "voiceId": "", "name": "", "notes": "" },
+    "aphrodite": { "voiceId": "", "name": "", "notes": "" },
+    "hermes":    { "voiceId": "", "name": "", "notes": "" },
+    "selene":    { "voiceId": "", "name": "", "notes": "" },
+    "hestia":    { "voiceId": "", "name": "", "notes": "" },
+    "kether":    { "voiceId": "", "name": "", "notes": "" }
+  },
+  "zodiac": {
+    "aries":       { "voiceId": "", "name": "", "notes": "" },
+    "taurus":      { "voiceId": "", "name": "", "notes": "" },
+    "gemini":      { "voiceId": "", "name": "", "notes": "" },
+    "cancer":      { "voiceId": "", "name": "", "notes": "" },
+    "leo":         { "voiceId": "", "name": "", "notes": "" },
+    "virgo":       { "voiceId": "", "name": "", "notes": "" },
+    "libra":       { "voiceId": "", "name": "", "notes": "" },
+    "scorpio":     { "voiceId": "", "name": "", "notes": "" },
+    "sagittarius": { "voiceId": "", "name": "", "notes": "" },
+    "capricorn":   { "voiceId": "", "name": "", "notes": "" },
+    "aquarius":    { "voiceId": "", "name": "", "notes": "" },
+    "pisces":      { "voiceId": "", "name": "", "notes": "" }
+  }
+}
