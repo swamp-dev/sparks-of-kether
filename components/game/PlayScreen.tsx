@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
+import { NODE_RADIUS, TREE_VIEW_W } from '@/data/tree-layout';
 import type { SefirahKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
@@ -436,7 +437,15 @@ export function PlayScreen({
     setDraggingCard(undefined);
     if (!activePlayer || !isMyTurn) return;
     const target = document.elementFromPoint(position.x, position.y);
-    const dropZone = target?.closest('[data-drop-zone]');
+    // Sefirah-node HTML buttons (h-12 w-12, pointer-events-auto) sit above
+    // the SVG path hit-lines. #213 trims hit-lines back by NODE_RADIUS, so
+    // drops near a node can miss the path. When the topmost element is a
+    // Sefirah button, probe nearby pixels to find the hit-line below.
+    const dropZone =
+      target?.closest('[data-drop-zone]') ??
+      (target?.closest('[data-sefirah-link]') != null
+        ? findDropZoneNear(position.x, position.y)
+        : null);
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
 
     // #462: drag-to-discard-pile branch. Routes to `turn.discard`,
@@ -1078,4 +1087,42 @@ function phaseHint(phase: TurnPhase): string {
       // exhaustive so a future routing bug surfaces at compile time.
       return 'Final Threshold ritual';
   }
+}
+
+/**
+ * When a drag ends on a Sefirah-node HTML button (which sits above the SVG
+ * path hit-lines in z-order), `elementFromPoint` returns the button and
+ * misses the path. Probe a ring of 8 neighbouring pixels — 4 cardinal and
+ * 4 diagonal — offset to land just past NODE_RADIUS scaled to screen pixels.
+ *
+ * Cardinal step: just past the trim point in each axis direction.
+ * Diagonal step: cardinal_step / √2 per axis, so each diagonal probe lands
+ * at roughly the same Euclidean distance from the node center as a cardinal
+ * probe. Without this, diagonal probes at (±step, ±step) sit √2 × further
+ * out and can miss the short trimmed segment near the path endpoint.
+ *
+ * Scale is derived from the SVG's actual rendered width. Falls back to
+ * scale=1 when the SVG is not yet laid out (jsdom, server-side).
+ */
+function findDropZoneNear(cx: number, cy: number): Element | null {
+  const svgWidth =
+    document.querySelector('[data-tree-root] svg')?.getBoundingClientRect().width ?? 0;
+  const scale = svgWidth > 0 ? svgWidth / TREE_VIEW_W : 1;
+  const stepC = Math.ceil(NODE_RADIUS * scale) + 4; // +4px sub-pixel margin
+  const stepD = Math.ceil((NODE_RADIUS * scale) / Math.SQRT2) + 4;
+  const probes: [number, number][] = [
+    [stepC, 0],
+    [-stepC, 0],
+    [0, stepC],
+    [0, -stepC],
+    [stepD, stepD],
+    [-stepD, stepD],
+    [stepD, -stepD],
+    [-stepD, -stepD],
+  ];
+  for (const [dx, dy] of probes) {
+    const zone = document.elementFromPoint(cx + dx, cy + dy)?.closest('[data-drop-zone]');
+    if (zone) return zone;
+  }
+  return null;
 }

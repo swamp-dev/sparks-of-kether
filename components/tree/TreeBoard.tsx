@@ -1,6 +1,12 @@
 import { useId, useMemo, type KeyboardEvent } from 'react';
 import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
-import { TREE_VIEW_H, TREE_VIEW_W, treeNodeLayout, type NodeLayout } from '@/data/tree-layout';
+import {
+  NODE_RADIUS,
+  TREE_VIEW_H,
+  TREE_VIEW_W,
+  treeNodeLayout,
+  type NodeLayout,
+} from '@/data/tree-layout';
 import { GROUND, VEIL } from '@/data/colors';
 import type { SefirahKey } from '@/data';
 import type { GameState } from '@/engine/types';
@@ -67,13 +73,11 @@ import { SefirahTooltip } from './SefirahTooltip';
  * SVG's aspect ratio so node coordinates resolve identically.
  */
 
-// TREE_VIEW_W / TREE_VIEW_H / treeNodeLayout / NodeLayout were previously inline
-// here; pulled into `data/tree-layout` so the home Hero, the lobby
-// backdrop, and this play board all read from one source. The
-// 620 (rather than 600) viewBox height is intentional — gives
-// Malkuth's label below the bottom node room to render without
-// clipping (label baseline sits at malkuth.y + radius + 14 = 602).
-const NODE_RADIUS = 28;
+// TREE_VIEW_W / TREE_VIEW_H / NODE_RADIUS / treeNodeLayout / NodeLayout were
+// previously inline here; pulled into `data/tree-layout` so consumers across
+// the app read from one source. The 620 (rather than 600) viewBox height is
+// intentional — gives Malkuth's label below the bottom node room to render
+// without clipping (label baseline sits at malkuth.y + radius + 14 = 602).
 
 /**
  * Frozen empty valid-paths set, returned when `movesEnabled` is false

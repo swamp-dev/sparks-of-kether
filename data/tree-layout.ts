@@ -26,6 +26,8 @@ export interface NodeLayout {
 
 export const TREE_VIEW_W = 400;
 export const TREE_VIEW_H = 620;
+/** Radius of each Sefirah node circle in SVG viewBox units (400×620). */
+export const NODE_RADIUS = 28;
 
 export const treeNodeLayout: Readonly<Record<SefirahKey, NodeLayout>> = {
   kether: { x: 200, y: 60 },
