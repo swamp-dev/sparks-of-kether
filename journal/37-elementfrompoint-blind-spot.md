@@ -21,4 +21,4 @@ on this branch.
 
 Scale-aware fix: `findDropZoneNear` now reads `[data-tree-root] svg` `getBoundingClientRect().width`, computes `scale = width / TREE_VIEW_W` (TREE_VIEW_W = 400), and sets `step = Math.ceil(NODE_RADIUS * scale) + 4`. At 1080p this gives step ≈ 41px, safely past the ~37px gap. In jsdom (svgWidth = 0) falls back to scale = 1 → step = 32px. Also exported `NODE_RADIUS = 28` from `data/tree-layout.ts` and updated `TreeBoard.tsx` to import it instead of redeclaring locally — eliminates the prior drift risk.
 
-**Commit(s):** `361b5b5`
+**Commit(s):** `361b5b5`, `c28ed8d` — second code review found diagonal probes used the same step as cardinal probes (√2 × further from node center); fixed with separate `stepD = ceil(NODE_RADIUS * scale / √2) + 4`. Test stub tightened to use `Math.hypot(x-220, y-300) <= NODE_RADIUS` so a step regression fails rather than passing silently.
