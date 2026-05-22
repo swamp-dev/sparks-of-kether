@@ -6,7 +6,7 @@ import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
 import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
-import { ShellPanel } from '@/components/shells/ShellPanel';
+import { ShellStrip } from '@/components/shells/ShellStrip';
 import { DiscardPile } from '@/components/game/DiscardPile';
 import { DrawDeck } from '@/components/game/DrawDeck';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
@@ -41,7 +41,7 @@ import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
  *   - Hand (visibility-aware, owner sees own; others by upper-Tree rule)
  *   - StatSheet for the active player (active stat highlighted during a check)
  *   - TeamMeters (Illumination / Separation / pillar streak)
- *   - ShellPanel
+ *   - ShellStrip (active Shells full-size; dormant/banished compact strip)
  *   - EncounterScreen opens automatically when the active player arrives at
  *     an uncleared `'check'`-kind Sefirah (replaces the prior ChallengeModal
  *     in #228; ChallengeModal stays alive for `/demo/challenge` only).
@@ -745,8 +745,8 @@ export function PlayScreen({
         and per-panel padding drops to p-3 (was p-4) — reclaims
         ~48 px of aside height so the right column stops dominating
         the document height at 1280×800. Mobile (gap-6 / p-4) is
-        preserved unchanged. ShellPanel collapse-to-strip remains a
-        separate ticket (#464) that can layer further compaction.
+        preserved unchanged. ShellPanel collapse-to-strip shipped in
+        #14 — active Shells show full-size, dormant/banished collapse.
       */}
       <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
         {/*
@@ -782,12 +782,9 @@ export function PlayScreen({
           />
         </div>
         <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
-          <ShellPanel
+          <ShellStrip
             shells={turn.state.shells}
             headingLevel={3}
-            // #321: same wiring pattern. ShellPanel fires the
-            // callback once per state transition; throttle still
-            // covers the multi-Shell-banished-in-one-tick case.
             onShellAwakened={() => playSound('shell-awakened')}
             onShellBanished={() => playSound('shell-banished')}
           />
