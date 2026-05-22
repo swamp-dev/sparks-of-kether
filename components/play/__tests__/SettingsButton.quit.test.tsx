@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import type { AxeResults } from 'axe-core';
 import { SettingsButton } from '../SettingsButton';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
+import { PantheonSettingsProvider } from '@/lib/settings/pantheon';
 
 function expectNoViolations(results: AxeResults): void {
   if (results.violations.length === 0) return;
@@ -17,7 +18,9 @@ function expectNoViolations(results: AxeResults): void {
 function renderWithQuit(onQuit?: () => void): ReturnType<typeof render> {
   return render(
     <SoundSettingsProvider>
-      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      <PantheonSettingsProvider>
+        <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      </PantheonSettingsProvider>
     </SoundSettingsProvider>,
   );
 }

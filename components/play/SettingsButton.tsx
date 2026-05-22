@@ -174,7 +174,9 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
   // overkill but the count must not be hardcoded.
   //
   // Radio buttons with tabIndex=-1 are excluded — only the selected
-  // radio (tabIndex=0) participates in the Tab cycle.
+  // radio (tabIndex=0) participates in the Tab cycle. The selector
+  // relies on React serialising tabIndex={-1} to the DOM attribute
+  // string `tabindex="-1"`, which is guaranteed by React's behaviour.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'Tab') return;
     if (!dialogRef.current) return;
