@@ -323,12 +323,7 @@ export function TreeBoard({
             shows through, so all 10 nodes look distinct while sharing
             the same jeweled quality.
           */}
-          <radialGradient
-            id={`node-gleam-${reactId}`}
-            cx="38%"
-            cy="32%"
-            r="65%"
-          >
+          <radialGradient id={`node-gleam-${reactId}`} cx="38%" cy="32%" r="65%">
             <stop offset="0%" stopColor="white" stopOpacity={0.45} />
             <stop offset="50%" stopColor="white" stopOpacity={0.0} />
             <stop offset="100%" stopColor="black" stopOpacity={0.22} />
