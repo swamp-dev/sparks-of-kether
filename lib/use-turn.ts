@@ -8,10 +8,11 @@ import type {
   ChallengeSuccess,
 } from '@/engine/checks';
 import {
-  currentWitnessPlayerId,
+  currentTrialPlayerId,
   ketherConfirmClosure,
-  ketherPassCard,
-  ketherPlayCard,
+  ketherTrialStageSpark as engineTrialStageSpark,
+  ketherTrialUnstageSpark as engineTrialUnstageSpark,
+  ketherTrialResolve as engineTrialResolve,
   ketherStageSpark,
   ketherUnstageSpark,
   type KetherConfirmResult,
@@ -81,7 +82,7 @@ interface UseTurnOptions {
    * K4 / #352 — caller's player id, used by ritual methods to populate
    * the `playerId` field on dispatched `ClientAction`s. Required when
    * `dispatchClientAction` is provided; ignored otherwise. (Hot-seat
-   * uses `currentWitnessPlayerId(state)` for play/pass and
+   * uses `currentTrialPlayerId(state)` for trial-resolve and
    * `state.activePlayerId` as the implicit actor for closure-window
    * stage/unstage actions.)
    */
@@ -219,53 +220,48 @@ export interface UseTurnReturn {
   readonly setState: (s: GameState) => void;
 
   // ────────────────────────────────────────────────────────────────
-  // K4 (#352) — Kether ritual adapter.
+  // K4 (#352) — Kether ritual adapter (trial redesign).
   //
-  // The five ritual methods mirror the K2 wire actions one-for-one
-  // (`design/final-threshold.md` § 7.1 K4). Hot-seat callers (no
-  // `dispatchClientAction` injected) get the local engine reducer
-  // applied directly; multiplayer callers also dispatch the matching
-  // `ClientAction` for Realtime. `currentWitnessPlayerId` is a
-  // derived field surfacing the engine's round-robin pointer so
-  // the UI can render "whose voice is speaking" without reaching
-  // into `state.ketherRitual` directly.
-  //
-  // `ketherHostSkipWitness` is `undefined` outside multiplayer mode —
-  // there is no disconnect risk at one keyboard. The hot-seat hook
-  // doesn't expose the affordance at all.
+  // Ritual methods mirror the K2 wire actions one-for-one. Hot-seat
+  // callers get the local engine reducer applied directly; multiplayer
+  // callers also dispatch the matching `ClientAction` for Realtime.
+  // `currentTrialPlayerId` surfaces the engine's round-robin pointer.
   // ────────────────────────────────────────────────────────────────
 
   /**
-   * Whose turn it currently is in the witness round-robin. Wraps
-   * `engine/kether.ts:currentWitnessPlayerId`. Returns `null` outside
-   * `phase === 'kether'` / `subPhase === 'witness'`. The hot-seat UI
-   * uses this to focus the right local "voice"; multiplayer UI uses it
-   * to gate the play/pass affordance.
+   * Whose turn it currently is in the trial gauntlet. Wraps
+   * `engine/kether.ts:currentTrialPlayerId`. Returns `null` outside
+   * `phase === 'kether'` / `subPhase === 'trial'`.
    */
-  readonly currentWitnessPlayerId: string | null;
+  readonly currentTrialPlayerId: string | null;
 
   /**
-   * Active witness plays one card from hand (§ 2.3). The arcanum must
-   * be in the player's hand; the engine validates this. Hot-seat uses
-   * `currentWitnessPlayerId(state)` as the implicit actor; multiplayer
-   * dispatches with `selfPlayerId`. No-op (and no wire dispatch) if
-   * the hook can't determine an actor (no current witness or no
-   * `selfPlayerId` in multiplayer mode).
+   * Stage one of `playerId`'s held Sparks for the current trial
+   * challenge. The engine validates ownership and sub-phase.
    */
-  readonly ketherWitnessPlay: (arcanum: number) => Result<GameState, KetherRejection> | undefined;
+  readonly ketherTrialStageSpark: (
+    playerId: string,
+    sefirah: SefirahKey,
+  ) => Result<GameState, KetherRejection>;
 
   /**
-   * Active witness passes their turn (+1 Separation; cap
-   * `⌈personalQueueLength / 2⌉`). Symmetric with `ketherWitnessPlay`
-   * for actor resolution.
+   * Symmetric un-stage for the trial.
    */
-  readonly ketherWitnessPass: () => Result<GameState, KetherRejection> | undefined;
+  readonly ketherTrialUnstageSpark: (
+    playerId: string,
+    sefirah: SefirahKey,
+  ) => Result<GameState, KetherRejection>;
 
   /**
-   * Stage one of `playerId`'s held Sparks for the closure window
-   * (§ 2.4). Pre-confirm only; the engine rejects once
-   * `closureLocked` is true. Multiplayer dispatch shape:
-   * `{ kind: 'kether-close-stage-spark', playerId, sefirah }`.
+   * Active trial player rolls their challenge. The engine handles
+   * d20 + stat + Spark-bonus and advances the turn index. Returns
+   * `undefined` if no actor can be determined.
+   */
+  readonly ketherTrialResolve: () => Result<GameState, KetherRejection> | undefined;
+
+  /**
+   * Stage one of `playerId`'s held Sparks for the closure window.
+   * Pre-confirm only; the engine rejects once `closureLocked` is true.
    */
   readonly ketherCloseStageSpark: (
     playerId: string,
@@ -273,7 +269,7 @@ export interface UseTurnReturn {
   ) => Result<GameState, KetherRejection>;
 
   /**
-   * Symmetric un-stage. Pre-confirm only.
+   * Symmetric un-stage for the closure window.
    */
   readonly ketherCloseUnstageSpark: (
     playerId: string,
@@ -281,21 +277,12 @@ export interface UseTurnReturn {
   ) => Result<GameState, KetherRejection>;
 
   /**
-   * Close the spark window (first-confirm-wins per § 2.4 / S-7).
-   * Hot-seat uses `state.activePlayerId` as the implicit actor;
-   * multiplayer uses `selfPlayerId`. Subsequent confirms reject with
+   * Close the spark window (first-confirm-wins). Hot-seat uses
+   * `state.activePlayerId` as the implicit actor; multiplayer uses
+   * `selfPlayerId`. Subsequent confirms reject with
    * `kether-already-confirmed` at the engine layer.
    */
   readonly thresholdConfirm: () => KetherConfirmResult | undefined;
-
-  /**
-   * Multiplayer-only: host forces an absent witness to pass / play
-   * (§ 7.1 disconnect defense). The K2 dispatcher in
-   * `lib/room-actions.ts` falls through to a forced lowest-arcanum
-   * play when the absent player has hit their pass cap. Hot-seat:
-   * this method is `undefined` (no disconnect risk).
-   */
-  readonly ketherHostSkipWitness?: (targetPlayerId: string) => void;
 }
 
 /**
@@ -674,40 +661,47 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     );
   }
 
-  const witnessPointer = currentWitnessPlayerId(state);
+  const trialPointer = currentTrialPlayerId(state);
 
-  const ketherWitnessPlay = useCallback(
-    (arcanum: number): Result<GameState, KetherRejection> | undefined => {
-      // Pick the actor: in multiplayer the caller's selfPlayerId IS
-      // the actor (the wire layer will reject if it isn't the current
-      // witness; the local optimistic apply will likewise reject via
-      // engine kether-not-your-turn). In hot-seat we use the engine
-      // pointer because there's only one keyboard — the round-robin
-      // is a UI focus, not a security boundary.
-      const actor = dispatch !== undefined ? selfPlayerId : currentWitnessPlayerId(state);
-      if (actor === undefined || actor === null) return undefined;
-      const result = ketherPlayCard(state, { playerId: actor, arcanum });
+  const ketherTrialStageSpark = useCallback(
+    (playerId: string, sefirah: SefirahKey): Result<GameState, KetherRejection> => {
+      const result = engineTrialStageSpark(state, { playerId, sefirah });
       if (!result.ok) return result;
       setSnapshot({ state: result.value });
       if (dispatch !== undefined) {
-        dispatch({ kind: 'kether-witness-play', playerId: actor, arcanum });
+        dispatch({ kind: 'kether-trial-stage-spark', playerId, sefirah });
       }
       return result;
     },
-    [state, dispatch, selfPlayerId],
+    [state, dispatch],
   );
 
-  const ketherWitnessPass = useCallback((): Result<GameState, KetherRejection> | undefined => {
-    const actor = dispatch !== undefined ? selfPlayerId : currentWitnessPlayerId(state);
+  const ketherTrialUnstageSpark = useCallback(
+    (playerId: string, sefirah: SefirahKey): Result<GameState, KetherRejection> => {
+      const result = engineTrialUnstageSpark(state, { playerId, sefirah });
+      if (!result.ok) return result;
+      setSnapshot({ state: result.value });
+      if (dispatch !== undefined) {
+        dispatch({ kind: 'kether-trial-unstage-spark', playerId, sefirah });
+      }
+      return result;
+    },
+    [state, dispatch],
+  );
+
+  const ketherTrialResolve = useCallback(():
+    | Result<GameState, KetherRejection>
+    | undefined => {
+    const actor = dispatch !== undefined ? selfPlayerId : currentTrialPlayerId(state);
     if (actor === undefined || actor === null) return undefined;
-    const result = ketherPassCard(state, { playerId: actor });
+    const result = engineTrialResolve(state, { playerId: actor, rng: opts.rng });
     if (!result.ok) return result;
     setSnapshot({ state: result.value });
     if (dispatch !== undefined) {
-      dispatch({ kind: 'kether-witness-pass', playerId: actor });
+      dispatch({ kind: 'kether-trial-resolve', playerId: actor });
     }
     return result;
-  }, [state, dispatch, selfPlayerId]);
+  }, [state, dispatch, selfPlayerId, opts.rng]);
 
   const ketherCloseStageSpark = useCallback(
     (playerId: string, sefirah: SefirahKey): Result<GameState, KetherRejection> => {
@@ -764,22 +758,6 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     return result;
   }, [state, dispatch, selfPlayerId]);
 
-  // Host-skip is a multiplayer-only affordance — no local engine
-  // apply; the server runs the forced pass / play on receipt. The
-  // hot-seat hook leaves this `undefined` (see UseTurnReturn comment).
-  const ketherHostSkipWitness = useMemo<((targetPlayerId: string) => void) | undefined>(() => {
-    if (dispatch === undefined || selfPlayerId === undefined) {
-      return undefined;
-    }
-    return (targetPlayerId: string): void => {
-      dispatch({
-        kind: 'kether-host-skip-witness',
-        playerId: selfPlayerId,
-        targetPlayerId,
-      });
-    };
-  }, [dispatch, selfPlayerId]);
-
   return useMemo(
     () => ({
       state,
@@ -801,19 +779,13 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       encounterBurnDiscard,
       endTurn,
       setState: replaceState,
-      // K4 (#352) — Kether ritual adapter.
-      currentWitnessPlayerId: witnessPointer,
-      ketherWitnessPlay,
-      ketherWitnessPass,
+      currentTrialPlayerId: trialPointer,
+      ketherTrialStageSpark,
+      ketherTrialUnstageSpark,
+      ketherTrialResolve,
       ketherCloseStageSpark,
       ketherCloseUnstageSpark,
       thresholdConfirm,
-      // Spread so the field is omitted (not `undefined`) in hot-seat —
-      // the type signature is optional, and `expect(field).toBeUndefined()`
-      // succeeds whether the key is absent or has value `undefined`.
-      // Multiplayer surfaces the function; hot-seat doesn't have the
-      // key. Tests rely on this dichotomy.
-      ...(ketherHostSkipWitness !== undefined ? { ketherHostSkipWitness } : {}),
     }),
     [
       state,
@@ -835,13 +807,13 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       encounterBurnDiscard,
       endTurn,
       replaceState,
-      witnessPointer,
-      ketherWitnessPlay,
-      ketherWitnessPass,
+      trialPointer,
+      ketherTrialStageSpark,
+      ketherTrialUnstageSpark,
+      ketherTrialResolve,
       ketherCloseStageSpark,
       ketherCloseUnstageSpark,
       thresholdConfirm,
-      ketherHostSkipWitness,
     ],
   );
 }

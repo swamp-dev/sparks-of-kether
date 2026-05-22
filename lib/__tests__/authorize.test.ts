@@ -82,8 +82,8 @@ describe('authorize — identity binding', () => {
 });
 
 describe('authorize — Kether ritual gates (#350)', () => {
-  // Two-player in-ritual fixture: phase: 'kether', ritual at witness
-  // sub-phase, p2 the round-robin opener. p1 is the host (seat 0).
+  // Two-player in-ritual fixture: phase 'kether', trial sub-phase,
+  // p2 is the current trial player (trialOrder[0]).
   function ketherFixture() {
     const players = [
       makePlayer({
@@ -106,12 +106,14 @@ describe('authorize — Kether ritual gates (#350)', () => {
         activePlayerId: 'p1',
         phase: 'kether',
         ketherRitual: {
-          subPhase: 'witness',
-          witnessOrder: ['p2', 'p1'],
-          witnessTurnIndex: 0,
-          personalQueueLengths: { p1: 2, p2: 2 },
-          passCounts: { p1: 0, p2: 0 },
-          witnessLog: [],
+          subPhase: 'trial',
+          trialOrder: ['p2', 'p1'],
+          trialTurnIndex: 0,
+          trialChallenges: [
+            { sefirahKey: 'chokmah', stat: 'insight', dc: 14, roll: null, passed: null },
+            { sefirahKey: 'binah', stat: 'understanding', dc: 14, roll: null, passed: null },
+          ],
+          trialStagedSparks: [],
           arrivalTimestamps: { p1: 100, p2: 200 },
           stagedClosureSparks: [],
           closureLocked: false,
@@ -120,43 +122,30 @@ describe('authorize — Kether ritual gates (#350)', () => {
     );
   }
 
-  describe('kether-witness-play / kether-witness-pass', () => {
-    it('allows the current witness to play (bypasses active-player gate)', () => {
+  describe('kether-trial-resolve', () => {
+    it('allows the current trial player to resolve (bypasses active-player gate)', () => {
       const k = ketherFixture();
-      // Note: state.activePlayerId is p1 (frozen at ritual entry per
-      // design § 3.3) but the gate uses the witness pointer instead.
-      const result = authorize(
-        { kind: 'kether-witness-play', playerId: 'p2', arcanum: 5 },
-        k,
-        'p2',
-      );
+      const result = authorize({ kind: 'kether-trial-resolve', playerId: 'p2' }, k, 'p2');
       expect(result.ok).toBe(true);
     });
 
-    it('rejects a non-witness with not-witness-turn', () => {
+    it('rejects a non-trial-player with not-trial-turn', () => {
       const k = ketherFixture();
-      const result = authorize({ kind: 'kether-witness-pass', playerId: 'p1' }, k, 'p1');
+      const result = authorize({ kind: 'kether-trial-resolve', playerId: 'p1' }, k, 'p1');
       expect(result.ok).toBe(false);
       if (result.ok) return;
-      expect(result.reason.kind).toBe('not-witness-turn');
-      if (result.reason.kind !== 'not-witness-turn') return;
+      expect(result.reason.kind).toBe('not-trial-turn');
+      if (result.reason.kind !== 'not-trial-turn') return;
       expect(result.reason.expectedPlayerId).toBe('p2');
     });
   });
 
-  describe('kether-close-stage-spark / kether-close-unstage-spark / threshold-confirm', () => {
-    it('allows any player (identity-bound only) to stage / unstage / confirm', () => {
+  describe('kether-trial-stage-spark / kether-trial-unstage-spark', () => {
+    it('allows any player to stage or unstage a Spark during trial', () => {
       const k = ketherFixture();
-      // p1 is NOT the active witness, but stage/unstage/confirm are
-      // open to any player per § 3.3.
       for (const action of [
-        { kind: 'kether-close-stage-spark', playerId: 'p1', sefirah: 'gevurah' },
-        {
-          kind: 'kether-close-unstage-spark',
-          playerId: 'p1',
-          sefirah: 'gevurah',
-        },
-        { kind: 'threshold-confirm', playerId: 'p1' },
+        { kind: 'kether-trial-stage-spark', playerId: 'p1', sefirah: 'gevurah' },
+        { kind: 'kether-trial-unstage-spark', playerId: 'p1', sefirah: 'gevurah' },
       ] as const) {
         const r = authorize(action, k, 'p1');
         expect(r.ok).toBe(true);
@@ -164,64 +153,17 @@ describe('authorize — Kether ritual gates (#350)', () => {
     });
   });
 
-  describe('kether-host-skip-witness', () => {
-    it('allows the host (state.players[0]) to dispatch on behalf of an absent witness', () => {
+  describe('kether-close-stage-spark / kether-close-unstage-spark / threshold-confirm', () => {
+    it('allows any player (identity-bound only) to stage / unstage / confirm', () => {
       const k = ketherFixture();
-      const result = authorize(
-        {
-          kind: 'kether-host-skip-witness',
-          playerId: 'p1',
-          targetPlayerId: 'p2',
-        },
-        k,
-        'p1',
-      );
-      expect(result.ok).toBe(true);
-    });
-
-    it('rejects a non-host caller with not-host', () => {
-      const k = ketherFixture();
-      const result = authorize(
-        {
-          kind: 'kether-host-skip-witness',
-          playerId: 'p2',
-          targetPlayerId: 'p1',
-        },
-        k,
-        'p2',
-      );
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
-      expect(result.reason.kind).toBe('not-host');
-      if (result.reason.kind !== 'not-host') return;
-      expect(result.reason.hostId).toBe('p1');
-    });
-
-    it('rejects when targetPlayerId is not the current witness (§ 7.1 gate b)', () => {
-      // Host attempting to skip a non-witness target. The engine's
-      // ketherPassCard would also reject (kether-not-your-turn), but
-      // the authorize layer must enforce this independently — the
-      // design's three-gate rule for host-skip is the authoritative
-      // contract. Without this gate, a host can probe witness-identity
-      // via 422-vs-403 response shapes.
-      const k = ketherFixture();
-      // p2 is the current witness; targeting p1 should reject.
-      const result = authorize(
-        {
-          kind: 'kether-host-skip-witness',
-          playerId: 'p1',
-          targetPlayerId: 'p1',
-        },
-        k,
-        'p1',
-      );
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
-      expect(result.reason.kind).toBe('not-witness-turn');
-      if (result.reason.kind !== 'not-witness-turn') return;
-      expect(result.reason.expectedPlayerId).toBe('p2');
-      expect(result.reason.targetPlayerId).toBe('p1');
-      expect(result.reason.action).toBe('kether-host-skip-witness');
+      for (const action of [
+        { kind: 'kether-close-stage-spark', playerId: 'p1', sefirah: 'gevurah' },
+        { kind: 'kether-close-unstage-spark', playerId: 'p1', sefirah: 'gevurah' },
+        { kind: 'threshold-confirm', playerId: 'p1' },
+      ] as const) {
+        const r = authorize(action, k, 'p1');
+        expect(r.ok).toBe(true);
+      }
     });
   });
 });
