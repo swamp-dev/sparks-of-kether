@@ -149,6 +149,13 @@ describe('DiscardPile', () => {
     expect(btn).not.toHaveAttribute('aria-label', expect.stringContaining('Click to browse'));
   });
 
+  it('dragActive=true on empty pile: drop prompt present, no click-to-browse', () => {
+    render(<DiscardPile discardPile={[]} dragActive />);
+    const btn = screen.getByRole('button');
+    expect(btn).toHaveAttribute('aria-label', 'Discard pile, empty. Drop a card here to discard.');
+    expect(btn).not.toHaveAttribute('aria-label', expect.stringContaining('Click to browse'));
+  });
+
   it('transitions back to empty state when recycleDiscardIntoDeck empties the pile', () => {
     // Simulates the recycle moment: discardPile goes from non-empty to [].
     const { rerender } = render(<DiscardPile discardPile={[2, 8, 14]} />);
