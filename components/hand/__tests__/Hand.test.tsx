@@ -669,6 +669,25 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     );
   });
 
+  it('transformOrigin is always "center" regardless of magnification state (#42)', () => {
+    // Holding transformOrigin at "center" always avoids the discrete
+    // bottom-center → center snap that occurs at magnify start/end.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const slots = container.querySelectorAll('[data-card-slot]') as NodeListOf<HTMLElement>;
+    const [first, middle] = slots;
+    if (!first || !middle) throw new Error('expected slots');
+    const firstWrapper = first.parentElement as HTMLElement;
+    const middleWrapper = middle.parentElement as HTMLElement;
+    // At rest (not magnified)
+    expect(firstWrapper.style.transformOrigin).toBe('center');
+    // Magnified
+    fireEvent.mouseEnter(middle);
+    expect(middleWrapper.style.transformOrigin).toBe('center');
+    // Back to rest
+    fireEvent.mouseLeave(middle);
+    expect(middleWrapper.style.transformOrigin).toBe('center');
+  });
+
   it('magnified card gets a box-shadow lift; siblings do not', () => {
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
     const slots = container.querySelectorAll('[data-card-slot]') as NodeListOf<HTMLElement>;
