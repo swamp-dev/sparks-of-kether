@@ -6,6 +6,7 @@ import {
   type SefirahKey,
   type ZodiacSignKey,
 } from '@/data';
+import { sefirahBlessingsCeremony } from '@/data/sefirah-blessings-ceremony';
 import type { SefirahBlessingMatrix } from '@/data/pantheons/types';
 import type { Rng } from './rng';
 
@@ -118,4 +119,14 @@ export function quoteForBlessing(
   rng: Rng,
 ): string {
   return pickBlessing(matrix, sefirah, sign, rng);
+}
+
+/**
+ * Pick the ceremony-specific blessing line for a given (sefirah, sign).
+ * Reads from the gift-receiving table (#13) rather than the encounter-
+ * voice table used by `quoteForBlessing`. Pantheon-agnostic: the
+ * ceremony gift is structural to the game, not avatar-voiced.
+ */
+export function quoteForCeremony(sefirah: SefirahKey, sign: ZodiacSignKey, rng: Rng): string {
+  return pickBlessing(sefirahBlessingsCeremony, sefirah, sign, rng);
 }
