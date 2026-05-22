@@ -7,7 +7,7 @@ import type { Rng } from '@/engine/rng';
 import type { StatSheet } from '@/engine/types';
 import {
   dignityRelationship,
-  quoteForBlessing,
+  quoteForCeremony,
   type DignityRelationship,
 } from '@/engine/sefirah-quote';
 import { usePantheon } from '@/lib/settings/pantheon';
@@ -103,7 +103,7 @@ export function BlessingRitual({
     if (currentSefirah) {
       setStats((prev) => ({ ...prev, [currentSefirah.stat]: a + b + c }));
       setBlessing({
-        quote: quoteForBlessing(pantheon.sefirahBlessings, currentSefirah.key, sign, rng),
+        quote: quoteForCeremony(currentSefirah.key, sign, rng),
         tier: dignityRelationship(currentSefirah.key, sign),
       });
     }

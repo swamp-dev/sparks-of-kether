@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { BlessingRitual } from '../BlessingRitual';
 import { seededRng } from '@/engine/rng';
 import { sefirot } from '@/data';
-import { sefirahBlessings } from '@/data/pantheons/greco-roman/blessings';
+import { sefirahBlessingsCeremony } from '@/data/sefirah-blessings-ceremony';
 import type { StatSheet } from '@/engine/types';
 
 const STAT_KEYS = sefirot.map((s) => s.stat);
@@ -430,7 +430,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.kether.aries).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.kether.aries).toContain(quote?.textContent?.trim());
   });
 
   it('Aries player at Gevurah → ruler tier (Mars rules Aries)', () => {
@@ -446,7 +446,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.gevurah.aries).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.gevurah.aries).toContain(quote?.textContent?.trim());
     expect(quote?.getAttribute('data-dignity-tier')).toBe('ruler');
   });
 
@@ -463,7 +463,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.hod.pisces).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.hod.pisces).toContain(quote?.textContent?.trim());
     expect(quote?.getAttribute('data-dignity-tier')).toBe('fall');
   });
 
@@ -480,7 +480,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.chesed.cancer).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.chesed.cancer).toContain(quote?.textContent?.trim());
   });
 
   it('Aries player at Netzach → detriment tier (Venus detriment in Aries)', () => {
@@ -496,7 +496,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.netzach.aries).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.netzach.aries).toContain(quote?.textContent?.trim());
   });
 
   it('any sign at Malkuth → neutral tier (Hestia warmth-only)', () => {
@@ -512,7 +512,7 @@ describe('BlessingRitual — sign-aware blessing quote (#255)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
     const quote = container.querySelector('[data-blessing-quote]');
     expect(quote).not.toBeNull();
-    expect(sefirahBlessings.malkuth.taurus).toContain(quote?.textContent?.trim());
+    expect(sefirahBlessingsCeremony.malkuth.taurus).toContain(quote?.textContent?.trim());
   });
 
   it('Hasten the rite mid-roll clears blessing state (state-machine invariant, #380)', () => {
