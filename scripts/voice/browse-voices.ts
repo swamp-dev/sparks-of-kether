@@ -26,25 +26,33 @@ function loadEnv() {
   try {
     for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
       const m = line.match(/^([^#=]+)=(.*)$/);
-      if (m) process.env[m[1].trim()] = m[2].trim();
+      if (m) process.env[m[1]!.trim()] = m[2]!.trim();
     }
-  } catch { /* rely on shell env */ }
+  } catch {
+    /* rely on shell env */
+  }
 }
 
 async function main() {
   loadEnv();
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) { console.error('ELEVENLABS_API_KEY not set in .env.local'); process.exit(1); }
+  if (!apiKey) {
+    console.error('ELEVENLABS_API_KEY not set in .env.local');
+    process.exit(1);
+  }
 
   const args = process.argv.slice(2);
-  const get = (flag: string) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : undefined; };
+  const get = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i !== -1 ? args[i + 1] : undefined;
+  };
 
-  const genderFilter  = get('--gender');
-  const searchFilter  = get('--search');
-  const ageFilter     = get('--age');
-  const accentFilter  = get('--accent');
+  const genderFilter = get('--gender');
+  const searchFilter = get('--search');
+  const ageFilter = get('--age');
+  const accentFilter = get('--accent');
   const useCaseFilter = get('--use-case');
-  const page  = parseInt(get('--page')  ?? '1',  10);
+  const page = parseInt(get('--page') ?? '1', 10);
   const limit = parseInt(get('--limit') ?? '30', 10);
 
   const client = new ElevenLabsClient({ apiKey });
@@ -54,30 +62,40 @@ async function main() {
   const response = await client.voices.getShared({
     pageSize: limit,
     page: page - 1,
-    language: 'en',   // English-primary voices only
-    ...(genderFilter  && { gender: genderFilter }),
-    ...(searchFilter  && { search: searchFilter }),
-    ...(ageFilter     && { age: ageFilter }),
-    ...(accentFilter  && { accent: accentFilter }),
+    language: 'en', // English-primary voices only
+    ...(genderFilter && { gender: genderFilter }),
+    ...(searchFilter && { search: searchFilter }),
+    ...(ageFilter && { age: ageFilter }),
+    ...(accentFilter && { accent: accentFilter }),
     ...(useCaseFilter && { useCases: [useCaseFilter] }),
-    sort: 'cloned_by_count',  // popularity as a quality signal
+    sort: 'cloned_by_count', // popularity as a quality signal
   });
 
   type LibraryVoice = {
-    voiceId?: string; name?: string; gender?: string; age?: string;
-    accent?: string; descriptive?: string; useCase?: string; description?: string;
-    previewUrl?: string; clonedByCount?: number;
+    voiceId?: string;
+    name?: string;
+    gender?: string;
+    age?: string;
+    accent?: string;
+    descriptive?: string;
+    useCase?: string;
+    description?: string;
+    previewUrl?: string;
+    clonedByCount?: number;
   };
   const voices = (response.voices ?? []) as LibraryVoice[];
 
-  if (voices.length === 0) { console.log('No voices matched.'); return; }
+  if (voices.length === 0) {
+    console.log('No voices matched.');
+    return;
+  }
 
   const active = [
-    genderFilter  && `gender=${genderFilter}`,
-    ageFilter     && `age=${ageFilter}`,
-    accentFilter  && `accent=${accentFilter}`,
+    genderFilter && `gender=${genderFilter}`,
+    ageFilter && `age=${ageFilter}`,
+    accentFilter && `accent=${accentFilter}`,
     useCaseFilter && `use-case=${useCaseFilter}`,
-    searchFilter  && `search="${searchFilter}"`,
+    searchFilter && `search="${searchFilter}"`,
   ].filter(Boolean);
   if (active.length) console.log(`Filters: ${active.join('  ')}\n`);
 
@@ -97,15 +115,20 @@ async function main() {
       console.log(`  Name: ${v.name}${clones}`);
       if (badge) console.log(`  Tags: ${badge}`);
       if (v.description) console.log(`  Desc: ${v.description}`);
-      if (v.previewUrl)  console.log(`  Preview: ${v.previewUrl}`);
+      if (v.previewUrl) console.log(`  Preview: ${v.previewUrl}`);
     }
   }
 
   console.log(`\n─────────────────────────────────────`);
-  console.log(`Page ${page} · ${voices.length} shown · total: ${(response as Record<string,unknown>).totalCount ?? '?'}`);
+  console.log(
+    `Page ${page} · ${voices.length} shown · total: ${(response as unknown as Record<string, unknown>).totalCount ?? '?'}`,
+  );
   const nextFlags = `--page ${page + 1}${genderFilter ? ` --gender ${genderFilter}` : ''}${ageFilter ? ` --age ${ageFilter}` : ''}${accentFilter ? ` --accent ${accentFilter}` : ''}${searchFilter ? ` --search "${searchFilter}"` : ''}`;
   console.log(`Next page:  pnpm voice:browse ${nextFlags}`);
   console.log(`\nSample:     pnpm voice:sample --voice-id <ID> --character <name>\n`);
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

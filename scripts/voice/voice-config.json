@@ -3,29 +3,117 @@
   "model": "eleven_multilingual_v2",
   "outputFormat": "mp3_44100_96",
   "avatars": {
-    "athena":    { "voiceId": "", "name": "", "notes": "" },
-    "demeter":   { "voiceId": "", "name": "", "notes": "" },
-    "zeus":      { "voiceId": "", "name": "", "notes": "" },
-    "ares":      { "voiceId": "", "name": "", "notes": "" },
-    "apollo":    { "voiceId": "", "name": "", "notes": "" },
-    "aphrodite": { "voiceId": "", "name": "", "notes": "" },
-    "hermes":    { "voiceId": "", "name": "", "notes": "" },
-    "selene":    { "voiceId": "", "name": "", "notes": "" },
-    "hestia":    { "voiceId": "", "name": "", "notes": "" },
-    "kether":    { "voiceId": "", "name": "", "notes": "" }
+    "athena": {
+      "voiceId": "56AoDkrOh6qfVPDXZ7Pt",
+      "name": "Cassidy - Crisp, Direct and Clear",
+      "notes": "American, mid-high, confident. Hits the spec's 'after-action report, not a teacher' framing — zero sentimentality, clean analytical authority without cruelty. Closest available to British but mid-Atlantic works: the precision is there."
+    },
+    "demeter": {
+      "voiceId": "KoVIHoyLDrQyd4pGalbs",
+      "name": "Autumn Veil - Warm and Reflective",
+      "notes": "The name is almost too on-brand for the harvest goddess. 'Vulnerability meets grounded confidence, rich, velvety, deeply human' — captures grief-restraint without performing it. Atmospheric depth that Jane (more neutral narrator) lacks."
+    },
+    "zeus": {
+      "voiceId": "fCxG8OHm4STbIsWe4aT9",
+      "name": "Harrison Gale - Smooth, Rich and Deep",
+      "notes": "Bass-baritone with 'velvety richness that commands attention and soothes' — the xenia energy, pours out rather than bellows. Has width Michael C. Vincent doesn't: authority AND warmth in the same register."
+    },
+    "ares": {
+      "voiceId": "IRHApOXLvnW57QJPQH2P",
+      "name": "Adam - American, Dark and Tough",
+      "notes": "Tough, weathered, intense — the chained severity of Gevurah. Chosen over Knox Dark because Knox is slow/methodical (Capricorn territory); Ares needs the clipped martial edge, not the deliberate plod."
+    },
+    "apollo": {
+      "voiceId": "NNl6r8mD7vthiJatiJt1",
+      "name": "Bradford - Expressive and Articulate",
+      "notes": "British male storyteller, expressive and articulate — the musical cadence comes through in the expressiveness. Frederick Surrey is smoother/flatter (documentary); Bradford has the dynamic range Apollo's lyre-as-cosmic-order needs."
+    },
+    "aphrodite": {
+      "voiceId": "4tRn1lSkEn13EVTuqb0g",
+      "name": "Serafina - Sensual Temptress",
+      "notes": "Rich, velvety, 'blends warmth with mystery, effortlessly captivating.' Leans fantasy, which is right for Netzach's desire-named-honestly energy. Juniper is too corporate/grounded for the goddess of love."
+    },
+    "hermes": {
+      "voiceId": "wyWA56cQNU2KqUW4eCsI",
+      "name": "Clyde - Full, Diplomatic and Inviting",
+      "notes": "Best available mercurial fit — 'nuance and humor, wonderful narrator voice.' Not a perfect trickster voice (the library skews toward narrators), but the wit and diplomatic range give Hermes the versatile shifts the spec demands. Can revisit if a closer match is found later."
+    },
+    "selene": {
+      "voiceId": "Z3R5wn05IrDiVCyEkUrK",
+      "name": "Arabella - Mysterious and Emotive",
+      "notes": "Mysterious and emotive tone, perfect for fantasy and romance — captures the lunar dreamlike quality better than Hope (more warmly romantic). Arabella has the slight distance Selene's 'dreamlike, unhurried, speaks in arcs' needs."
+    },
+    "hestia": {
+      "voiceId": "5l5f8iK3YPeGga21rQIX",
+      "name": "Adeline - Feminine and Conversational",
+      "notes": "Conversational, feminine — the hearth-keeper who makes the room occupied without claiming it. JA Bogart VO Professional reads as more confident/crisp (Athena register); Adeline's warmth without authority is exactly right for Malkuth's constant companion."
+    },
+    "kether": {
+      "voiceId": "ksryVoNAGZT8GxWCTiVm",
+      "name": "Elariel X - Epic Queen Ethereal",
+      "notes": "British, wise, 'epic queen ethereal' — most elevated voice in the library with genuine cosmic register. Declan Sage is wise but grounded/human; Myrrdin is wizard-ish. Kether needs the transcendent quality and Elariel X has it. The female-leaning register actually works: Kether is beyond gender, not agender."
+    }
   },
   "zodiac": {
-    "aries":       { "voiceId": "", "name": "", "notes": "" },
-    "taurus":      { "voiceId": "", "name": "", "notes": "" },
-    "gemini":      { "voiceId": "", "name": "", "notes": "" },
-    "cancer":      { "voiceId": "", "name": "", "notes": "" },
-    "leo":         { "voiceId": "", "name": "", "notes": "" },
-    "virgo":       { "voiceId": "", "name": "", "notes": "" },
-    "libra":       { "voiceId": "", "name": "", "notes": "" },
-    "scorpio":     { "voiceId": "", "name": "", "notes": "" },
-    "sagittarius": { "voiceId": "", "name": "", "notes": "" },
-    "capricorn":   { "voiceId": "", "name": "", "notes": "" },
-    "aquarius":    { "voiceId": "", "name": "", "notes": "" },
-    "pisces":      { "voiceId": "", "name": "", "notes": "" }
+    "aries": {
+      "voiceId": "dtSEyYGNJqjrtBArPCVZ",
+      "name": "Titan - Deep, Bold, and Powerful",
+      "notes": "Commanding, versatile, built for impact — Mars-fire declarative charge. Ellen is too clinical/cool for Aries's frontal energy; Titan runs at the answer."
+    },
+    "taurus": {
+      "voiceId": "EkK5I93UQWFDigLMpZcX",
+      "name": "James - Husky, Engaging and Bold",
+      "notes": "Husky and bassy, modulated and controlled — the physical weight of Venus-earth. 'Deliberate, tactile, won't be rushed' maps to James's measured delivery. Assigned here rather than Sagittarius because James's groundedness is more Taurus than expansive fire-sign."
+    },
+    "gemini": {
+      "voiceId": "ZF6FPAbjXT4488VcRRnw",
+      "name": "Amelia - Enthusiastic and Expressive",
+      "notes": "Young British, expressive and enthusiastic — the quick dual-self energy of Mercury-air. Jessa is too easygoing/single-register; Amelia's expressiveness gives the pivoting, question-inflected quality."
+    },
+    "cancer": {
+      "voiceId": "iCrDUkL56s3C8sCRl7wb",
+      "name": "Hope - Poetic, Romantic and Captivating",
+      "notes": "Warm, soothing, captivating — the tidal undertow quality. Says the thing sideways, emotional current under the surface. Free to use here because Selene went to Arabella."
+    },
+    "leo": {
+      "voiceId": "DMyrgzQFny3JI1Y1paM5",
+      "name": "Donovan - Articulate, Strong and Deep",
+      "notes": "Caring authority who feels deeply, will stick with you — theatrical conviction without pure bombast. Clyde (also a candidate) went to Hermes. Donovan's 'hard-boiled voice that accepts no nonsense' occupies the room without parody."
+    },
+    "virgo": {
+      "voiceId": "iiidtqDt9FBdT1vfBluA",
+      "name": "Bill Oxley - Documentary Commentator",
+      "notes": "Mature, factual, clear and objective — documentary commentator energy is the closest to Virgo's footnoted precision. David Castlemore is broadcast-announcing (more Capricorn); Bill Oxley parses rather than announces."
+    },
+    "libra": {
+      "voiceId": "G17SuINrv2H9FC6nvetn",
+      "name": "Christopher - Gentle and Trustworthy",
+      "notes": "British male narrator, gentle and trustworthy — weighing, conditional, holds both sides. Jon is warmer/more decisive; Christopher's gentleness captures the slight Libra hesitation."
+    },
+    "scorpio": {
+      "voiceId": "goT3UYdM9bhm0n2lmKQx",
+      "name": "Edward - British, Dark, Seductive, Low",
+      "notes": "Deep, low, seductive, strong British man — Scorpio's compressed secretive register exactly. Withholds. Heavy silences. Ian Cartwell (suspense/mystery) is the runner-up but Edward's low controlled quality is a closer match."
+    },
+    "sagittarius": {
+      "voiceId": "MFZUKuGQUsGJPQjTS4wC",
+      "name": "Jon - Warm & Grounded Storyteller",
+      "notes": "Warm, trustworthy, mature and grounded, 'intelligent and calm presence.' Names the larger truth nobody asked for in one clear sentence. James went to Taurus; Donovan to Leo. Jon's philosophical warmth carries Jupiter-fire without bellowing."
+    },
+    "capricorn": {
+      "voiceId": "kqVT88a5QfII1HNAEPTJ",
+      "name": "Declan Sage - Wise and Captivating",
+      "notes": "Controlled, measured, direct — 'perfect for authoritative narrations, gravitas and clarity.' Builds the staircase carefully. Knox Dark is more slow/dark; Declan Sage has the earned authority Capricorn's Saturn-earth demands. Free to use here because Kether went to Elariel X."
+    },
+    "aquarius": {
+      "voiceId": "BIvP0GN1cAtSRTxNHnWS",
+      "name": "Ellen - Serious, Direct and Confident",
+      "notes": "Serious, direct, international accent — the angular detached clinical quality of Saturn/Uranus-air. 'Re-derives, suggests a better question, solves adjacent problem.' Free to use here because Aries went to Titan."
+    },
+    "pisces": {
+      "voiceId": "BpjGufoPiobT79j2vtj4",
+      "name": "Priyanka - Calm, Neutral and Relaxed",
+      "notes": "Velvety, laid-back cadence, late-night warmth, 'smooth, deep, effortlessly soothing, storytelling, reflective monologues.' Fluid and dissolving — words drift to meaning. Arabella went to Selene; Priyanka has the oceanic drift Pisces needs."
+    }
   }
 }
