@@ -254,6 +254,18 @@ describe('BlessingRitual — skip-to-summary (#133)', () => {
   // Playtest finding: the 10-step sequential ceremony is slow on
   // repeat plays. Provide a "Hasten the rite" affordance that fills
   // the remaining stats in one click and advances to the summary.
+
+  it('skip affordance accessible name includes the consequence text (#12)', () => {
+    const noop = (): void => undefined;
+    render(<BlessingRitual sign="aries" rng={seededRng(7)} onComplete={noop} />);
+    // Asserts the full accessible name — both the action label and the
+    // consequence ("roll the rest at once") must be present. Wider than
+    // the /Hasten the rite/i regex used in the behavior tests.
+    expect(
+      screen.getByRole('button', { name: /hasten the rite — roll the rest at once/i }),
+    ).toBeInTheDocument();
+  });
+
   it('renders a Hasten button that rolls all remaining stats at once', () => {
     vi.useFakeTimers();
     try {
