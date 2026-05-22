@@ -436,7 +436,15 @@ export function PlayScreen({
     setDraggingCard(undefined);
     if (!activePlayer || !isMyTurn) return;
     const target = document.elementFromPoint(position.x, position.y);
-    const dropZone = target?.closest('[data-drop-zone]');
+    // Sefirah-node HTML buttons (h-12 w-12, pointer-events-auto) sit above
+    // the SVG path hit-lines. #213 trims hit-lines back by NODE_RADIUS, so
+    // drops near a node can miss the path. When the topmost element is a
+    // Sefirah button, probe nearby pixels to find the hit-line below.
+    const dropZone =
+      target?.closest('[data-drop-zone]') ??
+      (target?.closest('[data-sefirah-link]') !== null
+        ? findDropZoneNear(position.x, position.y)
+        : null);
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
 
     // #462: drag-to-discard-pile branch. Routes to `turn.discard`,
@@ -1078,4 +1086,21 @@ function phaseHint(phase: TurnPhase): string {
       // exhaustive so a future routing bug surfaces at compile time.
       return 'Final Threshold ritual';
   }
+}
+
+/**
+ * When a drag ends on a Sefirah-node HTML button (which sits above the SVG
+ * path hit-lines in z-order), `elementFromPoint` returns the button and
+ * misses the path. Probe a ring of neighbouring pixels so a drop near a node
+ * still resolves to the correct `[data-drop-zone]`.
+ */
+function findDropZoneNear(cx: number, cy: number): Element | null {
+  const offsets = [16, -16, 24, -24];
+  for (const dx of offsets) {
+    for (const dy of offsets) {
+      const zone = document.elementFromPoint(cx + dx, cy + dy)?.closest('[data-drop-zone]');
+      if (zone) return zone;
+    }
+  }
+  return null;
 }

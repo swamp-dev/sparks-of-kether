@@ -25,11 +25,12 @@ type DocWithEFP = Omit<Document, 'elementFromPoint'> & {
  */
 async function performDragWithDropTarget(
   cardBtn: HTMLElement,
-  dropTarget: Element | null,
+  dropTarget: Element | null | ((x: number, y: number) => Element | null),
 ): Promise<void> {
   const docWithEFP = document as DocWithEFP;
   const originalEFP = docWithEFP.elementFromPoint;
-  docWithEFP.elementFromPoint = (): Element | null => dropTarget;
+  const stub = typeof dropTarget === 'function' ? dropTarget : (): Element | null => dropTarget;
+  docWithEFP.elementFromPoint = stub;
   try {
     await act(async () => {
       fireEvent.pointerDown(cardBtn, {
@@ -132,6 +133,46 @@ describe('PlayScreen — drag-to-play (#412)', () => {
     expect(main?.getAttribute('data-phase')).toBe('move');
     const liveRegion = container.querySelector('[data-drag-announcement]');
     expect(liveRegion?.textContent ?? '').toMatch(/cannot|that path/i);
+  });
+
+  it('dropping a card whose pointer-up lands on a Sefirah-node button resolves via pixel probing', async () => {
+    // The Sefirah-node HTML buttons (48×48 px, pointer-events-auto) sit
+    // above the SVG path hit-lines in z-order. When a drag ends on the
+    // button, elementFromPoint returns it and closest('[data-drop-zone]')
+    // finds nothing. The fix probes nearby pixels; this test verifies the
+    // drop still dispatches turn.move when a path is found on the probe.
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? {
+            ...p,
+            position: 'malkuth' as const,
+            hand: [21],
+            clearedSefirot: new Set([...p.clearedSefirot, 'yesod' as const]),
+          }
+        : p,
+    );
+    const state = { ...base, players };
+    const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
+
+    const main = container.querySelector('[data-play-screen]');
+    expect(main?.getAttribute('data-phase')).toBe('move');
+
+    const cardBtn = container.querySelector('[data-card-slot][data-arcanum="21"]') as HTMLElement;
+    const path32Hit = container.querySelector('[data-drop-zone="path-32"]') as Element;
+    const sefirahBtn = container.querySelector('[data-sefirah-link]') as Element;
+    expect(path32Hit, 'path-32 drop zone in DOM').toBeTruthy();
+    expect(sefirahBtn, 'sefirah button in DOM').toBeTruthy();
+
+    // Center probe (220, 300) returns the Sefirah button — the blind spot.
+    // Any offset probe returns the path hit-line below it.
+    await performDragWithDropTarget(cardBtn, (x, y) =>
+      x === 220 && y === 300 ? sefirahBtn : path32Hit,
+    );
+
+    // The drop resolved — phase has left 'move'.
+    expect(main?.getAttribute('data-phase')).not.toBe('move');
   });
 
   it('dropping a card outside any drop zone announces rejection without dispatching', async () => {
