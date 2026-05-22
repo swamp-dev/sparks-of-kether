@@ -24,7 +24,7 @@ import { CardBack } from './CardBack';
  * other players, but if it ever did, the UI doesn't leak the data.
  */
 
-interface HandProps {
+interface HandBaseProps {
   readonly hand: readonly number[];
   readonly visible: boolean;
   readonly onCardSelect?: (arcanumNumber: number) => void;
@@ -78,20 +78,26 @@ interface HandProps {
    */
   readonly layout?: 'floating' | 'inline';
   readonly className?: string;
-  /**
-   * #90 — when true, each face-up card shows a translucent discard
-   * icon overlay. Clicking the icon fires `onDiscard`. Hovering the
-   * card still fires `onCardHover` so Tree paths light up before the
-   * player commits to discarding.
-   */
-  readonly discardMode?: boolean;
-  /**
-   * #90 — fires with the arcanum when the player clicks a card's
-   * discard icon during `discardMode`. Supply together with
-   * `discardMode={true}`.
-   */
-  readonly onDiscard?: (arcanum: number) => void;
 }
+
+/**
+ * #90/#93 — discriminated union enforces that `onDiscard` is required
+ * whenever `discardMode={true}`. Passing `discardMode` without `onDiscard`
+ * is a compile-time error; the silent no-op is impossible.
+ */
+type HandProps = HandBaseProps &
+  (
+    | {
+        /** #90 — shows a discard icon on each visible card; `onDiscard` is required. */
+        readonly discardMode: true;
+        /** #90 — fires with the arcanum when the discard icon is clicked. */
+        readonly onDiscard: (arcanum: number) => void;
+      }
+    | {
+        readonly discardMode?: false;
+        readonly onDiscard?: never;
+      }
+  );
 
 const MAX_FAN_DEG = 12;
 /**
@@ -662,6 +668,10 @@ export function Hand({
                 // HTML requires this to be a sibling, not a child of
                 // the card <button> — nested interactive elements are
                 // invalid HTML and cause accessibility issues.
+                // onDiscard guard: technically guaranteed by HandProps union
+                // (#93) but kept here so TypeScript can narrow onDiscard to
+                // non-null — the destructuring default `discardMode=false`
+                // loses the discriminant information.
                 <button
                   type="button"
                   data-discard-icon={arcanum}
