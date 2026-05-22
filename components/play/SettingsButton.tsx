@@ -271,7 +271,9 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
                     onClick={() => setPantheonId(opt.id)}
                     data-action={`select-pantheon-${opt.id}`}
                     className={`flex items-center gap-2 rounded px-2 py-1 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-illumination ${
-                      checked ? 'bg-illumination/20 text-illumination' : 'opacity-70 hover:opacity-100'
+                      checked
+                        ? 'bg-illumination/20 text-illumination'
+                        : 'opacity-70 hover:opacity-100'
                     }`}
                   >
                     <span
