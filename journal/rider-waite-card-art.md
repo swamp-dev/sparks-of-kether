@@ -8,6 +8,27 @@ replacing the procedural geometric glyph cards with Rider-Waite photography.
 
 ---
 
+## 2026-05-22T01:55:00-04:00 — push 3: baselines re-captured on warm dev server
+
+**Pushed:** 48 visual-regression baselines re-captured after clearing stale webpack cache.
+
+**What changed:**
+- The `.next` dev-server cache had a stale chunk (`./1501.js`) causing 500s on
+  `/demo/cards`, `/demo/hand`, and other routes. Cleared `.next` and restarted.
+- After cold-start, Playwright workers hit uncompiled routes concurrently,
+  causing timeout-induced baseline gaps in push 2.
+- Pre-warmed all 18 routes with a serial HTTP sweep, then ran `--update-snapshots`
+  with the fully-warmed server → 60/60 passed, 48 baselines re-written to a
+  stable state.
+
+**Surprising:** The webpack chunk stale-cache failure only surfaces when the dev
+server is reused across multiple test runs (Playwright's `reuseExistingServer`)
+and the server accumulates stale `.next/server/` artifacts. Cold-starting forces
+a clean rebuild — which then needs explicit pre-warming to avoid per-route
+compilation races in parallel Playwright workers.
+
+---
+
 ## 2026-05-22T01:15:00-04:00 — push 2: visual-regression baselines regenerated
 
 **Pushed:** 40 updated Playwright visual-regression baselines.
