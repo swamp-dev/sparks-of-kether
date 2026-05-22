@@ -19,7 +19,7 @@ describe('Hand — drag-to-play (#412)', () => {
     const card = container.querySelector('[data-arcanum="5"]') as HTMLElement;
     fireEvent.pointerDown(card, { pointerId: 1, clientX: 100, clientY: 200 });
     fireEvent.pointerMove(card, { pointerId: 1, clientX: 130, clientY: 200 });
-    // Effects flush via queueMicrotask; one tick is enough.
+    // Effects now fire via useEffect after commit; act() drains them.
     await Promise.resolve();
     expect(onCardDragStart).toHaveBeenCalledExactlyOnceWith(5);
   });
@@ -157,11 +157,10 @@ describe('Hand — drag-to-play (#412)', () => {
     const { container } = render(<Hand hand={[5, 9]} visible={true} onCardSelect={vi.fn()} />);
     const card5 = container.querySelector('[data-arcanum="5"]') as HTMLElement;
     expect(card5.getAttribute('data-dragging')).toBe('false');
-    // Wrap each fireEvent + microtask flush in `act` so React
-    // processes the queued setState (which fires from a microtask
-    // inside useCardDrag's dispatch). Without act, the
-    // `data-dragging` attribute reads stale even though the state
-    // has been updated — the DOM commit hasn't run.
+    // Wrap each fireEvent in `act` so React processes the queued
+    // setState and the useEffect that fires the drag effect. Without
+    // act, the `data-dragging` attribute reads stale even though the
+    // state has been updated — the DOM commit hasn't run.
     await act(async () => {
       fireEvent.pointerDown(card5, { pointerId: 1, clientX: 100, clientY: 200 });
       fireEvent.pointerMove(card5, { pointerId: 1, clientX: 200, clientY: 250 });
