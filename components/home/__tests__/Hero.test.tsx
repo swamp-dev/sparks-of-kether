@@ -80,4 +80,24 @@ describe('Hero', () => {
     const malkuthR = Number(malkuth?.getAttribute('r') ?? 0);
     expect(tiferetR).toBeGreaterThan(malkuthR);
   });
+
+  describe('#9 — Tree-light surge paths', () => {
+    it('marks the three Middle Pillar paths with data-surge-path', () => {
+      const { container } = render(<Hero />);
+      // Middle Pillar: Kether–Tiferet (13), Tiferet–Yesod (25), Yesod–Malkuth (32).
+      // These are the paths that light when the home CTA is focused/hovered.
+      const surgePaths = container.querySelectorAll('[data-surge-path]');
+      expect(surgePaths.length).toBe(3);
+      const numbers = new Set(
+        Array.from(surgePaths).map((el) => el.getAttribute('data-surge-path')),
+      );
+      expect(numbers).toEqual(new Set(['13', '25', '32']));
+    });
+
+    it('surge paths are inside the paths layer (not outside the SVG)', () => {
+      const { container } = render(<Hero />);
+      const pathsLayer = container.querySelector('[data-layer="paths"]');
+      expect(pathsLayer?.querySelectorAll('[data-surge-path]').length).toBe(3);
+    });
+  });
 });
