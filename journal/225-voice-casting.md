@@ -55,3 +55,11 @@ specs in `design/voices.md`. All 22 assignments are unique.
 
 - **Virgo → Bill Oxley**: Documentary commentator voice. Parses rather than announces. Three
   reservations before the answer is in the DNA of the format.
+
+---
+
+## 2026-05-22 — push 2: PR #263 open
+
+**Pushed:** Fix commit aligning `sample-voice.ts` outputFormat to 96kbps (was 128kbps — mismatch
+with `voice-config.json` caught by code-reviewer). All quality checks green. PR #263 open,
+waiting for CI.
