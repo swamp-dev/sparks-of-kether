@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import type { AxeResults } from 'axe-core';
 import { SettingsButton } from '../SettingsButton';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
+import { PantheonSettingsProvider } from '@/lib/settings/pantheon';
 
 function expectNoViolations(results: AxeResults): void {
   if (results.violations.length === 0) return;
@@ -17,7 +18,9 @@ function expectNoViolations(results: AxeResults): void {
 function renderWithQuit(onQuit?: () => void): ReturnType<typeof render> {
   return render(
     <SoundSettingsProvider>
-      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      <PantheonSettingsProvider>
+        <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      </PantheonSettingsProvider>
     </SoundSettingsProvider>,
   );
 }
@@ -97,5 +100,13 @@ describe('SettingsButton — quit flow', () => {
     await user.click(screen.getByRole('button', { name: /settings/i }));
     await user.click(screen.getByRole('button', { name: /leave game/i }));
     expectNoViolations((await axe(container)) as AxeResults);
+  });
+
+  it('focus moves to the Confirm button when quit confirmation appears', async () => {
+    const user = userEvent.setup();
+    renderWithQuit(vi.fn());
+    await user.click(screen.getByRole('button', { name: /settings/i }));
+    await user.click(screen.getByRole('button', { name: /leave game/i }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /confirm/i }));
   });
 });

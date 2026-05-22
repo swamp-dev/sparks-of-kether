@@ -86,6 +86,7 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const confirmBtnRef = useRef<HTMLButtonElement | null>(null);
   const pantheonGroupRef = useRef<HTMLDivElement | null>(null);
 
   // OS-level reduced-motion read-out. Refreshed on every popover
@@ -133,6 +134,14 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
     }
   }, [open]);
 
+  // When the quit confirmation appears, move focus to Confirm so
+  // keyboard users don't have to Tab there themselves. (#116)
+  useEffect(() => {
+    if (confirmingQuit) {
+      confirmBtnRef.current?.focus();
+    }
+  }, [confirmingQuit]);
+
   const handlePantheonKey = useCallback(
     (e: KeyboardEvent<HTMLDivElement>): void => {
       const ids = PANTHEON_OPTIONS.map((o) => o.id);
@@ -165,7 +174,9 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
   // overkill but the count must not be hardcoded.
   //
   // Radio buttons with tabIndex=-1 are excluded — only the selected
-  // radio (tabIndex=0) participates in the Tab cycle.
+  // radio (tabIndex=0) participates in the Tab cycle. The selector
+  // relies on React serialising tabIndex={-1} to the DOM attribute
+  // string `tabindex="-1"`, which is guaranteed by React's behaviour.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'Tab') return;
     if (!dialogRef.current) return;
@@ -314,6 +325,7 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
                   <p className="text-center text-xs opacity-60">Leave this game?</p>
                   <div className="flex gap-2">
                     <button
+                      ref={confirmBtnRef}
                       type="button"
                       onClick={() => onQuit()}
                       data-action="confirm-quit"
