@@ -7,3 +7,7 @@ Fix: hold `transformOrigin: 'center'` always instead of switching between `'bott
 Removed the now-stale comment block that explained the two-state origin logic.
 
 Reviewer verdict: ship. Noted the `parentElement` traversal pattern is pre-existing fragile coupling, not introduced here.
+
+## Push 2 — (baseline update)
+
+Visual regression baseline updated for `demo-hand-tablet`: the `transformOrigin` change from `'bottom center'` to `'center'` at rest altered the fan card positions slightly. The new render is the correct, intentional appearance.
