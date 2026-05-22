@@ -275,6 +275,7 @@ export function BlessingRitual({
             {...(avatarName !== undefined ? { avatarName } : {})}
             state={stepStatus === 'awaiting' ? 'prep' : 'pass'}
             size="stage"
+            pose="speaking"
           />
           <span
             data-sefirah-stat-label
