@@ -95,50 +95,26 @@ const EMPTY_VALID_PATHS: ReadonlySet<number> = Object.freeze(new Set<number>());
 const PATH_HIT_WIDTH = 28;
 
 /**
- * Per-Sefirah Tailwind glow class. Pre-mapped (not built by string
- * concat) so Tailwind's JIT picks them up — the content scanner
- * needs the literal classnames in source.
- */
-const GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
-  kether: 'shadow-glow-kether',
-  chokmah: 'shadow-glow-chokmah',
-  binah: 'shadow-glow-binah',
-  chesed: 'shadow-glow-chesed',
-  gevurah: 'shadow-glow-gevurah',
-  tiferet: 'shadow-glow-tiferet',
-  netzach: 'shadow-glow-netzach',
-  hod: 'shadow-glow-hod',
-  yesod: 'shadow-glow-yesod',
-  malkuth: 'shadow-glow-malkuth',
-};
-
-/**
- * Per-Sefirah hover/focus glow utility classes (#505). Tailwind JIT
- * requires literal class names; these strings combine `peer-hover` and
- * `peer-focus-visible` variants on the same `shadow-glow-{key}` token
- * the always-on baseline halo already uses.
+ * Per-Sefirah Tailwind glow classes. Pre-mapped (not built by string
+ * concat) so Tailwind's JIT picks them up — the content scanner needs
+ * literal classnames in source.
  *
- * The class is parked on a hover-glow span that sits AFTER the `.peer`
- * button or anchor so the peer selectors resolve correctly. The
- * peer is mode-aware (#384): `<button>` when `onSefirahClick` is
- * set, `<a href="/sefirah/{key}">` otherwise. Both branches carry
- * the `.peer` class, so peer-hover and peer-focus-visible resolve
- * correctly in either case. At rest it carries no shadow; on hover
- * or keyboard focus of the peer it lights up, stacking on top of
- * the always-lit baseline halo as an intensity bump rather than a
- * separate effect.
+ * `base` — always-on baseline halo (`shadow-glow-{key}`).
+ * `peer` — hover/focus intensity bump (#505); `peer-hover` and
+ *   `peer-focus-visible` variants applied from a sibling span that sits
+ *   after the `.peer` button or anchor.
  */
-const HOVER_GLOW_CLASS_BY_KEY: Readonly<Record<SefirahKey, string>> = {
-  kether: 'peer-hover:shadow-glow-kether peer-focus-visible:shadow-glow-kether',
-  chokmah: 'peer-hover:shadow-glow-chokmah peer-focus-visible:shadow-glow-chokmah',
-  binah: 'peer-hover:shadow-glow-binah peer-focus-visible:shadow-glow-binah',
-  chesed: 'peer-hover:shadow-glow-chesed peer-focus-visible:shadow-glow-chesed',
-  gevurah: 'peer-hover:shadow-glow-gevurah peer-focus-visible:shadow-glow-gevurah',
-  tiferet: 'peer-hover:shadow-glow-tiferet peer-focus-visible:shadow-glow-tiferet',
-  netzach: 'peer-hover:shadow-glow-netzach peer-focus-visible:shadow-glow-netzach',
-  hod: 'peer-hover:shadow-glow-hod peer-focus-visible:shadow-glow-hod',
-  yesod: 'peer-hover:shadow-glow-yesod peer-focus-visible:shadow-glow-yesod',
-  malkuth: 'peer-hover:shadow-glow-malkuth peer-focus-visible:shadow-glow-malkuth',
+const GLOW_BY_KEY: Readonly<Record<SefirahKey, { base: string; peer: string }>> = {
+  kether:  { base: 'shadow-glow-kether',  peer: 'peer-hover:shadow-glow-kether peer-focus-visible:shadow-glow-kether' },
+  chokmah: { base: 'shadow-glow-chokmah', peer: 'peer-hover:shadow-glow-chokmah peer-focus-visible:shadow-glow-chokmah' },
+  binah:   { base: 'shadow-glow-binah',   peer: 'peer-hover:shadow-glow-binah peer-focus-visible:shadow-glow-binah' },
+  chesed:  { base: 'shadow-glow-chesed',  peer: 'peer-hover:shadow-glow-chesed peer-focus-visible:shadow-glow-chesed' },
+  gevurah: { base: 'shadow-glow-gevurah', peer: 'peer-hover:shadow-glow-gevurah peer-focus-visible:shadow-glow-gevurah' },
+  tiferet: { base: 'shadow-glow-tiferet', peer: 'peer-hover:shadow-glow-tiferet peer-focus-visible:shadow-glow-tiferet' },
+  netzach: { base: 'shadow-glow-netzach', peer: 'peer-hover:shadow-glow-netzach peer-focus-visible:shadow-glow-netzach' },
+  hod:     { base: 'shadow-glow-hod',     peer: 'peer-hover:shadow-glow-hod peer-focus-visible:shadow-glow-hod' },
+  yesod:   { base: 'shadow-glow-yesod',   peer: 'peer-hover:shadow-glow-yesod peer-focus-visible:shadow-glow-yesod' },
+  malkuth: { base: 'shadow-glow-malkuth', peer: 'peer-hover:shadow-glow-malkuth peer-focus-visible:shadow-glow-malkuth' },
 };
 
 /**
@@ -643,7 +619,7 @@ export function TreeBoard({
                   <span
                     data-breath-halo={sefirah.key}
                     aria-hidden="true"
-                    className={`pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full motion-safe:animate-breath ${GLOW_CLASS_BY_KEY[sefirah.key]}`}
+                    className={`pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full motion-safe:animate-breath ${GLOW_BY_KEY[sefirah.key].base}`}
                     style={{
                       // #505: no backgroundColor / opacity here. Setting
                       // the dot's fill to `sefirah.color` mixed with the
@@ -713,7 +689,7 @@ export function TreeBoard({
                 <span
                   data-hover-glow={sefirah.key}
                   aria-hidden="true"
-                  className={`pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full transition-shadow duration-200 ease-out motion-reduce:transition-none ${HOVER_GLOW_CLASS_BY_KEY[sefirah.key]}`}
+                  className={`pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full transition-shadow duration-200 ease-out motion-reduce:transition-none ${GLOW_BY_KEY[sefirah.key].peer}`}
                 />
                 {/*
                   Tooltip surface. `peer-hover` / `peer-focus` reveals
