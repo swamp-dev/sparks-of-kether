@@ -15,10 +15,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import {
-  sefirahVerdicts,
-  sefirahPlayerResponses,
-} from '@/data/pantheons/greco-roman/verdicts';
+import { sefirahVerdicts, sefirahPlayerResponses } from '@/data/pantheons/greco-roman/verdicts';
 
 export interface ClipEntry {
   readonly key: string;

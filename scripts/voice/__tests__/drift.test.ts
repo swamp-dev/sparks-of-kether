@@ -73,8 +73,18 @@ describe('buildExpectedClipMap', () => {
 
   it('covers all 12 zodiac signs', () => {
     const signs = [
-      'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
-      'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+      'aries',
+      'taurus',
+      'gemini',
+      'cancer',
+      'leo',
+      'virgo',
+      'libra',
+      'scorpio',
+      'sagittarius',
+      'capricorn',
+      'aquarius',
+      'pisces',
     ];
     for (const sign of signs) {
       expect(map.has(`verdict-hod-${sign}-pass-0`)).toBe(true);
@@ -83,7 +93,9 @@ describe('buildExpectedClipMap', () => {
 });
 
 describe('detectDrift', () => {
-  function makeManifest(clips: Record<string, { textHash: string; textSnippet?: string }>): Manifest {
+  function makeManifest(
+    clips: Record<string, { textHash: string; textSnippet?: string }>,
+  ): Manifest {
     const manifestClips: Record<string, { textHash: string; textSnippet?: string }> = {};
     for (const [k, v] of Object.entries(clips)) {
       const entry: { textHash: string; textSnippet?: string } = { textHash: v.textHash };

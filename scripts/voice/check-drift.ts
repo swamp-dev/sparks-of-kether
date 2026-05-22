@@ -45,10 +45,7 @@ export interface DriftResult {
   missing: string[];
 }
 
-export function detectDrift(
-  manifest: Manifest,
-  expected: Map<string, ClipEntry>,
-): DriftResult {
+export function detectDrift(manifest: Manifest, expected: Map<string, ClipEntry>): DriftResult {
   const stale: StaleEntry[] = [];
   const missing: string[] = [];
 
@@ -148,7 +145,12 @@ async function main(): Promise<void> {
     console.error('');
   }
 
-  console.error(buildFixSuggestion(stale.map((s) => s.key), missing));
+  console.error(
+    buildFixSuggestion(
+      stale.map((s) => s.key),
+      missing,
+    ),
+  );
   process.exit(1);
 }
 
