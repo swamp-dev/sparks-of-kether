@@ -139,6 +139,20 @@ describe('detectDrift', () => {
     expect(stale).toHaveLength(0);
   });
 
+  it('silently ignores extra manifest keys not in the expected map', () => {
+    const expected = buildExpectedClipMap();
+    const clips: Record<string, { textHash: string }> = {};
+    for (const [key, entry] of expected) {
+      clips[key] = { textHash: entry.textHash };
+    }
+    // Orphan entry (e.g., greeting clip, deprecated key) — should be ignored.
+    clips['greeting-hermes'] = { textHash: 'sha256:' + '0'.repeat(64) };
+    const manifest = makeManifest(clips);
+    const { stale, missing } = detectDrift(manifest, expected);
+    expect(stale).toHaveLength(0);
+    expect(missing).toHaveLength(0);
+  });
+
   it('reports multiple stale and missing clips independently', () => {
     const expected = buildExpectedClipMap();
     const clips: Record<string, { textHash: string }> = {};

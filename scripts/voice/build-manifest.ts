@@ -27,7 +27,9 @@ export interface ClipEntry {
 }
 
 export function hashText(text: string): string {
-  return 'sha256:' + createHash('sha256').update(text, 'utf8').digest('hex');
+  // NFC-normalize before hashing so visually identical strings with different
+  // Unicode encodings (e.g. composed vs decomposed accents) produce the same hash.
+  return 'sha256:' + createHash('sha256').update(text.normalize('NFC'), 'utf8').digest('hex');
 }
 
 export function buildExpectedClipMap(): Map<string, ClipEntry> {

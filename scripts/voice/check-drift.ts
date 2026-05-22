@@ -15,7 +15,7 @@
  *   - Missing entry → clip has TypeScript source text but no manifest entry
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildExpectedClipMap, type ClipEntry } from './build-manifest';
@@ -87,13 +87,26 @@ function buildFixSuggestion(staleKeys: string[], missingKeys: string[]): string 
 }
 
 function readManifest(manifestPath: string): Manifest {
-  if (!existsSync(manifestPath)) {
-    console.error('\n  ERROR: No manifest found at public/audio/voice/manifest.json');
-    console.error('         Run pnpm voice:generate to generate audio and write the manifest.\n');
+  let raw: string;
+  try {
+    raw = readFileSync(manifestPath, 'utf-8');
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') {
+      console.error('\n  ERROR: No manifest found at public/audio/voice/manifest.json');
+      console.error('         Run pnpm voice:generate to generate audio and write the manifest.\n');
+    } else {
+      console.error('\n  ERROR: Failed to read manifest.json:', (e as Error).message, '\n');
+    }
     process.exit(1);
   }
   try {
-    return JSON.parse(readFileSync(manifestPath, 'utf-8')) as Manifest;
+    const parsed = JSON.parse(raw) as Manifest;
+    if (typeof parsed.clips !== 'object' || parsed.clips === null || Array.isArray(parsed.clips)) {
+      console.error('\n  ERROR: manifest.json is malformed — "clips" must be an object.\n');
+      process.exit(1);
+    }
+    return parsed;
   } catch (e) {
     console.error('\n  ERROR: Failed to parse manifest.json:', (e as Error).message, '\n');
     process.exit(1);

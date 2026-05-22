@@ -125,9 +125,11 @@ jobs:
         run: pnpm format:check
 
       - name: Voice drift check
-        # Soft gate: continue-on-error until the full 873-clip library is generated
-        # and manifest.json is committed. Promote to hard-fail by removing the flag
-        # once pnpm voice:generate has been run and manifest.json is in the repo.
+        # Soft gate: continue-on-error until the 864-clip library is generated
+        # and manifest.json is committed (864 = 576 verdicts + 288 responses;
+        # greeting clips add 9 when wired). Promote to hard-fail by removing
+        # continue-on-error once pnpm voice:generate has run and manifest.json
+        # is in the repo.
         continue-on-error: true
         run: pnpm voice:check-drift
 
