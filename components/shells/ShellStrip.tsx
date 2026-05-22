@@ -269,7 +269,7 @@ function ExpandPanel({
       ) : (
         <>
           <p className="mb-1 text-xs opacity-60">Dormant — not yet awakened.</p>
-          <p className="text-xs opacity-50 italic">{copy.effect}</p>
+          <p className="text-xs italic opacity-50">{copy.effect}</p>
         </>
       )}
     </div>
