@@ -289,6 +289,8 @@ export function useLobby(code: string): UseLobbyReturn {
         setError(
           `Could not start game: ${body.reason?.kind ?? body.error ?? `HTTP ${res.status}`}`,
         );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error.');
       } finally {
         beginningRef.current = false;
         setBeginning(false);
@@ -333,6 +335,8 @@ export function useLobby(code: string): UseLobbyReturn {
           error?: string;
         };
         setError(`Could not reset room: ${body.error ?? `HTTP ${res.status}`}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error.');
       } finally {
         resettingRef.current = false;
         setResetting(false);

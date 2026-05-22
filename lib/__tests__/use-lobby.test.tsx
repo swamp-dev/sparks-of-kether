@@ -589,4 +589,22 @@ describe('useLobby', () => {
     expect(fetchCalls).toHaveLength(1);
     expect(result.current.error).toMatch(/session expired/i);
   });
+
+  it('beginGame() surfaces server error when retry after token refresh still fails', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    fetchResponseQueue = [
+      { ok: false, status: 401, jsonBody: {} },
+      { ok: false, status: 403, jsonBody: { reason: { kind: 'not-host' } } },
+    ];
+
+    act(() => {
+      result.current.beginGame();
+    });
+    await waitFor(() => expect(result.current.beginning).toBe(false));
+
+    expect(fetchCalls).toHaveLength(2);
+    expect(result.current.error).toMatch(/not-host/);
+  });
 });
