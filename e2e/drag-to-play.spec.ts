@@ -97,13 +97,17 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
 
   // Expand the floating hand from peek mode, then hover the specific
-  // card to position the mouse exactly at its centre before mouse.down.
+  // card so the mouse lands exactly at its centre before mouse.down.
   // A generic page.mouse.move(fanCentre → cardCentre) can cross outside
   // the hand-fan boundary, triggering mouseleave → collapse → card shift
   // → mouse.down misses. card.hover() avoids the cross-boundary move.
+  // The extra 300ms wait lets the MAGNIFY_LIFT_PX/MAGNIFY_SCALE transform
+  // (240ms ease-out) settle before we capture boundingBox — mid-animation
+  // the card is at an intermediate position and mouse.down would miss it.
   await page.locator('[data-hand-fan]').hover();
   await page.waitForTimeout(350);
   await card.hover();
+  await page.waitForTimeout(300);
 
   const cardBox = await card.boundingBox();
   const pathBox = await path.boundingBox();
@@ -113,13 +117,12 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
 
   // Mouse is already at card centre from card.hover() above.
   // Drag to path centre with a midpoint to ensure threshold is crossed.
+  const startX = cardBox.x + cardBox.width / 2;
+  const startY = cardBox.y + cardBox.height / 2;
   const endX = pathBox.x + pathBox.width / 2;
   const endY = pathBox.y + pathBox.height / 2;
 
   await page.mouse.down();
-  // Two-step move so the threshold is crossed before the final drop.
-  const startX = cardBox.x + cardBox.width / 2;
-  const startY = cardBox.y + cardBox.height / 2;
   await page.mouse.move((startX + endX) / 2, (startY + endY) / 2, { steps: 5 });
   await page.mouse.move(endX, endY, { steps: 5 });
   await page.mouse.up();
