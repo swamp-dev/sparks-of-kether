@@ -50,9 +50,12 @@ function Toggle({
  * controls the surrounding layout). Clicking opens a small popover
  * with:
  *
- *   - **Sound** — interactive toggle. Persists to `localStorage` via
- *     `useSoundEnabled()`. Default OFF (auto-playing audio is hostile
- *     by default).
+ *   - **Sound effects** — interactive toggle. Persists to `localStorage`.
+ *     Default ON (SFX fire on user gestures, safe from autoplay policy).
+ *   - **Music** — interactive toggle. Persists to `localStorage`.
+ *     Default OFF (ambient auto-play is hostile by default).
+ *   - **Voice** — interactive toggle. Persists to `localStorage`.
+ *     Default OFF (voice plays in effects, same rationale as music).
  *   - **Pantheon** — radio group (Greco-Roman / Egyptian). Persists to
  *     `localStorage` via `usePantheon()`. Default Greco-Roman.
  *     Arrow keys navigate and immediately select within the group.
@@ -73,7 +76,14 @@ function Toggle({
  */
 
 export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
-  const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
+  const {
+    sfxEnabled,
+    setSfxEnabled,
+    musicEnabled,
+    setMusicEnabled,
+    voiceEnabled,
+    setVoiceEnabled,
+  } = useSoundEnabled();
   const { pantheonId, setPantheonId } = usePantheon();
   // When pantheonId is an unknown id (stale localStorage from a future version),
   // no radio would match and all would get tabIndex=-1, making the group
@@ -168,7 +178,7 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
   // Minimal focus trap: Tab from the last focusable element loops
   // back to the close button; Shift+Tab from the close button loops
   // to the last focusable element. The selector captures all buttons
-  // and switches dynamically (close + sfx + music + 1 pantheon radio;
+  // and switches dynamically (close + sfx + music + voice + 1 pantheon radio;
   // +1 Leave Game when onQuit is provided; +2 Confirm + Cancel when
   // confirmingQuit is active), so a full focus-trap library would be
   // overkill but the count must not be hardcoded.
@@ -255,6 +265,16 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
               label="Toggle music"
               onChange={() => setMusicEnabled(!musicEnabled)}
               testId="toggle-music"
+            />
+          </div>
+
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm">Voice</span>
+            <Toggle
+              checked={voiceEnabled}
+              label="Toggle voice narration"
+              onChange={() => setVoiceEnabled(!voiceEnabled)}
+              testId="toggle-voice"
             />
           </div>
 

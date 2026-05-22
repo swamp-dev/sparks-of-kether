@@ -198,9 +198,10 @@ describe('SettingsButton — Pantheon radio group (#34)', () => {
     const dialog = await openSettings(user);
     const { grecoRoman } = getRadios(dialog);
 
-    // On open, focus is on the close button. Tab three times: close → sfx → music → radio.
+    // On open, focus is on the close button. Tab four times: close → sfx → music → voice → radio.
     await user.tab(); // → sfx toggle
     await user.tab(); // → music toggle
+    await user.tab(); // → voice toggle
     await user.tab(); // → selected radio (Greco-Roman)
     expect(document.activeElement).toBe(grecoRoman);
   });
