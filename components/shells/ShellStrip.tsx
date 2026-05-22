@@ -44,7 +44,7 @@ const HALO_GLOW: Readonly<Record<SefirahKey, string>> = {
 const SEFIRAH_TEXT: Readonly<Record<SefirahKey, string>> = {
   kether: 'text-kether',
   chokmah: 'text-chokmah',
-  binah: 'text-chokmah',
+  binah: 'text-chokmah', // Binah's near-black is unreadable on the void; lift to chokmah's silver.
   chesed: 'text-chesed',
   gevurah: 'text-gevurah',
   tiferet: 'text-tiferet',
@@ -77,6 +77,7 @@ export function ShellStrip({
 }: ShellStripProps): JSX.Element {
   const [expandedShell, setExpandedShell] = useState<SefirahKey | null>(null);
   const expandBtnRefs = useRef<Map<SefirahKey, HTMLButtonElement | null>>(new Map());
+  const sectionRef = useRef<HTMLElement | null>(null);
 
   // Transition hooks — same pattern as ShellPanel.
   const prevShellsRef = useRef<ShellStateMap | null>(null);
@@ -103,8 +104,12 @@ export function ShellStrip({
   }, []);
 
   // Esc collapses the open panel and returns focus to its trigger.
+  // Scoped to the section element so multiple ShellStrip instances on the
+  // same page don't cross-collapse each other.
   useEffect(() => {
     if (!expandedShell) return undefined;
+    const section = sectionRef.current;
+    if (!section) return undefined;
     const handler = (e: globalThis.KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -113,8 +118,8 @@ export function ShellStrip({
         btn?.focus();
       }
     };
-    document.addEventListener('keydown', handler);
-    return (): void => document.removeEventListener('keydown', handler);
+    section.addEventListener('keydown', handler);
+    return (): void => section.removeEventListener('keydown', handler);
   }, [expandedShell]);
 
   const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
@@ -125,6 +130,7 @@ export function ShellStrip({
 
   return (
     <section
+      ref={sectionRef}
       role="region"
       aria-label="Shell pressure panel"
       data-shell-panel
@@ -261,7 +267,10 @@ function ExpandPanel({
       {status === 'banished' ? (
         <p className="text-xs opacity-60">Banished at {data.englishName}.</p>
       ) : (
-        <p className="text-xs opacity-60">Dormant — not yet awakened.</p>
+        <>
+          <p className="mb-1 text-xs opacity-60">Dormant — not yet awakened.</p>
+          <p className="text-xs opacity-50 italic">{copy.effect}</p>
+        </>
       )}
     </div>
   );
