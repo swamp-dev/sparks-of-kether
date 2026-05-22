@@ -53,6 +53,9 @@ function Toggle({
  *   - **Sound** — interactive toggle. Persists to `localStorage` via
  *     `useSoundEnabled()`. Default OFF (auto-playing audio is hostile
  *     by default).
+ *   - **Pantheon** — radio group (Greco-Roman / Egyptian). Persists to
+ *     `localStorage` via `usePantheon()`. Default Greco-Roman.
+ *     Arrow keys navigate and immediately select within the group.
  *   - **Reduced motion** — read-only status. The OS-level
  *     `prefers-reduced-motion` value is system-driven; we surface
  *     it here so the player knows the game is honoring their
@@ -72,6 +75,12 @@ function Toggle({
 export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
   const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
   const { pantheonId, setPantheonId } = usePantheon();
+  // When pantheonId is an unknown id (stale localStorage from a future version),
+  // no radio would match and all would get tabIndex=-1, making the group
+  // unreachable by Tab. Fall back to the first option as the tab stop.
+  const pantheonFocusId = PANTHEON_OPTIONS.some((o) => o.id === pantheonId)
+    ? pantheonId
+    : (PANTHEON_OPTIONS[0]?.id ?? 'greco-roman');
   const [open, setOpen] = useState(false);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -239,11 +248,13 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
           </div>
 
           <div className="mb-3">
-            <p className="mb-2 text-sm">Pantheon</p>
+            <p id="pantheon-label" className="mb-2 text-sm">
+              Pantheon
+            </p>
             <div
               ref={pantheonGroupRef}
               role="radiogroup"
-              aria-label="Pantheon"
+              aria-labelledby="pantheon-label"
               data-pantheon-group
               onKeyDown={handlePantheonKey}
               className="flex flex-col gap-1"
@@ -256,7 +267,7 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
                     type="button"
                     role="radio"
                     aria-checked={checked}
-                    tabIndex={checked ? 0 : -1}
+                    tabIndex={opt.id === pantheonFocusId ? 0 : -1}
                     onClick={() => setPantheonId(opt.id)}
                     data-action={`select-pantheon-${opt.id}`}
                     className={`flex items-center gap-2 rounded px-2 py-1 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-illumination ${

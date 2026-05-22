@@ -155,6 +155,56 @@ describe('SettingsButton — Pantheon radio group (#34)', () => {
     expect(egyptian).toHaveAttribute('aria-checked', 'true');
   });
 
+  it('ArrowLeft from Egyptian selects Greco-Roman', async () => {
+    localStorage.setItem(PANTHEON_STORAGE_KEY, 'egyptian');
+    const user = userEvent.setup();
+    renderWithProviders();
+    const dialog = await openSettings(user);
+    const { grecoRoman, egyptian } = getRadios(dialog);
+    await user.click(egyptian);
+    await user.keyboard('{ArrowLeft}');
+    expect(grecoRoman).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('selected radio has tabIndex=0 and unselected has tabIndex=-1', async () => {
+    const user = userEvent.setup();
+    renderWithProviders();
+    const dialog = await openSettings(user);
+    const { grecoRoman, egyptian } = getRadios(dialog);
+
+    expect(grecoRoman).toHaveAttribute('tabindex', '0');
+    expect(egyptian).toHaveAttribute('tabindex', '-1');
+
+    await user.click(egyptian);
+    expect(egyptian).toHaveAttribute('tabindex', '0');
+    expect(grecoRoman).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('unknown stored pantheonId falls back to Greco-Roman having tabIndex=0', async () => {
+    localStorage.setItem(PANTHEON_STORAGE_KEY, 'norse'); // future/unknown id
+    const user = userEvent.setup();
+    renderWithProviders();
+    const dialog = await openSettings(user);
+    const { grecoRoman, egyptian } = getRadios(dialog);
+    // Neither is aria-checked (unknown id doesn't match), but Greco-Roman
+    // still holds tabIndex=0 so the group is reachable via Tab.
+    expect(grecoRoman).toHaveAttribute('tabindex', '0');
+    expect(egyptian).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('selected radio is reachable via Tab inside the popover', async () => {
+    const user = userEvent.setup();
+    renderWithProviders();
+    const dialog = await openSettings(user);
+    const { grecoRoman } = getRadios(dialog);
+
+    // On open, focus is on the close button. Tab three times: close → sfx → music → radio.
+    await user.tab(); // → sfx toggle
+    await user.tab(); // → music toggle
+    await user.tab(); // → selected radio (Greco-Roman)
+    expect(document.activeElement).toBe(grecoRoman);
+  });
+
   it('is axe-clean with both providers', async () => {
     const user = userEvent.setup();
     const { container } = renderWithProviders();
