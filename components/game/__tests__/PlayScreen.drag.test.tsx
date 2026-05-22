@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { act, fireEvent, render } from '@testing-library/react';
 import { PlayScreen } from '../PlayScreen';
+import { NODE_RADIUS } from '@/data/tree-layout';
 import { makeFullGame } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 
@@ -165,10 +166,13 @@ describe('PlayScreen — drag-to-play (#412)', () => {
     expect(path32Hit, 'path-32 drop zone in DOM').toBeTruthy();
     expect(sefirahBtn, 'sefirah button in DOM').toBeTruthy();
 
-    // Center probe (220, 300) returns the Sefirah button — the blind spot.
-    // Any offset probe returns the path hit-line below it.
+    // Pointer-up fires at (220, 300). Probes within NODE_RADIUS of that
+    // centre represent the blind spot (inside the button); probes beyond
+    // it represent the path hit-line. This exercises the step calibration:
+    // a step too small would place the probe inside NODE_RADIUS → returns
+    // sefirahBtn again → drop fails.
     await performDragWithDropTarget(cardBtn, (x, y) =>
-      x === 220 && y === 300 ? sefirahBtn : path32Hit,
+      Math.hypot(x - 220, y - 300) <= NODE_RADIUS ? sefirahBtn : path32Hit,
     );
 
     // The drop resolved — phase has left 'move'.
