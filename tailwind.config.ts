@@ -346,6 +346,11 @@ const config: Config = {
           '0 0 8px rgba(220, 20, 60, 0.50), 0 0 18px rgba(220, 20, 60, 0.30), 0 0 36px rgba(220, 20, 60, 0.16)',
         'glow-tiferet':
           '0 0 8px rgba(255, 215, 0, 0.55), 0 0 18px rgba(255, 215, 0, 0.32), 0 0 36px rgba(255, 215, 0, 0.18)',
+        // #9: stronger halo for the home CTA on focus — noticeably
+        // brighter/wider than the ambient glow-tiferet so the focus
+        // state reads as "portal activating", not just ring-on-button.
+        'glow-tiferet-focus':
+          '0 0 12px rgba(255, 215, 0, 0.80), 0 0 32px rgba(255, 215, 0, 0.55), 0 0 64px rgba(255, 215, 0, 0.30), 0 0 100px rgba(255, 215, 0, 0.12)',
         'glow-netzach':
           '0 0 8px rgba(34, 139, 34, 0.50), 0 0 18px rgba(34, 139, 34, 0.30), 0 0 36px rgba(34, 139, 34, 0.16)',
         'glow-hod':
