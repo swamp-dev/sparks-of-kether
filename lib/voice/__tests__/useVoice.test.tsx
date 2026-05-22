@@ -158,10 +158,9 @@ describe('useVoice', () => {
 
   it('pauses in-flight audio when voiceEnabled toggles off mid-clip', () => {
     seedVoice(true);
-    const { result } = renderHook(
-      () => ({ voice: useVoice(), settings: useSoundEnabled() }),
-      { wrapper: Provider },
-    );
+    const { result } = renderHook(() => ({ voice: useVoice(), settings: useSoundEnabled() }), {
+      wrapper: Provider,
+    });
     act(() => {
       result.current.voice.playVoice('/audio/voice/verdict-chesed-cancer-pass-1.mp3');
     });

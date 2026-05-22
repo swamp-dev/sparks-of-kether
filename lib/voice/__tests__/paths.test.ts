@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  verdictVoicePath,
-  playerResponseVoicePath,
-  greetingVoicePath,
-} from '../paths';
+import { verdictVoicePath, playerResponseVoicePath, greetingVoicePath } from '../paths';
 
 describe('verdictVoicePath', () => {
   it('produces correct path for variant 0', () => {
@@ -29,8 +25,14 @@ describe('verdictVoicePath', () => {
 
   it('handles every avatar key', () => {
     const avatars = [
-      'chokmah', 'binah', 'chesed', 'gevurah', 'tiferet',
-      'netzach', 'hod', 'yesod',
+      'chokmah',
+      'binah',
+      'chesed',
+      'gevurah',
+      'tiferet',
+      'netzach',
+      'hod',
+      'yesod',
     ] as const;
     for (const avatar of avatars) {
       const path = verdictVoicePath(avatar, 'aries', 'pass', 0);
@@ -54,8 +56,18 @@ describe('playerResponseVoicePath', () => {
 
   it('handles every zodiac sign', () => {
     const signs = [
-      'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
-      'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+      'aries',
+      'taurus',
+      'gemini',
+      'cancer',
+      'leo',
+      'virgo',
+      'libra',
+      'scorpio',
+      'sagittarius',
+      'capricorn',
+      'aquarius',
+      'pisces',
     ] as const;
     for (const sign of signs) {
       const path = playerResponseVoicePath('tiferet', sign, 0);

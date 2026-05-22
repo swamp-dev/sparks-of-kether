@@ -76,8 +76,14 @@ function Toggle({
  */
 
 export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
-  const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled, voiceEnabled, setVoiceEnabled } =
-    useSoundEnabled();
+  const {
+    sfxEnabled,
+    setSfxEnabled,
+    musicEnabled,
+    setMusicEnabled,
+    voiceEnabled,
+    setVoiceEnabled,
+  } = useSoundEnabled();
   const { pantheonId, setPantheonId } = usePantheon();
   // When pantheonId is an unknown id (stale localStorage from a future version),
   // no radio would match and all would get tabIndex=-1, making the group
