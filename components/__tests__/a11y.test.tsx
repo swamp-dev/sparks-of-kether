@@ -15,6 +15,8 @@ import { useTurn } from '@/lib/use-turn';
 import { BlessingRitual } from '@/components/setup/BlessingRitual';
 import { ZodiacSignPicker } from '@/components/setup/ZodiacSignPicker';
 import { Lobby } from '@/components/setup/Lobby';
+import { DiscardPile } from '@/components/game/DiscardPile';
+import { DrawDeck } from '@/components/game/DrawDeck';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 import { EMPTY_PENDING_MODIFIERS } from '@/engine/types';
@@ -393,6 +395,26 @@ describe('a11y — major UI surfaces', () => {
         onToggleReady={() => undefined}
       />,
     );
+    expectNoViolations(await axe(container));
+  });
+
+  it('DiscardPile (non-empty) is axe-clean (#507)', async () => {
+    const { container } = render(<DiscardPile discardPile={[3, 7, 12]} />);
+    expectNoViolations(await axe(container));
+  });
+
+  it('DiscardPile (empty) is axe-clean (#507)', async () => {
+    const { container } = render(<DiscardPile discardPile={[]} />);
+    expectNoViolations(await axe(container));
+  });
+
+  it('DrawDeck (non-empty) is axe-clean (#25)', async () => {
+    const { container } = render(<DrawDeck deck={[0, 1, 2, 3, 4, 5]} />);
+    expectNoViolations(await axe(container));
+  });
+
+  it('DrawDeck (empty) is axe-clean (#25)', async () => {
+    const { container } = render(<DrawDeck deck={[]} />);
     expectNoViolations(await axe(container));
   });
 
