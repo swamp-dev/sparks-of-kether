@@ -117,7 +117,7 @@ export function HomeRoomForms(): JSX.Element {
         onClick={handleCreate}
         disabled={busy}
         data-action="create-room"
-        className="rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground disabled:opacity-30"
+        className="rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:opacity-30"
       >
         {busy ? 'Creating…' : 'New game'}
       </button>

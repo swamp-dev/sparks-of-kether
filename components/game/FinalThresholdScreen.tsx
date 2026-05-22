@@ -597,7 +597,7 @@ function ClosurePanel(props: ClosurePanelProps): JSX.Element {
           onClick={() => turn.thresholdConfirm()}
           disabled={closureLocked}
           data-action="threshold-confirm"
-          className="rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground shadow-glow-kether disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded bg-illumination px-6 py-3 font-display tracking-widest text-ground shadow-glow-kether focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {closureLocked ? 'Closure confirmed' : 'Confirm closure'}
         </button>

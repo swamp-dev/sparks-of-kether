@@ -668,7 +668,7 @@ export function PlayScreen({
                 onClick={() => turn.endTurn()}
                 disabled={!isMyTurn}
                 data-action="end-turn"
-                className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground"
+                className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
                 End turn
               </button>

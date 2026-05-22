@@ -200,7 +200,7 @@ export function Lobby({
                 disabled={!canBegin}
                 data-action="begin"
                 data-allready={allReady ? 'true' : 'false'}
-                className="relative rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground disabled:cursor-not-allowed disabled:opacity-30"
+                className="relative rounded bg-illumination px-6 py-2 font-display tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:cursor-not-allowed disabled:opacity-30"
               >
                 {beginning ? 'Beginning…' : 'Begin'}
               </button>

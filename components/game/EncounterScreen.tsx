@@ -1251,7 +1251,7 @@ function ReactPanel({
           data-action="continue"
           // Pass action: bright Tiferet-gold button so the success
           // path reads as the rewarded one.
-          className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground shadow-glow-tiferet"
+          className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground shadow-glow-tiferet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           Continue
         </button>
