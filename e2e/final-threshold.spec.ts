@@ -53,10 +53,13 @@ test('trial sub-state shows the challenge list and current trial player', async 
   const activeSeats = page.locator('[data-trial-active="true"]');
   await expect(activeSeats).toHaveCount(1);
 
-  // The resolve button exists (p2 is the active player; the demo mounts
-  // for p1 in hot-seat mode so the button renders but the non-active
-  // player cannot click it — the UI hides or disables it per the K4 guard).
-  await expect(page.locator('[data-action="kether-trial-resolve"]')).toBeVisible();
+  // The demo mounts for p1 in hot-seat mode. P2 is the active trial player
+  // (last-arrived), so p1 sees the waiting status, not the resolve button.
+  await expect(page.locator('[data-trial-status]').getByText(/Waiting for Bea/i)).toBeVisible();
+
+  // The active challenge block is always visible to all players so they
+  // can see what stat is being tested.
+  await expect(page.locator('[data-active-challenge]')).toBeVisible();
 });
 
 test('closure sub-state stages a Spark and surfaces the projected gap', async ({ page }) => {
