@@ -8,6 +8,27 @@ replacing the procedural geometric glyph cards with Rider-Waite photography.
 
 ---
 
+## 2026-05-22T01:15:00-04:00 — push 2: visual-regression baselines regenerated
+
+**Pushed:** 40 updated Playwright visual-regression baselines.
+
+**What changed:**
+- `pnpm e2e visual-regression --update-snapshots` regenerated the 40 baseline
+  PNGs that were stale relative to the push 1 redesign. The affected routes
+  are those not captured in push 1: about (mobile/tablet), arcana-13 (all),
+  codex (all), demo-challenge (all), demo-icons (all), demo-meters (all),
+  demo-ritual (all), demo-shell-panel (mobile/tablet), demo-stat-sheet
+  (mobile/tablet), demo-tokens (mobile/tablet), demo-tree (all), home
+  (mobile/tablet), path-22 (all), sefirah-tiferet (all), tokens (all).
+
+**Surprising:** Push 1 had already updated demo-cards, demo-hand, play, and
+play-mid-game baselines — the routes most directly showing the new card art.
+The push 2 batch covers the broader app shell: pages where card art only
+appears indirectly (e.g. codex arcanum detail, sefirah detail sidebar) plus
+unrelated routes where sub-pixel rendering differences accumulated.
+
+---
+
 ## 2026-05-22T00:37:00-04:00 — push 1: RW art + drop card number
 
 **Pushed:** Single-commit redesign of ArcanumCard.
