@@ -98,7 +98,9 @@ interface PlayScreenProps {
   /**
    * Called when the player confirms leaving the game. When provided,
    * a "Leave Game" affordance with inline confirmation appears in the
-   * Settings popover. Absent in hot-seat mode (no session to leave).
+   * Settings popover. Should be provided on all active play surfaces —
+   * hot-seat passes `() => router.push('/')`, multiplayer passes the
+   * handleLeave handler.
    */
   readonly onQuit?: () => void;
 }
