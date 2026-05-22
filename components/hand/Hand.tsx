@@ -554,10 +554,7 @@ export function Hand({
                 position: 'relative',
                 zIndex,
                 transform: baseTransform + magnifyTransform,
-                // Magnified cards scale from center so the lift is symmetric;
-                // non-magnified cards anchor at bottom-center to keep the
-                // fan's curve on a horizontal baseline.
-                transformOrigin: isMagnified ? 'center' : 'bottom center',
+                transformOrigin: 'center',
                 // Transition is scoped to cards participating in the magnify
                 // *now or on the previous render*. The `inMagnifySet` half
                 // covers entry; the `prevInMagnifySet` half covers exit
