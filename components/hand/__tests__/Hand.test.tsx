@@ -878,6 +878,15 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
     expect((middle.parentElement as HTMLElement).style.opacity).toBe('0.75');
   });
 
+  it('omits box-shadow on hover under reduced-motion (#40)', () => {
+    restoreMatchMedia = stubMatchMedia(true);
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} />);
+    const middle = container.querySelector('[data-card-slot="1"]') as HTMLButtonElement;
+    fireEvent.mouseEnter(middle);
+    expect(middle.getAttribute('data-magnified')).toBe('true');
+    expect((middle.parentElement as HTMLElement).style.boxShadow).toBe('');
+  });
+
   it('layout="inline" renders the open hand without the position-fixed overlay (#579 review)', () => {
     // The /demo/hand showcase renders three Hand instances stacked
     // vertically. Pre-fix, all three rendered as
