@@ -18,18 +18,18 @@ import type { SefirahKey } from '@/data';
  * Query params:
  *   ?subPhase=hold       — pre-ritual hold view (held player + still-
  *                          climbing roster). The default.
- *   ?subPhase=witness    — round-robin witness state. P2 is the active
- *                          witness (last-arrived first per § 2.2).
+ *   ?subPhase=trial      — cooperative gauntlet state. P2 is the active
+ *                          trial player (last-arrived first per § 2.2).
  *   ?subPhase=close      — closure window with seeded held Sparks so
  *                          stage / unstage / Confirm exercise.
  *
  * The screen mounts a real `useTurn` hook so dispatched ritual
- * methods (ketherWitnessPlay, ketherWitnessPass,
+ * methods (ketherTrialResolve, ketherTrialStageSpark,
  * ketherCloseStageSpark, etc.) flow through the engine reducer
  * exactly as they do in production.
  */
 
-type DemoSubPhase = 'hold' | 'witness' | 'close';
+type DemoSubPhase = 'hold' | 'trial' | 'close';
 
 const HELD_SPARKS: ReadonlySet<SefirahKey> = new Set(['gevurah', 'tiferet'] as const);
 
@@ -50,7 +50,7 @@ function FinalThresholdDemoContent(): JSX.Element {
   const searchParams = useSearchParams();
   const subPhaseParam = searchParams.get('subPhase');
   const subPhase: DemoSubPhase =
-    subPhaseParam === 'witness' || subPhaseParam === 'close' ? subPhaseParam : 'hold';
+    subPhaseParam === 'trial' || subPhaseParam === 'close' ? subPhaseParam : 'hold';
 
   const initialState = useMemo<GameState>(() => {
     if (subPhase === 'hold') {
@@ -73,9 +73,9 @@ function FinalThresholdDemoContent(): JSX.Element {
       return makeState({}, { players: [heldPlayer, climbingPlayer], activePlayerId: 'p1' });
     }
 
-    // Witness + close share a base: both players at Kether with the
+    // Trial + close share a base: both players at Kether with the
     // ritual initialised. P2 arrives last (descending timestamp →
-    // p2 first in witness order).
+    // p2 first in trial order).
     const p1 = makePlayer({
       id: 'p1',
       name: 'Alex',
@@ -99,7 +99,7 @@ function FinalThresholdDemoContent(): JSX.Element {
         `final-threshold demo: initKetherRitual rejected — ${initResult.reason.kind}`,
       );
     }
-    if (subPhase === 'witness') return initResult.value;
+    if (subPhase === 'trial') return initResult.value;
 
     // close — hand-roll the ritual into the closure sub-phase by
     // emptying both queues and flipping subPhase. Production reaches
