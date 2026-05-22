@@ -90,7 +90,8 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   await expect(page.locator('[data-play-screen]')).toHaveAttribute('data-phase', 'move');
 
   const pair = await findValidDragPair(page);
-  if (pair === null) throw new Error('Seed 3 produced no valid drag pair — seed invariant violated');
+  if (pair === null)
+    throw new Error('Seed 3 produced no valid drag pair — seed invariant violated');
 
   const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
@@ -138,7 +139,8 @@ test('drag-to-play: dragging onto a non-matching path is rejected with announcem
 
   const card = page.locator('[data-card-slot]').first();
   const arcanumAttr = await card.getAttribute('data-arcanum');
-  if (arcanumAttr === null) throw new Error('Seed 3 produced no visible card — seed invariant violated');
+  if (arcanumAttr === null)
+    throw new Error('Seed 3 produced no visible card — seed invariant violated');
   const arcanum = Number(arcanumAttr);
 
   // Find a path whose arcanum DOESN'T match this card.
@@ -205,7 +207,8 @@ test('drag-to-play: keyboard fallback — click-to-select then click-path still 
   await expect(page.locator('[data-play-screen]')).toBeVisible();
 
   const pair = await findValidDragPair(page);
-  if (pair === null) throw new Error('Seed 3 produced no valid drag pair — seed invariant violated');
+  if (pair === null)
+    throw new Error('Seed 3 produced no valid drag pair — seed invariant violated');
 
   const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   await card.click();
