@@ -539,6 +539,18 @@ describe('Hand — Mac-dock magnification (#463)', () => {
     expect(fan.style.transform).toBe('translateY(0)');
   });
 
+  it('peek-shelf: mouseenter on a card directly expands the fan (not via bubbling)', () => {
+    // Defensive: handleHoverEnter calls expandHand() directly so the hand
+    // expands even if a descendant calls e.stopPropagation() in the future.
+    const { container } = render(<Hand hand={[2, 5, 13]} visible={true} onCardSelect={vi.fn()} />);
+    const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
+    const cardBtn = container.querySelector('[data-card-slot="0"]') as HTMLElement;
+    const cardWrapper = cardBtn.parentElement as HTMLElement;
+    expect(fan.style.transform).toBe('translateY(calc(100% - 72px))');
+    fireEvent.mouseEnter(cardWrapper);
+    expect(fan.style.transform).toBe('translateY(0)');
+  });
+
   it('peek-shelf: reveal transition uses HAND_REVEAL_MS=280ms easing', () => {
     // Default suite runs without reduced-motion (no matchMedia stub), so
     // the transition string is set — not suppressed to 'none'.
