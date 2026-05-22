@@ -16,6 +16,7 @@ import {
   useSoundEnabled,
   SFX_ENABLED_STORAGE_KEY,
   MUSIC_ENABLED_STORAGE_KEY,
+  _resetAudioUnlockForTests,
 } from '../settings';
 
 const wrapper = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
@@ -89,6 +90,7 @@ describe('useSoundEnabled — sfxEnabled', () => {
   });
 
   it('attempts an audio unlock play when sfxEnabled transitions from off to on', () => {
+    _resetAudioUnlockForTests();
     const playCalls: string[] = [];
     vi.stubGlobal(
       'Audio',
@@ -118,6 +120,45 @@ describe('useSoundEnabled — sfxEnabled', () => {
       result.current.setSfxEnabled(false);
     });
     expect(playCalls.length).toBe(countAfterEnable);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('audio unlock fires only once even if the user toggles off→on multiple times', () => {
+    _resetAudioUnlockForTests();
+    const playCalls: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class FakeAudio {
+        src: string;
+        play = vi.fn(() => {
+          playCalls.push(this.src);
+          return Promise.resolve();
+        });
+        constructor(src?: string) {
+          this.src = src ?? '';
+        }
+      },
+    );
+
+    localStorage.setItem(SFX_ENABLED_STORAGE_KEY, 'false');
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+
+    // First enable — unlock should fire
+    act(() => {
+      result.current.setSfxEnabled(true);
+    });
+    const countAfterFirst = playCalls.length;
+    expect(countAfterFirst).toBeGreaterThan(0);
+
+    // Toggle off then on again — unlock must NOT fire a second time
+    act(() => {
+      result.current.setSfxEnabled(false);
+    });
+    act(() => {
+      result.current.setSfxEnabled(true);
+    });
+    expect(playCalls.length).toBe(countAfterFirst);
 
     vi.unstubAllGlobals();
   });

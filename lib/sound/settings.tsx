@@ -76,8 +76,12 @@ function readMusicInitial(): boolean {
   return false; // Music default: OFF (ambient auto-play is hostile by default)
 }
 
+let audioContextUnlocked = false;
+
 function unlockAudioContext(): void {
   if (typeof window === 'undefined') return;
+  if (audioContextUnlocked) return;
+  audioContextUnlocked = true;
   try {
     const unlock = new Audio();
     const p = unlock.play();
@@ -85,6 +89,10 @@ function unlockAudioContext(): void {
   } catch {
     /* ignore */
   }
+}
+
+export function _resetAudioUnlockForTests(): void {
+  audioContextUnlocked = false;
 }
 
 function persist(key: string, value: boolean): void {
