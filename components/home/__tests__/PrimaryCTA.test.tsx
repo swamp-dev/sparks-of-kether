@@ -140,21 +140,17 @@ describe('PrimaryCTA', () => {
     expect(trigger).not.toHaveAttribute('hidden');
   });
 
-  it('focus is returned to the trigger after the panel closes', async () => {
-    // The close-side focus-return runs in a useEffect (not synchronously
-    // alongside setIsOpen(false)), because under React 18 automatic
-    // batching the trigger is still `display:none` when an immediate
-    // `.focus()` call would run. Verify the contract here in the unit
-    // suite; the Playwright spec covers the production-browser path.
-    render(<PrimaryCTA defaultOpen />);
-    const close = screen.getByRole('button', {
-      name: /collapse and return to the portal/i,
-    });
-    fireEvent.click(close);
-
-    await waitFor(() => {
-      const trigger = screen.getByRole('button', { name: /begin the ascent/i });
-      expect(trigger).toHaveFocus();
+  describe('#16 — expand-in-place transition', () => {
+    it('panel carries motion-safe:animate-portal-emerge for the mount reveal', () => {
+      // The panel is conditionally mounted (isOpen ? <div> : null).
+      // A CSS transition on the element has no starting state to
+      // animate FROM — so we use a keyframe animation that fires on
+      // mount instead. Gate it under motion-safe: so reduced-motion
+      // users see an instant reveal without the translate-up effect.
+      render(<PrimaryCTA defaultOpen />);
+      const panel = document.querySelector('[data-home-portal-panel]');
+      expect(panel).not.toBeNull();
+      expect(panel?.getAttribute('class') ?? '').toMatch(/motion-safe:animate-portal-emerge/);
     });
   });
 
@@ -171,6 +167,24 @@ describe('PrimaryCTA', () => {
       render(<PrimaryCTA />);
       const trigger = screen.getByRole('button', { name: /begin the ascent/i });
       expect(trigger.getAttribute('data-home-cta')).toBe('begin');
+    });
+  });
+
+  it('focus is returned to the trigger after the panel closes', async () => {
+    // The close-side focus-return runs in a useEffect (not synchronously
+    // alongside setIsOpen(false)), because under React 18 automatic
+    // batching the trigger is still `display:none` when an immediate
+    // `.focus()` call would run. Verify the contract here in the unit
+    // suite; the Playwright spec covers the production-browser path.
+    render(<PrimaryCTA defaultOpen />);
+    const close = screen.getByRole('button', {
+      name: /collapse and return to the portal/i,
+    });
+    fireEvent.click(close);
+
+    await waitFor(() => {
+      const trigger = screen.getByRole('button', { name: /begin the ascent/i });
+      expect(trigger).toHaveFocus();
     });
   });
 });

@@ -69,6 +69,18 @@ const config: Config = {
       // path travel and sefirah-clear feedback. CSS-only by design;
       // framer-motion stays a follow-up if this proves insufficient.
       keyframes: {
+        // #16: portal-emerge — panel reveal when PrimaryCTA expands.
+        // Conditionally mounted elements cannot use CSS transitions
+        // (no starting state to interpolate FROM), so a keyframe fires
+        // on mount instead. 350ms out-expo lifts the panel 6px
+        // upward into position. `both` fill-mode means the panel
+        // starts at opacity:0 / shifted before the animation begins.
+        // Gate with `motion-safe:` at the call site so reduced-motion
+        // users get an instant reveal with no translate.
+        'portal-emerge': {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         'hand-fade-in': {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
@@ -231,6 +243,7 @@ const config: Config = {
         },
       },
       animation: {
+        'portal-emerge': 'portal-emerge 350ms cubic-bezier(0.22, 1, 0.36, 1) both',
         'hand-fade-in': 'hand-fade-in 180ms ease-out',
         'hand-fade-out': 'hand-fade-out 180ms ease-out forwards',
         'path-travel-pulse': 'path-travel-pulse 600ms ease-out',
