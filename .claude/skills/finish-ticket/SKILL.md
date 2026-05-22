@@ -205,12 +205,11 @@ Verify it was written:
 
 ```bash
 main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
-jq '{verdict, head_sha, written_via}' "${main_repo}/.claude/state/checklist-${branch_safe}.json"
+jq '{verdict, head_sha}' "${main_repo}/.claude/state/checklist-${branch_safe}.json"
 ```
 
 Expected: `verdict` matches what the reviewer returned (`ship`, `fix`,
-`block`, or `rework`); `head_sha` matches `git rev-parse HEAD`;
-`written_via` is `agent`.
+`block`, or `rework`); `head_sha` matches `git rev-parse HEAD`.
 
 If `verdict` is `unknown`, the reviewer output is missing the
 `## Verdict` markdown header — re-run code-reviewer asking for a

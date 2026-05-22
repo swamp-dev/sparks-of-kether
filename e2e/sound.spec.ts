@@ -105,3 +105,74 @@ test('settings cog opens, toggles SFX + Music independently, persists to localSt
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('pantheon radio group appears in settings, defaults Greco-Roman, persists Egyptian selection (#34)', async ({
+  page,
+}) => {
+  // Same onboarding walk as above — reaches the play screen where the
+  // settings cog is mounted.
+  await page.goto('/');
+  await page.getByRole('button', { name: /begin the ascent/i }).click();
+  const hotseatLink = page.getByRole('link', { name: /Hot-seat/i });
+  await hotseatLink.waitFor({ state: 'visible' });
+  await hotseatLink.click();
+  await page.waitForURL('**/play');
+
+  for (let player = 1; player <= 2; player++) {
+    await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
+    if (player === 2) {
+      const nextArrow = page.getByRole('button', { name: /^Next sign$/ }).first();
+      for (let i = 0; i < 3; i++) {
+        await nextArrow.click();
+      }
+    }
+    const signLabel = player === 1 ? 'Aries' : 'Leo';
+    await page.getByRole('button', { name: new RegExp(`^Confirm ${signLabel}$`) }).click();
+    await expect(page.getByText(new RegExp(`Player ${player} — Sefirot Blessing`))).toBeVisible();
+    for (let step = 0; step < 10; step++) {
+      await page.getByRole('button', { name: /Roll 3d6/i }).click();
+      await page.getByRole('button', { name: /^Next$/i }).click();
+    }
+    await expect(page.getByRole('heading', { name: /The Tree has spoken/i })).toBeVisible();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
+  }
+  await expect(page.getByRole('heading', { name: /^Lobby$/ })).toBeVisible();
+  await page.getByRole('button', { name: /^Begin$/ }).click();
+  await expect(page.locator('[data-play-screen]')).toBeVisible();
+
+  // Open settings.
+  await page.getByRole('button', { name: /^Settings$/ }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+
+  // Pantheon radiogroup is present with two options.
+  const group = dialog.getByRole('radiogroup', { name: /pantheon/i });
+  await expect(group).toBeVisible();
+  const grecoRoman = group.getByRole('radio', { name: /greco-roman/i });
+  const egyptian = group.getByRole('radio', { name: /egyptian/i });
+  await expect(grecoRoman).toBeVisible();
+  await expect(egyptian).toBeVisible();
+
+  // Default is Greco-Roman selected.
+  await expect(grecoRoman).toHaveAttribute('aria-checked', 'true');
+  await expect(egyptian).toHaveAttribute('aria-checked', 'false');
+
+  // Select Egyptian.
+  await egyptian.click();
+  await expect(egyptian).toHaveAttribute('aria-checked', 'true');
+  await expect(grecoRoman).toHaveAttribute('aria-checked', 'false');
+
+  // Persists to localStorage.
+  const stored = await page.evaluate(() => window.localStorage.getItem('sok.pantheonId'));
+  expect(stored).toBe('egyptian');
+
+  // Close and reopen — Egyptian is still selected (localStorage survived).
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: /^Settings$/ }).click();
+  const dialog2 = page.getByRole('dialog');
+  const grecoRoman2 = dialog2.getByRole('radio', { name: /greco-roman/i });
+  const egyptian2 = dialog2.getByRole('radio', { name: /egyptian/i });
+  await expect(egyptian2).toHaveAttribute('aria-checked', 'true');
+  await expect(grecoRoman2).toHaveAttribute('aria-checked', 'false');
+});
