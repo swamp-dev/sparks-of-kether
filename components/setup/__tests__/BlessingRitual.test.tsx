@@ -352,6 +352,23 @@ describe('BlessingRitual — scene polish (#156)', () => {
     expect(portrait?.getAttribute('data-avatar-size')).toBe('stage');
   });
 
+  it('avatar portrait uses pose="speaking" to suppress idle jitter/drift in ceremony (#85)', () => {
+    // Advance 7 steps to land on Hod — the jitter character (Hermes), the primary regression target.
+    const { container } = render(
+      <BlessingRitual rng={seededRng(3)} sign="pisces" onComplete={vi.fn()} />,
+    );
+    for (let i = 0; i < 7; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Roll 3d6/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Next$/i }));
+    }
+    expect(container.querySelector('[data-avatar-portrait]')?.getAttribute('data-sefirah')).toBe(
+      'hod',
+    );
+    expect(container.querySelector('[data-avatar-portrait]')?.getAttribute('data-avatar-pose')).toBe(
+      'speaking',
+    );
+  });
+
   it('avatar portrait is well above the 80 px ticket threshold (stage: h-60 = 240 px)', () => {
     const { container } = render(
       <BlessingRitual rng={seededRng(1)} sign="aries" onComplete={vi.fn()} />,
