@@ -401,8 +401,8 @@ describe('BlessingRitual — scene polish (#156)', () => {
 // ──────────────── #255 / T4 — sign-aware blessing quote ────────────────
 //
 // The Voices Epic adds a per-Sefirah blessing quote rendered after each
-// roll. Quote text comes from `data/pantheons/greco-roman/blessings.ts`
-// (T2) via `engine/sefirah-quote.ts:quoteForBlessing` (T3). Every cell offers
+// roll. Quote text comes from `data/sefirah-blessings-ceremony.ts` (#13)
+// via `engine/sefirah-quote.ts:quoteForCeremony`. Every cell offers
 // 3 variants; the selector picks one uniformly via the seeded `Rng` so
 // the same game-seed always renders the same line.
 //
