@@ -23,7 +23,8 @@
     "ci:local:fast": "SKIP_E2E=1 SKIP_INTEGRATION=1 bash scripts/ci-local.sh",
     "archive:journal": "node scripts/archive-journal.mjs",
     "music:render": "tsx scripts/music/render.ts",
-    "sfx:render-stings": "tsx scripts/sfx/render-stings.ts"
+    "sfx:render-stings": "tsx scripts/sfx/render-stings.ts",
+    "voice:check-drift": "tsx scripts/voice/check-drift.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
