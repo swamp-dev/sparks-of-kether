@@ -86,6 +86,7 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const confirmBtnRef = useRef<HTMLButtonElement | null>(null);
   const pantheonGroupRef = useRef<HTMLDivElement | null>(null);
 
   // OS-level reduced-motion read-out. Refreshed on every popover
@@ -132,6 +133,14 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
       closeBtnRef.current?.focus();
     }
   }, [open]);
+
+  // When the quit confirmation appears, move focus to Confirm so
+  // keyboard users don't have to Tab there themselves. (#116)
+  useEffect(() => {
+    if (confirmingQuit) {
+      confirmBtnRef.current?.focus();
+    }
+  }, [confirmingQuit]);
 
   const handlePantheonKey = useCallback(
     (e: KeyboardEvent<HTMLDivElement>): void => {
@@ -314,6 +323,7 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
                   <p className="text-center text-xs opacity-60">Leave this game?</p>
                   <div className="flex gap-2">
                     <button
+                      ref={confirmBtnRef}
                       type="button"
                       onClick={() => onQuit()}
                       data-action="confirm-quit"

@@ -98,4 +98,12 @@ describe('SettingsButton — quit flow', () => {
     await user.click(screen.getByRole('button', { name: /leave game/i }));
     expectNoViolations((await axe(container)) as AxeResults);
   });
+
+  it('focus moves to the Confirm button when quit confirmation appears', async () => {
+    const user = userEvent.setup();
+    renderWithQuit(vi.fn());
+    await user.click(screen.getByRole('button', { name: /settings/i }));
+    await user.click(screen.getByRole('button', { name: /leave game/i }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /confirm/i }));
+  });
 });
