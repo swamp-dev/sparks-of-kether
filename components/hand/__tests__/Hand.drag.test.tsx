@@ -190,4 +190,25 @@ describe('Hand — drag-to-play (#412)', () => {
     await Promise.resolve();
     expect(onCardDragStart).not.toHaveBeenCalled();
   });
+
+  it('pointerMove and pointerUp on a non-draggable card do not fire drag callbacks', async () => {
+    const onCardDragStart = vi.fn();
+    const onCardDragEnd = vi.fn();
+    const { container } = render(
+      <Hand
+        hand={[5]}
+        visible={true}
+        // onCardSelect omitted → not interactive / not draggable
+        onCardDragStart={onCardDragStart}
+        onCardDragEnd={onCardDragEnd}
+      />,
+    );
+    const card = container.querySelector('[data-arcanum="5"]') as HTMLElement;
+    fireEvent.pointerMove(card, { pointerId: 1, clientX: 200, clientY: 250 });
+    fireEvent.pointerUp(card, { pointerId: 1, clientX: 220, clientY: 260 });
+    fireEvent.pointerCancel(card, { pointerId: 1 });
+    await Promise.resolve();
+    expect(onCardDragStart).not.toHaveBeenCalled();
+    expect(onCardDragEnd).not.toHaveBeenCalled();
+  });
 });

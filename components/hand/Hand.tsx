@@ -624,12 +624,12 @@ export function Hand({
                 // the post-drop synthesized click on its first
                 // invocation, then resets.
                 onClick={handleClick}
-                onPointerDown={(e) => {
-                  if (draggable) cardDrag.handlers.onPointerDown(e, arcanum);
-                }}
-                onPointerMove={cardDrag.handlers.onPointerMove}
-                onPointerUp={cardDrag.handlers.onPointerUp}
-                onPointerCancel={cardDrag.handlers.onPointerCancel}
+                onPointerDown={
+                  draggable ? (e) => cardDrag.handlers.onPointerDown(e, arcanum) : undefined
+                }
+                onPointerMove={draggable ? cardDrag.handlers.onPointerMove : undefined}
+                onPointerUp={draggable ? cardDrag.handlers.onPointerUp : undefined}
+                onPointerCancel={draggable ? cardDrag.handlers.onPointerCancel : undefined}
                 onFocus={handleFocusIn}
                 onBlur={handleFocusOut}
                 onKeyDown={(e) => handleKey(e, i, arcanum)}
