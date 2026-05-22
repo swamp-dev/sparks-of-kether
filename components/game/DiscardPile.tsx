@@ -46,14 +46,14 @@ export function DiscardPile({
   const [open, setOpen] = useState(false);
   const count = discardPile.length;
   const top = count > 0 ? discardPile[count - 1] : undefined;
-  const label =
-    count === 0
-      ? 'Discard pile, empty'
-      : `Discard pile, ${count} ${count === 1 ? 'card' : 'cards'}. Click to browse.`;
-  // #462: when a drag is live, append a "drop a card here to discard"
-  // prompt to the AT label so screen-reader users hear the affordance
-  // without needing to navigate to a separate aria-live region.
-  const ariaLabel = dragActive ? `${label} Drop a card here to discard.` : label;
+  const baseLabel = `Discard pile, ${count === 0 ? 'empty' : `${count} ${count === 1 ? 'card' : 'cards'}`}`;
+  // #462: when a drag is live, swap "Click to browse" for the drop
+  // prompt so AT users hear only the relevant affordance.
+  const ariaLabel = dragActive
+    ? `${baseLabel}. Drop a card here to discard.`
+    : count === 0
+      ? baseLabel
+      : `${baseLabel}. Click to browse.`;
 
   return (
     <div
