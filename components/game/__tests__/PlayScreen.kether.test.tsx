@@ -43,9 +43,7 @@ function buildKetherTrialState(): GameState {
   // p2 arrives last (descending timestamp → p2 first in trial order).
   const initResult = initKetherRitual(baseState, { p1: 100, p2: 200 });
   if (!initResult.ok) {
-    throw new Error(
-      `buildKetherTrialState: initKetherRitual rejected — ${initResult.reason.kind}`,
-    );
+    throw new Error(`buildKetherTrialState: initKetherRitual rejected — ${initResult.reason.kind}`);
   }
   return initResult.value;
 }

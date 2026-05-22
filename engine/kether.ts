@@ -268,7 +268,10 @@ export function ketherTrialUnstageSpark(
     ...ritual.trialStagedSparks.slice(0, idx),
     ...ritual.trialStagedSparks.slice(idx + 1),
   ];
-  return { ok: true, value: { ...state, ketherRitual: { ...ritual, trialStagedSparks: newStaged } } };
+  return {
+    ok: true,
+    value: { ...state, ketherRitual: { ...ritual, trialStagedSparks: newStaged } },
+  };
 }
 
 /**
@@ -463,7 +466,10 @@ export function ketherUnstageSpark(
     ...ritual.stagedClosureSparks.slice(0, idx),
     ...ritual.stagedClosureSparks.slice(idx + 1),
   ];
-  return { ok: true, value: { ...state, ketherRitual: { ...ritual, stagedClosureSparks: newStaged } } };
+  return {
+    ok: true,
+    value: { ...state, ketherRitual: { ...ritual, stagedClosureSparks: newStaged } },
+  };
 }
 
 // ──────────────── Confirm closure ────────────────

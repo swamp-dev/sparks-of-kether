@@ -72,9 +72,7 @@ export function FinalThresholdScreen(props: FinalThresholdScreenProps): JSX.Elem
     >
       <header className="mb-6 text-center">
         <h2 className="font-display text-3xl tracking-widest">The Final Threshold</h2>
-        <p className="mt-2 italic opacity-80">
-          The Crown stands before you. Stand together.
-        </p>
+        <p className="mt-2 italic opacity-80">The Crown stands before you. Stand together.</p>
       </header>
 
       {subPhase === 'trial' ? (
@@ -365,7 +363,7 @@ function TrialPanel(props: TrialPanelProps): JSX.Element {
               if (challenge.roll === null) return null;
               const playerId = trialOrder[idx];
               const p = state.players.find((pl) => pl.id === playerId);
-              const name = p?.name ?? (playerId ?? '?');
+              const name = p?.name ?? playerId ?? '?';
               const sefirahName = sefirahByKey(challenge.sefirahKey).englishName;
               return (
                 <li
@@ -381,9 +379,9 @@ function TrialPanel(props: TrialPanelProps): JSX.Element {
                     rolled {challenge.roll} vs DC {challenge.dc}
                   </span>
                   {challenge.passed ? (
-                    <span className="text-illumination text-xs">passed (+1 Illumination)</span>
+                    <span className="text-xs text-illumination">passed (+1 Illumination)</span>
                   ) : (
-                    <span className="text-xs opacity-60 italic">failed</span>
+                    <span className="text-xs italic opacity-60">failed</span>
                   )}
                 </li>
               );

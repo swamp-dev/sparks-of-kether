@@ -101,8 +101,7 @@ export function KetherCelebration({
           className="font-display text-6xl leading-none"
           style={{
             color: 'rgba(255,248,220,0.95)',
-            textShadow:
-              '0 0 40px rgba(212,160,23,0.90), 0 0 80px rgba(255,255,255,0.28)',
+            textShadow: '0 0 40px rgba(212,160,23,0.90), 0 0 80px rgba(255,255,255,0.28)',
           }}
         >
           כ
@@ -148,10 +147,7 @@ export function KetherCelebration({
         </h1>
 
         {/* Subhead */}
-        <p
-          data-celebration-subhead
-          className="max-w-sm text-sm italic opacity-70 sm:text-base"
-        >
+        <p data-celebration-subhead className="max-w-sm text-sm italic opacity-70 sm:text-base">
           The Crown was never a destination. It was a return.
         </p>
 

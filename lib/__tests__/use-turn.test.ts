@@ -1063,7 +1063,10 @@ describe('useTurn — ketherTrialStageSpark / ketherTrialUnstageSpark (K4 / #352
       makePlayer({ id: 'p1', position: 'kether', hand: [], sparksHeld: new Set(['gevurah']) }),
       makePlayer({ id: 'p2', position: 'kether', hand: [] }),
     ];
-    const stagedRitual = { ...freshRitual(['p2', 'p1']), trialStagedSparks: [{ playerId: 'p1', sefirah: 'gevurah' as const }] };
+    const stagedRitual = {
+      ...freshRitual(['p2', 'p1']),
+      trialStagedSparks: [{ playerId: 'p1', sefirah: 'gevurah' as const }],
+    };
     const { result } = ritualHook({ players, ritual: stagedRitual });
     act(() => {
       result.current.ketherTrialUnstageSpark('p1', 'gevurah');

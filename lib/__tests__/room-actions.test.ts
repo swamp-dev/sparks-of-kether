@@ -1119,7 +1119,10 @@ describe('applyClientAction — kether wire-format (#350)', () => {
         ...base,
         players: base.players.map((p) => (p.id === 'p2' ? p2WithSpark : p)),
         ketherRitual: base.ketherRitual
-          ? { ...base.ketherRitual, trialStagedSparks: [{ playerId: 'p2', sefirah: 'chesed' as const }] }
+          ? {
+              ...base.ketherRitual,
+              trialStagedSparks: [{ playerId: 'p2', sefirah: 'chesed' as const }],
+            }
           : base.ketherRitual,
       };
       const result = applyClientAction(
@@ -1289,7 +1292,6 @@ describe('applyClientAction — kether wire-format (#350)', () => {
       expect(result.error.cause.kind).toBe('kether-already-confirmed');
     });
   });
-
 });
 
 describe('applyClientAction — end-turn refuses while pendingDiscard pending (#291)', () => {

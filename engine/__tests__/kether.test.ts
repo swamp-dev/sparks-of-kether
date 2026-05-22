@@ -23,19 +23,21 @@ import type { GameState } from '../types';
  * defaults to one resolved-null challenge per player so tests can
  * easily override specific fields.
  */
-function makeTrialState(opts: {
-  readonly p1Sparks?: ReadonlySet<string>;
-  readonly p2Sparks?: ReadonlySet<string>;
-  readonly trialTurnIndex?: number;
-  readonly trialOrder?: readonly string[];
-  readonly trialChallenges?: readonly KetherTrialChallenge[];
-  readonly trialStagedSparks?: KetherRitualState['trialStagedSparks'];
-  readonly illumination?: number;
-  readonly separation?: number;
-  readonly subPhase?: KetherRitualState['subPhase'];
-  readonly stagedClosureSparks?: KetherRitualState['stagedClosureSparks'];
-  readonly closureLocked?: boolean;
-} = {}): GameState {
+function makeTrialState(
+  opts: {
+    readonly p1Sparks?: ReadonlySet<string>;
+    readonly p2Sparks?: ReadonlySet<string>;
+    readonly trialTurnIndex?: number;
+    readonly trialOrder?: readonly string[];
+    readonly trialChallenges?: readonly KetherTrialChallenge[];
+    readonly trialStagedSparks?: KetherRitualState['trialStagedSparks'];
+    readonly illumination?: number;
+    readonly separation?: number;
+    readonly subPhase?: KetherRitualState['subPhase'];
+    readonly stagedClosureSparks?: KetherRitualState['stagedClosureSparks'];
+    readonly closureLocked?: boolean;
+  } = {},
+): GameState {
   const defaultChallenges: readonly KetherTrialChallenge[] = [
     { sefirahKey: 'chokmah', stat: 'insight', dc: 14, roll: null, passed: null },
     { sefirahKey: 'binah', stat: 'understanding', dc: 14, roll: null, passed: null },
@@ -285,9 +287,7 @@ describe('ketherTrialStageSpark', () => {
   });
 
   it('rejects when the same Spark is already staged (prevents double-count)', () => {
-    const already: KetherRitualState['trialStagedSparks'] = [
-      { playerId: 'p1', sefirah: 'chesed' },
-    ];
+    const already: KetherRitualState['trialStagedSparks'] = [{ playerId: 'p1', sefirah: 'chesed' }];
     const state = makeTrialState({
       p1Sparks: new Set(['chesed']),
       trialStagedSparks: already,
@@ -303,9 +303,7 @@ describe('ketherTrialStageSpark', () => {
 
 describe('ketherTrialUnstageSpark', () => {
   it('removes a previously staged Spark', () => {
-    const staged: KetherRitualState['trialStagedSparks'] = [
-      { playerId: 'p1', sefirah: 'chesed' },
-    ];
+    const staged: KetherRitualState['trialStagedSparks'] = [{ playerId: 'p1', sefirah: 'chesed' }];
     const state = makeTrialState({ p1Sparks: new Set(['chesed']), trialStagedSparks: staged });
     const result = ketherTrialUnstageSpark(state, { playerId: 'p1', sefirah: 'chesed' });
     expect(result.ok).toBe(true);
@@ -354,9 +352,7 @@ describe('ketherTrialResolve', () => {
     // DC = 17, stat insight = 10 (DEFAULT_STATS). Roll 5 → total 15 < 17 → fail without Spark.
     // With one Spark staged (+5): 5 + 10 + 5 = 20 ≥ 17 → pass.
     const rng = { d20: () => 5, int: () => 5 };
-    const staged: KetherRitualState['trialStagedSparks'] = [
-      { playerId: 'p1', sefirah: 'chesed' },
-    ];
+    const staged: KetherRitualState['trialStagedSparks'] = [{ playerId: 'p1', sefirah: 'chesed' }];
     const challenges: readonly KetherTrialChallenge[] = [
       { sefirahKey: 'chokmah', stat: 'insight', dc: 17, roll: null, passed: null },
       { sefirahKey: 'binah', stat: 'understanding', dc: 17, roll: null, passed: null },

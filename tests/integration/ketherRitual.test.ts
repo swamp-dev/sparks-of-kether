@@ -189,9 +189,7 @@ describe('integration: Final Threshold ritual end-to-end (real Supabase, #350)',
     expect(closeState.ketherRitual?.subPhase).toBe('close');
     // 2 challenges, all with roll and passed set after the gauntlet.
     expect(closeState.ketherRitual?.trialChallenges).toHaveLength(2);
-    expect(
-      closeState.ketherRitual?.trialChallenges.every((c) => c.roll !== null),
-    ).toBe(true);
+    expect(closeState.ketherRitual?.trialChallenges.every((c) => c.roll !== null)).toBe(true);
 
     // 5. Closure window: confirm without staging any Spark (illumination=6
     //    ≥ separation=0 + 5 → already won).
