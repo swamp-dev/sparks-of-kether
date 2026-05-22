@@ -16,6 +16,8 @@ import { SettingsButton } from '@/components/play/SettingsButton';
 import { HestiaCompanionLine } from '@/components/game/HestiaCompanionLine';
 import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
+import { KetherCelebration } from '@/components/game/KetherCelebration';
+import { JourneySummary } from '@/components/game/JourneySummary';
 import { isKetherHeld } from '@/engine/kether';
 import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type TurnPhase } from '@/lib/use-turn';
@@ -161,6 +163,9 @@ export function PlayScreen({
   // or Escape.
   const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(undefined);
   const [showMeditateConfirm, setShowMeditateConfirm] = useState(false);
+  // Tracks whether the KetherCelebration "Continue" has been clicked.
+  // When true, the win path advances to JourneySummary.
+  const [celebrationDone, setCelebrationDone] = useState(false);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -313,18 +318,18 @@ export function PlayScreen({
   // Seat derivation (#562): during the witness sub-phase, the rendered
   // seat must follow `currentWitnessPlayerId` — the engine reducers
   // rotate `witnessTurnIndex` independently of `activePlayerIndex`,
-  // so pinning to `activePlayer` would freeze the chorus on the first
-  // witness handoff. The close sub-phase exposes a null witness pointer
-  // (`currentWitnessPlayerId` returns null once every queue is empty);
+  // so pinning to `activePlayer` would freeze the trial on the first
+  // handoff. The close sub-phase exposes a null trial pointer
+  // (`currentTrialPlayerId` returns null once all challenges resolve);
   // fall back to `activePlayer` then so the closure-window UI still
   // mounts. Multiplayer's per-client seat derivation (each client
   // renders for its own selfPlayerId) is deferred to the
   // `/rooms/[code]/play` route landing per #325.
   if (turn.phase === 'kether') {
-    const witnessId = turn.currentWitnessPlayerId;
+    const trialId = turn.currentTrialPlayerId;
     const seatPlayer =
-      witnessId !== null
-        ? turn.state.players.find((p) => p.id === witnessId)
+      trialId !== null
+        ? turn.state.players.find((p) => p.id === trialId)
         : // TODO(#325): close sub-phase needs per-player rotation in
           // hot-seat (each player stages their own Sparks). Falling
           // back to activePlayer here means only one seat surfaces
@@ -376,6 +381,29 @@ export function PlayScreen({
             : 'The team is stranded.'}
         </p>
       </section>
+    );
+  }
+
+  // Win path: phase transitions 'kether' → 'end' on threshold-confirm.
+  // checkEndgame returns 'won' once closureLocked && illumination margin met.
+  // Route through KetherCelebration (Act 3) before the JourneySummary.
+  if (endgame.status === 'won') {
+    if (!celebrationDone) {
+      return (
+        <KetherCelebration
+          state={turn.state}
+          onContinue={() => setCelebrationDone(true)}
+          {...(className !== undefined ? { className } : {})}
+        />
+      );
+    }
+    return (
+      <JourneySummary
+        state={turn.state}
+        outcome={{ ok: true, value: { state: turn.state, status: 'won' } }}
+        reflections={{}}
+        {...(className !== undefined ? { className } : {})}
+      />
     );
   }
 

@@ -1,12 +1,11 @@
-import { currentWitnessPlayerId } from '@/engine/kether';
+import { currentTrialPlayerId } from '@/engine/kether';
 import type { ClientAction } from './room-actions';
 import type { GameState } from '@/engine/types';
 
 /**
  * Authorization rejection reasons. Discriminated by `kind` so callers
  * can map them to HTTP status codes (`identity-mismatch` and
- * `not-active-player` both surface as 403; future ability-specific
- * rejections might warrant 409 / 422).
+ * `not-active-player` both surface as 403).
  */
 export type AuthorizationRejection =
   | {
@@ -21,23 +20,10 @@ export type AuthorizationRejection =
       readonly action: ClientAction['kind'];
     }
   | {
-      readonly kind: 'not-witness-turn';
+      readonly kind: 'not-trial-turn';
       readonly callerId: string;
       readonly expectedPlayerId: string | null;
-      readonly action: 'kether-witness-play' | 'kether-witness-pass' | 'kether-host-skip-witness';
-      /**
-       * For `kether-host-skip-witness` only: the rejected dispatcher's
-       * named `targetPlayerId` (which failed the witness check). Omitted
-       * for direct `kether-witness-play` / `kether-witness-pass`
-       * rejections — there `callerId` is itself the offender.
-       */
-      readonly targetPlayerId?: string;
-    }
-  | {
-      readonly kind: 'not-host';
-      readonly callerId: string;
-      readonly hostId: string | null;
-      readonly action: 'kether-host-skip-witness';
+      readonly action: 'kether-trial-resolve';
     };
 
 export type AuthorizationResult =
@@ -49,29 +35,14 @@ export type AuthorizationResult =
  * `state`?
  *
  * Rules:
- *   - Every action's `playerId` must equal `callerId`. The route
- *     already enforces this against `auth.uid()` before calling, but
- *     authorize is also called in unit tests and from any future
- *     in-process consumer, so the check belongs here too.
- *   - Turn-locked actions (`move`, `prep-*`, `react-retry`,
- *     `react-continue`, `accept-setback`, `meditate`, `discard`,
- *     `end-turn`) require the caller to be the active player.
- *   - Kether ritual actions (#350 / `design/final-threshold.md` § 3.3
- *     and § 5.3) bypass the active-player gate in favour of per-action
- *     rules:
- *       - `kether-witness-play` / `kether-witness-pass`: the caller
- *         must be `currentWitnessPlayerId(state)` (the round-robin
- *         pointer's player). Outside the witness sub-phase the helper
- *         returns null, so any caller is rejected — the engine catches
- *         the actual phase-mismatch separately (defense-in-depth).
+ *   - Every action's `playerId` must equal `callerId`.
+ *   - Turn-locked actions require the caller to be the active player.
+ *   - Kether ritual actions bypass the active-player gate:
+ *       - `kether-trial-resolve`: caller must be `currentTrialPlayerId`.
+ *       - `kether-trial-stage-spark` / `kether-trial-unstage-spark`:
+ *         any player (identity check binds them to their own Spark).
  *       - `kether-close-stage-spark` / `kether-close-unstage-spark` /
- *         `threshold-confirm`: any player can call. The identity
- *         check above already pins them to their own Spark / their
- *         own confirm; the engine cross-checks ownership.
- *       - `kether-host-skip-witness`: the caller must be the host
- *         (`state.players[0].id` by convention; matches `rooms.host_id`
- *         since the room's creator is seated first via `joinRoom`'s
- *         seat-pick RPC).
+ *         `threshold-confirm`: any player.
  */
 export function authorize(
   action: ClientAction,
@@ -90,14 +61,13 @@ export function authorize(
   }
 
   switch (action.kind) {
-    case 'kether-witness-play':
-    case 'kether-witness-pass': {
-      const expected = currentWitnessPlayerId(state);
+    case 'kether-trial-resolve': {
+      const expected = currentTrialPlayerId(state);
       if (callerId !== expected) {
         return {
           ok: false,
           reason: {
-            kind: 'not-witness-turn',
+            kind: 'not-trial-turn',
             callerId,
             expectedPlayerId: expected,
             action: action.kind,
@@ -106,48 +76,14 @@ export function authorize(
       }
       return { ok: true };
     }
+    case 'kether-trial-stage-spark':
+    case 'kether-trial-unstage-spark':
     case 'kether-close-stage-spark':
     case 'kether-close-unstage-spark':
     case 'threshold-confirm': {
-      // Any player at the table may stage / un-stage / confirm during
-      // the closure window; the identity check above already binds the
-      // action to its caller. Engine reducers enforce in-phase + Spark-
-      // ownership rules.
-      return { ok: true };
-    }
-    case 'kether-host-skip-witness': {
-      const hostId = state.players[0]?.id ?? null;
-      if (callerId !== hostId) {
-        return {
-          ok: false,
-          reason: {
-            kind: 'not-host',
-            callerId,
-            hostId,
-            action: action.kind,
-          },
-        };
-      }
-      // § 7.1 gate (b): targetPlayerId must be the current witness.
-      // The engine's `ketherPassCard` rejects non-witness targets too,
-      // but the authorize layer is the authoritative gate per the
-      // design's three-gate requirement; without this check the host
-      // could probe witness identity via 422-vs-403 response shape and
-      // any future caller bypassing the engine's defense-in-depth would
-      // be unprotected.
-      const expectedWitness = currentWitnessPlayerId(state);
-      if (action.targetPlayerId !== expectedWitness) {
-        return {
-          ok: false,
-          reason: {
-            kind: 'not-witness-turn',
-            callerId,
-            expectedPlayerId: expectedWitness,
-            action: action.kind,
-            targetPlayerId: action.targetPlayerId,
-          },
-        };
-      }
+      // Any player at the table may call these; identity check above
+      // already binds the action to its caller. Engine reducers enforce
+      // in-phase + Spark-ownership rules.
       return { ok: true };
     }
     default: {

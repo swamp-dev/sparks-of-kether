@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * #351 — End-to-end coverage for the FinalThresholdScreen UI.
+ * #351 / #232 — End-to-end coverage for the FinalThresholdScreen UI.
  *
- * Drives the three rendered shapes (pre-ritual hold view, witness
+ * Drives the three rendered shapes (pre-ritual hold view, trial
  * sub-state, closure sub-state) through actual button clicks via the
  * `/demo/final-threshold` route. The demo route mounts the same
  * production component against deterministic seeded fixture state, so
@@ -40,21 +40,26 @@ test('hold view renders the arrived/climbing roster + waiting status', async ({ 
   await expect(page.locator('[data-roster="climbing"] [data-player="p2"]')).toBeVisible();
 });
 
-test('witness sub-state advances when the active witness clicks Play', async ({ page }) => {
-  await page.goto('/demo/final-threshold?subPhase=witness');
+test('trial sub-state shows the challenge list and current trial player', async ({ page }) => {
+  await page.goto('/demo/final-threshold?subPhase=trial');
   const screen = page.locator('[data-final-threshold-screen]');
-  await expect(screen).toHaveAttribute('data-sub-phase', 'witness');
+  await expect(screen).toHaveAttribute('data-sub-phase', 'trial');
 
-  // P2 is the active witness (last-arrived per § 2.2). The demo mounts
-  // for P1 by default, so P1 sees a read-only view with the "Waiting
-  // for Bea" status — Play / Pass affordances are absent for P1.
-  await expect(page.locator('[data-witness-status]').getByText(/Waiting for Bea/i)).toBeVisible();
-  await expect(page.locator('[data-action="kether-witness-play"]')).toHaveCount(0);
+  // Trial panel is present.
+  await expect(page.locator('[data-trial-panel]')).toBeVisible();
 
-  // The witness order ribbon shows both seats; the active one carries
-  // the data-witness-active=true marker.
-  const activeSeats = page.locator('[data-witness-active="true"]');
+  // Trial order ribbon renders both seats; the active seat (p2, last-arrived)
+  // carries data-trial-active=true.
+  const activeSeats = page.locator('[data-trial-active="true"]');
   await expect(activeSeats).toHaveCount(1);
+
+  // The demo mounts for p1 in hot-seat mode. P2 is the active trial player
+  // (last-arrived), so p1 sees the waiting status, not the resolve button.
+  await expect(page.locator('[data-trial-status]').getByText(/Waiting for Bea/i)).toBeVisible();
+
+  // The active challenge block is always visible to all players so they
+  // can see what stat is being tested.
+  await expect(page.locator('[data-active-challenge]')).toBeVisible();
 });
 
 test('closure sub-state stages a Spark and surfaces the projected gap', async ({ page }) => {
