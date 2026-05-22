@@ -81,9 +81,9 @@ let audioContextUnlocked = false;
 function unlockAudioContext(): void {
   if (typeof window === 'undefined') return;
   if (audioContextUnlocked) return;
-  audioContextUnlocked = true;
   try {
     const unlock = new Audio();
+    audioContextUnlocked = true;
     const p = unlock.play();
     if (p && typeof p.catch === 'function') p.catch(() => undefined);
   } catch {

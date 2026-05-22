@@ -38,6 +38,7 @@ describe('useSoundEnabled — sfxEnabled', () => {
   beforeEach(() => {
     localStorage.clear();
     setReducedMotion(false);
+    _resetAudioUnlockForTests();
   });
 
   afterEach(() => {
@@ -90,7 +91,6 @@ describe('useSoundEnabled — sfxEnabled', () => {
   });
 
   it('attempts an audio unlock play when sfxEnabled transitions from off to on', () => {
-    _resetAudioUnlockForTests();
     const playCalls: string[] = [];
     vi.stubGlobal(
       'Audio',
@@ -125,7 +125,6 @@ describe('useSoundEnabled — sfxEnabled', () => {
   });
 
   it('audio unlock fires only once even if the user toggles off→on multiple times', () => {
-    _resetAudioUnlockForTests();
     const playCalls: string[] = [];
     vi.stubGlobal(
       'Audio',
