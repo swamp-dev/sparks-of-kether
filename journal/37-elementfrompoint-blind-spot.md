@@ -12,3 +12,13 @@ on this branch.
 **Why:** `#213` trimmed path hit-lines back by `NODE_RADIUS` so they don't overlap the node circles. But the 48px HTML buttons still fully cover the last few pixels before the trim point. A drag released on that boundary (≈24px ring around each node center) would announce "No path under the pointer" instead of dispatching the move.
 
 **Commit(s):** `49d4a56`
+
+---
+
+## 2026-05-22T11:50:00Z — push 2 scale-aware probe + NODE_RADIUS export
+
+**Pushed:** Code review of push 1 found CRITICAL: hardcoded 16/24px probe offsets are too small at 1080p. The tree SVG renders ~529px wide at that viewport, making NODE_RADIUS ≈ 37px in screen pixels — the maximum diagonal reach of the 16/24px offsets is 33.9px, so all 16 probes still land inside the blind spot. Additionally SIGNIFICANT: the `!== null` guard on `target?.closest('[data-sefirah-link]')` misses `undefined` (optional chaining returns `undefined` when `target` is null); changed to `!= null` (loose inequality).
+
+Scale-aware fix: `findDropZoneNear` now reads `[data-tree-root] svg` `getBoundingClientRect().width`, computes `scale = width / TREE_VIEW_W` (TREE_VIEW_W = 400), and sets `step = Math.ceil(NODE_RADIUS * scale) + 4`. At 1080p this gives step ≈ 41px, safely past the ~37px gap. In jsdom (svgWidth = 0) falls back to scale = 1 → step = 32px. Also exported `NODE_RADIUS = 28` from `data/tree-layout.ts` and updated `TreeBoard.tsx` to import it instead of redeclaring locally — eliminates the prior drift risk.
+
+**Commit(s):** `361b5b5`
