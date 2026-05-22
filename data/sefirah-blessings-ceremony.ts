@@ -39,7 +39,7 @@ export const sefirahBlessingsCeremony: Readonly<
     ],
     leo: [
       'Your light is not diminished here — it joins. The Crown receives radiance as its own. You are counted among the bright.',
-      'The generosity you carry becomes the whole\'s generosity. The Crown gives back through you. You are received.',
+      "The generosity you carry becomes the whole's generosity. The Crown gives back through you. You are received.",
       'You shine as you come, and the whole answers with its own shine. Nothing is dimmed. Welcome.',
     ],
     virgo: [
@@ -60,17 +60,17 @@ export const sefirahBlessingsCeremony: Readonly<
     sagittarius: [
       'Every horizon you sought was a gesture toward here. The Crown receives the seeking as arrival. You are found.',
       'Your faith in something larger was not misplaced. This is the larger thing. Welcome.',
-      'The meaning you\'ve been pursuing meets you at the threshold. The Crown gives you the answer you were carrying. You are in.',
+      "The meaning you've been pursuing meets you at the threshold. The Crown gives you the answer you were carrying. You are in.",
     ],
     capricorn: [
       'Your endurance brought you here. The Crown receives what has lasted. You are recognized as the work that holds.',
       'Every stone you placed, every step you took — they are recorded in the whole. You arrive with a full account. Welcome.',
-      'The weight you\'ve carried is set down at the threshold. The Crown does not ask you to carry it further. You are received.',
+      "The weight you've carried is set down at the threshold. The Crown does not ask you to carry it further. You are received.",
     ],
     aquarius: [
       'The future you imagined was always already here, waiting. The Crown receives the visionary. You are in.',
-      'Your love of the collective is the Crown\'s own quality. You belong among the ones who hold the whole. Welcome.',
-      'The ideas you\'ve given to others arrive here before you. The Crown has been keeping them. You are received.',
+      "Your love of the collective is the Crown's own quality. You belong among the ones who hold the whole. Welcome.",
+      "The ideas you've given to others arrive here before you. The Crown has been keeping them. You are received.",
     ],
     pisces: [
       'You sensed this place before you arrived. The Crown gathers what comes by feel. You are counted in our cohering.',
@@ -217,14 +217,14 @@ export const sefirahBlessingsCeremony: Readonly<
       'Abundance settles like fertile ground receiving rain. Chesed is generous to what endures. You are given more than enough.',
     ],
     gemini: [
-      'The gift doubles, as gifts do in Gemini\'s hands. Chesed gives abundance to the one who connects. Receive and share.',
+      "The gift doubles, as gifts do in Gemini's hands. Chesed gives abundance to the one who connects. Receive and share.",
       'Abundance arrives in words, in links, in all the ways connection carries. Chesed is generous through you. Yours.',
       'The cup overflows in every direction. Chesed pours freely for the curious mind. You receive what you can carry and more.',
     ],
     cancer: [
       'Chesed gives abundance to what protects. The gift is fullness for the home you tend. Yours — and all who shelter with you.',
       'The nurturing you give is given back as abundance. Chesed recognizes the one who feeds others. Receive now.',
-      'The gift arrives as overflow from the caring. Chesed is generous with Cancer\'s own gifts. More is given than is asked.',
+      "The gift arrives as overflow from the caring. Chesed is generous with Cancer's own gifts. More is given than is asked.",
     ],
     leo: [
       'The gift is radiant and wide. Chesed gives to the generous heart abundantly. You receive more than you can hold — and are meant to give.',
@@ -271,12 +271,12 @@ export const sefirahBlessingsCeremony: Readonly<
   gevurah: {
     aries: [
       'Gevurah gives its own quality to Aries — strength to the strong. A portion of discipline arrives as fire focused. Yours.',
-      'The gift is precision of force. Gevurah gives Mars\'s own energy, refined. You receive the cut, made clean.',
+      "The gift is precision of force. Gevurah gives Mars's own energy, refined. You receive the cut, made clean.",
       'Strength is granted in the same register you carry it. Gevurah recognizes Aries and gives more of what you are. Received.',
     ],
     taurus: [
       'Strength arrives as the endurance you already know, deepened. Gevurah gives Taurus the kind of strength that holds. Yours.',
-      'The gift settles like iron in the earth — not violent but immovable. A portion of Gevurah\'s discipline is given. Receive.',
+      "The gift settles like iron in the earth — not violent but immovable. A portion of Gevurah's discipline is given. Receive.",
       'What you can bear is given back as strength. Gevurah recognizes endurance as its own. You receive the grant of it.',
     ],
     gemini: [
@@ -403,7 +403,7 @@ export const sefirahBlessingsCeremony: Readonly<
     taurus: [
       'Desire arrives as appetite for the beautiful and the real. Netzach gives passion grounded in the body. Yours.',
       'The gift is the deep wanting of Taurus — pleasure, fullness, the beautiful thing held. Netzach amplifies this. Received.',
-      'Passion arrives as the desire for what endures. Netzach gives Taurus its own heart\'s frequency. More. Yours.',
+      "Passion arrives as the desire for what endures. Netzach gives Taurus its own heart's frequency. More. Yours.",
     ],
     gemini: [
       'Desire arrives in all its forms at once — wanting to know, to connect, to speak. Netzach gives Gemini its many appetites. Yours.',
@@ -523,13 +523,13 @@ export const sefirahBlessingsCeremony: Readonly<
   yesod: {
     aries: [
       'The foundation receives the first fire and holds it steady. Yesod gives Aries the ground beneath the speed. Yours.',
-      'The gift is the dreaming of initiation — the image of the first act, held in the moon\'s light. Received.',
+      "The gift is the dreaming of initiation — the image of the first act, held in the moon's light. Received.",
       'Foundation arrives as the sense that the speed has somewhere to stand. Yesod gives Aries the ground. Yours.',
     ],
     taurus: [
       'Moon meets earth. Yesod gives Taurus the dream of permanence made real. The foundation holds you deeply. Yours.',
       'The gift is the foundation already beneath you, recognized. Yesod gives what Taurus already is its name. Received.',
-      'Foundation arrives as the body\'s knowing that it is held. Yesod gives Taurus the moon\'s long confirmation. Yours.',
+      "Foundation arrives as the body's knowing that it is held. Yesod gives Taurus the moon's long confirmation. Yours.",
     ],
     gemini: [
       'The foundation holds the connection in place. Yesod gives Gemini the dreaming that links what is separated. Yours.',
@@ -543,13 +543,13 @@ export const sefirahBlessingsCeremony: Readonly<
     ],
     leo: [
       'The foundation receives the radiance and gives it depth. Yesod gives Leo the dreaming of the generous heart. Yours.',
-      'The gift is the dream of the center — the moon\'s long held image of what you are. Received.',
+      "The gift is the dream of the center — the moon's long held image of what you are. Received.",
       'Foundation arrives as the ground beneath the light. Yesod gives Leo the root of the radiance. Yours.',
     ],
     virgo: [
       'The foundation holds the careful work in place. Yesod gives Virgo the dreaming of completed service. Yours.',
       'The gift is the ground beneath precision — the dream of the thing done right. Yesod gives this. Received.',
-      'Foundation arrives as the confirmation that the small act is held. Yesod gives Virgo the moon\'s quiet witness. Yours.',
+      "Foundation arrives as the confirmation that the small act is held. Yesod gives Virgo the moon's quiet witness. Yours.",
     ],
     libra: [
       'The foundation holds the scales in place. Yesod gives Libra the dreaming of equilibrium held. Yours.',
@@ -558,27 +558,27 @@ export const sefirahBlessingsCeremony: Readonly<
     ],
     scorpio: [
       'The foundation holds what has survived transformation. Yesod gives Scorpio the dream of depth made stable. Yours.',
-      'The gift is the ground beneath the intensity — the moon\'s image of what has endured. Yesod gives this. Received.',
+      "The gift is the ground beneath the intensity — the moon's image of what has endured. Yesod gives this. Received.",
       'Foundation arrives in the deep register. Yesod gives Scorpio the dreaming of the thing that holds through change. Yours.',
     ],
     sagittarius: [
       'The foundation holds the vision in place. Yesod gives Sagittarius the dreaming of the horizon arrived at. Yours.',
-      'The gift is the ground beneath the journey — the moon\'s image of meaning held. Received.',
+      "The gift is the ground beneath the journey — the moon's image of meaning held. Received.",
       'Foundation arrives as the place the vision can return to. Yesod gives Sagittarius the root of the seeking. Yours.',
     ],
     capricorn: [
       'The foundation recognizes what has been built. Yesod gives Capricorn the dreaming of the completed work. Yours.',
-      'The gift is the ground beneath the mountain — the moon\'s long knowledge of endurance. Yesod gives this. Received.',
+      "The gift is the ground beneath the mountain — the moon's long knowledge of endurance. Yesod gives this. Received.",
       'Foundation arrives as the confirmation of the long labor. Yesod gives Capricorn the dream of the work proved right. Yours.',
     ],
     aquarius: [
       'The foundation holds the future in place. Yesod gives Aquarius the dreaming of the collective arrived at. Yours.',
-      'The gift is the ground beneath the vision — the moon\'s image of what is possible for all. Received.',
+      "The gift is the ground beneath the vision — the moon's image of what is possible for all. Received.",
       'Foundation arrives as the sense that the future has somewhere to stand. Yesod gives Aquarius the root of the possible. Yours.',
     ],
     pisces: [
       'The foundation holds the one who flows. Yesod gives Pisces the dreaming of the deep made safe. Yours.',
-      'The gift is the ground beneath the dissolving — the moon\'s image of the boundary softened without loss. Received.',
+      "The gift is the ground beneath the dissolving — the moon's image of the boundary softened without loss. Received.",
       'Foundation arrives as the place the dreaming returns to. Yesod gives Pisces the ground that holds the ocean. Yours.',
     ],
   },
@@ -602,7 +602,7 @@ export const sefirahBlessingsCeremony: Readonly<
     cancer: [
       'The earth is the first home. Malkuth gives Cancer the deepest belonging — the body, the hearth, the ground. Yours.',
       'The gift is the kingdom that is always home. Malkuth gives Cancer the belonging it spends its life building. Received.',
-      'Ground arrives as the sense of being held by the world itself. Malkuth gives Cancer the earth\'s embrace. Yours.',
+      "Ground arrives as the sense of being held by the world itself. Malkuth gives Cancer the earth's embrace. Yours.",
     ],
     leo: [
       'The earth receives the radiant. Malkuth gives Leo the kingdom — the belonging of the one who shines from the center. Yours.',
