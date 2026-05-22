@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 /**
  * #412 — drag-to-play onto path. End-to-end: walk through the
- * setup pipeline, land on `/play?seed=1492` (deterministic deal),
+ * setup pipeline, land on `/play?seed=3` (deterministic deal),
  * pick a card, drag it to its matching path, verify the player
  * advances. Then a second test verifies the rejection path: drag a
  * card to a non-matching path, verify the player stays put and the
@@ -84,17 +84,13 @@ async function findValidDragPair(page: Page): Promise<{
 }
 
 test('drag-to-play: dragging a card onto a matching path moves the player', async ({ page }) => {
-  await page.goto('/play?seed=1492');
+  await page.goto('/play?seed=3');
   await walkToPlayScreen(page);
   await expect(page.locator('[data-play-screen]')).toBeVisible();
   await expect(page.locator('[data-play-screen]')).toHaveAttribute('data-phase', 'move');
 
   const pair = await findValidDragPair(page);
-  test.skip(
-    pair === null,
-    'No eligible card / path pair in this seeded deal — drag-to-play covered when the deal lines up.',
-  );
-  if (pair === null) return;
+  if (pair === null) throw new Error('Seed 3 produced no valid drag pair — seed invariant violated');
 
   const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
@@ -109,7 +105,7 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   const pathBox = await path.boundingBox();
   expect(cardBox).not.toBeNull();
   expect(pathBox).not.toBeNull();
-  if (!cardBox || !pathBox) return;
+  if (!cardBox || !pathBox) throw new Error('Bounding box unexpectedly null after expect guard');
 
   // Drag: mouse-move to card centre, mouse-down, mouse-move to path
   // centre (with a midpoint to ensure the threshold is crossed
@@ -136,14 +132,13 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
 test('drag-to-play: dragging onto a non-matching path is rejected with announcement', async ({
   page,
 }) => {
-  await page.goto('/play?seed=1492');
+  await page.goto('/play?seed=3');
   await walkToPlayScreen(page);
   await expect(page.locator('[data-play-screen]')).toBeVisible();
 
   const card = page.locator('[data-card-slot]').first();
   const arcanumAttr = await card.getAttribute('data-arcanum');
-  test.skip(arcanumAttr === null, 'No visible card in hand for this seed.');
-  if (arcanumAttr === null) return;
+  if (arcanumAttr === null) throw new Error('Seed 3 produced no visible card — seed invariant violated');
   const arcanum = Number(arcanumAttr);
 
   // Find a path whose arcanum DOESN'T match this card.
@@ -175,7 +170,7 @@ test('drag-to-play: dragging onto a non-matching path is rejected with announcem
 
   const cardBox = await card.boundingBox();
   const pathBox = await path.boundingBox();
-  if (!cardBox || !pathBox) return;
+  if (!cardBox || !pathBox) throw new Error('Bounding box unexpectedly null — element not visible');
 
   const startX = cardBox.x + cardBox.width / 2;
   const startY = cardBox.y + cardBox.height / 2;
@@ -205,13 +200,12 @@ test('drag-to-play: keyboard fallback — click-to-select then click-path still 
   // dispatches a synthesized click event without crossing the drag
   // threshold; React onClick fires `onCardSelect` and the card is
   // selected. Then clicking a matching path dispatches `turn.move`.
-  await page.goto('/play?seed=1492');
+  await page.goto('/play?seed=3');
   await walkToPlayScreen(page);
   await expect(page.locator('[data-play-screen]')).toBeVisible();
 
   const pair = await findValidDragPair(page);
-  test.skip(pair === null, 'No eligible card / path pair for keyboard fallback.');
-  if (pair === null) return;
+  if (pair === null) throw new Error('Seed 3 produced no valid drag pair — seed invariant violated');
 
   const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   await card.click();
