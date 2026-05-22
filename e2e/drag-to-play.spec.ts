@@ -96,11 +96,14 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
 
-  // Expand the floating hand from peek mode before computing bounding
-  // boxes — otherwise the hover triggered by mouse.move shifts the card
-  // position between box-capture and mouse.down, missing the element.
+  // Expand the floating hand from peek mode, then hover the specific
+  // card to position the mouse exactly at its centre before mouse.down.
+  // A generic page.mouse.move(fanCentre → cardCentre) can cross outside
+  // the hand-fan boundary, triggering mouseleave → collapse → card shift
+  // → mouse.down misses. card.hover() avoids the cross-boundary move.
   await page.locator('[data-hand-fan]').hover();
   await page.waitForTimeout(350);
+  await card.hover();
 
   const cardBox = await card.boundingBox();
   const pathBox = await path.boundingBox();
@@ -108,18 +111,15 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   expect(pathBox).not.toBeNull();
   if (!cardBox || !pathBox) throw new Error('Bounding box unexpectedly null after expect guard');
 
-  // Drag: mouse-move to card centre, mouse-down, mouse-move to path
-  // centre (with a midpoint to ensure the threshold is crossed
-  // smoothly), mouse-up. Pointer events fire alongside mouse events
-  // in real browsers, so this exercises the production drag path.
-  const startX = cardBox.x + cardBox.width / 2;
-  const startY = cardBox.y + cardBox.height / 2;
+  // Mouse is already at card centre from card.hover() above.
+  // Drag to path centre with a midpoint to ensure threshold is crossed.
   const endX = pathBox.x + pathBox.width / 2;
   const endY = pathBox.y + pathBox.height / 2;
 
-  await page.mouse.move(startX, startY);
   await page.mouse.down();
   // Two-step move so the threshold is crossed before the final drop.
+  const startX = cardBox.x + cardBox.width / 2;
+  const startY = cardBox.y + cardBox.height / 2;
   await page.mouse.move((startX + endX) / 2, (startY + endY) / 2, { steps: 5 });
   await page.mouse.move(endX, endY, { steps: 5 });
   await page.mouse.up();
