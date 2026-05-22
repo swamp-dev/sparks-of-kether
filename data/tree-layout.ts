@@ -28,6 +28,14 @@ export const TREE_VIEW_W = 400;
 export const TREE_VIEW_H = 620;
 /** Radius of each Sefirah node circle in SVG viewBox units (400×620). */
 export const NODE_RADIUS = 28;
+/**
+ * CSS selector for the rendered SVG inside a TreeBoard. Used by
+ * `findDropZoneNear` in PlayScreen to measure the SVG's on-screen
+ * width for scale derivation. Centralising the selector here means
+ * renaming `data-tree-root` in TreeBoard only requires updating this
+ * one constant.
+ */
+export const TREE_ROOT_SVG_SELECTOR = '[data-tree-root] svg';
 
 export const treeNodeLayout: Readonly<Record<SefirahKey, NodeLayout>> = {
   kether: { x: 200, y: 60 },
