@@ -1085,6 +1085,54 @@ describe('applyClientAction — kether wire-format (#350)', () => {
     });
   });
 
+  describe('kether-trial-stage-spark / kether-trial-unstage-spark', () => {
+    it('stages a held Spark for the active trial challenge', () => {
+      const base = makeTwoPlayerRitual();
+      const p2 = base.players.find((p) => p.id === 'p2');
+      if (!p2) throw new Error('fixture');
+      const p2WithSpark: typeof p2 = {
+        ...p2,
+        sparksHeld: new Set(['chesed']),
+      };
+      const state: typeof base = {
+        ...base,
+        players: base.players.map((p) => (p.id === 'p2' ? p2WithSpark : p)),
+      };
+      const result = applyClientAction(
+        state,
+        { kind: 'kether-trial-stage-spark', playerId: 'p2', sefirah: 'chesed' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.ketherRitual?.trialStagedSparks).toEqual([
+        { playerId: 'p2', sefirah: 'chesed' },
+      ]);
+    });
+
+    it('unstages a previously staged Spark for the trial', () => {
+      const base = makeTwoPlayerRitual();
+      const p2 = base.players.find((p) => p.id === 'p2');
+      if (!p2) throw new Error('fixture');
+      const p2WithSpark: typeof p2 = { ...p2, sparksHeld: new Set(['chesed']) };
+      const stateWithStaged = {
+        ...base,
+        players: base.players.map((p) => (p.id === 'p2' ? p2WithSpark : p)),
+        ketherRitual: base.ketherRitual
+          ? { ...base.ketherRitual, trialStagedSparks: [{ playerId: 'p2', sefirah: 'chesed' as const }] }
+          : base.ketherRitual,
+      };
+      const result = applyClientAction(
+        stateWithStaged,
+        { kind: 'kether-trial-unstage-spark', playerId: 'p2', sefirah: 'chesed' },
+        seededRng(1),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.newState.ketherRitual?.trialStagedSparks).toHaveLength(0);
+    });
+  });
+
   describe('kether-trial-resolve', () => {
     it('rolls the challenge and advances the trial pointer', () => {
       const state = makeTwoPlayerRitual();

@@ -692,7 +692,14 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const ketherTrialResolve = useCallback(():
     | Result<GameState, KetherRejection>
     | undefined => {
-    const actor = dispatch !== undefined ? selfPlayerId : currentTrialPlayerId(state);
+    const trialPlayer = currentTrialPlayerId(state);
+    // In multiplayer the self player resolves only when it is their trial turn.
+    // Returning `undefined` (not a rejection Result) matches the documented
+    // contract: "undefined if no actor can be determined."
+    if (dispatch !== undefined) {
+      if (selfPlayerId === undefined || selfPlayerId !== trialPlayer) return undefined;
+    }
+    const actor = dispatch !== undefined ? selfPlayerId : trialPlayer;
     if (actor === undefined || actor === null) return undefined;
     const result = engineTrialResolve(state, { playerId: actor, rng: opts.rng });
     if (!result.ok) return result;

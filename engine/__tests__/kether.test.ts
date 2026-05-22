@@ -169,6 +169,17 @@ describe('initKetherRitual', () => {
     expect(result.value.ketherRitual?.trialOrder).toEqual(['p2', 'p1']);
   });
 
+  it('tie-break on equal timestamps is ascending lexicographic (p1 before p2)', () => {
+    const p1 = makePlayer({ id: 'p1', position: 'kether' });
+    const p2 = makePlayer({ id: 'p2', position: 'kether' });
+    const state = makeState({}, { players: [p1, p2] });
+    // Same timestamp → ascending lex: 'p1' < 'p2' → p1 first
+    const result = initKetherRitual(state, { p1: 5, p2: 5 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.ketherRitual?.trialOrder).toEqual(['p1', 'p2']);
+  });
+
   it('computes DC = 14 when illumination gap is already met', () => {
     const p1 = makePlayer({ id: 'p1', position: 'kether' });
     const p2 = makePlayer({ id: 'p2', position: 'kether' });
@@ -272,6 +283,20 @@ describe('ketherTrialStageSpark', () => {
     if (result.ok) return;
     expect(result.reason.kind).toBe('kether-wrong-sub-phase');
   });
+
+  it('rejects when the same Spark is already staged (prevents double-count)', () => {
+    const already: KetherRitualState['trialStagedSparks'] = [
+      { playerId: 'p1', sefirah: 'chesed' },
+    ];
+    const state = makeTrialState({
+      p1Sparks: new Set(['chesed']),
+      trialStagedSparks: already,
+    });
+    const result = ketherTrialStageSpark(state, { playerId: 'p1', sefirah: 'chesed' });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('kether-already-staged');
+  });
 });
 
 // ──────────────── ketherTrialUnstageSpark ────────────────
@@ -350,6 +375,30 @@ describe('ketherTrialResolve', () => {
     expect(result.value.players[0]?.sparksHeld.has('chesed')).toBe(false);
     // trialStagedSparks cleared after resolve.
     expect(result.value.ketherRitual?.trialStagedSparks).toHaveLength(0);
+  });
+
+  it('grants +1 Illumination per Spark burned (spark-spent event applied)', () => {
+    // Regression guard for the missing applyEvents call. The spark-spent
+    // event contributes {illumination: 1} via counters.ts:applyEvents.
+    // Plus the pass bonus (+1) if the roll passes. Both must land.
+    // DC=17, stat=10, roll=5, Spark bonus=5 → 5+10+5=20 ≥ 17 → pass.
+    // Expected: illumination 0 + 1 (spark-spent) + 1 (pass) = 2.
+    const rng = { d20: () => 5, int: () => 5 };
+    const state = makeTrialState({
+      illumination: 0,
+      separation: 0,
+      p1Sparks: new Set(['chesed']),
+      trialStagedSparks: [{ playerId: 'p1', sefirah: 'chesed' }],
+      trialChallenges: [
+        { sefirahKey: 'chokmah', stat: 'insight', dc: 17, roll: null, passed: null },
+        { sefirahKey: 'binah', stat: 'understanding', dc: 17, roll: null, passed: null },
+      ],
+    });
+    const result = ketherTrialResolve(state, { playerId: 'p1', rng });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // 1 from spark-spent + 1 from pass bonus = 2
+    expect(result.value.illumination).toBe(2);
   });
 
   it('advances trialTurnIndex after resolve', () => {

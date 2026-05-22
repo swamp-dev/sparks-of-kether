@@ -1226,10 +1226,12 @@ describe('useTurn — hot-seat trial gauntlet rotation (K4 / #352)', () => {
 });
 
 describe('useTurn — Kether dispatch ordering (K4 / #352 review fix)', () => {
-  it('does NOT dispatch over the wire when the local engine reduce rejects', () => {
-    // p1 is NOT the current trial player (p2 opens). Calling
-    // ketherTrialResolve with selfPlayerId 'p1' should reject
-    // with kether-not-your-turn. The wire should not fire.
+  it('does NOT dispatch over the wire when selfPlayerId is not the current trial player', () => {
+    // p1 is NOT the current trial player (p2 opens). In multiplayer mode,
+    // ketherTrialResolve returns undefined (no actor — consistent with the
+    // "undefined means no actor can be determined" contract) and does not
+    // fire a wire action. This is the K4 gate: optimistic local apply first,
+    // wire only on success — here "no actor" prevents both.
     const dispatchClientAction = vi.fn<(action: ClientAction) => void>();
     const { result } = ritualHook({
       dispatchClientAction,
@@ -1239,9 +1241,8 @@ describe('useTurn — Kether dispatch ordering (K4 / #352 review fix)', () => {
     act(() => {
       callResult = result.current.ketherTrialResolve();
     });
-    expect(callResult?.ok).toBe(false);
-    if (!callResult || callResult.ok) return;
-    expect(callResult.reason.kind).toBe('kether-not-your-turn');
+    // Non-trial-player gets undefined (not a rejection shape)
+    expect(callResult).toBeUndefined();
     expect(dispatchClientAction).not.toHaveBeenCalled();
   });
 

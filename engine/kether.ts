@@ -37,6 +37,7 @@ export type KetherRejection =
       readonly sefirah: SefirahKey;
     }
   | { readonly kind: 'kether-not-staged'; readonly sefirah: SefirahKey }
+  | { readonly kind: 'kether-already-staged'; readonly sefirah: SefirahKey }
   | { readonly kind: 'kether-closure-locked' }
   | { readonly kind: 'kether-already-confirmed' }
   | { readonly kind: 'kether-not-all-at-kether' }
@@ -127,14 +128,14 @@ export function initKetherRitual(
     return { ok: false, reason: { kind: 'kether-not-all-at-kether' } };
   }
 
-  // Determine trial order: last-arrived first, lex tie-break.
+  // Determine trial order: last-arrived first, ascending-lex tie-break.
   const trialOrder = [...state.players]
     .map((p) => p.id)
     .sort((a, b) => {
       const ta = arrivalTimestamps[a] ?? 0;
       const tb = arrivalTimestamps[b] ?? 0;
       if (ta !== tb) return tb - ta;
-      return a < b ? 1 : a > b ? -1 : 0;
+      return a < b ? -1 : a > b ? 1 : 0;
     });
 
   // Build one challenge per player, selecting from TRIAL_SEFIROT in order.
@@ -197,15 +198,15 @@ export function ketherTrialStageSpark(
   state: GameState,
   args: { readonly playerId: string; readonly sefirah: SefirahKey },
 ): Result<GameState, KetherRejection> {
-  const ritual = state.ketherRitual;
-  if (ritual !== undefined && ritual.closureLocked) {
-    return { ok: false, reason: { kind: 'kether-closure-locked' } };
-  }
   if (state.phase !== 'kether') {
     return { ok: false, reason: { kind: 'kether-wrong-phase' } };
   }
+  const ritual = state.ketherRitual;
   if (ritual === undefined) {
     return { ok: false, reason: { kind: 'kether-no-ritual' } };
+  }
+  if (ritual.closureLocked) {
+    return { ok: false, reason: { kind: 'kether-closure-locked' } };
   }
   if (ritual.subPhase !== 'trial') {
     return { ok: false, reason: { kind: 'kether-wrong-sub-phase' } };
@@ -219,6 +220,12 @@ export function ketherTrialStageSpark(
       ok: false,
       reason: { kind: 'kether-spark-not-held', playerId: args.playerId, sefirah: args.sefirah },
     };
+  }
+  const alreadyStaged = ritual.trialStagedSparks.some(
+    (s) => s.playerId === args.playerId && s.sefirah === args.sefirah,
+  );
+  if (alreadyStaged) {
+    return { ok: false, reason: { kind: 'kether-already-staged', sefirah: args.sefirah } };
   }
   const newRitual: KetherRitualState = {
     ...ritual,
@@ -238,15 +245,15 @@ export function ketherTrialUnstageSpark(
   state: GameState,
   args: { readonly playerId: string; readonly sefirah: SefirahKey },
 ): Result<GameState, KetherRejection> {
-  const ritual = state.ketherRitual;
-  if (ritual !== undefined && ritual.closureLocked) {
-    return { ok: false, reason: { kind: 'kether-closure-locked' } };
-  }
   if (state.phase !== 'kether') {
     return { ok: false, reason: { kind: 'kether-wrong-phase' } };
   }
+  const ritual = state.ketherRitual;
   if (ritual === undefined) {
     return { ok: false, reason: { kind: 'kether-no-ritual' } };
+  }
+  if (ritual.closureLocked) {
+    return { ok: false, reason: { kind: 'kether-closure-locked' } };
   }
   if (ritual.subPhase !== 'trial') {
     return { ok: false, reason: { kind: 'kether-wrong-sub-phase' } };
@@ -323,6 +330,11 @@ export function ketherTrialResolve(
     events.push({ kind: 'spark-spent', playerId: staged.playerId, sefirah: staged.sefirah });
     sparkBurnCount++;
   }
+  // Apply spark-spent events so each Spark grants its +1 Illumination bonus
+  // via the standard event machinery (counters.ts:applyEvents). Missing this
+  // call was a critical bug: players burned Sparks during the trial but the
+  // Illumination credit never landed.
+  workingState = applyEvents(workingState, events);
 
   // Look up the player's stat for this challenge (use the post-consume player).
   const resolvedPlayer = workingState.players.find((p) => p.id === args.playerId);
