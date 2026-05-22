@@ -386,7 +386,7 @@ function CommittingPanel(props: CommittingPanelProps): JSX.Element {
           type="button"
           onClick={onRoll}
           data-action="roll"
-          className="flex-1 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+          className="flex-1 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
         >
           Roll
         </button>
@@ -482,7 +482,7 @@ function RollPanel({ outcome, phase, onFailChoice, onContinue }: RollPanelProps)
               type="button"
               onClick={onContinue}
               data-action="continue"
-              className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground"
+              className="mt-2 rounded bg-illumination px-4 py-2 font-display tracking-widest text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
             >
               Continue
             </button>

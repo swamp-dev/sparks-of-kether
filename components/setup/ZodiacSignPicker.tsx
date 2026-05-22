@@ -379,7 +379,7 @@ export function ZodiacSignPicker({
           onClick={handleConfirm}
           disabled={focusedDisabled}
           data-action="confirm"
-          className="rounded bg-illumination px-8 py-3 font-display tracking-widest text-ground transition-shadow duration-300 ease-emerge hover:shadow-glow-tiferet disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded bg-illumination px-8 py-3 font-display tracking-widest text-ground transition-shadow duration-300 ease-emerge hover:shadow-glow-tiferet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:cursor-not-allowed disabled:opacity-30"
         >
           Confirm {focusedSign.name}
         </button>
