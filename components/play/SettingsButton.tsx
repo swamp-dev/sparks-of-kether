@@ -1,6 +1,13 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useSoundEnabled } from '@/lib/sound/settings';
+import { pantheons } from '@/data/pantheons';
+import { usePantheon } from '@/lib/settings/pantheon';
+
+const PANTHEON_OPTIONS: readonly { readonly id: string; readonly label: string }[] = [
+  { id: 'greco-roman', label: pantheons['greco-roman'].displayName },
+  { id: 'egyptian', label: pantheons['egyptian'].displayName },
+];
 
 function Toggle({
   checked,
@@ -64,11 +71,13 @@ function Toggle({
 
 export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
   const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
+  const { pantheonId, setPantheonId } = usePantheon();
   const [open, setOpen] = useState(false);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const pantheonGroupRef = useRef<HTMLDivElement | null>(null);
 
   // OS-level reduced-motion read-out. Refreshed on every popover
   // open so a user toggling their system setting between sessions
@@ -115,17 +124,45 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
     }
   }, [open]);
 
+  const handlePantheonKey = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>): void => {
+      const ids = PANTHEON_OPTIONS.map((o) => o.id);
+      const current = ids.indexOf(pantheonId);
+      let next = -1;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        next = current < 0 ? 0 : (current + 1) % ids.length;
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        next = current < 0 ? ids.length - 1 : (current - 1 + ids.length) % ids.length;
+      }
+      if (next >= 0) {
+        const nextId = ids[next];
+        if (nextId !== undefined) setPantheonId(nextId);
+        const buttons =
+          pantheonGroupRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+        buttons?.[next]?.focus();
+      }
+    },
+    [pantheonId, setPantheonId],
+  );
+
   // Minimal focus trap: Tab from the last focusable element loops
   // back to the close button; Shift+Tab from the close button loops
   // to the last focusable element. The selector captures all buttons
-  // and switches dynamically (3–5 elements: always close + sfx + music;
+  // and switches dynamically (close + sfx + music + 1 pantheon radio;
   // +1 Leave Game when onQuit is provided; +2 Confirm + Cancel when
   // confirmingQuit is active), so a full focus-trap library would be
   // overkill but the count must not be hardcoded.
+  //
+  // Radio buttons with tabIndex=-1 are excluded — only the selected
+  // radio (tabIndex=0) participates in the Tab cycle.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'Tab') return;
     if (!dialogRef.current) return;
-    const focusables = dialogRef.current.querySelectorAll<HTMLElement>('button, [role="switch"]');
+    const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+      'button:not([tabindex="-1"])',
+    );
     if (focusables.length === 0) return;
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
@@ -199,6 +236,48 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
               onChange={() => setMusicEnabled(!musicEnabled)}
               testId="toggle-music"
             />
+          </div>
+
+          <div className="mb-3">
+            <p className="mb-2 text-sm">Pantheon</p>
+            <div
+              ref={pantheonGroupRef}
+              role="radiogroup"
+              aria-label="Pantheon"
+              data-pantheon-group
+              onKeyDown={handlePantheonKey}
+              className="flex flex-col gap-1"
+            >
+              {PANTHEON_OPTIONS.map((opt) => {
+                const checked = pantheonId === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={checked}
+                    tabIndex={checked ? 0 : -1}
+                    onClick={() => setPantheonId(opt.id)}
+                    data-action={`select-pantheon-${opt.id}`}
+                    className={`flex items-center gap-2 rounded px-2 py-1 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-illumination ${
+                      checked ? 'bg-illumination/20 text-illumination' : 'opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full border ${
+                        checked ? 'border-illumination bg-illumination/30' : 'border-veil/40'
+                      }`}
+                    >
+                      {checked ? (
+                        <span className="block h-1.5 w-1.5 rounded-full bg-illumination" />
+                      ) : null}
+                    </span>
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Reduced motion — system-driven, read-only. Surface the
