@@ -59,14 +59,18 @@ describe('PlayScreen — fit-on-screen layout (#411)', () => {
     expect(cls).toMatch(/\bgap-6\b/);
     expect(cls).toMatch(/lg:gap-3/);
 
-    // Each panel inside the aside drops from p-4 → p-3 at lg+.
     // Four panels expected: deck/discard cluster (#25 + #507; mounted
     // at the top of the aside as a flex row), StatSheet (conditional
     // on activePlayer being non-null — `makeFullGame({ playerCount: 2 })`
     // always satisfies that), TeamMeters, ShellPanel.
     const panels = aside?.querySelectorAll(':scope > div') ?? [];
     expect(panels.length).toBe(4);
-    panels.forEach((panel) => {
+    const [cluster, ...rest] = [...panels];
+    // #32: cluster gets tighter compaction (lg:p-2) to restore the
+    // 1280×800 fit-on-screen invariant after DiscardPile addition.
+    expect(cluster?.getAttribute('class') ?? '').toMatch(/\bp-4\b/);
+    expect(cluster?.getAttribute('class') ?? '').toMatch(/lg:p-2/);
+    rest.forEach((panel) => {
       const panelCls = panel.getAttribute('class') ?? '';
       expect(panelCls).toMatch(/\bp-4\b/);
       expect(panelCls).toMatch(/lg:p-3/);

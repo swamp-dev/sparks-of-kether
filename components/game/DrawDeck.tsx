@@ -35,7 +35,7 @@ export function DrawDeck({ deck, className }: DrawDeckProps): JSX.Element {
     >
       <div
         aria-hidden="true"
-        className="relative block w-20 rounded border border-veil/30 bg-ground/40 p-1"
+        className="relative block w-20 rounded border border-veil/30 bg-ground/40 p-1 lg:w-12"
       >
         {count === 0 ? (
           <div
