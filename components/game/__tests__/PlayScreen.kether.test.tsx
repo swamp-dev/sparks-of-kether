@@ -7,31 +7,30 @@ import { makePlayer, makeState } from '@/test/fixtures';
 import type { GameState } from '@/engine/types';
 
 /**
- * #562 — hot-seat chorus freeze regression.
+ * #562 — hot-seat chorus seat follows trial pointer.
  *
  * Pre-fix, `PlayScreen` mounted `FinalThresholdScreen` with
- * `player={players[activePlayerIndex]}`, but the witness round-robin
- * rotates `state.ketherRitual.witnessTurnIndex` independently. When
- * the first witness was anyone other than the active player, the
- * screen rendered for the wrong seat — the active witness saw no
- * Play button and the rendered seat saw "Waiting for …" with no way
- * to advance. Two consecutive witness plays are enough to expose
- * both freeze shapes (initial mismatch and post-rotation mismatch).
+ * `player={players[activePlayerIndex]}`, but the trial gauntlet
+ * rotates `state.ketherRitual.trialTurnIndex` independently. When
+ * the first trial player is anyone other than the active player, the
+ * screen rendered for the wrong seat — the active trial player saw no
+ * Roll button and the rendered seat saw "Waiting for …" with no way
+ * to advance.
  */
 
-function buildKetherWitnessState(): GameState {
+function buildKetherTrialState(): GameState {
   const player1 = makePlayer({
     id: 'p1',
     name: 'Alex',
     position: 'kether',
-    hand: [10, 11],
+    hand: [],
     zodiacSign: 'aries',
   });
   const player2 = makePlayer({
     id: 'p2',
     name: 'Bea',
     position: 'kether',
-    hand: [20, 21],
+    hand: [],
     zodiacSign: 'leo',
   });
   const baseState = makeState(
@@ -41,78 +40,49 @@ function buildKetherWitnessState(): GameState {
       activePlayerId: 'p1',
     },
   );
-  // p2 arrives last (descending timestamp → p2 first in witness order).
+  // p2 arrives last (descending timestamp → p2 first in trial order).
   const initResult = initKetherRitual(baseState, { p1: 100, p2: 200 });
   if (!initResult.ok) {
     throw new Error(
-      `buildKetherWitnessState: initKetherRitual rejected — ${initResult.reason.kind}`,
+      `buildKetherTrialState: initKetherRitual rejected — ${initResult.reason.kind}`,
     );
   }
   return initResult.value;
 }
 
-describe('PlayScreen — hot-seat chorus seat follows witness pointer (#562)', () => {
-  it('renders the FinalThresholdScreen for the current witness, not the activePlayer', () => {
-    // p2 is first witness (last-arrived); activePlayerId is p1.
-    // Pre-fix this rendered for p1 with no Play button — frozen.
-    const initial = buildKetherWitnessState();
+describe('PlayScreen — hot-seat chorus seat follows trial pointer (#562)', () => {
+  it('renders the FinalThresholdScreen for the current trial player, not the activePlayer', () => {
+    // p2 is first trial player (last-arrived); activePlayerId is p1.
+    // Pre-fix this rendered for p1 with no Roll button — frozen.
+    const initial = buildKetherTrialState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} />);
 
-    const status = document.querySelector('[data-witness-status]');
+    const status = document.querySelector('[data-trial-status]');
     expect(status?.textContent).toMatch(/Your turn/i);
 
-    // Only the current witness's hand exposes Play buttons. p2 holds
-    // arcana 20 and 21; pre-fix the rendered seat (p1) saw no Play
-    // buttons at all because `isMyTurn` was false for p1.
-    expect(
-      document.querySelector('[data-action="kether-witness-play"][data-arcanum="20"]'),
-    ).not.toBeNull();
-    expect(
-      document.querySelector('[data-action="kether-witness-play"][data-arcanum="21"]'),
-    ).not.toBeNull();
+    // Only the current trial player sees a Roll button.
+    expect(document.querySelector('[data-action="kether-trial-resolve"]')).not.toBeNull();
   });
 
-  it('rotates the rendered seat after a card play so the next witness can act', () => {
-    // Two-step rotation: p2 plays 20 → witness pointer moves to p1
-    // → the screen must now render for p1 so they can also play.
-    const initial = buildKetherWitnessState();
+  it('rotates the rendered seat after a resolve so the next trial player can act', () => {
+    // p2 resolves → trial pointer moves to p1 → the screen must now
+    // render for p1 so they can also resolve.
+    const initial = buildKetherTrialState();
     render(<PlayScreen initialState={initial} rng={seededRng(1)} />);
 
-    const playP2 = document.querySelector(
-      '[data-action="kether-witness-play"][data-arcanum="20"]',
+    const resolveBtn = document.querySelector(
+      '[data-action="kether-trial-resolve"]',
     ) as HTMLButtonElement | null;
-    expect(playP2).not.toBeNull();
-    if (!playP2) return;
+    expect(resolveBtn).not.toBeNull();
+    if (!resolveBtn) return;
     act(() => {
-      fireEvent.click(playP2);
+      fireEvent.click(resolveBtn);
     });
 
-    // After p2's play, the witness pointer is at p1. The rendered
-    // seat must follow — p1's arcana (10, 11) should now be
-    // playable, and p2's already-played card (20) is out of the
-    // hand so its Play button is gone regardless.
-    const status = document.querySelector('[data-witness-status]');
+    // After p2 resolves, the trial pointer is at p1. The rendered
+    // seat must follow — p1 should now see a Roll button.
+    const status = document.querySelector('[data-trial-status]');
     expect(status?.textContent).toMatch(/Your turn/i);
-    expect(
-      document.querySelector('[data-action="kether-witness-play"][data-arcanum="10"]'),
-    ).not.toBeNull();
-    expect(
-      document.querySelector('[data-action="kether-witness-play"][data-arcanum="11"]'),
-    ).not.toBeNull();
-
-    // Drive a second play to confirm the rotation continues round-
-    // robin (back to p2 for arcanum 21).
-    const playP1 = document.querySelector(
-      '[data-action="kether-witness-play"][data-arcanum="10"]',
-    ) as HTMLButtonElement | null;
-    expect(playP1).not.toBeNull();
-    if (!playP1) return;
-    act(() => {
-      fireEvent.click(playP1);
-    });
-
-    expect(
-      document.querySelector('[data-action="kether-witness-play"][data-arcanum="21"]'),
-    ).not.toBeNull();
+    expect(document.querySelector('[data-action="kether-trial-resolve"]')).not.toBeNull();
   });
 });

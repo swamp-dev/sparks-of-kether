@@ -21,7 +21,7 @@ import type { SefirahKey } from '@/data';
  *   - `buildPreRitualState`: two players, one already at Kether (held),
  *     one still climbing. `phase !== 'kether'` so `isKetherHeld(state,
  *     held.id)` is true and the screen renders the hold view.
- *   - `buildWitnessState`: both players at Kether, ritual initialised
+ *   - `buildTrialState`: both players at Kether, ritual initialised
  *     via `initKetherRitual`. SubPhase is 'witness' by default.
  *   - `buildCloseState`: same but the engine has been driven (or the
  *     ritual hand-rolled) into `subPhase === 'close'`.
@@ -54,7 +54,7 @@ function buildPreRitualState(): {
   };
 }
 
-function buildWitnessState(opts?: {
+function buildTrialState(opts?: {
   hand1?: number[];
   hand2?: number[];
   illumination?: number;
@@ -94,7 +94,7 @@ function buildWitnessState(opts?: {
   // (descending timestamp → p2 first in witness order).
   const initResult = initKetherRitual(baseState, { p1: 100, p2: 200 });
   if (!initResult.ok) {
-    throw new Error(`buildWitnessState: initKetherRitual rejected — ${initResult.reason.kind}`);
+    throw new Error(`buildTrialState: initKetherRitual rejected — ${initResult.reason.kind}`);
   }
   return initResult.value;
 }
@@ -110,7 +110,7 @@ function buildCloseState(opts?: {
   // the Spark staging tests. The engine's natural way to enter close
   // is "every queue is empty" — easier to assert the closure UI by
   // setting subPhase directly than to drive 4-6 `play`/`pass` actions.
-  const base = buildWitnessState({
+  const base = buildTrialState({
     hand1: [],
     hand2: [],
     ...(opts?.illumination !== undefined ? { illumination: opts.illumination } : {}),
@@ -197,9 +197,9 @@ describe('FinalThresholdScreen — pre-ritual hold view (§ 2.1)', () => {
   });
 });
 
-describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
-  it('renders the witness sub-state when the ritual is active', () => {
-    const state = buildWitnessState();
+describe('FinalThresholdScreen — trial sub-state', () => {
+  it('renders the trial sub-state when the ritual is active', () => {
+    const state = buildTrialState();
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
     const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
@@ -207,36 +207,33 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
       <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     const screen = container.querySelector('[data-final-threshold-screen]');
-    expect(screen?.getAttribute('data-sub-phase')).toBe('witness');
-    expect(container.querySelector('[data-witness-panel]')).not.toBeNull();
+    expect(screen?.getAttribute('data-sub-phase')).toBe('trial');
+    expect(container.querySelector('[data-trial-panel]')).not.toBeNull();
   });
 
-  it('shows Play / Pass affordances to the current witness', () => {
-    // Witness order is descending by timestamp; p2 arrived last (200)
-    // so p2 is the current witness. Render for p2 — should see Play
-    // buttons on each card and a Pass button.
-    const state = buildWitnessState();
-    const witnessPlayer = state.players.find((p) => p.id === 'p2');
-    if (!witnessPlayer) throw new Error('witnessPlayer missing');
+  it('shows the Resolve button to the current trial player', () => {
+    // Trial order is descending by timestamp; p2 arrived last (stamp 200)
+    // so p2 is the first trial player. Render for p2 — should see the Roll button.
+    const state = buildTrialState();
+    const trialPlayer = state.players.find((p) => p.id === 'p2');
+    if (!trialPlayer) throw new Error('trialPlayer missing');
     const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
     const { container } = render(
       <FinalThresholdScreen
         state={state}
-        player={witnessPlayer}
+        player={trialPlayer}
         turn={result.current}
         mode="hot-seat"
       />,
     );
-    const playButtons = container.querySelectorAll('[data-action="kether-witness-play"]');
-    expect(playButtons.length).toBe(2); // p2 has 2 cards in queue
-    const passButton = container.querySelector('[data-action="kether-witness-pass"]');
-    expect(passButton).not.toBeNull();
+    const resolveBtn = container.querySelector('[data-action="kether-trial-resolve"]');
+    expect(resolveBtn).not.toBeNull();
   });
 
-  it('shows read-only view + waiting status to non-active witnesses', () => {
-    // p2 is current witness; render for p1 (waiting). p1 should NOT
-    // see Play / Pass buttons; they should see "Waiting for Bea" status.
-    const state = buildWitnessState();
+  it('shows waiting status to non-active trial players', () => {
+    // p2 is current trial player; render for p1 (waiting). p1 should NOT
+    // see a Resolve button; they should see "Waiting for Bea" status.
+    const state = buildTrialState();
     const inactivePlayer = state.players.find((p) => p.id === 'p1');
     if (!inactivePlayer) throw new Error('inactivePlayer missing');
     const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
@@ -248,124 +245,83 @@ describe('FinalThresholdScreen — witness sub-state (§ 2.3)', () => {
         mode="hot-seat"
       />,
     );
-    const playButtons = container.querySelectorAll('[data-action="kether-witness-play"]');
-    expect(playButtons.length).toBe(0);
-    const passButton = container.querySelector('[data-action="kether-witness-pass"]');
-    expect(passButton).toBeNull();
-    const status = container.querySelector('[data-witness-status]');
+    const resolveBtn = container.querySelector('[data-action="kether-trial-resolve"]');
+    expect(resolveBtn).toBeNull();
+    const status = container.querySelector('[data-trial-status]');
     expect(status?.textContent).toMatch(/Waiting for Bea/);
   });
 
-  it('clicking Play dispatches ketherWitnessPlay through useTurn', () => {
-    // Same setup: p2 is current witness, click Play on first card,
-    // verify the engine state advanced (p2's hand shrank by 1, log
-    // gained a 'played' entry).
-    const state = buildWitnessState();
-    const witnessPlayer = state.players.find((p) => p.id === 'p2');
-    if (!witnessPlayer) throw new Error('witnessPlayer missing');
+  it('clicking Roll dispatches ketherTrialResolve and advances the trial', () => {
+    const state = buildTrialState();
+    const trialPlayer = state.players.find((p) => p.id === 'p2');
+    if (!trialPlayer) throw new Error('trialPlayer missing');
     const { result, rerender } = renderHook(() =>
       useTurn({ initialState: state, rng: seededRng(1) }),
     );
     const Wrapper = (): JSX.Element => (
       <FinalThresholdScreen
         state={result.current.state}
-        player={result.current.state.players.find((p) => p.id === 'p2') ?? witnessPlayer}
+        player={result.current.state.players.find((p) => p.id === 'p2') ?? trialPlayer}
         turn={result.current}
         mode="hot-seat"
       />
     );
     const view = render(<Wrapper />);
-    const firstPlayBtn = view.container.querySelector(
-      '[data-action="kether-witness-play"]',
+    const resolveBtn = view.container.querySelector(
+      '[data-action="kether-trial-resolve"]',
     ) as HTMLButtonElement | null;
-    expect(firstPlayBtn).not.toBeNull();
-    if (!firstPlayBtn) return;
-    const arcanum = Number(firstPlayBtn.getAttribute('data-arcanum'));
+    expect(resolveBtn).not.toBeNull();
+    if (!resolveBtn) return;
 
     act(() => {
-      fireEvent.click(firstPlayBtn);
+      fireEvent.click(resolveBtn);
     });
     rerender();
     view.rerender(<Wrapper />);
 
-    // The engine reducer moved the card to discard + advanced the
-    // pointer. Witness log should have a 'played' entry; p2's hand
-    // should be smaller.
+    // After p2 resolves, trialTurnIndex advances to 1.
     const finalState = result.current.state;
-    const finalP2 = finalState.players.find((p) => p.id === 'p2');
-    expect(finalP2?.hand.length).toBe(1);
-    expect(finalState.ketherRitual?.witnessLog).toEqual([
-      { kind: 'played', playerId: 'p2', arcanum },
-    ]);
+    expect(finalState.ketherRitual?.trialTurnIndex).toBe(1);
+    // First challenge should have a roll and passed value.
+    const c = finalState.ketherRitual?.trialChallenges[0];
+    expect(c?.roll).not.toBeNull();
+    expect(c?.passed).not.toBeNull();
   });
 
-  it('clicking Pass dispatches ketherWitnessPass and ticks Separation', () => {
-    const state = buildWitnessState({ separation: 0 });
-    const witnessPlayer = state.players.find((p) => p.id === 'p2');
-    if (!witnessPlayer) throw new Error('witnessPlayer missing');
-    const { result, rerender } = renderHook(() =>
-      useTurn({ initialState: state, rng: seededRng(1) }),
-    );
-    const Wrapper = (): JSX.Element => (
-      <FinalThresholdScreen
-        state={result.current.state}
-        player={result.current.state.players.find((p) => p.id === 'p2') ?? witnessPlayer}
-        turn={result.current}
-        mode="hot-seat"
-      />
-    );
-    const view = render(<Wrapper />);
-    const passBtn = view.container.querySelector(
-      '[data-action="kether-witness-pass"]',
-    ) as HTMLButtonElement | null;
-    expect(passBtn).not.toBeNull();
-    if (!passBtn) return;
-
-    act(() => {
-      fireEvent.click(passBtn);
-    });
-    rerender();
-    view.rerender(<Wrapper />);
-
-    // +1 Separation; passCounts[p2] = 1; witnessLog gained passed entry.
-    const finalState = result.current.state;
-    expect(finalState.separation).toBe(1);
-    expect(finalState.ketherRitual?.passCounts.p2).toBe(1);
-    expect(finalState.ketherRitual?.witnessLog).toEqual([{ kind: 'passed', playerId: 'p2' }]);
-  });
-
-  it('renders the witness log with player names and arcana', () => {
-    // Hand-roll a state with a non-empty witness log.
-    const state = buildWitnessState();
+  it('renders the trial log with player names and results', () => {
+    // Hand-roll a state with one resolved challenge.
+    const state = buildTrialState();
     const seededRitual = state.ketherRitual;
     if (!seededRitual) throw new Error('ritual missing');
-    const stateWithLog: GameState = {
+    const stateWithResult: GameState = {
       ...state,
       ketherRitual: {
         ...seededRitual,
-        witnessLog: [
-          { kind: 'played', playerId: 'p2', arcanum: 20 },
-          { kind: 'passed', playerId: 'p1' },
+        trialTurnIndex: 1,
+        trialChallenges: [
+          { sefirahKey: 'chokmah', stat: 'insight', dc: 14, roll: 15, passed: true },
+          { sefirahKey: 'binah', stat: 'understanding', dc: 14, roll: null, passed: null },
         ],
       },
     };
-    const player = stateWithLog.players.find((p) => p.id === 'p1');
+    const player = stateWithResult.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
-    const { result } = renderHook(() => useTurn({ initialState: stateWithLog, rng: seededRng(1) }));
+    const { result } = renderHook(() =>
+      useTurn({ initialState: stateWithResult, rng: seededRng(1) }),
+    );
     const { container } = render(
       <FinalThresholdScreen
-        state={stateWithLog}
+        state={stateWithResult}
         player={player}
         turn={result.current}
         mode="hot-seat"
       />,
     );
-    const log = container.querySelector('[data-witness-log]');
-    expect(log?.textContent).toMatch(/Bea/); // p2's name
-    expect(log?.textContent).toMatch(/Alex/); // p1's name
+    const log = container.querySelector('[data-trial-log]');
+    expect(log?.textContent).toMatch(/Bea/); // p2's name (trialOrder[0])
     expect(log?.textContent).toMatch(/passed/i);
     const entries = container.querySelectorAll('[data-log-entry]');
-    expect(entries.length).toBe(2);
+    expect(entries.length).toBe(1); // only the resolved challenge
   });
 });
 
@@ -525,9 +481,9 @@ describe('FinalThresholdScreen — defensive guards', () => {
     // atomically with ritual init, but if a multiplayer wire push
     // arrives between the two flips, the renderer should not blank.
     // The component's guard at line 107-116 covers this — pin it.
-    const witnessState = buildWitnessState();
+    const trialState = buildTrialState();
     const stateAtCorruption: GameState = {
-      ...witnessState,
+      ...trialState,
       ketherRitual: undefined,
     };
     const player = stateAtCorruption.players.find((p) => p.id === 'p1');
@@ -547,16 +503,16 @@ describe('FinalThresholdScreen — defensive guards', () => {
     expect(screen?.getAttribute('data-sub-phase')).toBe('hold');
   });
 
-  it('falls back to the witness UI if rendered with subPhase === "gather"', () => {
-    // K1 transitions atomically through gather → witness on init, so
+  it('falls back to the trial UI if rendered with subPhase === "gather"', () => {
+    // K1 transitions atomically through gather → trial on init, so
     // subPhase==='gather' should never appear in production. The
-    // fallback is defensive — surface this is the witness UI so a
+    // fallback is defensive — surface this is the trial UI so a
     // stale snapshot doesn't blank the screen.
-    const witnessState = buildWitnessState();
-    const baseRitual = witnessState.ketherRitual;
+    const trialState = buildTrialState();
+    const baseRitual = trialState.ketherRitual;
     if (!baseRitual) throw new Error('ritual missing');
     const stateAtGather: GameState = {
-      ...witnessState,
+      ...trialState,
       ketherRitual: { ...baseRitual, subPhase: 'gather' },
     };
     const player = stateAtGather.players.find((p) => p.id === 'p1');
@@ -573,17 +529,17 @@ describe('FinalThresholdScreen — defensive guards', () => {
       />,
     );
     const screen = container.querySelector('[data-final-threshold-screen]');
-    // Component falls back to 'witness' when ritual.subPhase is anything
+    // Component falls back to 'trial' when ritual.subPhase is anything
     // other than 'close'. The data attribute reflects the rendered
     // panel, not the ritual's raw value.
-    expect(screen?.getAttribute('data-sub-phase')).toBe('witness');
-    expect(container.querySelector('[data-witness-panel]')).not.toBeNull();
+    expect(screen?.getAttribute('data-sub-phase')).toBe('trial');
+    expect(container.querySelector('[data-trial-panel]')).not.toBeNull();
   });
 });
 
 describe('FinalThresholdScreen — mode flag', () => {
   it('surfaces mode="hot-seat" as a data attribute', () => {
-    const state = buildWitnessState();
+    const state = buildTrialState();
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
     const { result } = renderHook(() => useTurn({ initialState: state, rng: seededRng(1) }));
@@ -596,7 +552,7 @@ describe('FinalThresholdScreen — mode flag', () => {
   });
 
   it('surfaces mode="multiplayer" as a data attribute', () => {
-    const state = buildWitnessState();
+    const state = buildTrialState();
     const player = state.players.find((p) => p.id === 'p1');
     if (!player) throw new Error('player missing');
     const { result } = renderHook(() =>
