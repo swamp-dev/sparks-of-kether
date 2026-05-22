@@ -96,36 +96,14 @@ test('drag-to-play: dragging a card onto a matching path moves the player', asyn
   const card = page.locator(`[data-card-slot][data-arcanum="${pair.arcanum}"]`);
   const path = page.locator(`[data-drop-zone="path-${pair.pathNumber}"]`);
 
-  // Expand the floating hand from peek mode, then hover the specific
-  // card so the mouse lands exactly at its centre before mouse.down.
-  // A generic page.mouse.move(fanCentre → cardCentre) can cross outside
-  // the hand-fan boundary, triggering mouseleave → collapse → card shift
-  // → mouse.down misses. card.hover() avoids the cross-boundary move.
-  // The extra 300ms wait lets the MAGNIFY_LIFT_PX/MAGNIFY_SCALE transform
-  // (240ms ease-out) settle before we capture boundingBox — mid-animation
-  // the card is at an intermediate position and mouse.down would miss it.
+  // Expand the hand so the card is fully visible, then use dragTo for
+  // a reliable drag gesture. dragTo moves to the card centre (firing
+  // pointerdown immediately, without waiting for any magnify animation
+  // that would shift the card before mouse.down), then drags to the
+  // path's bounding-box centre and releases.
   await page.locator('[data-hand-fan]').hover();
   await page.waitForTimeout(350);
-  await card.hover();
-  await page.waitForTimeout(300);
-
-  const cardBox = await card.boundingBox();
-  const pathBox = await path.boundingBox();
-  expect(cardBox).not.toBeNull();
-  expect(pathBox).not.toBeNull();
-  if (!cardBox || !pathBox) throw new Error('Bounding box unexpectedly null after expect guard');
-
-  // Mouse is already at card centre from card.hover() above.
-  // Drag to path centre with a midpoint to ensure threshold is crossed.
-  const startX = cardBox.x + cardBox.width / 2;
-  const startY = cardBox.y + cardBox.height / 2;
-  const endX = pathBox.x + pathBox.width / 2;
-  const endY = pathBox.y + pathBox.height / 2;
-
-  await page.mouse.down();
-  await page.mouse.move((startX + endX) / 2, (startY + endY) / 2, { steps: 5 });
-  await page.mouse.move(endX, endY, { steps: 5 });
-  await page.mouse.up();
+  await card.dragTo(path);
 
   // Phase has left 'move' — the drop dispatched. Either 'end' (no
   // challenge) or 'challenge' depending on whether the destination
