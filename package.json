@@ -24,6 +24,10 @@
     "archive:journal": "node scripts/archive-journal.mjs",
     "music:render": "tsx scripts/music/render.ts",
     "sfx:render-stings": "tsx scripts/sfx/render-stings.ts",
+    "voice:browse": "tsx scripts/voice/browse-voices.ts",
+    "voice:sample": "tsx scripts/voice/sample-voice.ts",
+    "voice:generate": "tsx scripts/voice/generate-voices.ts",
+    "voice:generate:dry": "tsx scripts/voice/generate-voices.ts --dry-run",
     "voice:check-drift": "tsx scripts/voice/check-drift.ts"
   },
   "dependencies": {
@@ -33,6 +37,7 @@
     "react-dom": "^18.3.0"
   },
   "devDependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.49.1",
     "@playwright/test": "^1.59.1",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
