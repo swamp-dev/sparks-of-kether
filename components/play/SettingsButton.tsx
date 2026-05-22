@@ -73,7 +73,8 @@ function Toggle({
  */
 
 export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}): JSX.Element {
-  const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled } = useSoundEnabled();
+  const { sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled, voiceEnabled, setVoiceEnabled } =
+    useSoundEnabled();
   const { pantheonId, setPantheonId } = usePantheon();
   // When pantheonId is an unknown id (stale localStorage from a future version),
   // no radio would match and all would get tabIndex=-1, making the group
@@ -255,6 +256,16 @@ export function SettingsButton({ onQuit }: { readonly onQuit?: () => void } = {}
               label="Toggle music"
               onChange={() => setMusicEnabled(!musicEnabled)}
               testId="toggle-music"
+            />
+          </div>
+
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm">Voice</span>
+            <Toggle
+              checked={voiceEnabled}
+              label="Toggle voice narration"
+              onChange={() => setVoiceEnabled(!voiceEnabled)}
+              testId="toggle-voice"
             />
           </div>
 

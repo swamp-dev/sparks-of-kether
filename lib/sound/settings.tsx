@@ -31,12 +31,15 @@ import {
 
 export const SFX_ENABLED_STORAGE_KEY = 'sok.sfxEnabled';
 export const MUSIC_ENABLED_STORAGE_KEY = 'sok.musicEnabled';
+export const VOICE_ENABLED_STORAGE_KEY = 'sok.voiceEnabled';
 
 interface SoundSettingsContextValue {
   readonly sfxEnabled: boolean;
   readonly setSfxEnabled: (next: boolean) => void;
   readonly musicEnabled: boolean;
   readonly setMusicEnabled: (next: boolean) => void;
+  readonly voiceEnabled: boolean;
+  readonly setVoiceEnabled: (next: boolean) => void;
 }
 
 const SoundSettingsContext = createContext<SoundSettingsContextValue | null>(null);
@@ -76,6 +79,18 @@ function readMusicInitial(): boolean {
   return false; // Music default: OFF (ambient auto-play is hostile by default)
 }
 
+function readVoiceInitial(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const stored = window.localStorage.getItem(VOICE_ENABLED_STORAGE_KEY);
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+  } catch {
+    /* ignore */
+  }
+  return false; // Voice default: OFF (same rationale as music)
+}
+
 let audioContextUnlocked = false;
 
 function unlockAudioContext(): void {
@@ -106,13 +121,16 @@ function persist(key: string, value: boolean): void {
 export function SoundSettingsProvider({ children }: SoundSettingsProviderProps): JSX.Element {
   const [sfxEnabled, setSfxState] = useState<boolean>(readSfxInitial);
   const [musicEnabled, setMusicState] = useState<boolean>(readMusicInitial);
+  const [voiceEnabled, setVoiceState] = useState<boolean>(readVoiceInitial);
 
   // Re-sync on mount in case SSR-rendered initial differs from stored value.
   useEffect(() => {
     const sfx = readSfxInitial();
     const music = readMusicInitial();
+    const voice = readVoiceInitial();
     setSfxState((prev) => (prev === sfx ? prev : sfx));
     setMusicState((prev) => (prev === music ? prev : music));
+    setVoiceState((prev) => (prev === voice ? prev : voice));
   }, []);
 
   const setSfxEnabled = useCallback((next: boolean) => {
@@ -140,14 +158,27 @@ export function SoundSettingsProvider({ children }: SoundSettingsProviderProps):
     }
   }, []);
 
+  const setVoiceEnabled = useCallback((next: boolean) => {
+    setVoiceState(next);
+    if (typeof window !== 'undefined') {
+      if (next) {
+        // Voice plays in useEffects — unlock audio context on enable.
+        unlockAudioContext();
+      }
+      persist(VOICE_ENABLED_STORAGE_KEY, next);
+    }
+  }, []);
+
   const value = useMemo(
     (): SoundSettingsContextValue => ({
       sfxEnabled,
       setSfxEnabled,
       musicEnabled,
       setMusicEnabled,
+      voiceEnabled,
+      setVoiceEnabled,
     }),
-    [sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled],
+    [sfxEnabled, setSfxEnabled, musicEnabled, setMusicEnabled, voiceEnabled, setVoiceEnabled],
   );
 
   return <SoundSettingsContext.Provider value={value}>{children}</SoundSettingsContext.Provider>;
@@ -174,4 +205,6 @@ const DEFAULT_DISABLED_VALUE: SoundSettingsContextValue = {
   setSfxEnabled: () => undefined,
   musicEnabled: false,
   setMusicEnabled: () => undefined,
+  voiceEnabled: false,
+  setVoiceEnabled: () => undefined,
 };
