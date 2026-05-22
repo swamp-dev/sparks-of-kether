@@ -540,8 +540,9 @@ describe('Hand — Mac-dock magnification (#463)', () => {
   });
 
   it('peek-shelf: mouseenter on a card directly expands the fan (not via bubbling)', () => {
-    // Defensive: handleHoverEnter calls expandHand() directly so the hand
-    // expands even if a descendant calls e.stopPropagation() in the future.
+    // mouseenter never bubbles (DOM spec), so the fan's own onMouseEnter
+    // handler never fires when the pointer enters a card-wrapper child.
+    // handleHoverEnter must call expandHand() directly to cover that gap.
     const { container } = render(<Hand hand={[2, 5, 13]} visible={true} onCardSelect={vi.fn()} />);
     const fan = container.querySelector('[data-hand-fan]') as HTMLElement;
     const cardBtn = container.querySelector('[data-card-slot="0"]') as HTMLElement;
