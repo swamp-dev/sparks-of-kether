@@ -24,3 +24,9 @@ overage.
 **Surprising**: the previous baseline was 858 px (not the 968 px cited in the
 ticket body), because `lg:gap-3` was already in place on `origin/main` before
 this branch.
+
+## Push 2 — 6660407
+
+**What**: Prettier formatting fix only. CI failed `format:check` because
+Prettier's Tailwind class-ordering plugin moved `lg:w-12` to the end of both
+class strings (`w-20 lg:w-12` → `w-20 ... lg:w-12`). No behavioral change.
