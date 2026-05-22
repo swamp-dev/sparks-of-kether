@@ -23,5 +23,5 @@ export function derivePose(
   if (uiSubPhase === 'resolve') return 'watching';
   if (uiSubPhase === 'react') return resolvedOutcome?.pass === true ? 'pass' : 'fail';
   const _exhaustive: never = uiSubPhase;
-  return _exhaustive;
+  throw new Error(`Unhandled UiSubPhase: ${_exhaustive}`);
 }
