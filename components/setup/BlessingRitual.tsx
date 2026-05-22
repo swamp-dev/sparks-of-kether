@@ -1,4 +1,5 @@
 'use client';
+// #11: orb h2 shows transliteration (Kether) primary, Hebrew secondary, English tertiary.
 import { useEffect, useRef, useState } from 'react';
 import { sefirot } from '@/data';
 import type { StatKey, ZodiacSignKey } from '@/data';
@@ -234,8 +235,8 @@ export function BlessingRitual({
       data-sefirah={currentSefirah.key}
       data-status={stepStatus}
       data-blessing-state={blessing === null ? 'null' : 'set'}
-      aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.englishName}`}
-      className={`mx-auto max-w-5xl${className ? ` ${className}` : ''}`}
+      aria-label={`Blessing ritual, step ${stepIndex + 1} of ${sefirot.length}: ${currentSefirah.transliteration} (${currentSefirah.englishName})`}
+      className={`mx-auto max-w-5xl ${className ?? ''}`}
     >
       <RitualScene color={currentSefirah.color} sefirahKey={currentSefirah.key} />
 
@@ -305,7 +306,7 @@ export function BlessingRitual({
           </p>
 
           <h2 className="relative mt-3 font-display text-3xl tracking-widest" data-sefirah-name>
-            {currentSefirah.englishName}
+            {currentSefirah.transliteration}
           </h2>
           <p
             className="relative mt-1 font-hebrew text-2xl"
@@ -313,6 +314,9 @@ export function BlessingRitual({
             style={{ direction: 'rtl', unicodeBidi: 'isolate' }}
           >
             {currentSefirah.hebrewName}
+          </p>
+          <p className="relative mt-0.5 text-sm opacity-60" data-sefirah-gloss>
+            {currentSefirah.englishName}
           </p>
 
           <p className="relative mt-4 italic opacity-80" data-essence>
