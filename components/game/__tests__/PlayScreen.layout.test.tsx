@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { PlayScreen } from '../PlayScreen';
+import { TREE_ROOT_SELECTOR } from '@/data/tree-layout';
 import { makeFullGame } from '@/test/fixtures';
 import { seededRng } from '@/engine/rng';
 
@@ -27,12 +28,12 @@ function renderPlay() {
 describe('PlayScreen — fit-on-screen layout (#411)', () => {
   it('wraps the Tree in a height-clamped container at lg+ that preserves the 400/620 aspect', () => {
     const { container } = renderPlay();
-    const tree = container.querySelector('[data-tree-root]');
+    const tree = container.querySelector(TREE_ROOT_SELECTOR);
     expect(tree, 'tree root present').not.toBeNull();
     // Outer wrapper introduced in #411 carries the lg+ aspect-ratio
     // + viewport-derived height so the Tree fits inside 1280×800.
-    // Load-bearing assumption: TreeBoard's root element is
-    // `[data-tree-root]` and its `parentElement` is the #411
+    // Load-bearing assumption: TreeBoard's root element matches
+    // TREE_ROOT_SELECTOR and its `parentElement` is the #411
     // wrapper. If TreeBoard's structure ever changes (e.g. fragment
     // unwrap, an intermediate element) this lookup needs updating
     // — surface as an explicit failure here rather than letting

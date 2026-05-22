@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
-import { NODE_RADIUS, TREE_VIEW_W } from '@/data/tree-layout';
+import { NODE_RADIUS, TREE_ROOT_SVG_SELECTOR, TREE_VIEW_W } from '@/data/tree-layout';
 import type { SefirahKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
@@ -1134,7 +1134,7 @@ function phaseHint(phase: TurnPhase): string {
  */
 function findDropZoneNear(cx: number, cy: number): Element | null {
   const svgWidth =
-    document.querySelector('[data-tree-root] svg')?.getBoundingClientRect().width ?? 0;
+    document.querySelector(TREE_ROOT_SVG_SELECTOR)?.getBoundingClientRect().width ?? 0;
   const scale = svgWidth > 0 ? svgWidth / TREE_VIEW_W : 1;
   const stepC = Math.ceil(NODE_RADIUS * scale) + 4; // +4px sub-pixel margin
   const stepD = Math.ceil((NODE_RADIUS * scale) / Math.SQRT2) + 4;
