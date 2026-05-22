@@ -165,7 +165,7 @@ export function PrimaryCTA({ className, defaultOpen = false }: PrimaryCTAProps):
           role="region"
           aria-labelledby={TRIGGER_ID}
           data-home-portal-panel
-          className="mx-auto w-full max-w-md rounded-lg border border-veil/15 bg-ground/60 p-6 backdrop-blur-sm transition-opacity duration-300 ease-emerge"
+          className="mx-auto w-full max-w-md rounded-lg border border-veil/15 bg-ground/60 p-6 backdrop-blur-sm motion-safe:animate-portal-emerge"
           // No `aria-hidden` here — the panel is the active region.
         >
           {/* Header inside the open panel — affords a way back to the
