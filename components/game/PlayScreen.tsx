@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
+import { NODE_RADIUS, TREE_VIEW_W } from '@/data/tree-layout';
 import type { SefirahKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
 import { Hand } from '@/components/hand/Hand';
@@ -442,7 +443,7 @@ export function PlayScreen({
     // Sefirah button, probe nearby pixels to find the hit-line below.
     const dropZone =
       target?.closest('[data-drop-zone]') ??
-      (target?.closest('[data-sefirah-link]') !== null
+      (target?.closest('[data-sefirah-link]') != null
         ? findDropZoneNear(position.x, position.y)
         : null);
     const slug = dropZone?.getAttribute('data-drop-zone') ?? '';
@@ -1091,13 +1092,23 @@ function phaseHint(phase: TurnPhase): string {
 /**
  * When a drag ends on a Sefirah-node HTML button (which sits above the SVG
  * path hit-lines in z-order), `elementFromPoint` returns the button and
- * misses the path. Probe a ring of neighbouring pixels so a drop near a node
- * still resolves to the correct `[data-drop-zone]`.
+ * misses the path. Probe a ring of neighbouring pixels — offset by just past
+ * NODE_RADIUS scaled to screen pixels — so a drop near a node still resolves
+ * to the correct `[data-drop-zone]`.
+ *
+ * The step is derived from the SVG's actual rendered width so it stays correct
+ * at all viewport sizes. If the SVG is not yet laid out (width=0, e.g. jsdom),
+ * we fall back to scale=1 which gives a 32-pixel step (works at natural size).
  */
 function findDropZoneNear(cx: number, cy: number): Element | null {
-  const offsets = [16, -16, 24, -24];
+  const svgWidth =
+    document.querySelector('[data-tree-root] svg')?.getBoundingClientRect().width ?? 0;
+  const scale = svgWidth > 0 ? svgWidth / TREE_VIEW_W : 1;
+  const step = Math.ceil(NODE_RADIUS * scale) + 4;
+  const offsets = [-step, 0, step];
   for (const dx of offsets) {
     for (const dy of offsets) {
+      if (dx === 0 && dy === 0) continue;
       const zone = document.elementFromPoint(cx + dx, cy + dy)?.closest('[data-drop-zone]');
       if (zone) return zone;
     }
