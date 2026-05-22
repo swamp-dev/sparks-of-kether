@@ -25,12 +25,18 @@ let playersResponse: { data: unknown; error: unknown } = {
 let sessionResult: { data: { session: { access_token: string } | null } } = {
   data: { session: { access_token: 'caller-token' } },
 };
+let refreshSessionResult: { data: { session: { access_token: string } | null } } = {
+  data: { session: { access_token: 'refreshed-token' } },
+};
 let fetchCalls: { url: string; init: RequestInit | undefined }[] = [];
 let fetchResponse: { ok: boolean; status: number; jsonBody: unknown } = {
   ok: true,
   status: 200,
   jsonBody: {},
 };
+// Per-call overrides: if non-empty, each fetch call pops from the front.
+// Falls back to fetchResponse when the queue is exhausted.
+let fetchResponseQueue: { ok: boolean; status: number; jsonBody: unknown }[] = [];
 
 interface UpdateCall {
   table: string;
@@ -107,6 +113,7 @@ vi.mock('../supabase', async (importActual) => {
       auth: {
         getUser: vi.fn(async () => userResult),
         getSession: vi.fn(async () => sessionResult),
+        refreshSession: vi.fn(async () => refreshSessionResult),
       },
       channel: (name: string) => makeFakeChannel(name),
       removeChannel: vi.fn(),
@@ -173,8 +180,12 @@ describe('useLobby', () => {
     sessionResult = {
       data: { session: { access_token: 'caller-token' } },
     };
+    refreshSessionResult = {
+      data: { session: { access_token: 'refreshed-token' } },
+    };
     fetchCalls = [];
     fetchResponse = { ok: true, status: 200, jsonBody: {} };
+    fetchResponseQueue = [];
     updateCalls = [];
     updateResponse = { error: null };
     channelHandler = null;
@@ -186,10 +197,11 @@ describe('useLobby', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         fetchCalls.push({ url, init });
+        const resp = fetchResponseQueue.shift() ?? fetchResponse;
         return {
-          ok: fetchResponse.ok,
-          status: fetchResponse.status,
-          json: async () => fetchResponse.jsonBody,
+          ok: resp.ok,
+          status: resp.status,
+          json: async () => resp.jsonBody,
         } as Response;
       }),
     );
@@ -496,5 +508,85 @@ describe('useLobby', () => {
     });
 
     await waitFor(() => expect(result.current.room?.state).toBe('playing'));
+  });
+
+  it('beginGame() retries with refreshed token after 401 and succeeds', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    fetchResponseQueue = [
+      { ok: false, status: 401, jsonBody: {} },
+      { ok: true, status: 200, jsonBody: {} },
+    ];
+
+    act(() => {
+      result.current.beginGame();
+    });
+    await waitFor(() => expect(result.current.beginning).toBe(false));
+
+    expect(fetchCalls).toHaveLength(2);
+    expect((fetchCalls[0]?.init?.headers as Record<string, string>)['authorization']).toBe(
+      'Bearer caller-token',
+    );
+    expect((fetchCalls[1]?.init?.headers as Record<string, string>)['authorization']).toBe(
+      'Bearer refreshed-token',
+    );
+    expect(result.current.error).toBeNull();
+  });
+
+  it('beginGame() shows "Session expired" when refresh yields no session', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    refreshSessionResult = { data: { session: null } };
+    fetchResponseQueue = [{ ok: false, status: 401, jsonBody: {} }];
+
+    act(() => {
+      result.current.beginGame();
+    });
+    await waitFor(() => expect(result.current.beginning).toBe(false));
+
+    expect(fetchCalls).toHaveLength(1);
+    expect(result.current.error).toMatch(/session expired/i);
+  });
+
+  it('resetGame() retries with refreshed token after 401 and succeeds', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    fetchResponseQueue = [
+      { ok: false, status: 401, jsonBody: {} },
+      { ok: true, status: 200, jsonBody: {} },
+    ];
+
+    act(() => {
+      result.current.resetGame();
+    });
+    await waitFor(() => expect(result.current.resetting).toBe(false));
+
+    expect(fetchCalls).toHaveLength(2);
+    expect((fetchCalls[0]?.init?.headers as Record<string, string>)['authorization']).toBe(
+      'Bearer caller-token',
+    );
+    expect((fetchCalls[1]?.init?.headers as Record<string, string>)['authorization']).toBe(
+      'Bearer refreshed-token',
+    );
+    expect(result.current.error).toBeNull();
+  });
+
+  it('resetGame() shows "Session expired" when refresh yields no session', async () => {
+    const { result } = renderHook(() => useLobby('ABCDEF'));
+    await waitFor(() => expect(result.current.room).not.toBeNull());
+
+    refreshSessionResult = { data: { session: null } };
+    fetchResponseQueue = [{ ok: false, status: 401, jsonBody: {} }];
+
+    act(() => {
+      result.current.resetGame();
+    });
+    await waitFor(() => expect(result.current.resetting).toBe(false));
+
+    expect(fetchCalls).toHaveLength(1);
+    expect(result.current.error).toMatch(/session expired/i);
   });
 });
