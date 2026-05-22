@@ -364,9 +364,9 @@ describe('BlessingRitual — scene polish (#156)', () => {
     expect(container.querySelector('[data-avatar-portrait]')?.getAttribute('data-sefirah')).toBe(
       'hod',
     );
-    expect(container.querySelector('[data-avatar-portrait]')?.getAttribute('data-avatar-pose')).toBe(
-      'speaking',
-    );
+    expect(
+      container.querySelector('[data-avatar-portrait]')?.getAttribute('data-avatar-pose'),
+    ).toBe('speaking');
   });
 
   it('avatar portrait is well above the 80 px ticket threshold (stage: h-60 = 240 px)', () => {
