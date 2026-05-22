@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSoundEnabled } from '@/lib/sound/settings';
 
 interface UseVoiceReturn {
@@ -20,6 +20,14 @@ export function useVoice(): UseVoiceReturn {
   // Per-path cache: reuse (reset currentTime) instead of cloning —
   // voice clips are 3-10s; cloning would be wasteful.
   const cacheRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  // Stop in-flight audio when the voice toggle is disabled mid-clip,
+  // matching the useMusic pattern for consistent UX.
+  useEffect(() => {
+    if (!voiceEnabled && currentRef.current) {
+      currentRef.current.pause();
+    }
+  }, [voiceEnabled]);
 
   const playVoice = useCallback((path: string): void => {
     if (!enabledRef.current) return;

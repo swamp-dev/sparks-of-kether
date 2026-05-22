@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { SoundSettingsProvider, VOICE_ENABLED_STORAGE_KEY } from '@/lib/sound/settings';
+import {
+  SoundSettingsProvider,
+  VOICE_ENABLED_STORAGE_KEY,
+  useSoundEnabled,
+} from '@/lib/sound/settings';
+// VOICE_ENABLED_STORAGE_KEY used by seedVoice() helper below
 import { useVoice } from '../useVoice';
 
 /**
@@ -46,13 +51,14 @@ function installAudioStub(): void {
   );
 }
 
-function withVoiceEnabled(enabled: boolean) {
-  return function Wrapper({ children }: { children: ReactNode }): JSX.Element {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(VOICE_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
-    }
-    return <SoundSettingsProvider>{children}</SoundSettingsProvider>;
-  };
+function Provider({ children }: { children: ReactNode }): JSX.Element {
+  return <SoundSettingsProvider>{children}</SoundSettingsProvider>;
+}
+
+function seedVoice(enabled: boolean): void {
+  // Seed before renderHook so SoundSettingsProvider's lazy initializer
+  // reads the desired value. Idempotent — beforeEach already clears.
+  window.localStorage.setItem(VOICE_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
 }
 
 describe('useVoice', () => {
@@ -66,9 +72,8 @@ describe('useVoice', () => {
   });
 
   it('is a no-op when voiceEnabled is false', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(false),
-    });
+    seedVoice(false);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     act(() => {
       result.current.playVoice('/audio/voice/greeting-zeus.mp3');
     });
@@ -76,9 +81,8 @@ describe('useVoice', () => {
   });
 
   it('plays when voiceEnabled is true', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(true),
-    });
+    seedVoice(true);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     act(() => {
       result.current.playVoice('/audio/voice/greeting-zeus.mp3');
     });
@@ -88,9 +92,8 @@ describe('useVoice', () => {
   });
 
   it('sets preload to none on constructed audio', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(true),
-    });
+    seedVoice(true);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     act(() => {
       result.current.playVoice('/audio/voice/greeting-apollo.mp3');
     });
@@ -98,9 +101,8 @@ describe('useVoice', () => {
   });
 
   it('pauses and resets currentTime before playing a second voice', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(true),
-    });
+    seedVoice(true);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     act(() => {
       result.current.playVoice('/audio/voice/greeting-ares.mp3');
     });
@@ -117,9 +119,8 @@ describe('useVoice', () => {
   });
 
   it('reuses the same Audio element for repeated same-path calls', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(true),
-    });
+    seedVoice(true);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     const path = '/audio/voice/response-tiferet-leo-1.mp3';
     act(() => {
       result.current.playVoice(path);
@@ -133,9 +134,8 @@ describe('useVoice', () => {
   });
 
   it('stopVoice pauses the current audio', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(true),
-    });
+    seedVoice(true);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     act(() => {
       result.current.playVoice('/audio/voice/greeting-selene.mp3');
     });
@@ -147,13 +147,31 @@ describe('useVoice', () => {
   });
 
   it('stopVoice is safe with no current audio', () => {
-    const { result } = renderHook(() => useVoice(), {
-      wrapper: withVoiceEnabled(true),
-    });
+    seedVoice(true);
+    const { result } = renderHook(() => useVoice(), { wrapper: Provider });
     expect(() => {
       act(() => {
         result.current.stopVoice();
       });
     }).not.toThrow();
+  });
+
+  it('pauses in-flight audio when voiceEnabled toggles off mid-clip', () => {
+    seedVoice(true);
+    const { result } = renderHook(
+      () => ({ voice: useVoice(), settings: useSoundEnabled() }),
+      { wrapper: Provider },
+    );
+    act(() => {
+      result.current.voice.playVoice('/audio/voice/verdict-chesed-cancer-pass-1.mp3');
+    });
+    const playing = audioInstances[0];
+    expect(playing?.play).toHaveBeenCalled();
+
+    // Toggle voice off while the clip is still playing.
+    act(() => {
+      result.current.settings.setVoiceEnabled(false);
+    });
+    expect(playing?.pause).toHaveBeenCalled();
   });
 });
