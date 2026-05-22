@@ -277,29 +277,25 @@ describe('Hand — interaction', () => {
     expect(cls.endsWith(' ')).toBe(false);
   });
 
-  it('floating mode: no trailing space on [data-hand-fan] when className prop is absent (#41)', () => {
-    const { container } = render(<Hand hand={[2]} visible={true} />);
-    const fan = container.querySelector('[data-hand-fan]')?.getAttribute('class') ?? '';
-    expect(fan.endsWith(' ')).toBe(false);
-  });
-
-  it('floating mode: single space before className when className prop is present (#127, #41)', () => {
+  it('floating mode: single space before className when className prop is present (#127)', () => {
     const { container } = render(<Hand hand={[2]} visible={true} className="my-extra" />);
-    // After #41, className lands on [data-hand-fan], not the outer fixed wrapper.
-    const fan = container.querySelector('[data-hand-fan]')?.getAttribute('class') ?? '';
-    expect(fan).toMatch(/ my-extra$/);
-    expect(fan).not.toMatch(/  my-extra/);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toMatch(/ my-extra$/);
+    expect(cls).not.toMatch(/  my-extra/);
   });
 
-  it('floating mode: className lands on [data-hand-fan], not the fixed outer wrapper (#41)', () => {
-    const { container } = render(<Hand hand={[2]} visible={true} className="w-full max-w-xl" />);
+  it('floating mode: className lands on outer wrapper; width classes are a no-op due to inset-x-0 (#41)', () => {
+    // inset-x-0 forces the fixed overlay to full viewport width, so
+    // layout-constraining classes like max-w-xl have no visual effect.
+    // Consumers should not pass width classes in floating mode.
+    const { container } = render(<Hand hand={[2]} visible={true} className="max-w-xl" />);
     const outer = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
     const fan = container.querySelector('[data-hand-fan]')?.getAttribute('class') ?? '';
-    expect(outer).not.toContain('max-w-xl');
-    expect(fan).toContain('max-w-xl');
+    expect(outer).toContain('max-w-xl');
+    expect(fan).not.toContain('max-w-xl');
   });
 
-  it('inline mode: className still lands on outer [data-hand] wrapper (#41)', () => {
+  it('inline mode: className lands on outer [data-hand] wrapper (#41)', () => {
     const { container } = render(
       <Hand hand={[2]} visible={true} layout="inline" className="my-custom-class" />,
     );
@@ -932,8 +928,8 @@ describe('Hand — magnification under prefers-reduced-motion (#463)', () => {
   it('floating mode: className interior spaces are preserved — .trim() is not applied (#168)', () => {
     const extra = '  padded  ';
     const { container } = render(<Hand hand={[2]} visible={true} className={extra} />);
-    const fan = container.querySelector('[data-hand-fan]')?.getAttribute('class') ?? '';
-    expect(fan).toContain(extra);
+    const cls = container.querySelector('[data-hand]')?.getAttribute('class') ?? '';
+    expect(cls).toContain(extra);
   });
 
   it('still renders the focus-visible ring class under reduced-motion', () => {
