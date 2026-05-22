@@ -181,11 +181,9 @@ export function AvatarPortrait({
             className={`absolute inset-0 h-full w-full object-cover ${contentIdleClass}`}
             style={{ objectPosition: 'center 25%' }}
             onError={() => {
-              if (typeof console !== 'undefined' && console.warn) {
-                console.warn(
-                  `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to AvatarSilhouette placeholder`,
-                );
-              }
+              console.warn(
+                `AvatarPortrait: failed to load /portraits/${character}/large.webp — falling back to AvatarSilhouette placeholder`,
+              );
               setImageFailed(true);
             }}
           />
