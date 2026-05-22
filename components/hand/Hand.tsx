@@ -627,9 +627,9 @@ export function Hand({
                 onPointerDown={(e) => {
                   if (draggable) cardDrag.handlers.onPointerDown(e, arcanum);
                 }}
-                onPointerMove={cardDrag.handlers.onPointerMove}
-                onPointerUp={cardDrag.handlers.onPointerUp}
-                onPointerCancel={cardDrag.handlers.onPointerCancel}
+                onPointerMove={draggable ? cardDrag.handlers.onPointerMove : undefined}
+                onPointerUp={draggable ? cardDrag.handlers.onPointerUp : undefined}
+                onPointerCancel={draggable ? cardDrag.handlers.onPointerCancel : undefined}
                 onFocus={handleFocusIn}
                 onBlur={handleFocusOut}
                 onKeyDown={(e) => handleKey(e, i, arcanum)}
