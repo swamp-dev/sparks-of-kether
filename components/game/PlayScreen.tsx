@@ -8,6 +8,7 @@ import { StatSheet } from '@/components/player/StatSheet';
 import { TeamMeters } from '@/components/meters/TeamMeters';
 import { ShellPanel } from '@/components/shells/ShellPanel';
 import { DiscardPile } from '@/components/game/DiscardPile';
+import { DrawDeck } from '@/components/game/DrawDeck';
 import { EncounterScreen } from '@/components/game/EncounterScreen';
 import { SefirahInfoPopover } from '@/components/game/SefirahInfoPopover';
 import { SettingsButton } from '@/components/play/SettingsButton';
@@ -749,14 +750,14 @@ export function PlayScreen({
       */}
       <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
         {/*
-         * #507: visible discard pile. Mounted at the top of the right-
-         * column aside so the deck/discard cluster lives on the same
-         * side as the rest of the game-state surfaces (StatSheet,
-         * meters, shells). The pile is informational and not phase-
-         * gated — it stays mounted across `move` / `challenge` / `end`
-         * and reflects engine state live.
+         * #507 + #25: deck/discard cluster. Both are informational and
+         * not phase-gated — they stay mounted across `move` /
+         * `challenge` / `end` and reflect engine state live.
+         * DrawDeck is visualization-only since #502 folded the discrete
+         * 'draw' phase into end-turn / Meditate.
          */}
-        <div className="flex justify-center rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+        <div className="flex justify-center gap-4 rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+          <DrawDeck deck={turn.state.deck} />
           <DiscardPile
             discardPile={turn.state.discardPile}
             dragActive={draggingCard !== undefined}
