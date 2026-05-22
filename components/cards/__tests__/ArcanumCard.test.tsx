@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { ArcanumCard } from '../ArcanumCard';
 import { arcana, letterByKey } from '@/data';
-import { ARCANUM_GLYPHS } from '../glyph-mapping';
 
 describe('ArcanumCard — renders all 22 cards', () => {
   it.each(arcana.map((a) => [a.number, a.name] as const))('arcanum %i (%s)', (number, name) => {
@@ -40,24 +39,25 @@ describe('ArcanumCard — structural invariants', () => {
     expect(text?.getAttribute('lang')).toBe('he');
   });
 
-  it('renders at least one glyph element in the middle zone for every card', () => {
+  it('renders a Rider-Waite image for every card', () => {
     for (const arc of arcana) {
       const { container } = render(<ArcanumCard number={arc.number} />);
-      const glyphZone = container.querySelector('[data-zone="glyphs"]');
-      expect(glyphZone, `card ${arc.number}`).not.toBeNull();
-      // Each card has at least one glyph composition entry.
-      const placements = ARCANUM_GLYPHS[arc.number] ?? [];
-      expect(placements.length, `card ${arc.number}`).toBeGreaterThan(0);
+      const img = container.querySelector('image[href]');
+      expect(img, `card ${arc.number}`).not.toBeNull();
+      const href = img?.getAttribute('href') ?? '';
+      expect(href, `card ${arc.number} href`).toMatch(/^\/rider-waite-cards\/.+\.jpg$/);
     }
   });
 
-  it('renders the card number, name, and attribution in the footer', () => {
-    // The Sun = #19, attribution Sun (planet).
-    const { container } = render(<ArcanumCard number={19} />);
+  it('renders the card name and attribution in the footer, without a number', () => {
+    // The Chariot = #7, attribution Cancer. Name and attribution are lexically
+    // distinct, so each assertion independently verifies its own text node.
+    // Number is intentionally absent — the Hebrew letter uniquely identifies each card.
+    const { container } = render(<ArcanumCard number={7} />);
     const footer = container.querySelector('[data-zone="footer"]');
-    expect(footer?.textContent).toContain('19');
-    expect(footer?.textContent).toMatch(/the sun/i);
-    expect(footer?.textContent).toMatch(/sun/i);
+    expect(footer?.textContent).toMatch(/the chariot/i);
+    expect(footer?.textContent).toMatch(/cancer/i);
+    expect(footer?.textContent).not.toContain('7');
   });
 
   it('accepts a full Arcanum record via the `arcanum` prop', () => {
