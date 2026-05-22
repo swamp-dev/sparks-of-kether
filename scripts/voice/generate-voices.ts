@@ -206,7 +206,11 @@ function loadEnv(): void {
 
 function loadVoiceConfig(): VoiceConfig {
   const configPath = resolve(__dirname, 'voice-config.json');
-  return JSON.parse(readFileSync(configPath, 'utf-8')) as VoiceConfig;
+  const config = JSON.parse(readFileSync(configPath, 'utf-8')) as VoiceConfig;
+  if (!config.avatars || !config.zodiac) {
+    throw new Error('voice-config.json is malformed — missing "avatars" or "zodiac" section');
+  }
+  return config;
 }
 
 function parseArgs(): {
@@ -222,10 +226,16 @@ function parseArgs(): {
   };
 
   const rawType = get('--only-type');
-  const onlyType =
-    rawType === 'verdicts' || rawType === 'responses' || rawType === 'greetings'
-      ? rawType
-      : undefined;
+  if (
+    rawType !== undefined &&
+    rawType !== 'verdicts' &&
+    rawType !== 'responses' &&
+    rawType !== 'greetings'
+  ) {
+    console.error(`--only-type must be one of: verdicts, responses, greetings (got "${rawType}")`);
+    process.exit(1);
+  }
+  const onlyType = rawType as BuildOptions['onlyType'];
 
   const onlyAvatar = get('--only-avatar');
 
@@ -237,9 +247,9 @@ function parseArgs(): {
   };
 }
 
-async function streamToBuffer(stream: unknown): Promise<Buffer> {
+async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
   const chunks: Buffer[] = [];
-  for await (const chunk of stream as AsyncIterable<Uint8Array>) {
+  for await (const chunk of stream as unknown as AsyncIterable<Uint8Array>) {
     chunks.push(Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
@@ -257,6 +267,7 @@ async function generateClip(
   if (!force && existsSync(absPath)) return 'skipped';
 
   const MAX_ATTEMPTS = 3;
+  let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const stream = await client.textToSpeech.convert(clip.voiceId, {
@@ -271,6 +282,7 @@ async function generateClip(
       writeFileSync(absPath, audio);
       return 'generated';
     } catch (err: unknown) {
+      lastErr = err;
       const status = (err as { statusCode?: number }).statusCode;
       if (status === 429 && attempt < MAX_ATTEMPTS) {
         const delay = 2 ** attempt * 1000; // 2s, 4s
@@ -278,12 +290,12 @@ async function generateClip(
           `  429 rate limit — retrying in ${delay / 1000}s (attempt ${attempt}/${MAX_ATTEMPTS})`,
         );
         await new Promise((r) => setTimeout(r, delay));
-        continue;
+      } else {
+        throw err;
       }
-      throw err;
     }
   }
-  throw new Error(`Failed after ${MAX_ATTEMPTS} attempts: ${clip.outputPath}`);
+  throw lastErr ?? new Error(`Failed after ${MAX_ATTEMPTS} attempts: ${clip.outputPath}`);
 }
 
 // ──────────────── Main ────────────────
@@ -297,6 +309,14 @@ async function main() {
     ...(onlyAvatar !== undefined && { onlyAvatar }),
     ...(onlyType !== undefined && { onlyType }),
   });
+
+  if (clips.length === 0) {
+    console.error(
+      `No clips matched the given filters. Check --only-avatar (must be lowercase, e.g. 'hermes') and --only-type.`,
+    );
+    process.exit(1);
+  }
+
   const charCount = estimateCharCount(clips);
 
   console.log(`\nVoice generation${dryRun ? ' (DRY RUN)' : ''}`);
