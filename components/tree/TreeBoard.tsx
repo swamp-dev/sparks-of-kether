@@ -315,6 +315,20 @@ export function TreeBoard({
         <title>Tree of Life — ten Sefirot connected by twenty-two paths</title>
         <defs>
           {/*
+            Luminous-orb gleam: a single shared radial gradient applied
+            as an overlay on every Sefirah node. Upper-left light source
+            (cx=38%, cy=32%) creates a soft sphere illusion — the white
+            highlight fades through mid-transparency, and the outer edge
+            darkens slightly for depth. The underlying Sefirah colour
+            shows through, so all 10 nodes look distinct while sharing
+            the same jeweled quality.
+          */}
+          <radialGradient id={`node-gleam-${reactId}`} cx="38%" cy="32%" r="65%">
+            <stop offset="0%" stopColor="white" stopOpacity={0.45} />
+            <stop offset="50%" stopColor="white" stopOpacity={0.0} />
+            <stop offset="100%" stopColor="black" stopOpacity={0.22} />
+          </radialGradient>
+          {/*
             #312 — per-path "card-lit" gradient. A linear gradient
             from the `from` Sefirah's colour to the `to` Sefirah's
             colour; the path stroke references it via
@@ -505,16 +519,12 @@ export function TreeBoard({
         <g data-layer="nodes">
           {sefirot.map((sefirah) => {
             const pos = treeNodeLayout[sefirah.key];
-            // #214 + #401: declutter — only the Hebrew-name
-            // transliteration (Kether, Tiferet, …) is rendered as
-            // visible text on the board. Hebrew script and the 1-10
-            // number are gone visually (still in `data/sefirot.ts`
-            // and used by other surfaces like BlessingRitual's hero
-            // badge). The `aria-label` keeps the position number so
+            // #401 reversed: Hebrew script (כתר, תפארת, …) is now the
+            // visible label on each disc. The 1-10 position number is
+            // not rendered visually — the `aria-label` carries it so
             // screen-reader users still get spatial context (e.g.
-            // "Malkuth (10)" → tenth in the descent), since visible-
-            // text removal is a UX choice that shouldn't strip
-            // orientation cues from the AT layer.
+            // "Malkuth (10)" → tenth in the descent) without the
+            // number cluttering the disc for sighted players.
             const label = `${sefirah.englishName} (${sefirah.number})`;
             // #37: a Sefirah is "cleared" if any current player has it
             // in their `clearedSefirot` set. The wrapping `<g>` carries
@@ -560,6 +570,37 @@ export function TreeBoard({
                   }}
                 />
                 {/*
+                  Radial gleam overlay — luminous orb effect. Paints on
+                  top of the base circle fill using the shared
+                  node-gleam gradient (upper-left white highlight fading
+                  to transparent, subtle dark rim). pointerEvents="none"
+                  so the invisible overlay never intercepts clicks meant
+                  for the base circle or the HTML hit-surface above.
+                */}
+                <circle
+                  cx={pos.x}
+                  cy={pos.y}
+                  r={NODE_RADIUS}
+                  fill={`url(#node-gleam-${reactId})`}
+                  pointerEvents="none"
+                />
+                {/*
+                  Inner decorative ring — jeweled bezel at r=22 (inset
+                  6 units from the node edge). Barely perceptible; adds
+                  depth and an artisanal quality to each disc without
+                  competing with the text.
+                */}
+                <circle
+                  cx={pos.x}
+                  cy={pos.y}
+                  r={NODE_RADIUS - 6}
+                  fill="none"
+                  stroke={VEIL}
+                  strokeOpacity={0.28}
+                  strokeWidth={0.75}
+                  pointerEvents="none"
+                />
+                {/*
                   #289: render the Sefirah name INSIDE the circle so it's
                   identifiable at a single glance, instead of forcing
                   the eye from disc → label-below → disc again.
@@ -567,13 +608,14 @@ export function TreeBoard({
                   `pos.y` so the visible text sits at the geometric
                   centre of the disc, not below it.
 
-                  #401: the visible label is the Hebrew transliteration
-                  (Kether, Chokmah, Binah, …) — the form by which the
-                  Sefirah is invoked in the tradition — rather than the
-                  English meaning-translation. The aria-label keeps
-                  englishName + position number (e.g. "Beauty (6)") so
-                  screen-reader users still get the descriptive gloss
-                  AND the spatial cue.
+                  Hebrew script replaces the Latin transliteration (#401
+                  reversed). Frank Ruhl Libre (`--font-hebrew`) is the
+                  project's Hebrew face. Font sizes are calibrated for
+                  Hebrew glyph widths (narrower than Latin) so shorter
+                  names get a larger size for visual presence. The
+                  aria-label on the <g> keeps englishName + position
+                  number so screen-reader users still get the descriptive
+                  gloss AND the spatial cue.
 
                   Fill is picked per-Sefirah by `contrastTextColour` —
                   with ten different fills (white, gold, near-black,
@@ -587,14 +629,14 @@ export function TreeBoard({
                   y={pos.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={fontSizeForName(sefirah.transliteration)}
-                  fontFamily="var(--font-display), serif"
-                  fontWeight={600}
+                  fontSize={fontSizeForHebrew(sefirah.hebrewName)}
+                  fontFamily="var(--font-hebrew), serif"
+                  fontWeight={700}
                   fill={contrastTextColour(sefirah.color)}
-                  letterSpacing={0.5}
-                  style={{ textTransform: 'uppercase' }}
+                  lang="he"
+                  direction="rtl"
                 >
-                  {sefirah.transliteration}
+                  {sefirah.hebrewName}
                 </text>
               </g>
             );
@@ -764,6 +806,26 @@ export function TreeBoard({
 }
 
 /**
+ * Pick a font size for a Sefirah's Hebrew label based on glyph count,
+ * so the Hebrew script fills the 28-radius disc without overflow.
+ * Frank Ruhl Libre Hebrew characters are narrower than the Latin
+ * Fraunces they replaced, so the sizing can be more generous.
+ * Buckets calibrated for the ten actual Hebrew names (bare consonantal
+ * forms only — niqqud would inflate .length without adding glyphs and
+ * break these boundaries):
+ *   - ≤3 glyphs (כתר, חסד, נצח, הוד): 16
+ *   - 4 glyphs (חכמה, בינה, יסוד): 13
+ *   - 5 glyphs (גבורה, מלכות): 11
+ *   - 6+ glyphs (תפארת): 9
+ */
+function fontSizeForHebrew(name: string): number {
+  if (name.length <= 3) return 16;
+  if (name.length <= 4) return 13;
+  if (name.length <= 5) return 11;
+  return 9;
+}
+
+/**
  * Pure: shrink the segment a→b inward by `inset` units along its own
  * direction, returning the new endpoints. Used by the path hit-line
  * (#213) so its interactive zone doesn't overlap the Sefirah node
@@ -778,25 +840,6 @@ export function TreeBoard({
  * The call site special-cases path 32 to skip this trim (see #288);
  * SVG paint order keeps node clicks landing on the nodes regardless.
  */
-/**
- * Pick a font size for a Sefirah's display label based on character
- * count, so labels fit inside the 28-radius disc without horizontal
- * overflow. Tuned by visual review:
- *   - ≤ 7 chars (KETHER, CHOKMAH, BINAH, CHESED, GEVURAH, TIFERET,
- *     NETZACH, HOD, YESOD, MALKUTH — all transliterations fit here): 9
- *   - 8-9 chars: 8
- *   - 10+ chars: 7
- *
- * Bucket boundaries are kept in case future labels (codex / English
- * meanings reused in alt views) push longer; all current
- * transliterations land in bucket 1.
- */
-function fontSizeForName(name: string): number {
-  if (name.length <= 7) return 9;
-  if (name.length <= 9) return 8;
-  return 7;
-}
-
 function trimEndpoints(
   a: NodeLayout,
   b: NodeLayout,
@@ -820,19 +863,35 @@ function trimEndpoints(
   };
 }
 
-const STARS: readonly (readonly [number, number, number])[] = [
-  [40, 80, 0.6],
-  [340, 50, 0.4],
-  [120, 30, 0.5],
-  [260, 110, 0.3],
-  [60, 220, 0.4],
-  [355, 350, 0.5],
-  [30, 380, 0.3],
-  [380, 220, 0.4],
-  [180, 600, 0.3],
-  [10, 540, 0.4],
-  [390, 510, 0.5],
-  [140, 380, 0.3],
+const STARS: readonly (readonly [number, number, number, number])[] = [
+  // [cx, cy, r, opacity] — three size classes for layered depth
+  // Large (r=1.5) — few, very bright, anchor points
+  [340, 50, 1.5, 0.75],
+  [120, 30, 1.5, 0.65],
+  // Medium (r=1.0) — moderate presence
+  [40, 80, 1.0, 0.55],
+  [260, 110, 1.0, 0.45],
+  [355, 350, 1.0, 0.6],
+  [380, 220, 1.0, 0.5],
+  [390, 510, 1.0, 0.55],
+  [50, 170, 1.0, 0.4],
+  [310, 420, 1.0, 0.45],
+  [170, 500, 1.0, 0.35],
+  // Small (r=0.5) — many, faint, scattered fill
+  [60, 220, 0.5, 0.35],
+  [30, 380, 0.5, 0.3],
+  [180, 600, 0.5, 0.28],
+  [10, 540, 0.5, 0.38],
+  [140, 380, 0.5, 0.32],
+  [230, 70, 0.5, 0.42],
+  [370, 150, 0.5, 0.3],
+  [90, 460, 0.5, 0.25],
+  [280, 290, 0.5, 0.28],
+  [150, 130, 0.5, 0.35],
+  [350, 580, 0.5, 0.3],
+  [20, 100, 0.5, 0.25],
+  [320, 480, 0.5, 0.32],
+  [200, 200, 0.5, 0.22],
 ];
 
 /**
@@ -843,8 +902,8 @@ const STARS: readonly (readonly [number, number, number])[] = [
 function Starfield(): JSX.Element {
   return (
     <g aria-hidden="true">
-      {STARS.map(([cx, cy, opacity], i) => (
-        <circle key={i} cx={cx} cy={cy} r={0.8} fill={VEIL} fillOpacity={opacity} />
+      {STARS.map(([cx, cy, r, opacity], i) => (
+        <circle key={i} cx={cx} cy={cy} r={r} fill={VEIL} fillOpacity={opacity} />
       ))}
     </g>
   );
