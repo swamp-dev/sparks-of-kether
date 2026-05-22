@@ -454,6 +454,7 @@ export function Hand({
           // whether onCardHover is set; the callback is opt-in.
           const handleHoverEnter = visible
             ? (): void => {
+                if (isFloating) expandHand();
                 setHoveredIndex(i);
                 if (onCardHover) onCardHover(arcanum);
               }
