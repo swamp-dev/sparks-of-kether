@@ -109,13 +109,13 @@ export const lobby: TrackManifest = {
     maxLufs: -16,
     maxPeakDbfs: -1,
     maxSilenceSec: 2,
-    // Ticket #511 ACs name two values that can't both hold at 120 s
-    // duration: "≤ 250 KB" and "96-128 kbps VBR". 96 kbps × 120 s = 1440 KB,
-    // 128 kbps × 120 s = 1920 KB — already 6× the size cap. The 250 KB
-    // figure is consistent with the SFX cues (≤ 1 s each); for a 120 s
-    // ambient track at the same bitrate target, the ceiling has to scale
-    // with duration. 2 MB sits 1.04× over 128 kbps × 120 s, which keeps
-    // the bitrate honest without forcing audibly bad encoding.
+    // Bitrate-anchored ceiling: duration_s × 128 kbps ÷ 8 × 1.05. For 120 s
+    // that's 2,016,000 bytes; 2 MiB (2,097,152) is the nearest round-number
+    // ceiling above that. The SFX cues (≤ 1 s each) fit a 250 KB cap at the
+    // same bitrate; ambient tracks don't — the ceiling scales with duration.
+    // Formula for new long-form tracks:
+    //   maxBytes = Math.ceil(durationSec * 128_000 / 8 * 1.05)
+    //   rounded up to the nearest MiB for a clean constant.
     maxBytes: 2 * 1024 * 1024,
   },
   render(): StereoBuffer {
