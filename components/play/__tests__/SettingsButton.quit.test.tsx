@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import type { AxeResults } from 'axe-core';
 import { SettingsButton } from '../SettingsButton';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
+import { PantheonSettingsProvider } from '@/lib/settings/pantheon';
 
 function expectNoViolations(results: AxeResults): void {
   if (results.violations.length === 0) return;
@@ -17,7 +18,9 @@ function expectNoViolations(results: AxeResults): void {
 function renderWithQuit(onQuit?: () => void): ReturnType<typeof render> {
   return render(
     <SoundSettingsProvider>
-      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      <PantheonSettingsProvider>
+        <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      </PantheonSettingsProvider>
     </SoundSettingsProvider>,
   );
 }
@@ -89,6 +92,15 @@ describe('SettingsButton — quit flow', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('button', { name: /leave game/i })).toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+  });
+
+  it('quit confirmation paragraph has aria-live="polite" so AT announces the state change', async () => {
+    const user = userEvent.setup();
+    renderWithQuit(vi.fn());
+    await user.click(screen.getByRole('button', { name: /settings/i }));
+    await user.click(screen.getByRole('button', { name: /leave game/i }));
+    const prompt = screen.getByText(/leave this game/i);
+    expect(prompt).toHaveAttribute('aria-live', 'polite');
   });
 
   it('confirmation state has no axe violations', async () => {
