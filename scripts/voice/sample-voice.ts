@@ -89,7 +89,7 @@ async function main() {
   const stream = await client.textToSpeech.convert(voiceId!, {
     text,
     modelId: 'eleven_multilingual_v2',
-    outputFormat: 'mp3_44100_128',
+    outputFormat: 'mp3_44100_96',
     voiceSettings: {
       stability: 0.5,
       similarityBoost: 0.75,
