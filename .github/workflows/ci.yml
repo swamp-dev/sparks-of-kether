@@ -124,6 +124,13 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: Voice drift check
+        # Soft gate: continue-on-error until the full 873-clip library is generated
+        # and manifest.json is committed. Promote to hard-fail by removing the flag
+        # once pnpm voice:generate has been run and manifest.json is in the repo.
+        continue-on-error: true
+        run: pnpm voice:check-drift
+
       - name: Test + coverage (vitest --coverage)
         # `vitest run --coverage` is a superset of `vitest run` — it
         # executes the full suite AND collects coverage in a single
