@@ -145,7 +145,10 @@ describe('DiscardPile', () => {
   it('dragActive=true: drop prompt leads, click-to-browse omitted', () => {
     render(<DiscardPile discardPile={[3, 7]} dragActive />);
     const btn = screen.getByRole('button');
-    expect(btn).toHaveAttribute('aria-label', expect.stringContaining('Drop a card here to discard'));
+    expect(btn).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('Drop a card here to discard'),
+    );
     expect(btn).not.toHaveAttribute('aria-label', expect.stringContaining('Click to browse'));
   });
 
