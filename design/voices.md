@@ -11,7 +11,7 @@ acceptance-criteria reference for all voice QA.
 
 ## How to read this doc
 
-Each entry has four fields:
+Each entry has five fields:
 
 | Field | What it means |
 |---|---|
@@ -83,9 +83,10 @@ Carries autumn earth — resonant, slow, unhurried by urgency.
 - Loss vocabulary: *waited, cost, left, stayed, taken, returned, held*.
 - Never performs grief. The weight is already there before the line starts.
 
-**ElevenLabs brief:** A low, weighted female voice — deep warmth without
-performance, the voice of someone who has been through the long dark and
-come back with fewer words than they started with.
+**ElevenLabs brief:** A low, weighted female voice with autumn-earth
+restraint — words used sparingly because grief has reduced them to only
+what is true; the voice of someone who came back from the long dark
+knowing exactly which silences to keep.
 
 ---
 
@@ -218,9 +219,10 @@ the trick.
 - Mercurial — the same voice can be intimate, then teasing, then abrupt.
   Never flat.
 
-**ElevenLabs brief:** A nimble, slightly amused male voice — quick and
-versatile with an impish undertone, like someone who always knows three
-more things than they've told you and is deciding which one to reveal next.
+**ElevenLabs brief:** A nimble, mercurial male voice — quick-footed at
+the threshold, like a guide who has already read your destination in your
+face and is choosing which crossroads question to ask before letting you
+through.
 
 ---
 
@@ -271,9 +273,9 @@ that makes a cold room warmer without doing anything except being in it.
 - Slow, grounded cadence — the voice of someone who is not going anywhere.
 - Receives rather than directs. The companion tone: *I'm here, you're here*.
 
-**ElevenLabs brief:** A rich, warm contralto female voice — deeply steady
-and grounding, like the voice you'd hear from someone tending a fire who
-has always been there and always will be.
+**ElevenLabs brief:** A rich, warm contralto female voice — constant and
+grounding like a hearthfire that simply has not gone out; the companion
+who makes the room feel occupied without needing to say anything at all.
 
 ---
 
@@ -327,8 +329,8 @@ that shape the voice.
 who speaks before the thought is complete because the thought was already
 complete the moment it started.
 
-**Register:** Direct, bright, slightly forward in placement. Neither
-especially low nor high — incisive mid-range.
+**Register:** Any gender. Direct, bright, slightly forward in placement.
+Neither especially low nor high — incisive mid-range.
 
 **Delivery traits:**
 - Blunt. Fast. Few qualifiers; almost never hedges.
@@ -349,8 +351,8 @@ finished being asked.
 **Voice character:** Certain. Sits with the words. The voice that will
 not be hurried; patience as strength, not inertia.
 
-**Register:** Warm, low, unhurried. Tactile quality — the sound of
-something settled.
+**Register:** Any gender; lower register preferred. Warm, low, unhurried.
+Tactile quality — the sound of something settled.
 
 **Delivery traits:**
 - Deliberate, weighty — each word placed carefully before the next.
@@ -359,8 +361,8 @@ something settled.
 - Sensory and present — the body knows before the mind does.
 
 **ElevenLabs brief:** A warm, low voice with unhurried deliberateness —
-tactile and grounded, the voice of someone who considers each word the
-way you might consider each bite of a good meal.
+sensory and material, as if the words have physical texture and weight
+that must be tested before they are placed.
 
 ---
 
@@ -371,8 +373,8 @@ way you might consider each bite of a good meal.
 **Voice character:** Quick, dual, question-inflected. The voice that
 completes your sentence and starts a new one before you noticed.
 
-**Register:** Light, variable, quick. Higher energy than its physical
-register suggests — mercury-bright.
+**Register:** Any gender; lighter end of register. Light, variable, quick.
+Higher energy than its physical register suggests — mercury-bright.
 
 **Delivery traits:**
 - Pivots mid-thought without warning.
@@ -382,9 +384,9 @@ register suggests — mercury-bright.
 - Multiple perspectives present in a single sentence.
 - The energy shifts fast — catches the listener off-guard.
 
-**ElevenLabs brief:** A quick, light, nimble voice — playful with language,
-comfortable pivoting mid-sentence, and always giving the impression that
-it has at least one more thing to say.
+**ElevenLabs brief:** A quick, light voice that argues with itself out
+loud — pivots mid-thought, turns statements into questions, and holds two
+contradictory positions in the same sentence without discomfort.
 
 ---
 
@@ -395,8 +397,9 @@ it has at least one more thing to say.
 **Voice character:** Indirect. Tidal undertow. Says the thing sideways;
 the emotional current is under the surface, not on top.
 
-**Register:** Soft, indirect, slightly withdrawn. The voice that speaks
-toward but not quite at — emotionally present but approached from an angle.
+**Register:** Any gender; soft register. Indirect, slightly withdrawn.
+The voice that speaks toward but not quite at — emotionally present but
+approached from an angle.
 
 **Delivery traits:**
 - Indirect phrasing — approaches rather than states.
@@ -418,8 +421,9 @@ the temperature of the room before deciding what to say.
 **Voice character:** Theatrical conviction. Center-stage. Occupies the
 room before it speaks.
 
-**Register:** Rich, full, generous. The voice that projects without effort
-— not because it's loud but because it carries.
+**Register:** Any gender; full, carrying register. Rich and generous.
+The voice that projects without effort — not because it's loud but
+because it carries.
 
 **Delivery traits:**
 - Theatrical — knows it is being heard and doesn't apologize.
@@ -437,14 +441,14 @@ worried about being heard.
 
 ### 16. Virgo ♍
 
-**Planetary ruler:** Mercury (exalted) · **Element:** Earth ·
+**Planetary ruler:** Mercury (ruler + exalted) · **Element:** Earth ·
 **Modality:** Mutable
 
 **Voice character:** Precise, parsing, footnoted. Three reservations and
 a comma before the answer.
 
-**Register:** Careful, measured, thoughtful. Not cold — engaged. The
-precision comes from caring, not from distance.
+**Register:** Any gender; mid register. Careful, measured, thoughtful.
+Not cold — engaged. The precision comes from caring, not from distance.
 
 **Delivery traits:**
 - Parses carefully; qualifies before asserting.
@@ -467,8 +471,9 @@ the sentence and considers whether it belongs there.
 at once; the voice that cannot commit without also naming what it's
 committing away from.
 
-**Register:** Even, balanced, slightly hesitant at commitment points.
-Not weak — genuinely torn, because it sees both sides clearly.
+**Register:** Any gender; even, balanced placement. Slightly hesitant at
+commitment points. Not weak — genuinely torn, because it sees both sides
+clearly.
 
 **Delivery traits:**
 - *On the other hand* is a native construction.
@@ -492,8 +497,9 @@ who always sees both sides and takes that seriously.
 **Voice character:** Compressed. Secretive. Knows more than it says.
 The voice that withholds as its primary mode.
 
-**Register:** Low, controlled, knowing. The kind of low that isn't
-dramatic — just present and steady, like pressure.
+**Register:** Any gender; lower register preferred. Controlled, knowing.
+The kind of low that isn't dramatic — just present and steady, like
+pressure.
 
 **Delivery traits:**
 - Withholds; says the minimum that doesn't lie.
@@ -516,9 +522,9 @@ if you do too, saying only what the moment strictly requires.
 **Voice character:** Big-picture, philosophical blunt-truth. Names the
 larger truth nobody asked for. Already aiming at the next thing.
 
-**Register:** Expansive, frank, slightly rushing ahead of itself. The
-voice of the archer who looses before the draw is complete, and is right
-anyway.
+**Register:** Any gender; expansive, projecting register. Frank, slightly
+rushing ahead of itself. The voice of the archer who looses before the
+draw is complete, and is right anyway.
 
 **Delivery traits:**
 - Blunt-truth first; the context comes after if at all.
@@ -542,8 +548,8 @@ truth and expects the smaller question to catch up.
 **Voice character:** Structured. Deliberate. Builds the staircase
 carefully and climbs it one step at a time.
 
-**Register:** Measured, authoritative, slow-climbed. The voice of someone
-who has done this before and knows the path.
+**Register:** Any gender; measured, authoritative register. Slow-climbed.
+The voice of someone who has done this before and knows the path.
 
 **Delivery traits:**
 - Deliberate pacing — each clause earns the next.
@@ -561,13 +567,15 @@ time and has learned not to rush what takes as long as it takes.
 ### 21. Aquarius ♒
 
 **Planetary ruler:** Saturn · **Element:** Air · **Modality:** Fixed
+*(classical rulership; Uranus is outside this system's scope)*
 
 **Voice character:** Angular, frame-questioning, detached. Solves the
 problem the question actually needed, which may not be the one that was
 asked.
 
-**Register:** Detached, angular, slightly clinical. Intelligent detachment —
-not cold, just operating from a different altitude.
+**Register:** Any gender; detached, slightly elevated placement. Angular,
+slightly clinical. Intelligent detachment — not cold, just operating from
+a different altitude.
 
 **Delivery traits:**
 - Re-derives from first principles rather than accepting the frame.
@@ -592,8 +600,9 @@ answering it.
 than stating it. Arrives obliquely; meaning runs like water through the
 sentence.
 
-**Register:** Soft, drifting, non-linear. The voice that floats rather
-than walks — present but not anchored.
+**Register:** Any gender; soft, upper-register preferred. Drifting,
+non-linear. The voice that floats rather than walks — present but not
+anchored.
 
 **Delivery traits:**
 - Oblique arrivals; the meaning comes up from underneath the words.
@@ -623,15 +632,15 @@ sentence ends.
 | 8 | Selene | Yesod avatar | F, soft sop/mez | Distant, tidal | Cool lunar cycles |
 | 9 | Hestia | Malkuth companion | F, rich contralto | Even, warm | The fire that keeps |
 | 10 | Kether | Narrator | Neutral/blend | Elevated, still | Pure being before question |
-| 11 | Aries | Zodiac spirit | Direct, bright | Fast, blunt | Charges the sentence |
-| 12 | Taurus | Zodiac spirit | Warm, low | Unhurried, tactile | Sits with the words |
-| 13 | Gemini | Zodiac spirit | Light, quick | Variable, pivoting | Quick and dual |
-| 14 | Cancer | Zodiac spirit | Soft, indirect | Tidal, guarded | Says it sideways |
-| 15 | Leo | Zodiac spirit | Rich, full | Theatrical, generous | Center-stage conviction |
-| 16 | Virgo | Zodiac spirit | Careful, mid | Measured, parsing | Three reservations and a comma |
-| 17 | Libra | Zodiac spirit | Even, balanced | Hesitant at commit | Weighing both sides |
-| 18 | Scorpio | Zodiac spirit | Low, controlled | Compressed, still | Knows more than it says |
-| 19 | Sagittarius | Zodiac spirit | Expansive, frank | Rushing, blunt | Names the bigger truth |
-| 20 | Capricorn | Zodiac spirit | Measured, auth | Deliberate, structured | Builds the staircase |
-| 21 | Aquarius | Zodiac spirit | Detached, angular | Clinical, re-derives | Frame-questioning |
-| 22 | Pisces | Zodiac spirit | Soft, drifting | Fluid, oblique | Words drift to meaning |
+| 11 | Aries | Zodiac spirit | Any | Direct, bright, fast | Charges the sentence |
+| 12 | Taurus | Zodiac spirit | Any (low reg.) | Warm, unhurried, tactile | Sits with the words |
+| 13 | Gemini | Zodiac spirit | Any (light reg.) | Variable, pivoting | Quick and dual |
+| 14 | Cancer | Zodiac spirit | Any (soft reg.) | Indirect, tidal, guarded | Says it sideways |
+| 15 | Leo | Zodiac spirit | Any (full reg.) | Theatrical, generous | Center-stage conviction |
+| 16 | Virgo | Zodiac spirit | Any (mid reg.) | Careful, parsing | Three reservations and a comma |
+| 17 | Libra | Zodiac spirit | Any (even reg.) | Balanced, hesitant at commit | Weighing both sides |
+| 18 | Scorpio | Zodiac spirit | Any (low reg.) | Compressed, controlled, still | Knows more than it says |
+| 19 | Sagittarius | Zodiac spirit | Any (expansive) | Frank, rushing, blunt | Names the bigger truth |
+| 20 | Capricorn | Zodiac spirit | Any (measured) | Deliberate, structured | Builds the staircase |
+| 21 | Aquarius | Zodiac spirit | Any (detached) | Angular, clinical, re-derives | Frame-questioning |
+| 22 | Pisces | Zodiac spirit | Any (soft/upper) | Fluid, drifting, oblique | Words drift to meaning |
