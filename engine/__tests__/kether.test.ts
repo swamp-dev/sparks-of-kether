@@ -494,6 +494,18 @@ describe('ketherStageSpark — closure window', () => {
     if (result.ok) return;
     expect(result.reason.kind).toBe('kether-closure-locked');
   });
+
+  it('rejects when the same Spark is already staged in the closure window (prevents double-illumination)', () => {
+    const state = makeTrialState({
+      subPhase: 'close',
+      p1Sparks: new Set(['chesed']),
+      stagedClosureSparks: [{ playerId: 'p1', sefirah: 'chesed' }],
+    });
+    const result = ketherStageSpark(state, { playerId: 'p1', sefirah: 'chesed' });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('kether-already-staged');
+  });
 });
 
 // ──────────────── ketherUnstageSpark (closure window) ────────────────

@@ -416,6 +416,12 @@ export function ketherStageSpark(
       reason: { kind: 'kether-spark-not-held', playerId: args.playerId, sefirah: args.sefirah },
     };
   }
+  const alreadyStaged = ritual.stagedClosureSparks.some(
+    (s) => s.playerId === args.playerId && s.sefirah === args.sefirah,
+  );
+  if (alreadyStaged) {
+    return { ok: false, reason: { kind: 'kether-already-staged', sefirah: args.sefirah } };
+  }
   const newRitual: KetherRitualState = {
     ...ritual,
     stagedClosureSparks: [
