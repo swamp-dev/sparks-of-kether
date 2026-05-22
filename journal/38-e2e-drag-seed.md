@@ -22,3 +22,13 @@ on this branch.
 **Why:** Hosted CI failure on test 1 after push 1. Tests 2 and 3 were green; they use `.first()` (always near the fan centre, so the cross-boundary move was short and safe) while test 1 targets a specific arcanum card that may be further from fan centre.
 
 **Commit(s):** `f9ba3d1`, `75084ce`
+
+---
+
+## 2026-05-22T12:30:00Z — push 3 switch to card.dragTo(path) for test 1
+
+**Pushed:** Push 2 still failed in CI headless. Root cause: `card.hover()` triggers the `MAGNIFY_LIFT_PX` animation (240ms ease-out), which moves the card ~18px upward. After the `page.waitForTimeout(300)` settle wait, `page.mouse.down()` fired at the pre-animation position — 18px below the actual card — missing the card element entirely, so `pointerdown` never landed on the card and the drag never started. Replaced the entire manual sequence (`card.hover()` + 300ms wait + `boundingBox()` + coordinate arithmetic + `mouse.down/move/up`) with a single `await card.dragTo(path)`. Playwright's `dragTo` moves to the card centre, fires `pointerdown` immediately (before any animation displaces the card), drags to the path's bounding-box centre, and fires `pointerup`.
+
+**Why:** The magnify animation displacement post-`card.hover()` is the failure mode that `card.hover()` + wait was supposed to prevent but instead caused. `dragTo` sidesteps both the fan-boundary-crossing and the animation-displacement issues by handling mouse movement internally without an intermediate wait.
+
+**Commit(s):** `b818953`
