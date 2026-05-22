@@ -77,6 +77,11 @@ interface HandBaseProps {
    * them all collide at the same viewport position.
    */
   readonly layout?: 'floating' | 'inline';
+  /**
+   * In floating mode, applied to `[data-hand-fan]` so layout-affecting
+   * classes constrain the fan rather than the fixed overlay. In inline
+   * mode, applied to the outer wrapper as usual.
+   */
   readonly className?: string;
 }
 
@@ -346,10 +351,10 @@ export function Hand({
   // pass through empty space to the Tree while cards remain interactive.
   const isFloating = layout === 'floating';
   const outerClassName = isFloating
-    ? `pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center${className ? ` ${className}` : ''}`
+    ? 'pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center'
     : (className ?? '');
   const innerClassName = isFloating
-    ? 'pointer-events-auto animate-hand-fade-in motion-reduce:animate-none'
+    ? `pointer-events-auto animate-hand-fade-in motion-reduce:animate-none${className ? ` ${className}` : ''}`
     : 'animate-hand-fade-in overflow-x-clip motion-reduce:animate-none';
   return (
     <div
