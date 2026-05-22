@@ -254,10 +254,22 @@ export function useLobby(code: string): UseLobbyReturn {
           setError('Not signed in. Please refresh.');
           return;
         }
-        const res = await fetch(`/api/rooms/${code}/start`, {
+        let res = await fetch(`/api/rooms/${code}/start`, {
           method: 'POST',
           headers: { authorization: `Bearer ${token}` },
         });
+        if (res.status === 401) {
+          const { data: refreshed } = await client.auth.refreshSession();
+          const newToken = refreshed.session?.access_token;
+          if (!newToken) {
+            setError('Session expired — please refresh.');
+            return;
+          }
+          res = await fetch(`/api/rooms/${code}/start`, {
+            method: 'POST',
+            headers: { authorization: `Bearer ${newToken}` },
+          });
+        }
         if (res.ok) {
           if (currentNicknameRef.current !== null) {
             writeLastGame({
@@ -277,6 +289,8 @@ export function useLobby(code: string): UseLobbyReturn {
         setError(
           `Could not start game: ${body.reason?.kind ?? body.error ?? `HTTP ${res.status}`}`,
         );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error.');
       } finally {
         beginningRef.current = false;
         setBeginning(false);
@@ -297,10 +311,22 @@ export function useLobby(code: string): UseLobbyReturn {
           setError('Not signed in. Please refresh.');
           return;
         }
-        const res = await fetch(`/api/rooms/${code}/reset`, {
+        let res = await fetch(`/api/rooms/${code}/reset`, {
           method: 'POST',
           headers: { authorization: `Bearer ${token}` },
         });
+        if (res.status === 401) {
+          const { data: refreshed } = await client.auth.refreshSession();
+          const newToken = refreshed.session?.access_token;
+          if (!newToken) {
+            setError('Session expired — please refresh.');
+            return;
+          }
+          res = await fetch(`/api/rooms/${code}/reset`, {
+            method: 'POST',
+            headers: { authorization: `Bearer ${newToken}` },
+          });
+        }
         if (res.ok) {
           setRefreshTick((n) => n + 1);
           return;
@@ -309,6 +335,8 @@ export function useLobby(code: string): UseLobbyReturn {
           error?: string;
         };
         setError(`Could not reset room: ${body.error ?? `HTTP ${res.status}`}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error.');
       } finally {
         resettingRef.current = false;
         setResetting(false);
