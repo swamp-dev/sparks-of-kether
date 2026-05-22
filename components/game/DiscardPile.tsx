@@ -80,7 +80,7 @@ export function DiscardPile({
         // creates the first card in the pile).
         disabled={count === 0 && !dragActive}
         onClick={count === 0 ? undefined : () => setOpen(true)}
-        className={`relative block w-20 rounded border bg-ground/40 p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:cursor-default ${
+        className={`relative block w-20 lg:w-12 rounded border bg-ground/40 p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:cursor-default ${
           dragActive
             ? 'border-illumination shadow-[0_0_24px_rgba(255,215,0,0.45)]'
             : 'border-veil/30 hover:border-illumination disabled:hover:border-veil/30'

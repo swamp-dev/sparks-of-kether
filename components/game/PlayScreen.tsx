@@ -795,7 +795,7 @@ export function PlayScreen({
          * DrawDeck is visualization-only since #502 folded the discrete
          * 'draw' phase into end-turn / Meditate.
          */}
-        <div className="flex justify-center gap-4 rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+        <div className="flex justify-center gap-4 rounded border border-veil/20 bg-ground/40 p-4 lg:p-2">
           <DrawDeck deck={turn.state.deck} />
           <DiscardPile
             discardPile={turn.state.discardPile}
