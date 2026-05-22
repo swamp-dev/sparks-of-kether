@@ -105,16 +105,46 @@ const PATH_HIT_WIDTH = 28;
  *   after the `.peer` button or anchor.
  */
 const GLOW_BY_KEY: Readonly<Record<SefirahKey, { base: string; peer: string }>> = {
-  kether:  { base: 'shadow-glow-kether',  peer: 'peer-hover:shadow-glow-kether peer-focus-visible:shadow-glow-kether' },
-  chokmah: { base: 'shadow-glow-chokmah', peer: 'peer-hover:shadow-glow-chokmah peer-focus-visible:shadow-glow-chokmah' },
-  binah:   { base: 'shadow-glow-binah',   peer: 'peer-hover:shadow-glow-binah peer-focus-visible:shadow-glow-binah' },
-  chesed:  { base: 'shadow-glow-chesed',  peer: 'peer-hover:shadow-glow-chesed peer-focus-visible:shadow-glow-chesed' },
-  gevurah: { base: 'shadow-glow-gevurah', peer: 'peer-hover:shadow-glow-gevurah peer-focus-visible:shadow-glow-gevurah' },
-  tiferet: { base: 'shadow-glow-tiferet', peer: 'peer-hover:shadow-glow-tiferet peer-focus-visible:shadow-glow-tiferet' },
-  netzach: { base: 'shadow-glow-netzach', peer: 'peer-hover:shadow-glow-netzach peer-focus-visible:shadow-glow-netzach' },
-  hod:     { base: 'shadow-glow-hod',     peer: 'peer-hover:shadow-glow-hod peer-focus-visible:shadow-glow-hod' },
-  yesod:   { base: 'shadow-glow-yesod',   peer: 'peer-hover:shadow-glow-yesod peer-focus-visible:shadow-glow-yesod' },
-  malkuth: { base: 'shadow-glow-malkuth', peer: 'peer-hover:shadow-glow-malkuth peer-focus-visible:shadow-glow-malkuth' },
+  kether: {
+    base: 'shadow-glow-kether',
+    peer: 'peer-hover:shadow-glow-kether peer-focus-visible:shadow-glow-kether',
+  },
+  chokmah: {
+    base: 'shadow-glow-chokmah',
+    peer: 'peer-hover:shadow-glow-chokmah peer-focus-visible:shadow-glow-chokmah',
+  },
+  binah: {
+    base: 'shadow-glow-binah',
+    peer: 'peer-hover:shadow-glow-binah peer-focus-visible:shadow-glow-binah',
+  },
+  chesed: {
+    base: 'shadow-glow-chesed',
+    peer: 'peer-hover:shadow-glow-chesed peer-focus-visible:shadow-glow-chesed',
+  },
+  gevurah: {
+    base: 'shadow-glow-gevurah',
+    peer: 'peer-hover:shadow-glow-gevurah peer-focus-visible:shadow-glow-gevurah',
+  },
+  tiferet: {
+    base: 'shadow-glow-tiferet',
+    peer: 'peer-hover:shadow-glow-tiferet peer-focus-visible:shadow-glow-tiferet',
+  },
+  netzach: {
+    base: 'shadow-glow-netzach',
+    peer: 'peer-hover:shadow-glow-netzach peer-focus-visible:shadow-glow-netzach',
+  },
+  hod: {
+    base: 'shadow-glow-hod',
+    peer: 'peer-hover:shadow-glow-hod peer-focus-visible:shadow-glow-hod',
+  },
+  yesod: {
+    base: 'shadow-glow-yesod',
+    peer: 'peer-hover:shadow-glow-yesod peer-focus-visible:shadow-glow-yesod',
+  },
+  malkuth: {
+    base: 'shadow-glow-malkuth',
+    peer: 'peer-hover:shadow-glow-malkuth peer-focus-visible:shadow-glow-malkuth',
+  },
 };
 
 /**
