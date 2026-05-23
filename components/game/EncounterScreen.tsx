@@ -32,7 +32,7 @@ import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor } from '@/lib/sound/cues';
 import { useVoice } from '@/lib/voice/useVoice';
-import { verdictVoicePath } from '@/lib/voice/paths';
+import { playerResponseVoicePath, verdictVoicePath } from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { derivePose, type UiSubPhase } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
@@ -237,6 +237,22 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     if (!avatarHasCopy || context.playerSign === undefined) return undefined;
     return pickPlayerResponse(pantheon.sefirahPlayerResponses, avatarKey, context.playerSign, rng);
   });
+  // Recover the variant index used by pickPlayerResponse so the voice path
+  // matches the rendered text. No RNG draw — pure indexOf lookup, so the
+  // RNG ordering noted in the framing comment below is unaffected.
+  const [playerResponseVariantIndex] = useState<0 | 1 | 2 | undefined>(() => {
+    if (!avatarHasCopy || context.playerSign === undefined || playerResponse === undefined) {
+      return undefined;
+    }
+    const variants = pantheon.sefirahPlayerResponses[avatarKey]?.[context.playerSign] ?? [];
+    const idx = variants.indexOf(playerResponse);
+    if (idx < 0 && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        '[EncounterScreen] playerResponse not found in variants — voice path will use variant 0',
+      );
+    }
+    return (idx >= 0 && idx <= 2 ? idx : 0) as 0 | 1 | 2;
+  });
   // Trial-framing line for the prep stage (#478). Picked ONCE per
   // encounter via the same lazy-initializer pattern as
   // `playerResponse` so the line stays stable across prep ↔ resolve ↔
@@ -400,6 +416,23 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     avatarStingFiredRef.current = true;
     playSound(cue);
   }, [uiSubPhase, context.sefirah, playSound]);
+
+  // #229: zodiac player response voice. Fires in prep phase whenever the
+  // prep state becomes active (initial mount and after each retry). The
+  // zodiac sign's voice speaks the player's pre-roll response line.
+  // (playVoice is destructured above alongside stopVoice from #228.)
+  useEffect(() => {
+    if (uiSubPhase !== 'prep' || playerResponse === undefined) return;
+    if (context.playerSign === undefined || playerResponseVariantIndex === undefined) return;
+    playVoice(playerResponseVoicePath(avatarKey, context.playerSign, playerResponseVariantIndex));
+  }, [
+    uiSubPhase,
+    playerResponse,
+    avatarKey,
+    context.playerSign,
+    playerResponseVariantIndex,
+    playVoice,
+  ]);
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;
