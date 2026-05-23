@@ -37,7 +37,9 @@ function installAudioStub(): void {
       preload = 'none';
       play = vi.fn().mockResolvedValue(undefined);
       pause = vi.fn();
-      // useSound calls cloneNode() on cached Audio elements
+      // useSound (SFX hook) calls cloneNode() on cached Audio elements.
+      // useVoice does not, but the stub is shared with SFX paths that
+      // fire in this test (avatar-arrives sting), so it must be present.
       cloneNode = vi.fn().mockImplementation(() => {
         const clone = new (vi.mocked(globalThis.Audio as unknown as typeof FakeAudio))();
         clone.src = this.src;
