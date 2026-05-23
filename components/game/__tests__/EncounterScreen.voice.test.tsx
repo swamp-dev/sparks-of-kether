@@ -8,8 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { renderHook } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { EncounterScreen } from '../EncounterScreen';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
@@ -170,15 +169,10 @@ describe('verdict voice narration', () => {
   it('does NOT play voice when voice is disabled', async () => {
     await renderAndRoll(false);
 
+    // useVoice returns early before new Audio() when disabled, so no
+    // verdict Audio element is constructed at all.
     const verdictAudio = audioInstances.find((a) => a.src.includes('verdict-hod'));
-    // When voice is disabled, either no Audio is created for verdict paths,
-    // or if created, play was never called.
-    if (verdictAudio !== undefined) {
-      expect(verdictAudio.play).not.toHaveBeenCalled();
-    } else {
-      // No audio element created at all — that's also correct.
-      expect(verdictAudio).toBeUndefined();
-    }
+    expect(verdictAudio).toBeUndefined();
   });
 
   it('stops voice on retry (react → prep loopback)', async () => {
