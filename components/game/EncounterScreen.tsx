@@ -31,6 +31,8 @@ import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor } from '@/lib/sound/cues';
+import { useVoice } from '@/lib/voice/useVoice';
+import { verdictVoicePath } from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { derivePose, type UiSubPhase } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
@@ -255,6 +257,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     return pickFraming(pantheon.sefirahFraming, avatarKey, context.playerSign, rng);
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
+  const [verdictVariantIndex, setVerdictVariantIndex] = useState<0 | 1 | 2 | undefined>(undefined);
   // #482 framing-complete signal. Flips to `true` when `RevealLine`
   // finishes the staggered reveal of the trial-framing line. Surfaced
   // via the `data-framing-complete` attribute on the prep stage so
@@ -303,6 +306,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // reroll the player's "voice" mid-encounter, which reads
       // wrong. (#277)
       setVerdictLine(undefined);
+      setVerdictVariantIndex(undefined);
       // Reset the framing-complete signal so the retry round shows
       // the avatar speak again from the top. The framing line itself
       // is stable across retries (#478 picks once per encounter via
@@ -342,6 +346,47 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     firedForOutcomeRef.current = resolvedOutcome;
     playSound(resolvedOutcome.pass ? 'encounter-pass' : 'encounter-fail');
   }, [uiSubPhase, resolvedOutcome, playSound]);
+
+  // #228: verdict voice narration. Mirrors the pass/fail cue effect
+  // above — same guard pattern so re-renders inside react state don't
+  // re-fire, and retry resets fire a fresh voice for the new outcome.
+  const { playVoice, stopVoice } = useVoice();
+  const firedVoiceForOutcomeRef = useRef<CheckOutcome | null>(null);
+  useEffect(() => {
+    if (uiSubPhase !== 'react' || resolvedOutcome === null) return;
+    if (verdictLine === undefined || verdictVariantIndex === undefined) return;
+    if (context.playerSign === undefined) return;
+    if (firedVoiceForOutcomeRef.current === resolvedOutcome) return;
+    firedVoiceForOutcomeRef.current = resolvedOutcome;
+    playVoice(
+      verdictVoicePath(
+        avatarKey,
+        context.playerSign,
+        resolvedOutcome.pass ? 'pass' : 'fail',
+        verdictVariantIndex,
+      ),
+    );
+  }, [
+    uiSubPhase,
+    resolvedOutcome,
+    verdictLine,
+    verdictVariantIndex,
+    context.playerSign,
+    avatarKey,
+    playVoice,
+  ]);
+
+  // Stop verdict voice on retry so the previous outcome doesn't bleed
+  // into the next prep phase. Keyed on the same challengeSubPhase
+  // transition that clears verdictLine above.
+  useEffect(() => {
+    if (turn.challengeSubPhase !== 'prep') return;
+    stopVoice();
+    firedVoiceForOutcomeRef.current = null;
+    // stopVoice and firedVoiceForOutcomeRef are stable; turn.challengeSubPhase
+    // is the only real trigger here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turn.challengeSubPhase]);
 
   // #484: avatar-arrival sting. Fire once on first prep mount per
   // encounter — the moment the avatar's portrait first appears. Does
@@ -537,14 +582,20 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // a seeded test. Skipped when the context has no sign (demo /
     // tests without a player) — the fallback placeholder renders.
     if (avatarHasCopy && context.playerSign !== undefined) {
+      const outcomeKey = outcome.pass ? 'pass' : 'fail';
       const line = pickVerdict(
         pantheon.sefirahVerdicts,
         avatarKey,
         context.playerSign,
-        outcome.pass ? 'pass' : 'fail',
+        outcomeKey,
         rng,
       );
       setVerdictLine(line);
+      // Recover the variant index so the voice path matches the rendered text.
+      const variants =
+        pantheon.sefirahVerdicts[avatarKey]?.[context.playerSign]?.[outcomeKey] ?? [];
+      const idx = variants.indexOf(line);
+      setVerdictVariantIndex(idx >= 0 ? (idx as 0 | 1 | 2) : 0);
     }
     setAnimatingResolve(true);
     // Lag the engine's already-set 'react' sub-phase by the animation
