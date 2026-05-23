@@ -31,6 +31,8 @@ import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor } from '@/lib/sound/cues';
+import { useVoice } from '@/lib/voice/useVoice';
+import { verdictVoicePath } from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { derivePose, type UiSubPhase } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
@@ -255,6 +257,11 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     return pickFraming(pantheon.sefirahFraming, avatarKey, context.playerSign, rng);
   });
   const [verdictLine, setVerdictLine] = useState<string | undefined>(undefined);
+  const [verdictVariantIndex, setVerdictVariantIndex] = useState<0 | 1 | 2 | undefined>(undefined);
+  // #228: declared here (before the loopback effect) so stopVoice can be
+  // called inside the react→prep transition without a forward reference.
+  const { playVoice, stopVoice } = useVoice();
+  const firedVoiceForOutcomeRef = useRef<CheckOutcome | null>(null);
   // #482 framing-complete signal. Flips to `true` when `RevealLine`
   // finishes the staggered reveal of the trial-framing line. Surfaced
   // via the `data-framing-complete` attribute on the prep stage so
@@ -296,20 +303,25 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // instance from `rollCheck` and the identity check below
       // would correctly re-fire — but explicitly resetting here
       // keeps the intent obvious in the loopback path.
-      // (The ref itself is declared further down where it's read.)
       // Drop the verdict so the next Roll picks a fresh variant.
       // Player-response stays put — it's pre-roll flavor for the
       // current encounter, and re-picking on every retry would
       // reroll the player's "voice" mid-encounter, which reads
       // wrong. (#277)
       setVerdictLine(undefined);
+      setVerdictVariantIndex(undefined);
+      // #228: stop any playing verdict voice and clear the voice guard
+      // so the next outcome fires a fresh clip. Folded here instead of
+      // a separate effect to avoid firing stopVoice on initial mount.
+      stopVoice();
+      firedVoiceForOutcomeRef.current = null;
       // Reset the framing-complete signal so the retry round shows
       // the avatar speak again from the top. The framing line itself
       // is stable across retries (#478 picks once per encounter via
       // `useState` lazy init), but the reveal animation re-runs.
       setFramingComplete(false);
     }
-  }, [turn.challengeSubPhase]);
+  }, [turn.challengeSubPhase, stopVoice]);
 
   /**
    * Derived UI sub-phase. Engine truth + animation lag:
@@ -342,6 +354,35 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     firedForOutcomeRef.current = resolvedOutcome;
     playSound(resolvedOutcome.pass ? 'encounter-pass' : 'encounter-fail');
   }, [uiSubPhase, resolvedOutcome, playSound]);
+
+  // #228: verdict voice narration. Mirrors the pass/fail cue effect
+  // above — same guard pattern so re-renders inside react state don't
+  // re-fire, and retry resets fire a fresh voice for the new outcome.
+  // (useVoice and firedVoiceForOutcomeRef are declared above the loopback
+  // effect so stopVoice can be called in the react→prep transition.)
+  useEffect(() => {
+    if (uiSubPhase !== 'react' || resolvedOutcome === null) return;
+    if (verdictLine === undefined || verdictVariantIndex === undefined) return;
+    if (context.playerSign === undefined) return;
+    if (firedVoiceForOutcomeRef.current === resolvedOutcome) return;
+    firedVoiceForOutcomeRef.current = resolvedOutcome;
+    playVoice(
+      verdictVoicePath(
+        avatarKey,
+        context.playerSign,
+        resolvedOutcome.pass ? 'pass' : 'fail',
+        verdictVariantIndex,
+      ),
+    );
+  }, [
+    uiSubPhase,
+    resolvedOutcome,
+    verdictLine,
+    verdictVariantIndex,
+    context.playerSign,
+    avatarKey,
+    playVoice,
+  ]);
 
   // #484: avatar-arrival sting. Fire once on first prep mount per
   // encounter — the moment the avatar's portrait first appears. Does
@@ -537,14 +578,20 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // a seeded test. Skipped when the context has no sign (demo /
     // tests without a player) — the fallback placeholder renders.
     if (avatarHasCopy && context.playerSign !== undefined) {
+      const outcomeKey = outcome.pass ? 'pass' : 'fail';
       const line = pickVerdict(
         pantheon.sefirahVerdicts,
         avatarKey,
         context.playerSign,
-        outcome.pass ? 'pass' : 'fail',
+        outcomeKey,
         rng,
       );
       setVerdictLine(line);
+      // Recover the variant index so the voice path matches the rendered text.
+      const variants =
+        pantheon.sefirahVerdicts[avatarKey]?.[context.playerSign]?.[outcomeKey] ?? [];
+      const idx = variants.indexOf(line);
+      setVerdictVariantIndex((idx >= 0 && idx <= 2 ? idx : 0) as 0 | 1 | 2);
     }
     setAnimatingResolve(true);
     // Lag the engine's already-set 'react' sub-phase by the animation
