@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CUE_FILES, avatarArrivesCueFor, type SoundCue } from '../cues';
+import { CUE_FILES, avatarArrivesCueFor, avatarGreetingVoicePathFor, type SoundCue } from '../cues';
 
 /**
  * Pin the cue → file map (#321 + #484):
@@ -64,5 +64,26 @@ describe('avatarArrivesCueFor (#484)', () => {
 
   it('returns null for Kether (no avatar — collective threshold)', () => {
     expect(avatarArrivesCueFor('kether')).toBeNull();
+  });
+});
+
+describe('avatarGreetingVoicePathFor (#230)', () => {
+  it('maps each encounter Sefirah to its avatar greeting voice path', () => {
+    expect(avatarGreetingVoicePathFor('chokmah')).toBe('/audio/voice/greeting-athena.mp3');
+    expect(avatarGreetingVoicePathFor('binah')).toBe('/audio/voice/greeting-demeter.mp3');
+    expect(avatarGreetingVoicePathFor('chesed')).toBe('/audio/voice/greeting-zeus.mp3');
+    expect(avatarGreetingVoicePathFor('gevurah')).toBe('/audio/voice/greeting-ares.mp3');
+    expect(avatarGreetingVoicePathFor('tiferet')).toBe('/audio/voice/greeting-apollo.mp3');
+    expect(avatarGreetingVoicePathFor('netzach')).toBe('/audio/voice/greeting-aphrodite.mp3');
+    expect(avatarGreetingVoicePathFor('hod')).toBe('/audio/voice/greeting-hermes.mp3');
+    expect(avatarGreetingVoicePathFor('yesod')).toBe('/audio/voice/greeting-selene.mp3');
+  });
+
+  it('returns the Hestia greeting for Malkuth', () => {
+    expect(avatarGreetingVoicePathFor('malkuth')).toBe('/audio/voice/greeting-hestia.mp3');
+  });
+
+  it('returns null for Kether (narrator handled by #231)', () => {
+    expect(avatarGreetingVoicePathFor('kether')).toBeNull();
   });
 });

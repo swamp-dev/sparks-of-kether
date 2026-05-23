@@ -30,7 +30,7 @@ import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-type
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
-import { avatarArrivesCueFor } from '@/lib/sound/cues';
+import { avatarArrivesCueFor, avatarGreetingVoicePathFor } from '@/lib/sound/cues';
 import { useVoice } from '@/lib/voice/useVoice';
 import { playerResponseVoicePath, verdictVoicePath } from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
@@ -433,6 +433,22 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     playerResponseVariantIndex,
     playVoice,
   ]);
+
+  // #230: avatar spoken greeting. Fires once on first prep mount — same
+  // onset as the sting, but on the voice channel. Declared after the
+  // player-response effect (#229) so the greeting fires last in the
+  // initial render cycle and wins the exclusive voice slot; the player
+  // response is only heard on retry (greeting latch is already set).
+  // Returns null for Kether (narrator handled by #231).
+  const avatarGreetingFiredRef = useRef(false);
+  useEffect(() => {
+    if (avatarGreetingFiredRef.current) return;
+    if (uiSubPhase !== 'prep') return;
+    const path = avatarGreetingVoicePathFor(context.sefirah);
+    if (path === null) return;
+    avatarGreetingFiredRef.current = true;
+    playVoice(path);
+  }, [uiSubPhase, context.sefirah, playVoice]);
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;

@@ -20,6 +20,7 @@
 
 import type { EncounterAvatarKey, SefirahKey } from '@/data/types';
 import { pantheons } from '@/data/pantheons';
+import { greetingVoicePath } from '@/lib/voice/paths';
 
 // Avatar-arrives cue keys are intentionally greco-roman-coupled —
 // the cue keys (`avatar-arrives-hermes`, etc.) are baked into the
@@ -93,4 +94,18 @@ export function avatarArrivesCueFor(sefirah: SefirahKey): SoundCue | null {
   if (sefirah === 'malkuth') return 'avatar-arrives-hestia';
   const greek = grecoRomanAvatarNames[sefirah as EncounterAvatarKey].primary.toLowerCase();
   return `avatar-arrives-${greek}` as SoundCue;
+}
+
+/**
+ * Map a Sefirah key to the avatar's spoken greeting voice path (#230).
+ *
+ * Returns `null` for Kether (handled by the Kether narrator ticket #231).
+ * Returns the Hestia greeting for Malkuth (companion role mirrors sting).
+ * All 9 encounter-avatar + Hestia greeting clips are in `public/audio/voice/`.
+ */
+export function avatarGreetingVoicePathFor(sefirah: SefirahKey): string | null {
+  if (sefirah === 'kether') return null;
+  if (sefirah === 'malkuth') return greetingVoicePath('hestia');
+  const greek = grecoRomanAvatarNames[sefirah as EncounterAvatarKey].primary.toLowerCase();
+  return greetingVoicePath(greek);
 }
