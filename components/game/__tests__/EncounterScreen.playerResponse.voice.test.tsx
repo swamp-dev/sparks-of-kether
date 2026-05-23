@@ -8,7 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, renderHook, screen } from '@testing-library/react';
+import { render, renderHook, screen } from '@testing-library/react';
 import { EncounterScreen } from '../EncounterScreen';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
@@ -109,9 +109,6 @@ async function renderPrep(voiceEnabled = true) {
   );
 
   const view = render(<Wrapper />);
-  act(() => {
-    // Flush any pending effects after mount
-  });
   rerender();
   view.rerender(<Wrapper />);
 
@@ -156,10 +153,9 @@ describe('player response voice narration', () => {
     expect(responseAudio).toBeUndefined();
   });
 
-  it('screen renders player response text in prep phase', async () => {
+  it('Roll button is present — component is in prep phase', async () => {
     await renderPrep(true);
 
-    // Verify the component is in prep state (response text visible)
     expect(screen.getByRole('button', { name: /^Roll$/ })).toBeInTheDocument();
   });
 });

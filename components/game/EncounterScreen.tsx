@@ -246,6 +246,11 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     }
     const variants = pantheon.sefirahPlayerResponses[avatarKey]?.[context.playerSign] ?? [];
     const idx = variants.indexOf(playerResponse);
+    if (idx < 0 && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        '[EncounterScreen] playerResponse not found in variants — voice path will use variant 0',
+      );
+    }
     return (idx >= 0 && idx <= 2 ? idx : 0) as 0 | 1 | 2;
   });
   // Trial-framing line for the prep stage (#478). Picked ONCE per
@@ -415,7 +420,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // #229: zodiac player response voice. Fires in prep phase whenever the
   // prep state becomes active (initial mount and after each retry). The
   // zodiac sign's voice speaks the player's pre-roll response line.
-  const { playVoice } = useVoice();
+  // (playVoice is destructured above alongside stopVoice from #228.)
   useEffect(() => {
     if (uiSubPhase !== 'prep' || playerResponse === undefined) return;
     if (context.playerSign === undefined || playerResponseVariantIndex === undefined) return;
