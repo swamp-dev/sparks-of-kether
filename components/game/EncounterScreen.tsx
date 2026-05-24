@@ -483,6 +483,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // challenge states without setting `encounter` are unaffected.
   const gevurahRequiresBurn =
     turn.state.encounter?.sefirah === 'gevurah' && cumulativeCardBurns === 0 && maxCardBurns > 0;
+  const tiferetRequiresBurn =
+    turn.state.encounter?.sefirah === 'tiferet' && cumulativeCardBurns === 0 && maxCardBurns > 0;
+  const binahRequiresBurn =
+    turn.state.encounter?.sefirah === 'binah' && cumulativeCardBurns === 0 && maxCardBurns > 0;
 
   const assistTotal = useMemo(() => {
     return allies
@@ -973,6 +977,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
             gevurahRequiresBurn={gevurahRequiresBurn}
+            tiferetRequiresBurn={tiferetRequiresBurn}
+            binahRequiresBurn={binahRequiresBurn}
           />
           {awaitingBurnDiscard && player ? (
             <div
@@ -1061,6 +1067,10 @@ interface PrepPanelProps {
    * `turn-machine.ts` so the player sees why clicking does nothing.
    */
   readonly gevurahRequiresBurn?: boolean;
+  /** Parallel gate for Tiferet (Apollo) — same rule, same engine condition. */
+  readonly tiferetRequiresBurn?: boolean;
+  /** Parallel gate for Binah — same rule, same engine condition. */
+  readonly binahRequiresBurn?: boolean;
 }
 
 function PrepPanel(props: PrepPanelProps): JSX.Element {
@@ -1088,6 +1098,8 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     onCancel,
     glowClass,
     gevurahRequiresBurn,
+    tiferetRequiresBurn,
+    binahRequiresBurn,
   } = props;
   return (
     <div className="mt-4 space-y-4" data-encounter-prep>
@@ -1166,12 +1178,37 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
           Gevurah demands a sacrifice — burn at least one card before you roll.
         </p>
       ) : null}
+      {tiferetRequiresBurn === true ? (
+        <p
+          data-tiferet-burn-required
+          className="rounded border border-veil/30 px-3 py-2 text-center text-xs opacity-80"
+        >
+          Apollo demands balance — burn at least one card before you roll.
+        </p>
+      ) : null}
+      {binahRequiresBurn === true ? (
+        <p
+          data-binah-burn-required
+          className="rounded border border-veil/30 px-3 py-2 text-center text-xs opacity-80"
+        >
+          Binah demands understanding — burn at least one card before you roll.
+        </p>
+      ) : null}
       <div className="flex items-center justify-center gap-4 pt-2">
         <D20Button
           state="idle"
           glowClass={glowClass}
-          {...(onRoll !== undefined && gevurahRequiresBurn !== true ? { onClick: onRoll } : {})}
-          disabled={gevurahRequiresBurn === true}
+          {...(onRoll !== undefined &&
+          gevurahRequiresBurn !== true &&
+          tiferetRequiresBurn !== true &&
+          binahRequiresBurn !== true
+            ? { onClick: onRoll }
+            : {})}
+          disabled={
+            gevurahRequiresBurn === true ||
+            tiferetRequiresBurn === true ||
+            binahRequiresBurn === true
+          }
           caption="Roll"
         />
         {onCancel ? (
