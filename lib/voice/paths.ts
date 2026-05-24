@@ -21,3 +21,7 @@ export function playerResponseVoicePath(
 export function greetingVoicePath(avatarName: string): string {
   return `/audio/voice/greeting-${avatarName}.mp3`;
 }
+
+export function narratorVoicePath(context: string): string {
+  return `/audio/voice/narrator-kether-${context}.mp3`;
+}

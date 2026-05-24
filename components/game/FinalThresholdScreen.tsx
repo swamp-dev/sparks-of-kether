@@ -1,11 +1,13 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { sefirahByKey, zodiacSigns } from '@/data';
 import type { SefirahKey } from '@/data';
 import { REQUIRED_ILLUMINATION_MARGIN } from '@/engine/endgame';
 import { isKetherHeld } from '@/engine/kether';
 import type { GameState, KetherSubPhase, KetherTrialChallenge, PlayerState } from '@/engine/types';
 import type { UseTurnReturn } from '@/lib/use-turn';
+import { useVoice } from '@/lib/voice/useVoice';
+import { narratorVoicePath } from '@/lib/voice/paths';
 
 /**
  * FinalThresholdScreen — K3 of #285 / dissolution redesign.
@@ -35,6 +37,37 @@ interface FinalThresholdScreenProps {
 export function FinalThresholdScreen(props: FinalThresholdScreenProps): JSX.Element {
   const { state, player, turn, mode, className } = props;
 
+  // #231: Kether narrator voice. Hooks must precede all early returns.
+  // subPhase is derived here (before the PreRitualHoldView guards) so
+  // the effects can fire on the correct phase transitions.
+  const ritual = state.ketherRitual;
+  const narratorSubPhase: 'trial' | 'close' | undefined =
+    state.phase === 'kether' && ritual !== undefined
+      ? ritual.subPhase === 'close'
+        ? 'close'
+        : 'trial'
+      : undefined;
+
+  const { playVoice } = useVoice();
+
+  // #231: fire once when the trial gauntlet opens (team gathered at Kether).
+  const trialOpenFiredRef = useRef(false);
+  useEffect(() => {
+    if (trialOpenFiredRef.current) return;
+    if (narratorSubPhase !== 'trial') return;
+    trialOpenFiredRef.current = true;
+    playVoice(narratorVoicePath('threshold-open'));
+  }, [narratorSubPhase, playVoice]);
+
+  // #231: fire once when the closure window opens (trial gauntlet complete).
+  const closureOpenFiredRef = useRef(false);
+  useEffect(() => {
+    if (closureOpenFiredRef.current) return;
+    if (narratorSubPhase !== 'close') return;
+    closureOpenFiredRef.current = true;
+    playVoice(narratorVoicePath('threshold-close'));
+  }, [narratorSubPhase, playVoice]);
+
   if (isKetherHeld(state, player.id)) {
     return (
       <PreRitualHoldView
@@ -46,7 +79,6 @@ export function FinalThresholdScreen(props: FinalThresholdScreenProps): JSX.Elem
     );
   }
 
-  const ritual = state.ketherRitual;
   if (state.phase !== 'kether' || ritual === undefined) {
     return (
       <PreRitualHoldView
