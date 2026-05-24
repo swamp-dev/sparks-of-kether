@@ -1281,6 +1281,67 @@ describe('useTurn — multiplayer options pairing guard (K4 / #352 review fix)',
   });
 });
 
+describe('useTurn — endTurn multiplayer dispatch (#270)', () => {
+  // Regression: endTurn was local-only (no API dispatch) even though the
+  // Kether ritual methods correctly dispatch their ClientActions. The bug:
+  // non-active players never saw turn advances because `game_states` was
+  // never written on the server side. See issue #270.
+
+  it('multiplayer: endTurn dispatches the end-turn ClientAction', () => {
+    const dispatch = vi.fn<(action: ClientAction) => void>();
+    const initialState = makeState(
+      {},
+      {
+        players: [
+          makePlayer({ id: 'p1', name: 'Andy', hand: [0, 1, 2] }),
+          makePlayer({ id: 'p2', name: 'Bea', hand: [4, 5, 6] }),
+        ],
+        deck: [10, 11, 12, 13, 14, 15, 16, 17],
+      },
+    );
+    const { result } = renderHook(() =>
+      useTurn({
+        initialState,
+        rng: seededRng(1),
+        dispatchClientAction: dispatch,
+        selfPlayerId: 'p1',
+      }),
+    );
+    act(() => {
+      result.current.meditate();
+    });
+    act(() => {
+      result.current.endTurn();
+    });
+    expect(dispatch).toHaveBeenCalledOnce();
+    expect(dispatch).toHaveBeenCalledWith({ kind: 'end-turn', playerId: 'p1' });
+  });
+
+  it('hot-seat: endTurn does NOT dispatch when dispatchClientAction is omitted', () => {
+    const initialState = makeState(
+      {},
+      {
+        players: [
+          makePlayer({ id: 'p1', name: 'Andy', hand: [0, 1, 2] }),
+          makePlayer({ id: 'p2', name: 'Bea', hand: [4, 5, 6] }),
+        ],
+        deck: [10, 11, 12, 13, 14, 15, 16, 17],
+      },
+    );
+    const { result } = renderHook(() =>
+      useTurn({ initialState, rng: seededRng(1) }),
+    );
+    act(() => {
+      result.current.meditate();
+    });
+    act(() => {
+      result.current.endTurn();
+    });
+    expect(result.current.activePlayerIndex).toBe(1);
+    expect(result.current.state.activePlayerId).toBe('p2');
+  });
+});
+
 // Compile-time sanity: the `PrepModifier` type is exported from
 // the turn-machine module so the hook's signature can refer to
 // it. (This test is a lightweight type-check; if the export is
