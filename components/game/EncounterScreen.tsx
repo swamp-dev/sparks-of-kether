@@ -30,7 +30,7 @@ import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-type
 import type { UseTurnReturn } from '@/lib/use-turn';
 import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
-import { avatarArrivesCueFor } from '@/lib/sound/cues';
+import { avatarArrivesCueFor, avatarGreetingVoicePathFor } from '@/lib/sound/cues';
 import { useVoice } from '@/lib/voice/useVoice';
 import { playerResponseVoicePath, verdictVoicePath } from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
@@ -421,6 +421,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // prep state becomes active (initial mount and after each retry). The
   // zodiac sign's voice speaks the player's pre-roll response line.
   // (playVoice is destructured above alongside stopVoice from #228.)
+  // ORDERING DEPENDENCY (#230): this effect MUST remain declared before the
+  // greeting effect below. Both fire on the same 'prep' onset; useVoice is
+  // exclusive — the last-declared effect wins. Greeting must win on first
+  // mount, so it must be declared last.
   useEffect(() => {
     if (uiSubPhase !== 'prep' || playerResponse === undefined) return;
     if (context.playerSign === undefined || playerResponseVariantIndex === undefined) return;
@@ -433,6 +437,24 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     playerResponseVariantIndex,
     playVoice,
   ]);
+
+  // #230: avatar spoken greeting. Fires once on first prep mount — same
+  // onset as the sting, but on the voice channel. Declared AFTER the
+  // player-response effect (#229) so the greeting fires last in the
+  // initial render cycle and wins the exclusive voice slot; the player
+  // response is only heard on retry (greeting latch is already set).
+  // Returns null for Kether (narrator handled by #231).
+  // ORDERING DEPENDENCY (#229): do not move this effect above the
+  // player-response effect. See comment there for the full invariant.
+  const avatarGreetingFiredRef = useRef(false);
+  useEffect(() => {
+    if (avatarGreetingFiredRef.current) return;
+    if (uiSubPhase !== 'prep') return;
+    const path = avatarGreetingVoicePathFor(context.sefirah);
+    if (path === null) return;
+    avatarGreetingFiredRef.current = true;
+    playVoice(path);
+  }, [uiSubPhase, context.sefirah, playVoice]);
 
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;
