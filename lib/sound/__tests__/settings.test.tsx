@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 /**
- * Pin the settings store contract (#321, #76):
+ * Pin the settings store contract (#321, #76, #261):
  *
  *   - `sfxEnabled` defaults ON (SFX fire on user gestures, not hostile).
  *   - `musicEnabled` defaults OFF (ambient auto-play is hostile by default).
- *   - Both respect `prefers-reduced-motion: reduce` on first visit (default OFF).
+ *   - `voiceEnabled` defaults OFF (voice plays in effects, same rationale as music).
+ *   - All respect `prefers-reduced-motion: reduce` on first visit for sfx.
  *   - Stored preferences win over the reduced-motion heuristic.
  *   - Setters persist to `localStorage` under stable keys.
  */
@@ -16,6 +17,7 @@ import {
   useSoundEnabled,
   SFX_ENABLED_STORAGE_KEY,
   MUSIC_ENABLED_STORAGE_KEY,
+  VOICE_ENABLED_STORAGE_KEY,
   _resetAudioUnlockForTests,
 } from '../settings';
 
@@ -200,24 +202,143 @@ describe('useSoundEnabled — musicEnabled', () => {
   });
 });
 
+describe('useSoundEnabled — voiceEnabled', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    _resetAudioUnlockForTests();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('defaults OFF when there is no stored preference', () => {
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(result.current.voiceEnabled).toBe(false);
+  });
+
+  it('reads stored true on mount when localStorage has the key', () => {
+    localStorage.setItem(VOICE_ENABLED_STORAGE_KEY, 'true');
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(result.current.voiceEnabled).toBe(true);
+  });
+
+  it('reads stored false on mount when localStorage has the key', () => {
+    localStorage.setItem(VOICE_ENABLED_STORAGE_KEY, 'false');
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(result.current.voiceEnabled).toBe(false);
+  });
+
+  it('persists to localStorage when the setter is called', () => {
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
+    expect(result.current.voiceEnabled).toBe(true);
+    expect(localStorage.getItem(VOICE_ENABLED_STORAGE_KEY)).toBe('true');
+
+    act(() => {
+      result.current.setVoiceEnabled(false);
+    });
+    expect(result.current.voiceEnabled).toBe(false);
+    expect(localStorage.getItem(VOICE_ENABLED_STORAGE_KEY)).toBe('false');
+  });
+
+  it('attempts an audio unlock play when voiceEnabled transitions from off to on', () => {
+    const playCalls: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class FakeAudio {
+        src: string;
+        play = vi.fn(() => {
+          playCalls.push(this.src);
+          return Promise.resolve();
+        });
+        constructor(src?: string) {
+          this.src = src ?? '';
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+    expect(playCalls).toHaveLength(0);
+
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
+    expect(playCalls.length).toBeGreaterThan(0);
+
+    const countAfterEnable = playCalls.length;
+    act(() => {
+      result.current.setVoiceEnabled(false);
+    });
+    expect(playCalls.length).toBe(countAfterEnable);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('audio unlock fires only once even if voice toggles off→on multiple times', () => {
+    const playCalls: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class FakeAudio {
+        src: string;
+        play = vi.fn(() => {
+          playCalls.push(this.src);
+          return Promise.resolve();
+        });
+        constructor(src?: string) {
+          this.src = src ?? '';
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+
+    // First enable — unlock should fire
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
+    const countAfterFirst = playCalls.length;
+    expect(countAfterFirst).toBeGreaterThan(0);
+
+    // Toggle off then on again — unlock must NOT fire a second time
+    act(() => {
+      result.current.setVoiceEnabled(false);
+    });
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
+    expect(playCalls.length).toBe(countAfterFirst);
+
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('useSoundEnabled — outside provider', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  it('returns a silent-OFF stub for both settings when used without provider', () => {
+  it('returns a silent-OFF stub for all three settings when used without provider', () => {
     const { result } = renderHook(() => useSoundEnabled());
     expect(result.current.sfxEnabled).toBe(false);
     expect(result.current.musicEnabled).toBe(false);
+    expect(result.current.voiceEnabled).toBe(false);
     act(() => {
       result.current.setSfxEnabled(true);
     });
     act(() => {
       result.current.setMusicEnabled(true);
     });
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
     expect(result.current.sfxEnabled).toBe(false);
     expect(result.current.musicEnabled).toBe(false);
+    expect(result.current.voiceEnabled).toBe(false);
     expect(localStorage.getItem(SFX_ENABLED_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(VOICE_ENABLED_STORAGE_KEY)).toBeNull();
   });
 });
