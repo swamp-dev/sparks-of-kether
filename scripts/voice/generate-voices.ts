@@ -1,15 +1,17 @@
 /**
- * Generate all ~873 voice clips via the ElevenLabs TTS API.
+ * Generate all voice clips via the ElevenLabs TTS API.
  *
  * Writes mp3 files directly to public/audio/voice/ (Next.js static
  * serving directory). Incremental by default — skips files that already
- * exist so partial runs are safe to resume.
+ * exist so partial runs are safe to resume. Also writes
+ * public/audio/voice/manifest.json so pnpm voice:check-drift can
+ * detect text-audio drift on CI.
  *
  * Usage:
  *   pnpm voice:generate                          # generate all missing clips
  *   pnpm voice:generate:dry                      # dry-run: count + char estimate, no API calls
  *   pnpm voice:generate --only-avatar hermes     # one avatar only
- *   pnpm voice:generate --only-type verdicts     # verdicts | responses | greetings
+ *   pnpm voice:generate --only-type verdicts     # verdicts | responses | greetings | narrator
  *   pnpm voice:generate --force                  # regenerate even if file exists
  *
  * Requires ELEVENLABS_API_KEY in env (set in .env.local).
@@ -18,14 +20,16 @@
  *   verdict-{sefirahKey}-{sign}-{outcome}-{variant}.mp3
  *   response-{sefirahKey}-{sign}-{variant}.mp3
  *   greeting-{characterName}.mp3
+ *   narrator-kether-{context}.mp3
  */
 
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sefirahVerdicts, sefirahPlayerResponses } from '@/data/pantheons/greco-roman/verdicts';
 import { avatarNames } from '@/data/pantheons/greco-roman/avatar-names';
+import { hashText } from './build-manifest';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -52,8 +56,16 @@ export interface Clip {
 
 export interface BuildOptions {
   onlyAvatar?: string; // lowercase character name, e.g. 'hermes'
-  onlyType?: 'verdicts' | 'responses' | 'greetings';
+  onlyType?: 'verdicts' | 'responses' | 'greetings' | 'narrator';
 }
+
+// ──────────────── Narrator text ────────────────
+// Kether narrator lines for FinalThresholdScreen key moments.
+
+const NARRATOR_LINES: Record<string, string> = {
+  'threshold-open': 'All ten rise here. The final question opens.',
+  'threshold-close': 'The threshold closes. What you have placed holds.',
+};
 
 // ──────────────── Greeting text ────────────────
 // Short spoken greeting when avatar arrives in prep phase (~1 sentence each).
@@ -182,6 +194,23 @@ export function buildClipList(config: VoiceConfig, opts: BuildOptions): Clip[] {
     }
   }
 
+  // ── Narrator ──
+  // Narrator is Kether-only; skip when --only-avatar targets a different character.
+  if (!opts.onlyType || opts.onlyType === 'narrator') {
+    if (!opts.onlyAvatar || opts.onlyAvatar === 'kether') {
+      const narratorEntry = config.avatars['kether'];
+      if (!narratorEntry) throw new Error('voice-config.json missing avatars.kether for narrator');
+
+      for (const [context, text] of Object.entries(NARRATOR_LINES)) {
+        clips.push({
+          voiceId: narratorEntry.voiceId,
+          text,
+          outputPath: `public/audio/voice/narrator-kether-${context}.mp3`,
+        });
+      }
+    }
+  }
+
   return clips;
 }
 
@@ -230,9 +259,12 @@ function parseArgs(): {
     rawType !== undefined &&
     rawType !== 'verdicts' &&
     rawType !== 'responses' &&
-    rawType !== 'greetings'
+    rawType !== 'greetings' &&
+    rawType !== 'narrator'
   ) {
-    console.error(`--only-type must be one of: verdicts, responses, greetings (got "${rawType}")`);
+    console.error(
+      `--only-type must be one of: verdicts, responses, greetings, narrator (got "${rawType}")`,
+    );
     process.exit(1);
   }
   const onlyType = rawType as BuildOptions['onlyType'];
@@ -356,6 +388,41 @@ async function main() {
   }
 
   console.log(`\nDone. Generated: ${generated}  Skipped: ${skipped}  Total: ${clips.length}\n`);
+
+  // Write manifest.json so pnpm voice:check-drift can detect text-audio drift on CI.
+  // Only written on full (unfiltered) runs — a partial run (--only-type / --only-avatar)
+  // would overwrite the manifest with a stale timestamp for clips that weren't regenerated.
+  if (!onlyType && !onlyAvatar) {
+    const manifestPath = resolve(__dirname, '../../public/audio/voice/manifest.json');
+    // Re-derive the full 875-clip list for the manifest — separate from `clips` above,
+    // which only covers what matched the active filters this run.
+    const allClips = buildClipList(config, {});
+    const manifestClips: Record<
+      string,
+      { textHash: string; textSnippet: string; voiceId: string }
+    > = {};
+    for (const clip of allClips) {
+      const key = basename(clip.outputPath, extname(clip.outputPath));
+      manifestClips[key] = {
+        textHash: hashText(clip.text),
+        textSnippet: clip.text.length > 60 ? clip.text.slice(0, 57) + '...' : clip.text,
+        voiceId: clip.voiceId,
+      };
+    }
+    const manifest = {
+      version: '1',
+      generatedAt: new Date().toISOString(),
+      clips: manifestClips,
+    };
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+    console.log(
+      `Manifest written: public/audio/voice/manifest.json (${allClips.length} clips)\n`,
+    );
+  } else {
+    console.log(
+      `Skipping manifest update — partial run (filters active). Re-run without filters to refresh manifest.\n`,
+    );
+  }
 }
 
 // Only run when invoked directly; skip when imported by tests.
