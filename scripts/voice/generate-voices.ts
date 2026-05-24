@@ -415,9 +415,7 @@ async function main() {
       clips: manifestClips,
     };
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-    console.log(
-      `Manifest written: public/audio/voice/manifest.json (${allClips.length} clips)\n`,
-    );
+    console.log(`Manifest written: public/audio/voice/manifest.json (${allClips.length} clips)\n`);
   } else {
     console.log(
       `Skipping manifest update — partial run (filters active). Re-run without filters to refresh manifest.\n`,
