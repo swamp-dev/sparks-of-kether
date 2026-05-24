@@ -316,25 +316,21 @@ export function PlayScreen({
     setRemoteStateRef.current(remoteState);
   }, [remoteState]);
   const pendingDiscardCount = turn.state.pendingDiscard?.count ?? 0;
+  // Derived as a string primitive so the auto-advance effect dep is stable
+  // across Realtime pushes that produce new players array references.
+  const activePlayerId = turn.state.players[turn.activePlayerIndex]?.id;
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;
     if (pendingDiscardCount > 0) return undefined;
     // In multiplayer, only the active player auto-advances. Non-active clients
     // receive the 'end' phase via Realtime but must not fire endTurn — the
     // server rejects non-active players with 403, producing spurious errors.
-    const activeId = turn.state.players[turn.activePlayerIndex]?.id;
-    if (currentPlayerId !== undefined && currentPlayerId !== activeId) return undefined;
+    if (currentPlayerId !== undefined && currentPlayerId !== activePlayerId) return undefined;
     const handle = setTimeout(() => {
       endTurnRef.current();
     }, AUTO_ADVANCE_DELAY_MS);
     return (): void => clearTimeout(handle);
-  }, [
-    turn.phase,
-    pendingDiscardCount,
-    currentPlayerId,
-    turn.state.players,
-    turn.activePlayerIndex,
-  ]);
+  }, [turn.phase, pendingDiscardCount, currentPlayerId, activePlayerId]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   // In multiplayer each client passes its own player ID. The viewer's
