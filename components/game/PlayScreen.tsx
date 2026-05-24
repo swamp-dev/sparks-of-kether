@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
 import { NODE_RADIUS, TREE_ROOT_SVG_SELECTOR, TREE_VIEW_W } from '@/data/tree-layout';
 import type { SefirahKey } from '@/data';
@@ -20,7 +20,8 @@ import { KetherCelebration } from '@/components/game/KetherCelebration';
 import { JourneySummary } from '@/components/game/JourneySummary';
 import { isKetherHeld } from '@/engine/kether';
 import { isHandVisible } from '@/components/hand/visibility';
-import { useTurn, type TurnPhase } from '@/lib/use-turn';
+import { useTurn, type DispatchClientAction, type TurnPhase } from '@/lib/use-turn';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useSound } from '@/lib/sound/useSound';
 import { useMusic } from '@/lib/music/useMusic';
 import { usePantheon } from '@/lib/settings/pantheon';
@@ -128,7 +129,37 @@ export function PlayScreen({
   remoteState,
   onQuit,
 }: PlayScreenProps): JSX.Element {
-  const turn = useTurn({ initialState, rng });
+  // Fire-and-forget API dispatch. Only active in multiplayer (roomCode set).
+  // Each ClientAction is POSTed to the events route so the server writes the
+  // new snapshot and Supabase Realtime broadcasts to all other clients.
+  const dispatchClientAction = useCallback<DispatchClientAction>(
+    (action) => {
+      if (roomCode === undefined) return;
+      void (async () => {
+        const client = getSupabaseBrowserClient();
+        const { data: session } = await client.auth.getSession();
+        const token = session.session?.access_token;
+        if (!token) return;
+        await fetch(`/api/rooms/${roomCode}/events`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(action),
+        });
+      })();
+    },
+    [roomCode],
+  );
+
+  const turn = useTurn({
+    initialState,
+    rng,
+    ...(roomCode !== undefined && currentPlayerId !== undefined
+      ? { dispatchClientAction, selfPlayerId: currentPlayerId }
+      : {}),
+  });
   const [selectedCard, setSelectedCard] = useState<number | undefined>(undefined);
   // #405: separate hover state, so path-light fires on card hover/focus
   // BEFORE the player commits to a click. Hovered takes precedence over

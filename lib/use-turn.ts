@@ -604,14 +604,19 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, state, opts.rng],
   );
 
+  // Extracted so the deps array references stable per-render bindings
+  // rather than the opts object, matching the Kether methods' pattern.
+  const endTurnDispatch = opts.dispatchClientAction;
+  const endTurnPlayerId = opts.selfPlayerId;
+
   const endTurn = useCallback((): void => {
     const result = turnReducer(snapshot, { kind: 'end-turn' }, opts.rng);
     if (!result.ok) return;
     setSnapshot(result.value.next);
-    if (opts.dispatchClientAction !== undefined && opts.selfPlayerId !== undefined) {
-      opts.dispatchClientAction({ kind: 'end-turn', playerId: opts.selfPlayerId });
+    if (endTurnDispatch !== undefined && endTurnPlayerId !== undefined) {
+      endTurnDispatch({ kind: 'end-turn', playerId: endTurnPlayerId });
     }
-  }, [snapshot, opts.rng, opts.dispatchClientAction, opts.selfPlayerId]);
+  }, [snapshot, opts.rng, endTurnDispatch, endTurnPlayerId]);
 
   const replaceState = useCallback(
     (s: GameState): void => {

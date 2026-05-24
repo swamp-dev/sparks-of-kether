@@ -1328,9 +1328,7 @@ describe('useTurn — endTurn multiplayer dispatch (#270)', () => {
         deck: [10, 11, 12, 13, 14, 15, 16, 17],
       },
     );
-    const { result } = renderHook(() =>
-      useTurn({ initialState, rng: seededRng(1) }),
-    );
+    const { result } = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
     act(() => {
       result.current.meditate();
     });
