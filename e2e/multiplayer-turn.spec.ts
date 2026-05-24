@@ -70,8 +70,11 @@ test('non-active player sees turn advance when active player ends turn', async (
     const p2NextSign = p2.getByRole('button', { name: /^Next sign$/ }).first();
     await p2NextSign.waitFor({ state: 'visible' });
     await p2NextSign.click();
-    // Confirm whatever focused sign is now active.
-    await p2.getByRole('button', { name: /^Confirm /i }).click();
+    // Wait for the carousel label to settle before confirming, then assert
+    // the focused sign is NOT Aries (P1's sign) before clicking through.
+    const p2ConfirmBtn = p2.getByRole('button', { name: /^Confirm (?!Aries)/i });
+    await expect(p2ConfirmBtn).toBeVisible();
+    await p2ConfirmBtn.click();
 
     // ── Ready toggles ─────────────────────────────────────────────────
     // After picking a sign each player lands in the main lobby view.

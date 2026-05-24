@@ -136,18 +136,25 @@ export function PlayScreen({
     (action) => {
       if (roomCode === undefined) return;
       void (async () => {
-        const client = getSupabaseBrowserClient();
-        const { data: session } = await client.auth.getSession();
-        const token = session.session?.access_token;
-        if (!token) return;
-        await fetch(`/api/rooms/${roomCode}/events`, {
-          method: 'POST',
-          headers: {
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(action),
-        });
+        try {
+          const client = getSupabaseBrowserClient();
+          const { data: session } = await client.auth.getSession();
+          const token = session.session?.access_token;
+          if (!token) return;
+          const res = await fetch(`/api/rooms/${roomCode}/events`, {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${token}`,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(action),
+          });
+          if (!res.ok) {
+            console.error('[dispatch] action rejected:', res.status, action.kind);
+          }
+        } catch (err) {
+          console.error('[dispatch] action network error:', err);
+        }
       })();
     },
     [roomCode],

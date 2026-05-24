@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type * as SupabaseLib from '@/lib/supabase';
 import { PlayScreen } from '../PlayScreen';
 import { makeFullGame } from '@/test/fixtures';
@@ -58,9 +58,9 @@ describe('PlayScreen — multiplayer dispatch wiring (#270)', () => {
       />,
     );
 
-    const endTurnButton = document.querySelector('[data-action="end-turn"]') as HTMLButtonElement;
+    const endTurnButton = screen.getByRole('button', { name: /end turn/i });
     expect(endTurnButton).not.toBeNull();
-    expect(endTurnButton.disabled).toBe(false);
+    expect((endTurnButton as HTMLButtonElement).disabled).toBe(false);
 
     await act(async () => {
       fireEvent.click(endTurnButton);
@@ -90,7 +90,7 @@ describe('PlayScreen — multiplayer dispatch wiring (#270)', () => {
     // Hot-seat: no roomCode, no currentPlayerId.
     render(<PlayScreen initialState={state} rng={seededRng(1)} />);
 
-    const endTurnButton = document.querySelector('[data-action="end-turn"]') as HTMLButtonElement;
+    const endTurnButton = screen.getByRole('button', { name: /end turn/i });
     expect(endTurnButton).not.toBeNull();
 
     await act(async () => {
