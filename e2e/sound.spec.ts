@@ -25,7 +25,7 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
-test('settings cog opens, toggles SFX + Music independently, persists to localStorage, closes via Esc', async ({
+test('settings cog opens, toggles SFX + Music + Voice independently, persists to localStorage, closes via Esc', async ({
   page,
 }) => {
   // Walk the standard hot-seat onboarding so we land on the play
@@ -78,20 +78,27 @@ test('settings cog opens, toggles SFX + Music independently, persists to localSt
 
   const sfxSwitch = dialog.getByRole('switch', { name: /sound effects/i });
   const musicSwitch = dialog.getByRole('switch', { name: /music/i });
+  const voiceSwitch = dialog.getByRole('switch', { name: /voice narration/i });
   await expect(sfxSwitch).toHaveAttribute('aria-checked', 'true');
   await expect(musicSwitch).toHaveAttribute('aria-checked', 'false');
+  // Voice is OFF by default — same rationale as music (plays in effects, not gestures).
+  await expect(voiceSwitch).toHaveAttribute('aria-checked', 'false');
 
-  // Toggle SFX OFF, Music ON.
+  // Toggle SFX OFF, Music ON, Voice ON.
   await sfxSwitch.click();
   await expect(sfxSwitch).toHaveAttribute('aria-checked', 'false');
   await musicSwitch.click();
   await expect(musicSwitch).toHaveAttribute('aria-checked', 'true');
+  await voiceSwitch.click();
+  await expect(voiceSwitch).toHaveAttribute('aria-checked', 'true');
 
-  // Both persist to localStorage under the new keys (#76).
+  // All three persist to localStorage (#76, #261).
   const sfxStored = await page.evaluate(() => window.localStorage.getItem('sok.sfxEnabled'));
   const musicStored = await page.evaluate(() => window.localStorage.getItem('sok.musicEnabled'));
+  const voiceStored = await page.evaluate(() => window.localStorage.getItem('sok.voiceEnabled'));
   expect(sfxStored).toBe('false');
   expect(musicStored).toBe('true');
+  expect(voiceStored).toBe('true');
 
   // Reduced motion is read-only and reflects the system setting
   // (Playwright's default browser reports prefers-reduced-motion:
