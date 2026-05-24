@@ -276,6 +276,43 @@ describe('useSoundEnabled — voiceEnabled', () => {
 
     vi.unstubAllGlobals();
   });
+
+  it('audio unlock fires only once even if voice toggles off→on multiple times', () => {
+    const playCalls: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class FakeAudio {
+        src: string;
+        play = vi.fn(() => {
+          playCalls.push(this.src);
+          return Promise.resolve();
+        });
+        constructor(src?: string) {
+          this.src = src ?? '';
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useSoundEnabled(), { wrapper });
+
+    // First enable — unlock should fire
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
+    const countAfterFirst = playCalls.length;
+    expect(countAfterFirst).toBeGreaterThan(0);
+
+    // Toggle off then on again — unlock must NOT fire a second time
+    act(() => {
+      result.current.setVoiceEnabled(false);
+    });
+    act(() => {
+      result.current.setVoiceEnabled(true);
+    });
+    expect(playCalls.length).toBe(countAfterFirst);
+
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('useSoundEnabled — outside provider', () => {
