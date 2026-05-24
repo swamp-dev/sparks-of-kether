@@ -22,6 +22,6 @@ export function greetingVoicePath(avatarName: string): string {
   return `/audio/voice/greeting-${avatarName}.mp3`;
 }
 
-export function narratorVoicePath(context: string): string {
+export function narratorVoicePath(context: 'threshold-open' | 'threshold-close'): string {
   return `/audio/voice/narrator-kether-${context}.mp3`;
 }

@@ -41,6 +41,10 @@ export function FinalThresholdScreen(props: FinalThresholdScreenProps): JSX.Elem
   // subPhase is derived here (before the PreRitualHoldView guards) so
   // the effects can fire on the correct phase transitions.
   const ritual = state.ketherRitual;
+  // 'gather' is non-durable (initKetherRitual writes 'trial' directly),
+  // so any non-'close' subPhase maps to 'trial'. If 'gather' ever
+  // becomes durable, add an explicit guard here to avoid a premature
+  // threshold-open fire.
   const narratorSubPhase: 'trial' | 'close' | undefined =
     state.phase === 'kether' && ritual !== undefined
       ? ritual.subPhase === 'close'
