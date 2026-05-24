@@ -608,7 +608,10 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     const result = turnReducer(snapshot, { kind: 'end-turn' }, opts.rng);
     if (!result.ok) return;
     setSnapshot(result.value.next);
-  }, [snapshot, opts.rng]);
+    if (opts.dispatchClientAction !== undefined && opts.selfPlayerId !== undefined) {
+      opts.dispatchClientAction({ kind: 'end-turn', playerId: opts.selfPlayerId });
+    }
+  }, [snapshot, opts.rng, opts.dispatchClientAction, opts.selfPlayerId]);
 
   const replaceState = useCallback(
     (s: GameState): void => {
