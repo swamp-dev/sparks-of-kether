@@ -35,10 +35,10 @@ const MOCK_CONFIG: VoiceConfig = {
 };
 
 describe('buildClipList', () => {
-  it('produces exactly 873 clips with no filters', () => {
+  it('produces exactly 875 clips with no filters', () => {
     const clips = buildClipList(MOCK_CONFIG, {});
-    // 576 verdicts + 288 responses + 9 greetings
-    expect(clips).toHaveLength(873);
+    // 576 verdicts + 288 responses + 9 greetings + 2 narrator
+    expect(clips).toHaveLength(875);
   });
 
   it('produces exactly 576 verdict clips', () => {
@@ -86,6 +86,32 @@ describe('buildClipList', () => {
     const clips = buildClipList(MOCK_CONFIG, { onlyType: 'greetings', onlyAvatar: 'hermes' });
     expect(clips).toHaveLength(1);
     expect((clips[0] as Clip).outputPath).toBe('public/audio/voice/greeting-hermes.mp3');
+  });
+
+  it('produces exactly 2 narrator clips', () => {
+    const clips = buildClipList(MOCK_CONFIG, { onlyType: 'narrator' });
+    expect(clips).toHaveLength(2);
+  });
+
+  it('narrator clips use the kether voice ID', () => {
+    const clips = buildClipList(MOCK_CONFIG, { onlyType: 'narrator' });
+    for (const clip of clips) {
+      expect(clip.voiceId).toBe('v-kether');
+    }
+  });
+
+  it('narrator clip output paths match narrator-kether-{context}.mp3 convention', () => {
+    const clips = buildClipList(MOCK_CONFIG, { onlyType: 'narrator' });
+    for (const clip of clips) {
+      expect(clip.outputPath).toMatch(/^public\/audio\/voice\/narrator-kether-[a-z-]+\.mp3$/);
+    }
+  });
+
+  it('excludes narrator clips when --only-avatar targets a non-kether character', () => {
+    const clips = buildClipList(MOCK_CONFIG, { onlyAvatar: 'hermes' });
+    // 72 verdicts (12 × 2 × 3) + 36 responses (12 × 3) + 1 greeting — no narrator
+    expect(clips).toHaveLength(109);
+    expect(clips.some((c) => c.outputPath.includes('narrator'))).toBe(false);
   });
 
   it('verdict clips use the avatar voice ID', () => {

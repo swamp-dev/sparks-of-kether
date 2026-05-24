@@ -1,13 +1,12 @@
 /**
  * Build the expected clip map from the current TypeScript verdict/response data.
+ * Also exports `hashText`, used by generate-voices.ts when writing manifest.json.
  *
- * Returns a Map of clip-key → text for all 864 verdict + response clips
- * (576 verdicts + 288 player responses). Used by check-drift.ts to
- * compare against the committed manifest.json.
- *
- * Greeting clips (9) are excluded: there is no TypeScript source text
- * file for per-avatar greetings yet. Add them when a `greetings.ts`
- * data file is created.
+ * `buildExpectedClipMap` returns a Map of clip-key → entry for all 864 verdict +
+ * response clips (576 + 288). Used by check-drift.ts to compare against the
+ * committed manifest.json. Greeting (9) and narrator (2) clips are excluded from
+ * drift checking — they appear as orphan entries in the manifest and are silently
+ * ignored by detectDrift.
  *
  * Clip-key format matches lib/voice/paths.ts:
  *   verdict-{avatar}-{sign}-{outcome}-{variant}
