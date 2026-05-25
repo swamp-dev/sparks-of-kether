@@ -1732,3 +1732,299 @@ describe('EncounterScreen — avatar pose transitions (#21)', () => {
     }
   });
 });
+
+describe('EncounterScreen — burn-discard picker (#286)', () => {
+  /**
+   * The picker appears when the player has staged card burns AND still has
+   * cards in hand. They must select a card and confirm before the roll fires.
+   */
+
+  function makePickerState(): GameState {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? {
+            ...p,
+            position: 'gevurah' as const,
+            hand: [0, 1] as readonly number[],
+            sparksHeld: new Set(['chesed']) as ReadonlySet<'chesed'>,
+            stats: { ...p.stats, strength: 6 },
+          }
+        : p,
+    );
+    return {
+      ...base,
+      players,
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
+      lastOutcome: undefined,
+      encounter: { sefirah: 'gevurah', seed: 42, retryCount: 0 },
+    };
+  }
+
+  const pickerContext: ChallengeContext = {
+    sefirah: 'gevurah',
+    stat: 6,
+    statLabel: 'strength',
+    availableCardBurns: 2,
+    availableSparkBurns: 1,
+  };
+
+  it('picker is hidden before Roll is clicked', () => {
+    const state = makePickerState();
+    const rng = seededRng(1);
+    const { result } = renderHook(() => useTurn({ initialState: state, rng }));
+    const player = state.players.find((p) => p.id === state.activePlayerId);
+    if (!player) throw new Error('test setup: active player missing');
+    render(
+      <EncounterScreen
+        context={pickerContext}
+        rng={rng}
+        mode="hot-seat"
+        turn={result.current}
+        onResolved={vi.fn()}
+        player={player}
+      />,
+    );
+    expect(document.querySelector('[data-burn-discard-picker]')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Roll$/ })).toBeInTheDocument();
+  });
+
+  it('picker appears when Roll is clicked after staging a card burn', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makePickerState();
+      const rng = seededRng(1);
+      const { result, rerender: rerenderHook } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const player = state.players.find((p) => p.id === state.activePlayerId);
+      if (!player) throw new Error('test setup: active player missing');
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={pickerContext}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+          player={player}
+        />
+      );
+      const view = render(<Wrapper />);
+      const rerender = (): void => {
+        rerenderHook();
+        view.rerender(<Wrapper />);
+      };
+
+      // Stage one card burn.
+      act(() => {
+        fireEvent.click(
+          document.querySelector(
+            '[data-stepper="cardBurns"] button:last-of-type',
+          ) as HTMLButtonElement,
+        );
+      });
+      rerender();
+
+      // Click Roll — picker should appear, Roll button hidden.
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      rerender();
+
+      expect(document.querySelector('[data-burn-discard-picker]')).not.toBeNull();
+      // The Roll button stays rendered but has no handler — clicking it again
+      // must not close the picker (the picker heading is still present).
+      expect(screen.getByText('Choose a card to release')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('selecting a card shows the card name and confirm button', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makePickerState();
+      const rng = seededRng(1);
+      const { result, rerender: rerenderHook } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const player = state.players.find((p) => p.id === state.activePlayerId);
+      if (!player) throw new Error('test setup: active player missing');
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={pickerContext}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+          player={player}
+        />
+      );
+      const view = render(<Wrapper />);
+      const rerender = (): void => {
+        rerenderHook();
+        view.rerender(<Wrapper />);
+      };
+
+      // Stage burn → Roll → picker open.
+      act(() => {
+        fireEvent.click(
+          document.querySelector(
+            '[data-stepper="cardBurns"] button:last-of-type',
+          ) as HTMLButtonElement,
+        );
+      });
+      rerender();
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      rerender();
+
+      // Confirm button not yet visible.
+      expect(screen.queryByRole('button', { name: /Release this card/ })).toBeNull();
+
+      // Click the first card in the picker (arcanum 0 = The Fool).
+      const pickerEl = document.querySelector('[data-burn-discard-picker]');
+      if (!pickerEl) throw new Error('picker not found');
+      const firstCard = pickerEl.querySelector('[data-arcanum="0"]') as HTMLButtonElement;
+      act(() => {
+        fireEvent.click(firstCard);
+      });
+      rerender();
+
+      // Card name and confirm button should now be visible.
+      expect(screen.getByText(/The Fool.*confirm release/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Release this card/ })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('confirming the discard closes the picker and the roll proceeds to resolve', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makePickerState();
+      const rng = seededRng(1);
+      const { result, rerender: rerenderHook } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const player = state.players.find((p) => p.id === state.activePlayerId);
+      if (!player) throw new Error('test setup: active player missing');
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={pickerContext}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+          player={player}
+        />
+      );
+      const view = render(<Wrapper />);
+      const rerender = (): void => {
+        rerenderHook();
+        view.rerender(<Wrapper />);
+      };
+
+      // Stage burn → Roll → picker open.
+      act(() => {
+        fireEvent.click(
+          document.querySelector(
+            '[data-stepper="cardBurns"] button:last-of-type',
+          ) as HTMLButtonElement,
+        );
+      });
+      rerender();
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      rerender();
+
+      // Select card then confirm.
+      const pickerEl = document.querySelector('[data-burn-discard-picker]');
+      if (!pickerEl) throw new Error('picker not found');
+      act(() => {
+        fireEvent.click(pickerEl.querySelector('[data-arcanum="0"]') as HTMLButtonElement);
+      });
+      rerender();
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /Release this card/ }));
+      });
+      rerender();
+
+      // Picker gone; roll should be in flight (resolve sub-phase or sub-state heading).
+      expect(document.querySelector('[data-burn-discard-picker]')).toBeNull();
+      // The component transitions to the resolve animation — sub-phase attribute updates.
+      const screenEl = document.querySelector('[data-encounter-screen]');
+      expect(screenEl?.getAttribute('data-encounter-sub-phase')).not.toBe('prep');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('re-selecting a different card before confirming changes the selection', () => {
+    vi.useFakeTimers();
+    try {
+      const state = makePickerState();
+      const rng = seededRng(1);
+      const { result, rerender: rerenderHook } = renderHook(() =>
+        useTurn({ initialState: state, rng }),
+      );
+      const player = state.players.find((p) => p.id === state.activePlayerId);
+      if (!player) throw new Error('test setup: active player missing');
+      const Wrapper = (): JSX.Element => (
+        <EncounterScreen
+          context={pickerContext}
+          rng={rng}
+          mode="hot-seat"
+          turn={result.current}
+          onResolved={vi.fn()}
+          player={player}
+        />
+      );
+      const view = render(<Wrapper />);
+      const rerender = (): void => {
+        rerenderHook();
+        view.rerender(<Wrapper />);
+      };
+
+      // Stage burn → Roll → picker open.
+      act(() => {
+        fireEvent.click(
+          document.querySelector(
+            '[data-stepper="cardBurns"] button:last-of-type',
+          ) as HTMLButtonElement,
+        );
+      });
+      rerender();
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      rerender();
+
+      const pickerEl = document.querySelector('[data-burn-discard-picker]');
+      if (!pickerEl) throw new Error('picker not found');
+
+      // Select arcanum 0.
+      act(() => {
+        fireEvent.click(pickerEl.querySelector('[data-arcanum="0"]') as HTMLButtonElement);
+      });
+      rerender();
+      expect(screen.getByText(/The Fool.*confirm release/i)).toBeInTheDocument();
+
+      // Re-select arcanum 1 — selection should switch.
+      act(() => {
+        fireEvent.click(pickerEl.querySelector('[data-arcanum="1"]') as HTMLButtonElement);
+      });
+      rerender();
+      // arcanum 1 = The Magician
+      expect(screen.getByText(/The Magician.*confirm release/i)).toBeInTheDocument();
+      expect(screen.queryByText(/The Fool.*confirm release/i)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
