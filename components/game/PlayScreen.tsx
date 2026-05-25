@@ -276,13 +276,12 @@ export function PlayScreen({
   // the count decrements. The DiscardPrompt is interactive and
   // already gates the cadence; let the player drive.
   //
-  // #503: post-#503 Meditate stays in `'move'` (it no longer
-  // transitions to `'end'`), so the original "no auto-advance after
-  // Meditate" suppression is no longer reachable from this gate —
-  // landing in `'end'` always means a Move/Challenge has resolved
-  // and the auto-advance is appropriate. The `pendingDiscard` gate
-  // below still catches the at-cap-Meditate-then-clicks-End case
-  // (the player must trim down before End-turn fires).
+  // #503: Meditate from `'move'` stays in `'move'`, so the timer
+  // only fires when the player reaches `'end'` via an actual Move or
+  // Challenge. #287: Meditate from `'end'` (after playing a path) is
+  // now allowed; when it fires, `meditatedThisTurn` flips true and the
+  // timer must NOT auto-advance — the player should click End Turn
+  // explicitly to confirm they're done reviewing their new cards.
   //
   // Stable callback ref: `turn.endTurn` is `useCallback` but its dep
   // list includes the engine snapshot, so the function reference
@@ -322,6 +321,12 @@ export function PlayScreen({
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;
     if (pendingDiscardCount > 0) return undefined;
+    // #287: suppress auto-advance when the player just meditated from 'end' phase
+    // (lastAction is undefined after end-phase meditate). If meditatedThisTurn is
+    // true but lastAction is set (move-phase meditate then path to cleared sefirah),
+    // auto-advance fires normally — the player already saw their cards.
+    if (turn.state.meditatedThisTurn === true && turn.state.lastAction === undefined)
+      return undefined;
     // In multiplayer, only the active player auto-advances. Non-active clients
     // receive the 'end' phase via Realtime but must not fire endTurn — the
     // server rejects non-active players with 403, producing spurious errors.
@@ -330,7 +335,14 @@ export function PlayScreen({
       endTurnRef.current();
     }, AUTO_ADVANCE_DELAY_MS);
     return (): void => clearTimeout(handle);
-  }, [turn.phase, pendingDiscardCount, currentPlayerId, activePlayerId]);
+  }, [
+    turn.phase,
+    pendingDiscardCount,
+    currentPlayerId,
+    activePlayerId,
+    turn.state.meditatedThisTurn,
+    turn.state.lastAction,
+  ]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];
   // In multiplayer each client passes its own player ID. The viewer's
@@ -722,7 +734,7 @@ export function PlayScreen({
             {activePlayer?.name ?? '—'}&apos;s turn
           </span>
           <div className="flex gap-2">
-            {turn.phase === 'move' ? (
+            {turn.phase === 'move' || turn.phase === 'end' ? (
               <MeditateButton
                 onMeditate={() => setShowMeditateConfirm(true)}
                 disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
@@ -768,14 +780,17 @@ export function PlayScreen({
          * announcement (e.g. the move resolution) rather than
          * interrupting it.
          */}
-        {turn.phase === 'move' && turn.state.meditatedThisTurn === true ? (
+        {(turn.phase === 'move' || turn.phase === 'end') &&
+        turn.state.meditatedThisTurn === true ? (
           <div
             role="status"
             aria-live="polite"
             data-meditate-callout
             className="w-full max-w-xl rounded border border-veil/20 bg-ground/40 px-4 py-2 text-xs italic opacity-80"
           >
-            You drew 2 cards. You may still play a card, or End your turn.
+            {turn.phase === 'move'
+              ? 'You drew 2 cards. You may still play a card, or End your turn.'
+              : 'You drew 2 cards. End your turn when ready.'}
           </div>
         ) : null}
         {turn.phase === 'end' && activePlayer?.position === 'malkuth' ? (

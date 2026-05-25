@@ -346,12 +346,17 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, opts.rng],
   );
 
+  const meditateDispatch = opts.dispatchClientAction;
+  const meditatePlayerId = opts.selfPlayerId;
   const meditate = useCallback((): GameState => {
     const result = turnReducer(snapshot, { kind: 'meditate' }, opts.rng);
     if (!result.ok) return state;
     setSnapshot(result.value.next);
+    if (meditateDispatch !== undefined && meditatePlayerId !== undefined) {
+      meditateDispatch({ kind: 'meditate', playerId: meditatePlayerId });
+    }
     return result.value.next.state;
-  }, [snapshot, state, opts.rng]);
+  }, [snapshot, state, opts.rng, meditateDispatch, meditatePlayerId]);
 
   const prepAddModifier = useCallback(
     (modifier: PrepModifier): Result<TurnReducerSuccess, TurnReducerError> => {

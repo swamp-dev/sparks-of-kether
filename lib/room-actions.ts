@@ -184,7 +184,10 @@ export type ApplyActionRejection =
   | { readonly kind: 'move'; readonly cause: MoveRejection }
   | { readonly kind: 'prep'; readonly cause: TurnReducerError }
   | { readonly kind: 'challenge'; readonly cause: string }
-  | { readonly kind: 'meditate'; readonly cause: 'unknown-player' | 'already-meditated' }
+  | {
+      readonly kind: 'meditate';
+      readonly cause: 'unknown-player' | 'already-meditated' | 'wrong-phase';
+    }
   | {
       // #522: mirrors `turnReducer`'s `allowEndTurn` gate at
       // `lib/turn-machine.ts:1423`. Surfaces when an HTTP-level
@@ -324,6 +327,12 @@ export function applyClientAction(
       // through `authorize` first, so this is a programming error or
       // a bypass — surfacing it cleanly costs nothing and matches the
       // `MoveRejection.unknown-player` precedent.
+      if (state.phase !== 'move' && state.phase !== 'end') {
+        return {
+          ok: false,
+          error: { kind: 'meditate', cause: 'wrong-phase' },
+        };
+      }
       const player = state.players.find((p) => p.id === action.playerId);
       if (!player) {
         return {
@@ -342,8 +351,9 @@ export function applyClientAction(
       });
       const newState: GameState = {
         ...drewState,
-        phase: 'move',
+        phase: state.phase,
         meditatedThisTurn: true,
+        ...(state.phase === 'end' ? { lastAction: undefined } : {}),
       };
       return { ok: true, newState };
     }
