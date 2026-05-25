@@ -25,3 +25,7 @@ export function greetingVoicePath(avatarName: string): string {
 export function narratorVoicePath(context: 'threshold-open' | 'threshold-close'): string {
   return `/audio/voice/narrator-kether-${context}.mp3`;
 }
+
+export function burnDiscardNarratorPath(): string {
+  return '/audio/voice/narrator-burn-discard.mp3';
+}

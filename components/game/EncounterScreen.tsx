@@ -32,7 +32,11 @@ import type { PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor, avatarGreetingVoicePathFor } from '@/lib/sound/cues';
 import { useVoice } from '@/lib/voice/useVoice';
-import { playerResponseVoicePath, verdictVoicePath } from '@/lib/voice/paths';
+import {
+  burnDiscardNarratorPath,
+  playerResponseVoicePath,
+  verdictVoicePath,
+} from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
 import { derivePose, type UiSubPhase } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
@@ -288,7 +292,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // #90: burn-discard gate. Set to true when the player has staged card
   // burns and clicks Roll — they must shed one card before the die rolls.
   const [awaitingBurnDiscard, setAwaitingBurnDiscard] = useState(false);
-  const [burnDiscardHovered, setBurnDiscardHovered] = useState<number | undefined>(undefined);
+  // #286: selected card in the burn-discard picker (select → confirm flow).
+  const [burnDiscardSelected, setBurnDiscardSelected] = useState<number | undefined>(undefined);
 
   // Reset staged counters when the engine sub-phase loops back to
   // 'prep' (a `react-retry`). The engine's `pendingModifiers` carries
@@ -312,7 +317,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setCommittedModifiers(null);
       setAnimatingResolve(false);
       setAwaitingBurnDiscard(false);
-      setBurnDiscardHovered(undefined);
+      setBurnDiscardSelected(undefined);
       // #321: clear the verdict-cue ref so a retry's new outcome
       // fires its own cue. Without this, a retry that lands on the
       // same boolean (fail → fail) would still be a NEW outcome
@@ -456,6 +461,19 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     playVoice(path);
   }, [uiSubPhase, context.sefirah, playVoice]);
 
+  // #286: narrator voice for burn-discard picker. Fires once per picker
+  // opening; resets on close so a retry re-plays the instruction.
+  const burnDiscardVoiceFiredRef = useRef(false);
+  useEffect(() => {
+    if (!awaitingBurnDiscard) {
+      burnDiscardVoiceFiredRef.current = false;
+      return;
+    }
+    if (burnDiscardVoiceFiredRef.current) return;
+    burnDiscardVoiceFiredRef.current = true;
+    playVoice(burnDiscardNarratorPath());
+  }, [awaitingBurnDiscard, playVoice]);
+
   const effectiveDC = useMemo(() => {
     const soulDoorDelta = context.soulDoorDelta ?? 0;
     return baseDC + (context.shortcut ? SHORTCUT_DC_PENALTY : 0) + soulDoorDelta;
@@ -476,20 +494,19 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const cumulativeSparkBurns = (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
   const isRetry = (turn.pendingModifiers?.cardBurns.length ?? 0) > 0;
 
-  // Mirror the engine's `prep-confirm` gate (turn-machine.ts:1278-1283):
-  // Gevurah / Tiferet / Binah each require at least one staged card burn when
+  // Mirror the engine's `prep-confirm` gate (turn-machine.ts § tiferet/binah/gevurah-requires-burn):
+  // Gevurah, Tiferet, and Binah each require at least one staged card burn when
   // the player has cards. We read from `turn.state.encounter` (not just
   // `context.sefirah`) to match the engine condition exactly — test fixtures
   // that manually construct challenge states without setting `encounter` are
   // unaffected. `maxCardBurns > 0` proxies `player.hand.length > 0` because
   // PlayScreen sets `availableCardBurns = player.hand.length`; if that
   // contract ever changes, revisit these gates.
-  const gevurahRequiresBurn =
-    turn.state.encounter?.sefirah === 'gevurah' && cumulativeCardBurns === 0 && maxCardBurns > 0;
-  const tiferetRequiresBurn =
-    turn.state.encounter?.sefirah === 'tiferet' && cumulativeCardBurns === 0 && maxCardBurns > 0;
-  const binahRequiresBurn =
-    turn.state.encounter?.sefirah === 'binah' && cumulativeCardBurns === 0 && maxCardBurns > 0;
+  const requiresBurnSefirah = (['gevurah', 'tiferet', 'binah'] as const).find(
+    (s) => s === turn.state.encounter?.sefirah,
+  );
+  const requiresBurn =
+    requiresBurnSefirah !== undefined && cumulativeCardBurns === 0 && maxCardBurns > 0;
 
   const assistTotal = useMemo(() => {
     return allies
@@ -709,7 +726,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     if (!player) return;
     turn.encounterBurnDiscard(arcanum);
     setAwaitingBurnDiscard(false);
-    setBurnDiscardHovered(undefined);
+    setBurnDiscardSelected(undefined);
     // Defer the roll to the next render via pendingRollAfterBurnDiscardRef —
     // see the useLayoutEffect above for why doRoll() cannot be called here.
     pendingRollAfterBurnDiscardRef.current = true;
@@ -979,38 +996,50 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             onRoll={awaitingBurnDiscard ? undefined : handleRoll}
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
-            gevurahRequiresBurn={gevurahRequiresBurn}
-            tiferetRequiresBurn={tiferetRequiresBurn}
-            binahRequiresBurn={binahRequiresBurn}
+            frameBorderClass={frameTokens.frameBorder}
+            requiresBurn={requiresBurn}
+            {...(requiresBurnSefirah !== undefined ? { requiresBurnSefirah } : {})}
           />
           {awaitingBurnDiscard && player ? (
             <div
               data-burn-discard-picker
               role="region"
-              aria-label="Discard one card before rolling"
-              className="mt-4 rounded border border-veil/30 bg-ground/80 p-4"
+              aria-label="Choose a card to release"
+              className={`mt-4 rounded border-2 bg-veil/5 p-4 ${frameTokens.frameBorder}`}
             >
-              <p className="mb-2 font-display text-sm tracking-widest opacity-80">
-                Burning a card costs a discard — shed one card before the die rolls.
+              <p className="mb-1 font-display text-base tracking-widest">
+                Choose a card to release
               </p>
-              {burnDiscardHovered !== undefined ? (
-                <p className="mb-2 text-xs opacity-60">
-                  {arcanumByNumber(burnDiscardHovered).name}
-                </p>
-              ) : (
-                <p className="mb-2 text-xs opacity-60">
-                  Hover a card to see its name, then click ✕ to discard it.
-                </p>
-              )}
+              <p className="mb-3 text-xs opacity-60">
+                Burning costs a discard — select a card below, then confirm your choice.
+              </p>
               <Hand
                 hand={player.hand}
                 visible={true}
                 layout="inline"
-                discardMode={true}
-                onDiscard={handleBurnDiscard}
-                onCardHover={(n) => setBurnDiscardHovered(n)}
+                onCardSelect={(n) => setBurnDiscardSelected(n)}
+                {...(burnDiscardSelected !== undefined
+                  ? { selectedArcanum: burnDiscardSelected }
+                  : {})}
                 ariaLabel="Cards available to discard"
               />
+              {burnDiscardSelected !== undefined ? (
+                <div className="mt-3 flex items-center gap-3">
+                  <p className="font-display text-sm">
+                    {arcanumByNumber(burnDiscardSelected).name} — confirm release?
+                  </p>
+                  <button
+                    type="button"
+                    data-action="confirm-burn-discard"
+                    onClick={() => {
+                      handleBurnDiscard(burnDiscardSelected);
+                    }}
+                    className={`rounded border px-4 py-1.5 font-display text-sm ${frameTokens.frameBorder} ${frameTokens.buttonGlow}`}
+                  >
+                    Release this card
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </>
@@ -1063,17 +1092,18 @@ interface PrepPanelProps {
    * parent's `SEFIRAH_FRAME_TOKENS[context.sefirah].buttonGlow`.
    */
   readonly glowClass: string;
+  /** Sefirah-coloured border class for the burn-required hint callout. */
+  readonly frameBorderClass: string;
   /**
-   * When true, the Roll button is disabled and an explanatory hint is
-   * shown — Gevurah requires at least one staged card burn before
-   * `prep-confirm` will accept the roll. Mirrors the engine's gate in
-   * `turn-machine.ts` so the player sees why clicking does nothing.
+   * When true, the Roll button is disabled and a prominent callout is
+   * shown — the current Sefirah (Gevurah / Tiferet / Binah) requires at
+   * least one staged card burn before `prep-confirm` will accept the roll.
+   * Mirrors the engine gate in `turn-machine.ts` so the player sees why
+   * clicking does nothing.
    */
-  readonly gevurahRequiresBurn?: boolean;
-  /** Parallel gate for Tiferet (Apollo) — same rule, same engine condition. */
-  readonly tiferetRequiresBurn?: boolean;
-  /** Parallel gate for Binah — same rule, same engine condition. */
-  readonly binahRequiresBurn?: boolean;
+  readonly requiresBurn?: boolean;
+  /** Which Sefirah triggered the gate — drives the hint copy. */
+  readonly requiresBurnSefirah?: 'gevurah' | 'tiferet' | 'binah';
 }
 
 function PrepPanel(props: PrepPanelProps): JSX.Element {
@@ -1100,9 +1130,9 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     onRoll,
     onCancel,
     glowClass,
-    gevurahRequiresBurn,
-    tiferetRequiresBurn,
-    binahRequiresBurn,
+    frameBorderClass,
+    requiresBurn,
+    requiresBurnSefirah,
   } = props;
   return (
     <div className="mt-4 space-y-4" data-encounter-prep>
@@ -1173,45 +1203,24 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         onChange={adjustSparkBurns}
       />
 
-      {gevurahRequiresBurn === true ? (
-        <p
-          data-gevurah-burn-required
-          className="rounded border border-veil/30 px-3 py-2 text-center text-xs opacity-80"
+      {requiresBurn === true ? (
+        <div
+          data-requires-burn
+          className={`rounded border-l-4 bg-veil/10 px-4 py-3 text-sm ${frameBorderClass}`}
         >
-          Gevurah demands a sacrifice — burn at least one card before you roll.
-        </p>
-      ) : null}
-      {tiferetRequiresBurn === true ? (
-        <p
-          data-tiferet-burn-required
-          className="rounded border border-veil/30 px-3 py-2 text-center text-xs opacity-80"
-        >
-          Apollo demands balance — burn at least one card before you roll.
-        </p>
-      ) : null}
-      {binahRequiresBurn === true ? (
-        <p
-          data-binah-burn-required
-          className="rounded border border-veil/30 px-3 py-2 text-center text-xs opacity-80"
-        >
-          Binah demands understanding — burn at least one card before you roll.
-        </p>
+          {requiresBurnSefirah === 'gevurah'
+            ? 'Gevurah demands a sacrifice — burn at least one card before you roll.'
+            : requiresBurnSefirah === 'tiferet'
+              ? 'Tiferet weighs the cost — burn at least one card before you roll.'
+              : 'Binah sits with the loss — burn at least one card before you roll.'}
+        </div>
       ) : null}
       <div className="flex items-center justify-center gap-4 pt-2">
         <D20Button
           state="idle"
           glowClass={glowClass}
-          {...(onRoll !== undefined &&
-          gevurahRequiresBurn !== true &&
-          tiferetRequiresBurn !== true &&
-          binahRequiresBurn !== true
-            ? { onClick: onRoll }
-            : {})}
-          disabled={
-            gevurahRequiresBurn === true ||
-            tiferetRequiresBurn === true ||
-            binahRequiresBurn === true
-          }
+          {...(onRoll !== undefined && requiresBurn !== true ? { onClick: onRoll } : {})}
+          disabled={requiresBurn === true}
           caption="Roll"
         />
         {onCancel ? (
