@@ -137,7 +137,7 @@ describe('EncounterScreen — Gevurah requires-burn gate', () => {
   it('shows an explanatory hint when the Gevurah gate is active', () => {
     renderGevurahEncounter({ handSize: 2 });
 
-    expect(document.querySelector('[data-gevurah-burn-required]')).not.toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).not.toBeNull();
   });
 
   it('enables Roll after staging at least one card burn', () => {
@@ -156,7 +156,7 @@ describe('EncounterScreen — Gevurah requires-burn gate', () => {
 
     // After staging: Roll is enabled and the hint disappears.
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-gevurah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 
   it('does NOT gate Roll when the player has an empty hand (empty-hand waiver)', () => {
@@ -165,14 +165,14 @@ describe('EncounterScreen — Gevurah requires-burn gate', () => {
     renderGevurahEncounter({ handSize: 0 });
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-gevurah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 
   it('gates Roll in multiplayer mode at Gevurah just as it does in hot-seat', () => {
     renderGevurahEncounter({ handSize: 2, mode: 'multiplayer' });
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).toBeDisabled();
-    expect(document.querySelector('[data-gevurah-burn-required]')).not.toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).not.toBeNull();
   });
 
   it('does NOT gate Roll at a non-Gevurah sefirah even with no burns staged', () => {
@@ -213,7 +213,7 @@ describe('EncounterScreen — Gevurah requires-burn gate', () => {
     );
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-gevurah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 
   it('does not block Roll when pendingModifiers already carries burns from a prior retry', () => {
@@ -249,6 +249,6 @@ describe('EncounterScreen — Gevurah requires-burn gate', () => {
 
     // Engine already has 1 burn → cumulativeCardBurns = 1 → gate is off.
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-gevurah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 });

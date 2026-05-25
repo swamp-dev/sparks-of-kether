@@ -119,7 +119,7 @@ describe('EncounterScreen — Binah requires-burn gate', () => {
   it('shows an explanatory hint when the Binah gate is active', () => {
     renderBinahEncounter({ handSize: 2 });
 
-    expect(document.querySelector('[data-binah-burn-required]')).not.toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).not.toBeNull();
   });
 
   it('enables Roll after staging at least one card burn', () => {
@@ -135,21 +135,21 @@ describe('EncounterScreen — Binah requires-burn gate', () => {
     });
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-binah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 
   it('does NOT gate Roll when the player has an empty hand (empty-hand waiver)', () => {
     renderBinahEncounter({ handSize: 0 });
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-binah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 
   it('gates Roll in multiplayer mode at Binah just as it does in hot-seat', () => {
     renderBinahEncounter({ handSize: 2, mode: 'multiplayer' });
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).toBeDisabled();
-    expect(document.querySelector('[data-binah-burn-required]')).not.toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).not.toBeNull();
   });
 
   it('does not block Roll when pendingModifiers already carries burns from a prior retry', () => {
@@ -180,6 +180,6 @@ describe('EncounterScreen — Binah requires-burn gate', () => {
     );
 
     expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
-    expect(document.querySelector('[data-binah-burn-required]')).toBeNull();
+    expect(document.querySelector('[data-requires-burn]')).toBeNull();
   });
 });
