@@ -929,7 +929,7 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
     }
 
     case 'meditate': {
-      if (phase !== 'move') {
+      if (phase !== 'move' && phase !== 'end') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
       }
       // #503: Meditate is capped at one per turn. The flag is reset
@@ -947,19 +947,20 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // discard prompt. The check fires only when the player attempts
       // to End the turn with > HAND_CAP cards still in hand.
       //
-      // #503: Meditate stays in `'move'` (pre-#503 it transitioned to
-      // `'end'`) so the player may still play a card the same turn.
-      // The freshly drawn cards are usable immediately — closing the
-      // "drew in desperation but cannot use" gap that motivated the
-      // change. The once-per-turn cap (`meditatedThisTurn`) stops
-      // Meditate from strictly dominating Move.
+      // #503: When meditating from 'move', phase stays 'move' so the
+      // player may still play a card the same turn.
+      // #287: Meditate is also allowed from 'end' phase (after a path
+      // play with no challenge). Phase stays 'end' and lastAction is
+      // cleared to prevent the PlayScreen auto-advance timer from
+      // firing while the player reviews their new cards.
       const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng, {
         overCap: true,
       });
       const nextState: GameState = {
         ...drewState,
-        phase: 'move',
+        phase,
         meditatedThisTurn: true,
+        ...(phase === 'end' ? { lastAction: undefined } : {}),
       };
       return { ok: true, value: { next: { state: nextState } } };
     }
