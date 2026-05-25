@@ -24,6 +24,14 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
+// The multiplayer flow requires a real Supabase instance for room creation,
+// auth, and Realtime. Skip in CI environments where only the hot-seat e2e
+// job runs (no Supabase backing service).
+test.skip(
+  !process.env['NEXT_PUBLIC_SUPABASE_URL'],
+  'Requires Supabase: set NEXT_PUBLIC_SUPABASE_URL and run `supabase start`',
+);
+
 test('non-active player sees turn advance when active player ends turn', async ({ browser }) => {
   const ctx1 = await browser.newContext();
   const ctx2 = await browser.newContext();
