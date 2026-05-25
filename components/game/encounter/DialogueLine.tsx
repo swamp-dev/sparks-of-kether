@@ -108,10 +108,7 @@ export function DialogueLine({
         // the existing `[data-avatar-verdict]` / `[data-avatar-name]`
         // selectors keep working without changes to the tests that pin
         // the VerdictReveal DOM contract.
-        <p
-          data-avatar-verdict
-          className="text-center text-sm italic opacity-90"
-        >
+        <p data-avatar-verdict className="text-center text-sm italic opacity-90">
           <span
             data-avatar-name
             data-dialogue-speaker
@@ -119,7 +116,11 @@ export function DialogueLine({
           >
             {speaker}:
           </span>{' '}
-          <RevealLine text={line} reducedMotionOverride={reducedMotion} onComplete={onComplete} />
+          <RevealLine
+            text={line}
+            reducedMotionOverride={reducedMotion}
+            {...(onComplete !== undefined ? { onComplete } : {})}
+          />
         </p>
       ) : (
         // Framing / player-response layout: speaker nameplate above a
@@ -137,7 +138,11 @@ export function DialogueLine({
             {...(variant === 'player' ? { 'data-player-response': true } : {})}
             className="font-display italic leading-relaxed text-veil"
           >
-            <RevealLine text={line} reducedMotionOverride={reducedMotion} onComplete={onComplete} />
+            <RevealLine
+              text={line}
+              reducedMotionOverride={reducedMotion}
+              {...(onComplete !== undefined ? { onComplete } : {})}
+            />
           </p>
         </>
       )}
