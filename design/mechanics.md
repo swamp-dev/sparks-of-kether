@@ -213,7 +213,11 @@ On your turn, in order:
    end-of-turn).
 3. **Challenge** (if you arrived at an uncleared Sefirah). See below.
 4. **Assist** (optional). Spend Sparks to help allies.
-5. **End turn.**
+5. **Meditate (optional, once per turn).** After arriving at a cleared Sefirah
+   (which lands you in *end* phase), you may still Meditate once if you have
+   not already meditated this turn. Draw 2 cards; the turn does not
+   auto-advance — click End Turn when you are ready.
+6. **End turn.**
 
 Malkuth has no challenge. Kether has the **Final Threshold** (collective,
 endgame only).
