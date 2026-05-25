@@ -289,8 +289,16 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // DialogueLine bar during prep. Sequencing:
   //   'framing'         → avatar's trial-naming line reveals
   //   'player-response' → zodiac player's response reveals (voice fires)
-  //   'ready'           → dialogue done; both lines have revealed
+  //   'ready'           → dialogue done; bar is empty (intentional — the
+  //                        PrepPanel is now the visual focus)
   // Resets to 'framing' on retry (same effect that clears stagedCardBurns).
+  //
+  // Coupling note: `framingComplete` is always set to `true` in the same
+  // callback that advances this from 'framing' to 'player-response'/'ready'
+  // (see the framing DialogueLine onComplete below). They must stay in sync —
+  // `framingComplete` is what `derivePose` reads; `dialoguePhase` is what
+  // the bar rendering reads. If you add a path that sets one without the
+  // other, the avatar pose and the dialogue bar will diverge.
   const [dialoguePhase, setDialoguePhase] = useState<'framing' | 'player-response' | 'ready'>(
     'framing',
   );
@@ -428,17 +436,20 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     playSound(cue);
   }, [uiSubPhase, context.sefirah, playSound]);
 
-  // Player response voice. Fires when the dialogue sequence reaches the
-  // 'player-response' phase — after the framing line has revealed. This
-  // ordering naturally avoids the old #229/#230 effect-ordering dependency:
-  // the greeting fires on mount (wins the exclusive slot), the framing
-  // reveals (no voice), then the player response fires here with the
-  // exclusive slot free. On retry the greeting latch is already set, so
-  // the response voice plays uninterrupted.
+  // Player response voice. Fires once per encounter when the dialogue
+  // sequence reaches 'player-response' — after the framing line has
+  // revealed. The latch (playerResponseVoiceFiredRef) mirrors the
+  // greeting latch: retry resets dialoguePhase back to 'framing', which
+  // would normally re-fire this effect on the retry's player-response
+  // phase. We suppress that because the player has already "spoken"
+  // this encounter — re-voicing on every retry would feel like a loop.
+  const playerResponseVoiceFiredRef = useRef(false);
   useEffect(() => {
+    if (playerResponseVoiceFiredRef.current) return;
     if (dialoguePhase !== 'player-response') return;
     if (playerResponse === undefined) return;
     if (context.playerSign === undefined || playerResponseVariantIndex === undefined) return;
+    playerResponseVoiceFiredRef.current = true;
     playVoice(playerResponseVoicePath(avatarKey, context.playerSign, playerResponseVariantIndex));
   }, [
     dialoguePhase,
@@ -770,15 +781,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // it without the listener cleanup overhead.
   }, [uiSubPhase]);
 
-  // Avatar caption: in prep, the player-response line; in pass/fail,
-  // the verdict. The portrait stays mounted across all three sub-
-  // states so its position / breath halo don't reset between them.
-  const avatarCaption =
-    uiSubPhase === 'prep'
-      ? playerResponse
-      : verdictLine !== undefined && avatarHasCopy
-        ? verdictLine
-        : undefined;
+  // Avatar caption: in pass/fail react state, the verdict line shown
+  // beneath the (small) header portrait. The prep portrait carries no
+  // caption — that text is now in the DialogueLine bar. The portrait
+  // itself stays mounted across all three sub-states so its position /
+  // breath halo don't reset between them.
+  const avatarCaption = verdictLine !== undefined && avatarHasCopy ? verdictLine : undefined;
   const avatarState: 'prep' | 'pass' | 'fail' =
     uiSubPhase === 'prep' ? 'prep' : resolvedOutcome?.pass === true ? 'pass' : 'fail';
   const avatarNameLabel =

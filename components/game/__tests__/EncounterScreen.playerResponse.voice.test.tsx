@@ -82,7 +82,7 @@ function seedVoice(enabled: boolean): void {
  * Render EncounterScreen at Hod with Aries player sign in prep phase.
  * The player response voice should fire immediately on mount.
  */
-async function renderPrep(voiceEnabled = true) {
+function renderPrep(voiceEnabled = true) {
   seedVoice(voiceEnabled);
   const state = makeHodChallengeState();
   const rng = seededRng(1);
