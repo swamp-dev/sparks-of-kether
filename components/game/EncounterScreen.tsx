@@ -477,10 +477,13 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const isRetry = (turn.pendingModifiers?.cardBurns.length ?? 0) > 0;
 
   // Mirror the engine's `prep-confirm` gate (turn-machine.ts:1278-1283):
-  // Gevurah requires at least one staged card burn when the player has cards.
-  // We read from `turn.state.encounter` (not just `context.sefirah`) to match
-  // the engine condition exactly — test fixtures that manually construct
-  // challenge states without setting `encounter` are unaffected.
+  // Gevurah / Tiferet / Binah each require at least one staged card burn when
+  // the player has cards. We read from `turn.state.encounter` (not just
+  // `context.sefirah`) to match the engine condition exactly — test fixtures
+  // that manually construct challenge states without setting `encounter` are
+  // unaffected. `maxCardBurns > 0` proxies `player.hand.length > 0` because
+  // PlayScreen sets `availableCardBurns = player.hand.length`; if that
+  // contract ever changes, revisit these gates.
   const gevurahRequiresBurn =
     turn.state.encounter?.sefirah === 'gevurah' && cumulativeCardBurns === 0 && maxCardBurns > 0;
   const tiferetRequiresBurn =
