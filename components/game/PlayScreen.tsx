@@ -321,7 +321,12 @@ export function PlayScreen({
   useEffect(() => {
     if (turn.phase !== 'end') return undefined;
     if (pendingDiscardCount > 0) return undefined;
-    if (turn.state.meditatedThisTurn === true) return undefined;
+    // #287: suppress auto-advance when the player just meditated from 'end' phase
+    // (lastAction is undefined after end-phase meditate). If meditatedThisTurn is
+    // true but lastAction is set (move-phase meditate then path to cleared sefirah),
+    // auto-advance fires normally — the player already saw their cards.
+    if (turn.state.meditatedThisTurn === true && turn.state.lastAction === undefined)
+      return undefined;
     // In multiplayer, only the active player auto-advances. Non-active clients
     // receive the 'end' phase via Realtime but must not fire endTurn — the
     // server rejects non-active players with 403, producing spurious errors.
@@ -336,6 +341,7 @@ export function PlayScreen({
     currentPlayerId,
     activePlayerId,
     turn.state.meditatedThisTurn,
+    turn.state.lastAction,
   ]);
 
   const activePlayer = turn.state.players[turn.activePlayerIndex];

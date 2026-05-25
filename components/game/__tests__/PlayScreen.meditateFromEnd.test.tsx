@@ -149,19 +149,18 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
     const meditateBtn = screen.getByRole('button', { name: /^meditate$/i });
     expect(meditateBtn).toBeDisabled();
 
-    // Auto-advance also fires immediately (meditatedThisTurn=true in 'end' via move-phase
-    // meditate → end NOT via end-phase meditate — wait, NO. The auto-advance suppression
-    // only applies when meditatedThisTurn becomes true AFTER entering 'end'.
-    // If meditatedThisTurn was already true when we entered 'end', the effect runs
-    // with meditatedThisTurn=true and should NOT auto-advance.
+    // Auto-advance DOES fire here: meditatedThisTurn=true but lastAction='move-draw'
+    // (set by the path play), so the #287 suppression gate (lastAction===undefined)
+    // does not trigger. The player already reviewed their meditate cards in move phase;
+    // no further pause is needed.
     const initialActive = container
       .querySelector('[data-play-screen]')
       ?.getAttribute('data-active-player');
     act(() => {
-      vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 3);
+      vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
     });
-    expect(container.querySelector('[data-play-screen]')?.getAttribute('data-active-player')).toBe(
-      initialActive,
-    );
+    expect(
+      container.querySelector('[data-play-screen]')?.getAttribute('data-active-player'),
+    ).not.toBe(initialActive);
   });
 });

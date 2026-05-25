@@ -342,8 +342,9 @@ export function applyClientAction(
       });
       const newState: GameState = {
         ...drewState,
-        phase: 'move',
+        phase: state.phase,
         meditatedThisTurn: true,
+        ...(state.phase === 'end' ? { lastAction: undefined } : {}),
       };
       return { ok: true, newState };
     }
