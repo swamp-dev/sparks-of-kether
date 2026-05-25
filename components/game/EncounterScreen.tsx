@@ -1212,7 +1212,9 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
             ? 'Gevurah demands a sacrifice — burn at least one card before you roll.'
             : requiresBurnSefirah === 'tiferet'
               ? 'Tiferet weighs the cost — burn at least one card before you roll.'
-              : 'Binah sits with the loss — burn at least one card before you roll.'}
+              : requiresBurnSefirah === 'binah'
+                ? 'Binah sits with the loss — burn at least one card before you roll.'
+                : 'Burn at least one card before you roll.'}
         </div>
       ) : null}
       <div className="flex items-center justify-center gap-4 pt-2">
@@ -1220,7 +1222,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
           state="idle"
           glowClass={glowClass}
           {...(onRoll !== undefined && requiresBurn !== true ? { onClick: onRoll } : {})}
-          disabled={requiresBurn === true}
+          disabled={requiresBurn === true || onRoll === undefined}
           caption="Roll"
         />
         {onCancel ? (
