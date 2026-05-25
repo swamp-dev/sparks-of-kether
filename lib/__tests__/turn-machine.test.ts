@@ -44,8 +44,8 @@ describe('turnReducer — phase guards', () => {
     expect(result.reason.actual).toBe('challenge');
   });
 
-  it('rejects meditate when phase is not move', () => {
-    const result = turnReducer(snapshotAt('end'), { kind: 'meditate' }, RNG);
+  it('rejects meditate when phase is challenge (not move or end)', () => {
+    const result = turnReducer(snapshotAt('challenge'), { kind: 'meditate' }, RNG);
     expect(result.ok).toBe(false);
   });
 
@@ -1811,6 +1811,61 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     // fires on end-turn instead.
     expect(result.value.next.state.pendingDiscard).toBeUndefined();
     expect(result.value.next.state.phase).toBe('move');
+  });
+
+  it('meditate from end phase stays in end phase and sets meditatedThisTurn (#287)', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3] });
+    const state = makeState(
+      {},
+      { players: [player], activePlayerId: 'p1', deck: [11, 12, 13], discardPile: [] },
+    );
+    const result = turnReducer({ state: { ...state, phase: 'end' } }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const next = result.value.next.state;
+    // Stays in end phase — player still ends their turn manually.
+    expect(next.phase).toBe('end');
+    expect(next.meditatedThisTurn).toBe(true);
+    const after = next.players.find((p) => p.id === 'p1');
+    expect(after?.hand).toEqual([1, 2, 3, 11, 12]);
+  });
+
+  it('meditate from end phase clears lastAction to suppress auto-advance (#287)', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3] });
+    const state = makeState(
+      {},
+      { players: [player], activePlayerId: 'p1', deck: [11, 12, 13], discardPile: [] },
+    );
+    const stateWithLastAction: GameState = {
+      ...state,
+      phase: 'end',
+      lastAction: 'move-draw',
+    };
+    const result = turnReducer({ state: stateWithLastAction }, { kind: 'meditate' }, RNG);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // lastAction must be cleared so the PlayScreen auto-advance timer
+    // doesn't fire while the player is reviewing their new cards.
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+
+  it('second meditate from end phase is rejected with already-meditated (#287)', () => {
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [1, 2, 3] });
+    const state = makeState(
+      {},
+      { players: [player], activePlayerId: 'p1', deck: [11, 12, 13], discardPile: [] },
+    );
+    const first = turnReducer(
+      { state: { ...state, phase: 'end' } },
+      { kind: 'meditate' },
+      RNG,
+    );
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = turnReducer(first.value.next, { kind: 'meditate' }, RNG);
+    expect(second.ok).toBe(false);
+    if (second.ok) return;
+    expect(second.reason.kind).toBe('already-meditated');
   });
 
   it('end-turn with stale pendingDiscard skips the cap-check (#523)', () => {
