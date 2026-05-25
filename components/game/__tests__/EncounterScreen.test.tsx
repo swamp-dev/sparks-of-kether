@@ -973,6 +973,12 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         />
       );
       const view = render(<Wrapper />);
+      // Advance past framing animation so player-response dialogue line renders.
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
       // Player-response renders in prep, picked from variant 0.
       const prepResponse = document.querySelector('[data-player-response]');
       expect(prepResponse?.textContent).toContain('Just say what you mean, messenger.');
@@ -1034,6 +1040,11 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         />
       );
       const view = render(<Wrapper />);
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
       const prepResponse = document.querySelector('[data-player-response]');
       expect(prepResponse?.textContent).toContain("I'm in the want already, Aphrodite.");
 
@@ -1080,6 +1091,11 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         />
       );
       const view = render(<Wrapper />);
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
       const prepResponse = document.querySelector('[data-player-response]');
       expect(prepResponse?.textContent).toContain('Give me the spec, Ares.');
 
@@ -1130,6 +1146,12 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
         />
       );
       const view = render(<Wrapper />);
+      // Advance past framing so player-response dialogue line renders.
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
       const responseBefore = document.querySelector('[data-player-response]')?.textContent?.trim();
       expect(responseBefore).toBeTruthy();
 
@@ -1150,6 +1172,12 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
       }
       act(() => {
         fireEvent.click(retryBtn);
+      });
+      rerender();
+      view.rerender(<Wrapper />);
+      // Advance past framing again so player-response dialogue line renders after retry.
+      act(() => {
+        vi.advanceTimersByTime(5000);
       });
       rerender();
       view.rerender(<Wrapper />);

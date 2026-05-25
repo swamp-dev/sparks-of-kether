@@ -8,7 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, renderHook, screen } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import { EncounterScreen } from '../EncounterScreen';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
@@ -82,7 +82,7 @@ function seedVoice(enabled: boolean): void {
  * Render EncounterScreen at Hod with Aries player sign in prep phase.
  * The player response voice should fire immediately on mount.
  */
-async function renderPrep(voiceEnabled = true) {
+function renderPrep(voiceEnabled = true) {
   seedVoice(voiceEnabled);
   const state = makeHodChallengeState();
   const rng = seededRng(1);
@@ -109,6 +109,12 @@ async function renderPrep(voiceEnabled = true) {
   );
 
   const view = render(<Wrapper />);
+  rerender();
+  view.rerender(<Wrapper />);
+  // Advance past framing animation so dialoguePhase reaches 'player-response' and voice fires.
+  act(() => {
+    vi.advanceTimersByTime(5000);
+  });
   rerender();
   view.rerender(<Wrapper />);
 

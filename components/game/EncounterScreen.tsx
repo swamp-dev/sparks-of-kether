@@ -34,9 +34,9 @@ import { avatarArrivesCueFor, avatarGreetingVoicePathFor } from '@/lib/sound/cue
 import { useVoice } from '@/lib/voice/useVoice';
 import { playerResponseVoicePath, verdictVoicePath } from '@/lib/voice/paths';
 import { AvatarPortrait } from './encounter/AvatarPortrait';
+import { DialogueLine } from './encounter/DialogueLine';
 import { derivePose, type UiSubPhase } from './encounter/encounter-pose';
 import { D20Button } from './encounter/D20Button';
-import { RevealLine } from './encounter/RevealLine';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
 import { StatReadout } from './encounter/StatReadout';
 import { VerdictReveal } from './encounter/VerdictReveal';
@@ -285,6 +285,23 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // use case) without that gate landing in this PR — see PR body for
   // the deferral rationale and test-impact survey.
   const [framingComplete, setFramingComplete] = useState(false);
+  // Dialogue sequence phase. Drives which line is shown in the
+  // DialogueLine bar during prep. Sequencing:
+  //   'framing'         → avatar's trial-naming line reveals
+  //   'player-response' → zodiac player's response reveals (voice fires)
+  //   'ready'           → dialogue done; bar is empty (intentional — the
+  //                        PrepPanel is now the visual focus)
+  // Resets to 'framing' on retry (same effect that clears stagedCardBurns).
+  //
+  // Coupling note: `framingComplete` is always set to `true` in the same
+  // callback that advances this from 'framing' to 'player-response'/'ready'
+  // (see the framing DialogueLine onComplete below). They must stay in sync —
+  // `framingComplete` is what `derivePose` reads; `dialoguePhase` is what
+  // the bar rendering reads. If you add a path that sets one without the
+  // other, the avatar pose and the dialogue bar will diverge.
+  const [dialoguePhase, setDialoguePhase] = useState<'framing' | 'player-response' | 'ready'>(
+    'framing',
+  );
   // #90: burn-discard gate. Set to true when the player has staged card
   // burns and clicks Roll — they must shed one card before the die rolls.
   const [awaitingBurnDiscard, setAwaitingBurnDiscard] = useState(false);
@@ -336,6 +353,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // is stable across retries (#478 picks once per encounter via
       // `useState` lazy init), but the reveal animation re-runs.
       setFramingComplete(false);
+      // Reset dialogue sequence so framing reveals again on retry.
+      setDialoguePhase('framing');
     }
   }, [turn.challengeSubPhase, stopVoice]);
 
@@ -417,20 +436,23 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     playSound(cue);
   }, [uiSubPhase, context.sefirah, playSound]);
 
-  // #229: zodiac player response voice. Fires in prep phase whenever the
-  // prep state becomes active (initial mount and after each retry). The
-  // zodiac sign's voice speaks the player's pre-roll response line.
-  // (playVoice is destructured above alongside stopVoice from #228.)
-  // ORDERING DEPENDENCY (#230): this effect MUST remain declared before the
-  // greeting effect below. Both fire on the same 'prep' onset; useVoice is
-  // exclusive — the last-declared effect wins. Greeting must win on first
-  // mount, so it must be declared last.
+  // Player response voice. Fires once per encounter when the dialogue
+  // sequence reaches 'player-response' — after the framing line has
+  // revealed. The latch (playerResponseVoiceFiredRef) mirrors the
+  // greeting latch: retry resets dialoguePhase back to 'framing', which
+  // would normally re-fire this effect on the retry's player-response
+  // phase. We suppress that because the player has already "spoken"
+  // this encounter — re-voicing on every retry would feel like a loop.
+  const playerResponseVoiceFiredRef = useRef(false);
   useEffect(() => {
-    if (uiSubPhase !== 'prep' || playerResponse === undefined) return;
+    if (playerResponseVoiceFiredRef.current) return;
+    if (dialoguePhase !== 'player-response') return;
+    if (playerResponse === undefined) return;
     if (context.playerSign === undefined || playerResponseVariantIndex === undefined) return;
+    playerResponseVoiceFiredRef.current = true;
     playVoice(playerResponseVoicePath(avatarKey, context.playerSign, playerResponseVariantIndex));
   }, [
-    uiSubPhase,
+    dialoguePhase,
     playerResponse,
     avatarKey,
     context.playerSign,
@@ -438,14 +460,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     playVoice,
   ]);
 
-  // #230: avatar spoken greeting. Fires once on first prep mount — same
-  // onset as the sting, but on the voice channel. Declared AFTER the
-  // player-response effect (#229) so the greeting fires last in the
-  // initial render cycle and wins the exclusive voice slot; the player
-  // response is only heard on retry (greeting latch is already set).
+  // #230: avatar spoken greeting. Fires once on first prep mount.
   // Returns null for Kether (narrator handled by #231).
-  // ORDERING DEPENDENCY (#229): do not move this effect above the
-  // player-response effect. See comment there for the full invariant.
+  // The player-response voice now fires later (when dialoguePhase ===
+  // 'player-response'), so there is no ordering dependency between
+  // these two effects — greeting always wins the slot on mount because
+  // the player-response effect doesn't run until the framing completes.
   const avatarGreetingFiredRef = useRef(false);
   useEffect(() => {
     if (avatarGreetingFiredRef.current) return;
@@ -768,15 +788,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // it without the listener cleanup overhead.
   }, [uiSubPhase]);
 
-  // Avatar caption: in prep, the player-response line; in pass/fail,
-  // the verdict. The portrait stays mounted across all three sub-
-  // states so its position / breath halo don't reset between them.
-  const avatarCaption =
-    uiSubPhase === 'prep'
-      ? playerResponse
-      : verdictLine !== undefined && avatarHasCopy
-        ? verdictLine
-        : undefined;
+  // Avatar caption: in pass/fail react state, the verdict line shown
+  // beneath the (small) header portrait. The prep portrait carries no
+  // caption — that text is now in the DialogueLine bar. The portrait
+  // itself stays mounted across all three sub-states so its position /
+  // breath halo don't reset between them.
+  const avatarCaption = verdictLine !== undefined && avatarHasCopy ? verdictLine : undefined;
   const avatarState: 'prep' | 'pass' | 'fail' =
     uiSubPhase === 'prep' ? 'prep' : resolvedOutcome?.pass === true ? 'pass' : 'fail';
   const avatarNameLabel =
@@ -917,15 +934,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       {uiSubPhase === 'prep' ? (
         <>
           {/*
-            Prep stage (#479): avatar leads. The portrait sits at
-            stage centre (oval crop, ~240×360 with the commissioned
-            half-body painting visible). The trial-framing line — the
-            avatar's voice naming the trial — renders in font-display
-            italic above the modifier panel. When the Sefirah has a
-            shipped per-Sefirah mechanic (#353 Hod, #354 Yesod), the
-            "Twist" banner names it in plain language so the player
-            sees the rule before staging modifiers
-            (`design/per-sefirah-mechanics.md` § 2.2).
+            Prep stage (#479): avatar leads. The portrait sits at stage
+            centre. Below it, the DialogueLine bar shows one line at a
+            time — first the avatar's trial-framing line, then (after
+            it completes) the player's zodiac response. When the Sefirah
+            has a shipped per-Sefirah mechanic (#353 Hod, #354 Yesod),
+            the "Twist" banner names it below the dialogue.
           */}
           <div
             data-encounter-prep-stage
@@ -939,18 +953,37 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
               pose={pose}
               reducedMotion={reducedMotion}
               {...(avatarNameLabel !== undefined ? { avatarName: avatarNameLabel } : {})}
-              {...(avatarCaption !== undefined ? { caption: avatarCaption } : {})}
             />
-            <p
-              data-encounter-framing
-              className="max-w-2xl text-balance text-center font-display text-lg italic leading-relaxed opacity-90"
-            >
-              <RevealLine
-                text={framingLine}
-                reducedMotionOverride={reducedMotion}
-                onComplete={() => setFramingComplete(true)}
+            {dialoguePhase === 'framing' ? (
+              <DialogueLine
+                key="framing"
+                speaker={avatarNameLabel ?? 'The Avatar'}
+                line={framingLine}
+                variant="avatar"
+                accentBorderClass={frameTokens.dialogueBorderL}
+                accentSpeakerClass={frameTokens.dialogueSpeakerText}
+                reducedMotion={reducedMotion}
+                onComplete={() => {
+                  setFramingComplete(true);
+                  setDialoguePhase(playerResponse !== undefined ? 'player-response' : 'ready');
+                }}
+                className="max-w-2xl"
               />
-            </p>
+            ) : dialoguePhase === 'player-response' && playerResponse !== undefined ? (
+              <DialogueLine
+                key="player-response"
+                speaker={
+                  playerSignEntry !== undefined
+                    ? `${playerSignEntry.glyph} ${playerSignEntry.name}`
+                    : (context.playerSign ?? 'You')
+                }
+                line={playerResponse}
+                variant="player"
+                reducedMotion={reducedMotion}
+                onComplete={() => setDialoguePhase('ready')}
+                className="max-w-2xl"
+              />
+            ) : null}
             {twistLine !== undefined ? (
               <p
                 data-encounter-twist
