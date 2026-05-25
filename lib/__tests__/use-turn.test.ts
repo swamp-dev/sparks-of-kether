@@ -1313,8 +1313,9 @@ describe('useTurn — endTurn multiplayer dispatch (#270)', () => {
     act(() => {
       result.current.endTurn();
     });
-    expect(dispatch).toHaveBeenCalledOnce();
-    expect(dispatch).toHaveBeenCalledWith({ kind: 'end-turn', playerId: 'p1' });
+    expect(dispatch).toHaveBeenCalledTimes(2);
+    expect(dispatch).toHaveBeenNthCalledWith(1, { kind: 'meditate', playerId: 'p1' });
+    expect(dispatch).toHaveBeenNthCalledWith(2, { kind: 'end-turn', playerId: 'p1' });
   });
 
   it('hot-seat: endTurn does NOT dispatch when dispatchClientAction is omitted', () => {

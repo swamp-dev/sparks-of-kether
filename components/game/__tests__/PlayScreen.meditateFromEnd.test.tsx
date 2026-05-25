@@ -100,7 +100,7 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
     expect(callout?.textContent).toMatch(/End your turn when ready/);
   });
 
-  it('Meditate button is not shown in end phase if already meditated in move phase', () => {
+  it('Meditate button is disabled in end phase if already meditated in move phase', () => {
     // If the player meditated in 'move' then played a path to a cleared sefirah,
     // meditatedThisTurn is already true when they reach 'end' — button disabled.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
