@@ -34,6 +34,10 @@ interface SefirahFrameTokens {
   readonly headerAccent: string;
   /** D20 button glow ring (matches frameShadow but applied to the button). */
   readonly buttonGlow: string;
+  /** DialogueLine left-border accent (`border-l-4` stripe). */
+  readonly dialogueBorderL: string;
+  /** DialogueLine speaker nameplate text colour. */
+  readonly dialogueSpeakerText: string;
 }
 
 export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameTokens>> = {
@@ -44,6 +48,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-kether',
     headerAccent: 'border-kether',
     buttonGlow: 'shadow-glow-kether',
+    dialogueBorderL: 'border-l-kether',
+    dialogueSpeakerText: 'text-kether/70',
   },
   chokmah: {
     frameShadow: 'shadow-glow-chokmah',
@@ -52,6 +58,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-chokmah',
     headerAccent: 'border-chokmah',
     buttonGlow: 'shadow-glow-chokmah',
+    dialogueBorderL: 'border-l-chokmah',
+    dialogueSpeakerText: 'text-chokmah/70',
   },
   binah: {
     frameShadow: 'shadow-glow-binah',
@@ -60,6 +68,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-binah',
     headerAccent: 'border-binah',
     buttonGlow: 'shadow-glow-binah',
+    dialogueBorderL: 'border-l-binah',
+    dialogueSpeakerText: 'text-binah/70',
   },
   chesed: {
     frameShadow: 'shadow-glow-chesed',
@@ -68,6 +78,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-chesed',
     headerAccent: 'border-chesed',
     buttonGlow: 'shadow-glow-chesed',
+    dialogueBorderL: 'border-l-chesed',
+    dialogueSpeakerText: 'text-chesed/70',
   },
   gevurah: {
     frameShadow: 'shadow-glow-gevurah',
@@ -76,6 +88,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-gevurah',
     headerAccent: 'border-gevurah',
     buttonGlow: 'shadow-glow-gevurah',
+    dialogueBorderL: 'border-l-gevurah',
+    dialogueSpeakerText: 'text-gevurah/70',
   },
   tiferet: {
     frameShadow: 'shadow-glow-tiferet',
@@ -84,6 +98,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-tiferet',
     headerAccent: 'border-tiferet',
     buttonGlow: 'shadow-glow-tiferet',
+    dialogueBorderL: 'border-l-tiferet',
+    dialogueSpeakerText: 'text-tiferet/70',
   },
   netzach: {
     frameShadow: 'shadow-glow-netzach',
@@ -92,6 +108,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-netzach',
     headerAccent: 'border-netzach',
     buttonGlow: 'shadow-glow-netzach',
+    dialogueBorderL: 'border-l-netzach',
+    dialogueSpeakerText: 'text-netzach/70',
   },
   hod: {
     frameShadow: 'shadow-glow-hod',
@@ -100,6 +118,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-hod',
     headerAccent: 'border-hod',
     buttonGlow: 'shadow-glow-hod',
+    dialogueBorderL: 'border-l-hod',
+    dialogueSpeakerText: 'text-hod/70',
   },
   yesod: {
     frameShadow: 'shadow-glow-yesod',
@@ -108,6 +128,8 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-yesod',
     headerAccent: 'border-yesod',
     buttonGlow: 'shadow-glow-yesod',
+    dialogueBorderL: 'border-l-yesod',
+    dialogueSpeakerText: 'text-yesod/70',
   },
   malkuth: {
     frameShadow: 'shadow-glow-malkuth',
@@ -116,5 +138,7 @@ export const SEFIRAH_FRAME_TOKENS: Readonly<Record<SefirahKey, SefirahFrameToken
     avatarRing: 'border-malkuth',
     headerAccent: 'border-malkuth',
     buttonGlow: 'shadow-glow-malkuth',
+    dialogueBorderL: 'border-l-malkuth',
+    dialogueSpeakerText: 'text-malkuth/70',
   },
 };
