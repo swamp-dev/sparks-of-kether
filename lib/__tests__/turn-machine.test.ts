@@ -1855,11 +1855,7 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
       {},
       { players: [player], activePlayerId: 'p1', deck: [11, 12, 13], discardPile: [] },
     );
-    const first = turnReducer(
-      { state: { ...state, phase: 'end' } },
-      { kind: 'meditate' },
-      RNG,
-    );
+    const first = turnReducer({ state: { ...state, phase: 'end' } }, { kind: 'meditate' }, RNG);
     expect(first.ok).toBe(true);
     if (!first.ok) return;
     const second = turnReducer(first.value.next, { kind: 'meditate' }, RNG);
