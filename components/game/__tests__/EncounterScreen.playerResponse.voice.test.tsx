@@ -8,7 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, renderHook, screen } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import { EncounterScreen } from '../EncounterScreen';
 import { useTurn } from '@/lib/use-turn';
 import { seededRng } from '@/engine/rng';
@@ -109,6 +109,12 @@ async function renderPrep(voiceEnabled = true) {
   );
 
   const view = render(<Wrapper />);
+  rerender();
+  view.rerender(<Wrapper />);
+  // Advance past framing animation so dialoguePhase reaches 'player-response' and voice fires.
+  act(() => {
+    vi.advanceTimersByTime(5000);
+  });
   rerender();
   view.rerender(<Wrapper />);
 

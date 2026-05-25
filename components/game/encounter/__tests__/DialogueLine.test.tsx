@@ -135,12 +135,7 @@ describe('DialogueLine — data attributes by variant', () => {
 
   it('fail variant: body carries data-avatar-verdict, speaker carries data-avatar-name', () => {
     render(
-      <DialogueLine
-        speaker="Ares"
-        line="You fell short."
-        variant="fail"
-        reducedMotion={false}
-      />,
+      <DialogueLine speaker="Ares" line="You fell short." variant="fail" reducedMotion={false} />,
     );
     expect(document.querySelector('[data-avatar-verdict]')).not.toBeNull();
     expect(document.querySelector('[data-avatar-name]')).not.toBeNull();
@@ -163,11 +158,13 @@ describe('DialogueLine — data attributes by variant', () => {
     const { rerender } = render(
       <DialogueLine speaker="Hermes" line="Pass." variant="pass" reducedMotion={false} />,
     );
-    expect(document.querySelector('[data-dialogue-line]')?.getAttribute('data-dialogue-variant')).toBe('pass');
-    rerender(
-      <DialogueLine speaker="Ares" line="Fail." variant="fail" reducedMotion={false} />,
-    );
-    expect(document.querySelector('[data-dialogue-line]')?.getAttribute('data-dialogue-variant')).toBe('fail');
+    expect(
+      document.querySelector('[data-dialogue-line]')?.getAttribute('data-dialogue-variant'),
+    ).toBe('pass');
+    rerender(<DialogueLine speaker="Ares" line="Fail." variant="fail" reducedMotion={false} />);
+    expect(
+      document.querySelector('[data-dialogue-line]')?.getAttribute('data-dialogue-variant'),
+    ).toBe('fail');
   });
 });
 
