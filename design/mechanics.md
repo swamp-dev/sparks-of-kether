@@ -1,6 +1,6 @@
 # Sparks of Kether — Mechanics
 
-A cooperative RPG-flavored ascent for 2–4 players. This document describes
+A cooperative RPG-flavored ascent for 1–6 players. This document describes
 **the rules of play**, medium-agnostic. It could be realized as a board game,
 a card game, a web app, or a computer game — none of those are assumed here.
 
@@ -37,7 +37,7 @@ is an implementation choice.
 | Element | Count | Purpose |
 |---|---|---|
 | Tree board | 1 | 10 Sefirot as nodes, 22 paths as edges |
-| Major Arcana decks | **1 deck (2 players) or 2 decks (3–4 players)** | One card per path. Each is also a path-key. With two decks, two players can hold the same Arcanum. |
+| Major Arcana decks | **1 deck (1–2 players), 2 decks (3–4 players), or 3 decks (5–6 players)** | One card per path. Each is also a path-key. With multiple decks, players can hold the same Arcanum. |
 | Player tokens | 1 per player | Current position on the Tree |
 | Stat sheet | 1 per player | 10 stats (one per Sefirah) + zodiac-sign class |
 | Spark tokens | 10 types | One per Sefirah; earned and spent |
@@ -46,11 +46,18 @@ is an implementation choice.
 | Shell markers | 10 | One per Sefirah, dormant/active |
 | d20 | 1 | Stat-check rolls |
 
-**Deck scaling rule.** A 2-player game uses one Major Arcana deck (22
-cards). A 3- or 4-player game uses two shuffled Major Arcana decks
-together (44 cards). Two decks lets multiple players potentially hold
-the same path-key — coordination still matters, but the team isn't
-choked by a single rare card.
+**Deck scaling rule.**
+
+| Player count | Decks | Total cards |
+|---|---|---|
+| 1–2 | 1 deck | 22 cards |
+| 3–4 | 2 decks | 44 cards |
+| 5–6 | 3 decks | 66 cards |
+
+Multiple decks let players potentially hold the same path-key — coordination
+still matters, but the team isn't choked by a single rare card. Solo play (1
+player) uses a single deck with encounter fallbacks where ally mechanics would
+otherwise require a second player (see #277).
 
 **Hand-size cap.** Each player's hand is capped at **6 cards**. See
 [Drawing & Gift handling](#drawing--gift-handling) below for what
@@ -505,7 +512,8 @@ Things this doc intentionally leaves open:
   - [DIGITAL-EASY] Automatic Shell activation at Separation thresholds
   - [TABLETOP-HANDLED] Gift refusal/acceptance (use a token)
   - [TABLETOP-HANDLED] Perfect alternation tracking (use a pillar chip)
-- **Player count scaling.** Balanced at 3–4. 2-player is harder (fewer
-  allies); 5+ risks cluttered turn order — consider splitting into teams.
+- **Player count scaling.** Balanced at 3–4. 1–2 players is harder (fewer
+  allies); 5–6 risks cluttered turn order. Solo encounter fallbacks are
+  specified in #277.
 
 The rest is fair game for playtesting.
