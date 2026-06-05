@@ -484,7 +484,8 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   // snapshot sits at challenge/react/lastOutcome=pass; calling
   // reactContinue clears the challenge machinery and advances phase
   // to `'end'` (#502: pre-#502 this was 'draw').
-  it('reactContinue after a passed prepConfirm advances phase to end and clears challenge state', () => {
+  it('reactContinue after a passed prepConfirm advances phase to move and clears challenge state (#298)', () => {
+    // #298: react-continue returns to 'move' so the player may move again.
     const { result } = hookViaMoveIntoPrep();
     act(() => {
       result.current.prepConfirm('chesed', {
@@ -503,7 +504,7 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
       outcome = result.current.reactContinue();
     });
     expect(outcome?.ok).toBe(true);
-    expect(result.current.phase).toBe('end');
+    expect(result.current.phase).toBe('move');
     expect(result.current.challengeSubPhase).toBeUndefined();
     expect(result.current.state.lastOutcome).toBeUndefined();
   });

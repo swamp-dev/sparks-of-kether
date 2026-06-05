@@ -58,9 +58,12 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
     vi.useRealTimers();
   });
 
-  it('Meditate button is visible and enabled in end phase', () => {
+  it('Meditate button is visible and enabled after a move (#298)', () => {
+    // #298: a no-challenge move stays in 'move' phase. Meditate is still
+    // available (once per turn) — the player may meditate before or after
+    // any number of moves.
     const container = renderAndMoveToEnd();
-    expect(container.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('end');
+    expect(container.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('move');
 
     const meditateBtn = screen.getByRole('button', { name: /^meditate$/i });
     expect(meditateBtn).toBeInTheDocument();
@@ -83,7 +86,7 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
     expect(meditateBtn).toBeDisabled();
   });
 
-  it('shows the end-phase meditate callout after meditating', () => {
+  it('shows the move-phase meditate callout after meditating (#298)', () => {
     const container = renderAndMoveToEnd();
 
     act(() => {
@@ -97,12 +100,14 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
 
     const callout = container.querySelector('[data-meditate-callout]');
     expect(callout).not.toBeNull();
-    expect(callout?.textContent).toMatch(/End your turn when ready/);
+    // #298: after a move, phase is 'move' — the callout text is the
+    // 'move'-phase variant (may still play a card, or end turn).
+    expect(callout?.textContent).toMatch(/End your turn/);
   });
 
-  it('Meditate button is disabled in end phase if already meditated in move phase', () => {
+  it('Meditate button is disabled after move if already meditated (#298)', () => {
     // If the player meditated in 'move' then played a path to a cleared sefirah,
-    // meditatedThisTurn is already true when they reach 'end' — button disabled.
+    // meditatedThisTurn is true in the resulting 'move' phase — button disabled.
     const base = makeFullGame({ playerCount: 2, seed: 1 });
     const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
     const players = base.players.map((p, idx) =>
@@ -143,21 +148,29 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
       fireEvent.click(path32);
     });
 
-    expect(container.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('end');
+    // #298: phase stays 'move' after the no-challenge path play.
+    expect(container.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('move');
 
-    // Meditate button should be disabled because meditatedThisTurn was set in move phase.
+    // Meditate button should be disabled because meditatedThisTurn was set before the move.
     const meditateBtn = screen.getByRole('button', { name: /^meditate$/i });
     expect(meditateBtn).toBeDisabled();
 
-    // Auto-advance DOES fire here: meditatedThisTurn=true but lastAction='move-draw'
-    // (set by the path play), so the #287 suppression gate (lastAction===undefined)
-    // does not trigger. The player already reviewed their meditate cards in move phase;
-    // no further pause is needed.
+    // No auto-advance from 'move' — player must click End Turn.
     const initialActive = container
       .querySelector('[data-play-screen]')
       ?.getAttribute('data-active-player');
     act(() => {
-      vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
+      vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 3);
+    });
+    // Seat has NOT rotated (no auto-advance from 'move').
+    expect(
+      container.querySelector('[data-play-screen]')?.getAttribute('data-active-player'),
+    ).toBe(initialActive);
+    // End Turn works: movedThisTurn=true so the button is present.
+    const endBtn = container.querySelector<HTMLButtonElement>('[data-action="end-turn"]');
+    expect(endBtn).not.toBeNull();
+    act(() => {
+      fireEvent.click(endBtn as HTMLButtonElement);
     });
     expect(
       container.querySelector('[data-play-screen]')?.getAttribute('data-active-player'),
