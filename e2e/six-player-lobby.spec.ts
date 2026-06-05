@@ -35,7 +35,8 @@ test.skip(
  * P1 → aries (0): default, 0 clicks.
  * P2 → opens at taurus (1). Want leo (4): +3 clicks.
  * P3 → opens at taurus (1) (aries+leo taken). Want gemini (2): +1 click.
- * P4 → opens at taurus (1) (aries+leo+gemini taken). Want cancer (3): +2 clicks.
+ * P4 → opens at taurus (1) (aries+leo+gemini taken). Want cancer (3): +1 click.
+ *      Next skips taken signs, so taurus→(skip gemini)→cancer in one click.
  * P5 → opens at taurus (1) (aries+leo+gemini+cancer taken). Want taurus: 0 clicks.
  * P6 → opens at virgo (5) (aries+taurus+gemini+cancer+leo taken). Want virgo: 0 clicks.
  */
@@ -43,7 +44,7 @@ const SIX_PLAYERS: Array<{ label: string; nextClicks: number }> = [
   { label: 'Aries', nextClicks: 0 },
   { label: 'Leo', nextClicks: 3 },
   { label: 'Gemini', nextClicks: 1 },
-  { label: 'Cancer', nextClicks: 2 },
+  { label: 'Cancer', nextClicks: 1 },
   { label: 'Taurus', nextClicks: 0 },
   { label: 'Virgo', nextClicks: 0 },
 ];

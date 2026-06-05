@@ -245,9 +245,10 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
 
     expect(initialState.players).toHaveLength(6);
     // 5–6 players → 3 decks (design rule per mechanics.md).
-    // Each deck has 78 cards; minus 3 cards dealt per player (18 cards).
-    // 3*78 - 18 = 216 remaining in deck.
-    expect(initialState.deck.length).toBe(3 * 78 - 6 * 3);
+    // Each deck is the 22-card Major Arcana; 3*22 = 66 total.
+    // Minus STARTING_HAND_SIZE (3) × 6 players = 18 dealt.
+    // 66 - 18 = 48 remaining in the draw pile.
+    expect(initialState.deck.length).toBe(3 * 22 - 6 * 3);
     expect(initialState.activePlayerId).toBe(initialState.players[0]?.id);
   });
 });
