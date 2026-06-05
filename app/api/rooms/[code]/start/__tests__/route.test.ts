@@ -256,6 +256,8 @@ describe('POST /api/rooms/[code]/start', () => {
     });
     expect(res.status).toBe(200);
     expect(snapshotInserts).toHaveLength(1);
+    const inserted = snapshotInserts[0] as { snapshot: { activePlayerId: string } };
+    expect(inserted.snapshot.activePlayerId).toBe('host-uid');
   });
 
   it('returns 422 duplicate-zodiac-signs when two players share a sign', async () => {

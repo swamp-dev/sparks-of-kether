@@ -108,6 +108,8 @@ describe('validateAndBuildSetup', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('too-few-players');
+    if (result.error.kind !== 'too-few-players') return;
+    expect(result.error.count).toBe(0);
   });
 
   it('accepts 1 player (solo)', () => {
@@ -165,6 +167,8 @@ describe('validateAndBuildSetup', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('too-many-players');
+    if (result.error.kind !== 'too-many-players') return;
+    expect(result.error.count).toBe(7);
   });
 
   it('rejects with missing-zodiac-sign listing every offender', () => {
