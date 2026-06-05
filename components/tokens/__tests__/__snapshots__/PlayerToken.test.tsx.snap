@@ -2,7 +2,7 @@
 
 exports[`PlayerToken > matches snapshot for variant 1 1`] = `
 <svg
-  aria-label="Player token 1"
+  aria-label="Player token 1 (Leo)"
   data-token="player"
   data-variant="1"
   role="img"
@@ -10,7 +10,7 @@ exports[`PlayerToken > matches snapshot for variant 1 1`] = `
   xmlns="http://www.w3.org/2000/svg"
 >
   <title>
-    Player token 1
+    Player token 1 (Leo)
   </title>
   <circle
     cx="18"
@@ -29,14 +29,14 @@ exports[`PlayerToken > matches snapshot for variant 1 1`] = `
     x="18"
     y="24"
   >
-    1
+    ♌
   </text>
 </svg>
 `;
 
 exports[`PlayerToken > matches snapshot for variant 2 1`] = `
 <svg
-  aria-label="Player token 2"
+  aria-label="Player token 2 (Leo)"
   data-token="player"
   data-variant="2"
   role="img"
@@ -44,7 +44,7 @@ exports[`PlayerToken > matches snapshot for variant 2 1`] = `
   xmlns="http://www.w3.org/2000/svg"
 >
   <title>
-    Player token 2
+    Player token 2 (Leo)
   </title>
   <circle
     cx="18"
@@ -63,14 +63,14 @@ exports[`PlayerToken > matches snapshot for variant 2 1`] = `
     x="18"
     y="24"
   >
-    2
+    ♌
   </text>
 </svg>
 `;
 
 exports[`PlayerToken > matches snapshot for variant 3 1`] = `
 <svg
-  aria-label="Player token 3"
+  aria-label="Player token 3 (Leo)"
   data-token="player"
   data-variant="3"
   role="img"
@@ -78,7 +78,7 @@ exports[`PlayerToken > matches snapshot for variant 3 1`] = `
   xmlns="http://www.w3.org/2000/svg"
 >
   <title>
-    Player token 3
+    Player token 3 (Leo)
   </title>
   <circle
     cx="18"
@@ -97,14 +97,14 @@ exports[`PlayerToken > matches snapshot for variant 3 1`] = `
     x="18"
     y="24"
   >
-    3
+    ♌
   </text>
 </svg>
 `;
 
 exports[`PlayerToken > matches snapshot for variant 4 1`] = `
 <svg
-  aria-label="Player token 4"
+  aria-label="Player token 4 (Leo)"
   data-token="player"
   data-variant="4"
   role="img"
@@ -112,7 +112,7 @@ exports[`PlayerToken > matches snapshot for variant 4 1`] = `
   xmlns="http://www.w3.org/2000/svg"
 >
   <title>
-    Player token 4
+    Player token 4 (Leo)
   </title>
   <circle
     cx="18"
@@ -131,7 +131,7 @@ exports[`PlayerToken > matches snapshot for variant 4 1`] = `
     x="18"
     y="24"
   >
-    4
+    ♌
   </text>
 </svg>
 `;

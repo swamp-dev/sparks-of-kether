@@ -11,15 +11,36 @@ describe('PlayerToken', () => {
     expect(circle?.getAttribute('fill')).not.toBe('');
   });
 
-  it('uses the player initial when provided', () => {
-    const { container } = render(<PlayerToken variant={1} initial="Andy" />);
-    expect(container.querySelector('text')?.textContent).toBe('A');
-    expect(container.querySelector('svg')?.getAttribute('aria-label')).toContain('Andy');
+  it('renders the zodiac glyph when a sign is provided', () => {
+    const { container } = render(<PlayerToken variant={1} zodiacSign="aries" />);
+    expect(container.querySelector('text')?.textContent).toBe('♈');
+    expect(container.querySelector('svg')?.getAttribute('aria-label')).toContain('Aries');
   });
 
-  it('falls back to the variant index when no initial is passed', () => {
+  it('falls back to the variant index when no sign is passed', () => {
     const { container } = render(<PlayerToken variant={3} />);
     expect(container.querySelector('text')?.textContent).toBe('3');
+  });
+
+  it('renders correct glyphs for all 12 signs on variant 1', () => {
+    const cases = [
+      ['aries', '♈'],
+      ['taurus', '♉'],
+      ['gemini', '♊'],
+      ['cancer', '♋'],
+      ['leo', '♌'],
+      ['virgo', '♍'],
+      ['libra', '♎'],
+      ['scorpio', '♏'],
+      ['sagittarius', '♐'],
+      ['capricorn', '♑'],
+      ['aquarius', '♒'],
+      ['pisces', '♓'],
+    ] as const;
+    for (const [sign, glyph] of cases) {
+      const { container } = render(<PlayerToken variant={1} zodiacSign={sign} />);
+      expect(container.querySelector('text')?.textContent).toBe(glyph);
+    }
   });
 
   it('produces 4 distinct fill colors across all variants', () => {
@@ -31,7 +52,7 @@ describe('PlayerToken', () => {
   });
 
   it.each([1, 2, 3, 4] as const)('matches snapshot for variant %i', (v) => {
-    const { container } = render(<PlayerToken variant={v} />);
+    const { container } = render(<PlayerToken variant={v} zodiacSign="leo" />);
     expect(container.firstChild).toMatchSnapshot();
   });
 });
