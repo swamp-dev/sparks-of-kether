@@ -1774,7 +1774,10 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
           reason: { kind: 'gift-recipient-at-cap', recipientId: event.recipientId },
         };
       }
-      const newGiverHand = player.hand.filter((c) => c !== event.arcanum);
+      // Remove exactly one copy of the arcanum (player may hold duplicates in
+      // 3-6 player games where 2–3 decks are in play).
+      const giverIdx = player.hand.indexOf(event.arcanum);
+      const newGiverHand = [...player.hand.slice(0, giverIdx), ...player.hand.slice(giverIdx + 1)];
       const newRecipientHand = [...recipient.hand, event.arcanum];
       const newPlayers = state.players.map((p) => {
         if (p.id === player.id) return { ...p, hand: newGiverHand };
@@ -1795,6 +1798,9 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       if (phase !== 'move') {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
       }
+      if (isHoardingActive(state)) {
+        return { ok: false, reason: { kind: 'gift-hoarding-shell-active' } };
+      }
       if (!player.hand.includes(event.arcanum)) {
         return { ok: false, reason: { kind: 'gift-card-not-in-hand' } };
       }
@@ -1805,9 +1811,16 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       if (!recipient.hand.includes(event.discardArcanum)) {
         return { ok: false, reason: { kind: 'gift-discard-not-in-hand' } };
       }
-      const newGiverHand = player.hand.filter((c) => c !== event.arcanum);
+      // Remove exactly one copy of each arcanum (duplicates possible with multiple decks).
+      const giverIdx2 = player.hand.indexOf(event.arcanum);
+      const newGiverHand = [
+        ...player.hand.slice(0, giverIdx2),
+        ...player.hand.slice(giverIdx2 + 1),
+      ];
+      const discardIdx = recipient.hand.indexOf(event.discardArcanum);
       const newRecipientHand = [
-        ...recipient.hand.filter((c) => c !== event.discardArcanum),
+        ...recipient.hand.slice(0, discardIdx),
+        ...recipient.hand.slice(discardIdx + 1),
         event.arcanum,
       ];
       const newPlayers = state.players.map((p) => {
@@ -1830,6 +1843,9 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
     }
 
     case 'refuse-gift-turn': {
+      if (phase !== 'move') {
+        return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
+      }
       const afterEvent = applyEvent(state, {
         kind: 'gift-refused',
         playerId: event.recipientId,

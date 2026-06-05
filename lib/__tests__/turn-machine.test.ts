@@ -7,7 +7,7 @@ import {
   type GameState,
   type TurnPhase,
 } from '@/engine/types';
-import { turnReducer, type TurnSnapshot } from '../turn-machine';
+import { HAND_CAP, turnReducer, type TurnSnapshot } from '../turn-machine';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
 /**
@@ -4887,8 +4887,6 @@ describe('solo action guards (#277)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('turnReducer — gift-turn (#296)', () => {
-  const HAND_CAP = 5;
-
   function makeGiftState(overrides?: {
     giverHand?: number[];
     recipientHand?: number[];
@@ -5018,11 +5016,27 @@ describe('turnReducer — gift-turn (#296)', () => {
     if (result.ok) return;
     expect(result.reason.kind).toBe('wrong-phase');
   });
+
+  it('removes exactly one copy when giver holds duplicates (multi-deck games)', () => {
+    // In 3–6 player games 2–3 decks are in play; duplicates are possible.
+    const state = makeGiftState({ giverHand: [1, 1, 2], recipientHand: [] });
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const giver = result.value.next.state.players.find((p) => p.id === 'p1');
+    const recv = result.value.next.state.players.find((p) => p.id === 'p2');
+    // Giver retains one copy of arcanum 1.
+    expect(giver?.hand).toEqual([1, 2]);
+    expect(recv?.hand).toEqual([1]);
+    expect(result.value.next.state.illumination).toBe(1);
+  });
 });
 
 describe('turnReducer — gift-turn-accept-over-cap (#296)', () => {
-  const HAND_CAP = 5;
-
   it('discards one recipient card and transfers the gift, +1 Illumination', () => {
     const atCap = [10, 11, 12, 13, 14]; // HAND_CAP cards
     const giver = makePlayer({ id: 'p1', hand: [1, 2] });
@@ -5066,6 +5080,54 @@ describe('turnReducer — gift-turn-accept-over-cap (#296)', () => {
     if (result.ok) return;
     expect(result.reason.kind).toBe('gift-discard-not-in-hand');
   });
+
+  it('rejects when Hoarding shell is active', () => {
+    const atCap = [10, 11, 12, 13, 14];
+    const giver = makePlayer({ id: 'p1', hand: [1] });
+    const recipient = makePlayer({ id: 'p2', hand: atCap });
+    const state = makeState(
+      {},
+      {
+        players: [giver, recipient],
+        activePlayerId: 'p1',
+        phase: 'move',
+        shells: { ...EMPTY_SHELL_STATE, chesed: 'active' },
+      },
+    );
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn-accept-over-cap', arcanum: 1, recipientId: 'p2', discardArcanum: 10 },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('gift-hoarding-shell-active');
+  });
+
+  it('removes exactly one copy from recipient hand when duplicates present', () => {
+    // Recipient holds two copies of arcanum 10; discarding arcanum 10 should
+    // only remove one copy, not both.
+    const atCap = [10, 10, 12, 13, 14]; // two copies of 10, total = HAND_CAP
+    const giver = makePlayer({ id: 'p1', hand: [1] });
+    const recipient = makePlayer({ id: 'p2', hand: atCap });
+    const state = makeState(
+      {},
+      { players: [giver, recipient], activePlayerId: 'p1', phase: 'move' },
+    );
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn-accept-over-cap', arcanum: 1, recipientId: 'p2', discardArcanum: 10 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const recv = result.value.next.state.players.find((p) => p.id === 'p2');
+    // One copy of 10 discarded; one copy remains alongside the gifted card 1.
+    expect(recv?.hand).toContain(10);
+    expect(recv?.hand).toContain(1);
+    expect(recv?.hand).toHaveLength(HAND_CAP);
+    expect(result.value.next.state.discardPile).toContain(10);
+  });
 });
 
 describe('turnReducer — refuse-gift-turn (#296)', () => {
@@ -5084,5 +5146,23 @@ describe('turnReducer — refuse-gift-turn (#296)', () => {
     const giverAfter = after.players.find((p) => p.id === 'p1');
     expect(giverAfter?.hand).toEqual([1, 2]);
     expect(after.illumination).toBe(0);
+  });
+
+  it('rejects when phase is not move', () => {
+    const giver = makePlayer({ id: 'p1', hand: [1, 2] });
+    const recipient = makePlayer({ id: 'p2', hand: [10, 11, 12, 13, 14] });
+    const state = makeState(
+      {},
+      {
+        players: [giver, recipient],
+        activePlayerId: 'p1',
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+      },
+    );
+    const result = turnReducer({ state }, { kind: 'refuse-gift-turn', recipientId: 'p2' }, RNG);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('wrong-phase');
   });
 });

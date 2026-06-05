@@ -1064,11 +1064,14 @@ export function PlayScreen({
               setGiftStep(null);
             } else if (result.reason.kind === 'gift-recipient-at-cap') {
               setGiftStep({ kind: 'over-cap', arcanum, recipientId });
+            } else {
+              // Unexpected failure (e.g. Hoarding became active between open and pick).
+              setGiftStep(null);
             }
           }}
           onAcceptOverCap={(arcanum, recipientId, discardArcanum) => {
-            const result = turn.giftTurnAcceptOverCap(arcanum, recipientId, discardArcanum);
-            if (result.ok) setGiftStep(null);
+            turn.giftTurnAcceptOverCap(arcanum, recipientId, discardArcanum);
+            setGiftStep(null);
           }}
           onShowRefuseWarning={(arcanum, recipientId) =>
             setGiftStep({ kind: 'refuse-warning', arcanum, recipientId })
