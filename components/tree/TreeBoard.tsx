@@ -988,8 +988,7 @@ function PlayerTokens({
     const tokenY = node.y + NODE_RADIUS + 4 + TOKEN_RADIUS;
     const color = tokenColorForId(player.id);
     const isActive = player.id === activePlayerId;
-    const zodiacGlyph =
-      zodiacSignByKey(player.zodiacSign).glyph;
+    const zodiacGlyph = zodiacSignByKey(player.zodiacSign).glyph;
     // #312: data-just-moved is true iff this player's last arrival
     // path is recorded (which means they moved at least once). The
     // active-ring picks up the `path-travel-pulse` keyframe in that
