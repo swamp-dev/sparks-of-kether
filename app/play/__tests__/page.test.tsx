@@ -57,13 +57,7 @@ vi.mock('@/components/setup/BlessingRitual', () => ({
 
 let capturedLobbyPlayers: readonly LobbyPlayer[] = [];
 vi.mock('@/components/setup/Lobby', () => ({
-  Lobby: ({
-    players,
-    onBegin,
-  }: {
-    players: readonly LobbyPlayer[];
-    onBegin: () => void;
-  }) => {
+  Lobby: ({ players, onBegin }: { players: readonly LobbyPlayer[]; onBegin: () => void }) => {
     capturedLobbyPlayers = players;
     return (
       <div>

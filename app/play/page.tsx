@@ -25,7 +25,8 @@ import { useMusic } from '@/lib/music/useMusic';
  * #237 (Epic #212 T8) removed the Soul Aspect phase. #255 (Voices
  * Epic T4) reordered sign-pick before the blessing ritual so the
  * ritual can render sign-aware blessing copy. Current flow:
- * sign(p1) → ritual(p1) → sign(p2) → ritual(p2) → lobby → play.
+ * count-picker (1–6) → sign(p0) → ritual(p0) → … → sign(pN-1) →
+ * ritual(pN-1) → lobby → play.
  * The zodiac-sign pick alone supplies the player's class; dignity-
  * derived stat deltas land at `initializeGame` time.
  *
@@ -55,7 +56,6 @@ export default function PlayPage(): JSX.Element {
   // pick before the Tree blesses them.
   const [phase, setPhase] = useState<Phase>({ kind: 'count' });
   const [slots, setSlots] = useState<readonly SetupSlot[]>([]);
-  const [playerCount, setPlayerCount] = useState<number>(0);
 
   // #402: Resolved once per session via useState's lazy initializer
   // — Date.now() so every fresh hot-seat session deals a different
@@ -79,8 +79,9 @@ export default function PlayPage(): JSX.Element {
   const playRng = useMemo(() => seededRng(seed + 6), [seed]);
 
   const finishCount = (count: number): void => {
-    setPlayerCount(count);
-    setSlots(Array.from({ length: count }, (_, i) => ({ id: `p${i + 1}`, name: `Player ${i + 1}` })));
+    setSlots(
+      Array.from({ length: count }, (_, i) => ({ id: `p${i + 1}`, name: `Player ${i + 1}` })),
+    );
     setPhase({ kind: 'sign', playerIndex: 0 });
   };
 
@@ -103,7 +104,7 @@ export default function PlayPage(): JSX.Element {
       next[idx] = { ...slot, stats };
       return next;
     });
-    if (idx + 1 < playerCount) {
+    if (idx + 1 < slots.length) {
       setPhase({ kind: 'sign', playerIndex: idx + 1 });
     } else {
       setPhase({ kind: 'lobby' });
@@ -251,17 +252,13 @@ function CountPickerScreen({ onPick }: { readonly onPick: (n: number) => void })
   return (
     <main className="min-h-screen p-8 text-veil">
       <PhaseHeader title="How many seekers?" />
-      <div
-        role="group"
-        aria-label="Number of players"
-        className="flex gap-4 justify-center mt-8"
-      >
+      <div role="group" aria-label="Number of players" className="mt-8 flex justify-center gap-4">
         {([1, 2, 3, 4, 5, 6] as const).map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => onPick(n)}
-            className="font-display text-2xl w-14 h-14 rounded-full border border-current hover:bg-veil/10 focus:outline-none focus:ring-2 focus:ring-current"
+            className="h-14 w-14 rounded-full border border-current font-display text-2xl hover:bg-veil/10 focus:outline-none focus:ring-2 focus:ring-current"
           >
             {n}
           </button>
