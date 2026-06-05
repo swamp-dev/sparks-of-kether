@@ -48,10 +48,13 @@ export type { ChallengeSubPhase, TurnPhase };
  * without a `renderHook` harness.
  *
  * Phase contract:
- *   move      — player can `move` (apply path) or `meditate`. After
- *               `meditate` the player remains in `'move'` (#503) so
- *               they may still play a card; the once-per-turn cap is
- *               enforced by `state.meditatedThisTurn`.
+ *   move      — player can `move` (apply path) and/or `meditate`, in
+ *               either order (#297). After `meditate` the player
+ *               remains in `'move'` (#503) so they may still play a
+ *               card; after `move` to a cleared/no-challenge Sefirah
+ *               the player lands in `'end'` and may still `meditate`
+ *               (#287). The once-per-turn cap is enforced by
+ *               `state.meditatedThisTurn`.
  *   challenge — entered after `move` lands on an uncleared `'check'`
  *               Sefirah. Internally cycles three sub-phases:
  *                 prep    — player stages modifiers (card-burn, spark-burn,
