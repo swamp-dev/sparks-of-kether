@@ -21,6 +21,9 @@ test.skip(
 );
 
 async function walkToPlayScreen(page: Page): Promise<void> {
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   await page.locator('[data-zodiac-sign-picker]').waitFor();
   await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
   await page.locator('[data-action="skip-ceremony"]').click();

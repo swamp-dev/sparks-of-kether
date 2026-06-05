@@ -53,6 +53,9 @@ test('home → setup → lobby → play screen renders', async ({ page }) => {
   // and time out before the page has loaded.
   await page.waitForURL('**/play');
 
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   // Walk both players through the sign pick + blessing ritual.
   // Order is sign-first per #255 (the ritual needs the sign for
   // sign-aware blessing copy).

@@ -25,7 +25,8 @@ import { useMusic } from '@/lib/music/useMusic';
  * #237 (Epic #212 T8) removed the Soul Aspect phase. #255 (Voices
  * Epic T4) reordered sign-pick before the blessing ritual so the
  * ritual can render sign-aware blessing copy. Current flow:
- * sign(p1) → ritual(p1) → sign(p2) → ritual(p2) → lobby → play.
+ * count-picker (1–6) → sign(p0) → ritual(p0) → … → sign(pN-1) →
+ * ritual(pN-1) → lobby → play.
  * The zodiac-sign pick alone supplies the player's class; dignity-
  * derived stat deltas land at `initializeGame` time.
  *
@@ -41,8 +42,9 @@ interface SetupSlot {
 }
 
 type Phase =
-  | { readonly kind: 'ritual'; readonly playerIndex: 0 | 1 }
-  | { readonly kind: 'sign'; readonly playerIndex: 0 | 1 }
+  | { readonly kind: 'count' }
+  | { readonly kind: 'ritual'; readonly playerIndex: number }
+  | { readonly kind: 'sign'; readonly playerIndex: number }
   | { readonly kind: 'lobby' }
   | { readonly kind: 'play'; readonly setupComplete: PlayerSetup[] };
 
@@ -52,11 +54,8 @@ export default function PlayPage(): JSX.Element {
   // BlessingRitual can render per-sign blessing quotes (Voices Epic
   // T4). The sign is the player's astrological "class" — natural to
   // pick before the Tree blesses them.
-  const [phase, setPhase] = useState<Phase>({ kind: 'sign', playerIndex: 0 });
-  const [slots, setSlots] = useState<readonly [SetupSlot, SetupSlot]>([
-    { id: 'p1', name: 'Player 1' },
-    { id: 'p2', name: 'Player 2' },
-  ]);
+  const [phase, setPhase] = useState<Phase>({ kind: 'count' });
+  const [slots, setSlots] = useState<readonly SetupSlot[]>([]);
 
   // #402: Resolved once per session via useState's lazy initializer
   // — Date.now() so every fresh hot-seat session deals a different
@@ -70,29 +69,43 @@ export default function PlayPage(): JSX.Element {
 
   // Per-player ritual RNGs — independent sequences so adding a roll
   // in one player's ritual doesn't shift the other player's stats.
+  // Pre-allocate 6 (one per max player) so the array is stable across
+  // phases; unused RNG sequences are never consumed.
   // Hot-seat for now; Phase 5 will move RNG seeding server-side.
-  const ritualRngs = useMemo(() => [seededRng(seed), seededRng(seed + 1)] as const, [seed]);
-  const playRng = useMemo(() => seededRng(seed + 2), [seed]);
+  const ritualRngs = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => seededRng(seed + i)),
+    [seed],
+  );
+  const playRng = useMemo(() => seededRng(seed + 6), [seed]);
 
-  const finishSign = (idx: 0 | 1, sign: ZodiacSignKey): void => {
+  const finishCount = (count: number): void => {
+    setSlots(
+      Array.from({ length: count }, (_, i) => ({ id: `p${i + 1}`, name: `Player ${i + 1}` })),
+    );
+    setPhase({ kind: 'sign', playerIndex: 0 });
+  };
+
+  const finishSign = (idx: number, sign: ZodiacSignKey): void => {
     setSlots((prev) => {
-      const next = [...prev] as [SetupSlot, SetupSlot];
+      const next = [...prev];
       const slot = next[idx];
+      if (!slot) throw new Error(`No slot at index ${idx}`);
       next[idx] = { ...slot, zodiacSign: sign };
       return next;
     });
     setPhase({ kind: 'ritual', playerIndex: idx });
   };
 
-  const finishRitual = (idx: 0 | 1, stats: StatSheet): void => {
+  const finishRitual = (idx: number, stats: StatSheet): void => {
     setSlots((prev) => {
-      const next = [...prev] as [SetupSlot, SetupSlot];
+      const next = [...prev];
       const slot = next[idx];
+      if (!slot) throw new Error(`No slot at index ${idx}`);
       next[idx] = { ...slot, stats };
       return next;
     });
-    if (idx === 0) {
-      setPhase({ kind: 'sign', playerIndex: 1 });
+    if (idx + 1 < slots.length) {
+      setPhase({ kind: 'sign', playerIndex: idx + 1 });
     } else {
       setPhase({ kind: 'lobby' });
     }
@@ -126,8 +139,16 @@ export default function PlayPage(): JSX.Element {
     setPhase({ kind: 'play', setupComplete });
   };
 
+  if (phase.kind === 'count') {
+    return <CountPickerScreen onPick={finishCount} />;
+  }
+
   if (phase.kind === 'ritual') {
     const slot = slots[phase.playerIndex];
+    const rng = ritualRngs[phase.playerIndex];
+    if (!slot || !rng) {
+      throw new Error(`Ritual phase entered without slot/rng for player ${phase.playerIndex}`);
+    }
     const sign = slot.zodiacSign;
     if (sign === undefined) {
       // The phase machine routes sign-pick before ritual (#255), so
@@ -143,7 +164,7 @@ export default function PlayPage(): JSX.Element {
         key={`ritual-${phase.playerIndex}`}
         name={slot.name}
         sign={sign}
-        rng={ritualRngs[phase.playerIndex]}
+        rng={rng}
         onComplete={(stats) => finishRitual(phase.playerIndex, stats)}
       />
     );
@@ -158,9 +179,11 @@ export default function PlayPage(): JSX.Element {
     for (const s of slots) {
       if (s.zodiacSign) taken[s.zodiacSign] = s.name;
     }
+    const slotForSign = slots[phase.playerIndex];
+    if (!slotForSign) throw new Error(`No slot at index ${phase.playerIndex}`);
     return (
       <SignScreen
-        name={slots[phase.playerIndex].name}
+        name={slotForSign.name}
         taken={taken}
         onPick={(s) => finishSign(phase.playerIndex, s)}
       />
@@ -217,6 +240,32 @@ function PhaseHeader({ title }: { title: string }): JSX.Element {
     <header className="mb-8 text-center">
       <h1 className="font-display text-3xl tracking-widest">{title}</h1>
     </header>
+  );
+}
+
+/**
+ * Player count selection screen. First phase before any sign picks.
+ * Shows 1–6 as a segmented button group.
+ */
+function CountPickerScreen({ onPick }: { readonly onPick: (n: number) => void }): JSX.Element {
+  useMusic('lobby');
+  return (
+    <main className="min-h-screen p-8 text-veil">
+      <PhaseHeader title="How many seekers?" />
+      <div role="group" aria-label="Number of players" className="mt-8 flex justify-center gap-4">
+        {([1, 2, 3, 4, 5, 6] as const).map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onPick(n)}
+            className="h-14 w-14 rounded-full border border-current font-display text-2xl hover:bg-veil/10 focus:outline-none focus:ring-2 focus:ring-current"
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <SettingsButton />
+    </main>
   );
 }
 

@@ -25,6 +25,9 @@ async function goToPlayScreen(page: import('@playwright/test').Page): Promise<vo
   await hotseatLink.click();
   await page.waitForURL('**/play');
 
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   for (let player = 1; player <= 2; player++) {
     await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
     if (player === 2) {

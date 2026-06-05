@@ -37,6 +37,9 @@ test('settings cog opens, toggles SFX + Music + Voice independently, persists to
   await hotseatLink.click();
   await page.waitForURL('**/play');
 
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   // #255: sign-pick now runs BEFORE the blessing ritual.
   for (let player = 1; player <= 2; player++) {
     await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
@@ -124,6 +127,9 @@ test('pantheon radio group appears in settings, defaults Greco-Roman, persists E
   await hotseatLink.waitFor({ state: 'visible' });
   await hotseatLink.click();
   await page.waitForURL('**/play');
+
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
 
   for (let player = 1; player <= 2; player++) {
     await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
