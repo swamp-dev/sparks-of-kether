@@ -6,8 +6,15 @@ import { Lobby, type LobbyPlayer } from '../Lobby';
 // Default-distinct signs per id-suffix so the duplicate-zodiac-signs
 // gate (mirrors `validateAndBuildSetup`) doesn't silently disable
 // Begin in tests that don't care about signs. Tests that DO care
-// override `zodiacSign` explicitly.
-const DEFAULT_SIGNS: readonly ZodiacSignKey[] = ['aries', 'leo', 'virgo', 'pisces', 'taurus'];
+// override `zodiacSign` explicitly. Six entries cover the max player count.
+const DEFAULT_SIGNS: readonly ZodiacSignKey[] = [
+  'aries',
+  'leo',
+  'virgo',
+  'pisces',
+  'taurus',
+  'gemini',
+];
 
 function defaultSignForId(id: string): ZodiacSignKey {
   const match = /(\d+)/.exec(id);
@@ -56,6 +63,12 @@ describe('Lobby — rendering', () => {
     const { container } = render(<Lobby players={[player('p1', { zodiacSign: null })]} />);
     expect(container.textContent).toMatch(/Choosing sign/);
   });
+
+  it('status line for a solo player does not say "Waiting for more players"', () => {
+    const { container } = render(<Lobby players={[player('p1', { ready: true })]} />);
+    const status = container.querySelector('header p');
+    expect(status?.textContent).not.toMatch(/Waiting for more players/);
+  });
 });
 
 describe('Lobby — Begin button', () => {
@@ -96,11 +109,9 @@ describe('Lobby — Begin button', () => {
     expect(onBegin).toHaveBeenCalledTimes(1);
   });
 
-  it('Begin disabled below 2 players or above 4 players', () => {
+  it('Begin disabled with 0 players or above 6 players', () => {
     const onBegin = vi.fn();
-    const { rerender } = render(
-      <Lobby isHost onBegin={onBegin} players={[player('p1', { ready: true })]} />,
-    );
+    const { rerender } = render(<Lobby isHost onBegin={onBegin} players={[]} />);
     expect((screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled).toBe(
       true,
     );
@@ -109,12 +120,36 @@ describe('Lobby — Begin button', () => {
       <Lobby
         isHost
         onBegin={onBegin}
-        players={Array.from({ length: 5 }, (_, i) => player(`p${i}`, { ready: true }))}
+        players={Array.from({ length: 7 }, (_, i) => player(`p${i + 1}`, { ready: true }))}
       />,
     );
     expect((screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement).disabled).toBe(
       true,
     );
+  });
+
+  it('Begin enabled for a solo player (1 player, ready, sign picked)', () => {
+    const onBegin = vi.fn();
+    render(
+      <Lobby isHost onBegin={onBegin} players={[player('p1', { ready: true })]} />,
+    );
+    const begin = screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement;
+    expect(begin.disabled).toBe(false);
+    fireEvent.click(begin);
+    expect(onBegin).toHaveBeenCalledTimes(1);
+  });
+
+  it('Begin enabled for a 6-player lobby when all are ready with unique signs', () => {
+    const onBegin = vi.fn();
+    render(
+      <Lobby
+        isHost
+        onBegin={onBegin}
+        players={Array.from({ length: 6 }, (_, i) => player(`p${i + 1}`, { ready: true }))}
+      />,
+    );
+    const begin = screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement;
+    expect(begin.disabled).toBe(false);
   });
 
   it('Begin disabled if any player has not chosen a sign', () => {
@@ -205,11 +240,29 @@ describe('Lobby — Begin hint (host only)', () => {
     expect(hint?.textContent).toMatch(/Andy/);
   });
 
-  it('shows too-few-players hint with a single player', () => {
+  it('shows too-few-players hint only when the player list is empty', () => {
+    const { container } = render(<Lobby isHost onBegin={vi.fn()} players={[]} />);
+    expect(container.querySelector('[data-begin-hint="too-few-players"]')).not.toBeNull();
+  });
+
+  it('does not show too-few-players hint with a single player', () => {
     const { container } = render(
       <Lobby isHost onBegin={vi.fn()} players={[player('p1', { ready: true })]} />,
     );
-    expect(container.querySelector('[data-begin-hint="too-few-players"]')).not.toBeNull();
+    expect(container.querySelector('[data-begin-hint="too-few-players"]')).toBeNull();
+  });
+
+  it('shows too-many-players hint with 7 players', () => {
+    const { container } = render(
+      <Lobby
+        isHost
+        onBegin={vi.fn()}
+        players={Array.from({ length: 7 }, (_, i) => player(`p${i + 1}`, { ready: true }))}
+      />,
+    );
+    const hint = container.querySelector('[data-begin-hint="too-many-players"]');
+    expect(hint).not.toBeNull();
+    expect(hint?.textContent).toMatch(/six/i);
   });
 
   it('renders no hint when everyone is ready and signed', () => {
@@ -250,7 +303,9 @@ describe('Lobby — atmosphere (#403)', () => {
     const { container } = render(<Lobby players={[player('p1'), player('p2')]} />);
     const quote = container.querySelector('[data-lobby-quote]');
     expect(quote).not.toBeNull();
-    expect(quote?.textContent).toMatch(/Two seekers/);
+    // Quote must not reference a hardcoded player count — works for 1–6.
+    expect(quote?.textContent).not.toMatch(/Two seekers/);
+    expect(quote?.textContent?.length).toBeGreaterThan(0);
     // Italic + display face — the ticket's "restrained" register.
     expect(quote?.className).toMatch(/italic/);
     expect(quote?.className).toMatch(/font-display/);
