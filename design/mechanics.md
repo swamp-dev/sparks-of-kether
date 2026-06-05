@@ -122,9 +122,12 @@ player. The remaining cards form the face-down draw pile.
 
 | Players | Decks | Total cards | In hands | In draw pile |
 |---|---|---|---|---|
+| 1 | 1 | 22 | 4 | 18 |
 | 2 | 1 | 22 | 8 | 14 |
 | 3 | 2 | 44 | 12 | 32 |
 | 4 | 2 | 44 | 16 | 28 |
+| 5 | 3 | 66 | 20 | 46 |
+| 6 | 3 | 66 | 24 | 42 |
 
 Hand-size cap is **6**; starting at 4 leaves a 2-card buffer for early
 gifts and draws before the cap starts to bite.
