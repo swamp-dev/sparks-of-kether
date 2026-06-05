@@ -654,4 +654,26 @@ describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
     const rollBtn = container.querySelector('[data-action="kether-trial-resolve"]');
     expect(rollBtn).not.toBeNull();
   });
+
+  it('never shows "Waiting for the rest of the team to arrive" text for solo (AC #2)', () => {
+    // The pre-ritual hold view is unreachable for solo because
+    // maybeTriggerKetherRitual fires immediately when the only player reaches
+    // Kether, transitioning phase to 'kether' before the component renders.
+    // This test pins that invariant so any future regression is caught.
+    const state = buildSoloTrialState();
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
+    const { result } = renderHook(() =>
+      useTurn({
+        initialState: state,
+        rng: seededRng(1),
+        dispatchClientAction: () => undefined,
+        selfPlayerId: 'p1',
+      }),
+    );
+    const { container } = render(
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
+    );
+    expect(container.textContent).not.toMatch(/Waiting for the rest of the team/i);
+  });
 });
