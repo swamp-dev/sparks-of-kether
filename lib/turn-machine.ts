@@ -20,6 +20,8 @@ import {
   encounterBurnDiscard as encounterBurnDiscardReducer,
   endTurn as endTurnReducer,
 } from '@/engine/turn';
+import { applyEvent } from '@/engine/counters';
+import { isHoardingActive } from '@/engine/shells';
 import {
   EMPTY_PENDING_MODIFIERS,
   type ChallengeSubPhase,
@@ -269,7 +271,41 @@ export type TurnEvent =
       readonly arcanum: number;
     }
   | { readonly kind: 'end-turn' }
-  | { readonly kind: 'replace-state'; readonly state: GameState };
+  | { readonly kind: 'replace-state'; readonly state: GameState }
+  | {
+      /**
+       * Regular-turn card gifting (#296). Valid during `phase: 'move'`.
+       * Transfers `arcanum` from the active player to `recipientId` if
+       * the recipient is under `HAND_CAP`; emits `card-gifted` (+1
+       * Illumination). Rejects with `gift-recipient-at-cap` when the
+       * recipient is full — the UI then presents the over-cap prompt and
+       * dispatches `gift-turn-accept-over-cap` or `refuse-gift-turn`.
+       */
+      readonly kind: 'gift-turn';
+      readonly arcanum: number;
+      readonly recipientId: string;
+    }
+  | {
+      /**
+       * Recipient is at `HAND_CAP`: they agree to discard `discardArcanum`
+       * from their hand to make room, then receive the gift (#296).
+       * Transfers `arcanum` from active player, removes `discardArcanum`
+       * from recipient to the discard pile, emits `card-gifted` (+1
+       * Illumination).
+       */
+      readonly kind: 'gift-turn-accept-over-cap';
+      readonly arcanum: number;
+      readonly recipientId: string;
+      readonly discardArcanum: number;
+    }
+  | {
+      /**
+       * Recipient refuses the gift (#296). Emits `gift-refused` (+1
+       * Separation). The card stays in the active player's hand.
+       */
+      readonly kind: 'refuse-gift-turn';
+      readonly recipientId: string;
+    };
 
 export type TurnReducerError =
   | { readonly kind: 'wrong-phase'; readonly expected: TurnPhase; readonly actual: TurnPhase }
@@ -392,7 +428,12 @@ export type TurnReducerError =
        * consistent with the design before the UI ships.
        */
       readonly kind: 'solo-no-gift-recipient';
-    };
+    }
+  | { readonly kind: 'gift-card-not-in-hand' }
+  | { readonly kind: 'gift-invalid-recipient' }
+  | { readonly kind: 'gift-recipient-at-cap'; readonly recipientId: string }
+  | { readonly kind: 'gift-hoarding-shell-active' }
+  | { readonly kind: 'gift-discard-not-in-hand' };
 
 export interface TurnReducerSuccess {
   readonly next: TurnSnapshot;
@@ -1711,6 +1752,90 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
     case 'encounter-burn-discard': {
       const after = encounterBurnDiscardReducer(state, player.id, event.arcanum);
       return { ok: true, value: { next: { state: after } } };
+    }
+
+    case 'gift-turn': {
+      if (phase !== 'move') {
+        return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
+      }
+      if (isHoardingActive(state)) {
+        return { ok: false, reason: { kind: 'gift-hoarding-shell-active' } };
+      }
+      if (!player.hand.includes(event.arcanum)) {
+        return { ok: false, reason: { kind: 'gift-card-not-in-hand' } };
+      }
+      const recipient = state.players.find(
+        (p) => p.id === event.recipientId && p.id !== player.id,
+      );
+      if (!recipient) {
+        return { ok: false, reason: { kind: 'gift-invalid-recipient' } };
+      }
+      if (recipient.hand.length >= HAND_CAP) {
+        return { ok: false, reason: { kind: 'gift-recipient-at-cap', recipientId: event.recipientId } };
+      }
+      const newGiverHand = player.hand.filter((c) => c !== event.arcanum);
+      const newRecipientHand = [...recipient.hand, event.arcanum];
+      const newPlayers = state.players.map((p) => {
+        if (p.id === player.id) return { ...p, hand: newGiverHand };
+        if (p.id === event.recipientId) return { ...p, hand: newRecipientHand };
+        return p;
+      });
+      const withTransfer = { ...state, players: newPlayers };
+      const afterEvent = applyEvent(withTransfer, {
+        kind: 'card-gifted',
+        fromPlayerId: player.id,
+        toPlayerId: event.recipientId,
+        arcanumNumber: event.arcanum,
+      });
+      return { ok: true, value: { next: { state: afterEvent } } };
+    }
+
+    case 'gift-turn-accept-over-cap': {
+      if (phase !== 'move') {
+        return { ok: false, reason: { kind: 'wrong-phase', expected: 'move', actual: phase } };
+      }
+      if (!player.hand.includes(event.arcanum)) {
+        return { ok: false, reason: { kind: 'gift-card-not-in-hand' } };
+      }
+      const recipient = state.players.find(
+        (p) => p.id === event.recipientId && p.id !== player.id,
+      );
+      if (!recipient) {
+        return { ok: false, reason: { kind: 'gift-invalid-recipient' } };
+      }
+      if (!recipient.hand.includes(event.discardArcanum)) {
+        return { ok: false, reason: { kind: 'gift-discard-not-in-hand' } };
+      }
+      const newGiverHand = player.hand.filter((c) => c !== event.arcanum);
+      const newRecipientHand = [
+        ...recipient.hand.filter((c) => c !== event.discardArcanum),
+        event.arcanum,
+      ];
+      const newPlayers = state.players.map((p) => {
+        if (p.id === player.id) return { ...p, hand: newGiverHand };
+        if (p.id === event.recipientId) return { ...p, hand: newRecipientHand };
+        return p;
+      });
+      const withTransfer = {
+        ...state,
+        players: newPlayers,
+        discardPile: [...state.discardPile, event.discardArcanum],
+      };
+      const afterEvent = applyEvent(withTransfer, {
+        kind: 'card-gifted',
+        fromPlayerId: player.id,
+        toPlayerId: event.recipientId,
+        arcanumNumber: event.arcanum,
+      });
+      return { ok: true, value: { next: { state: afterEvent } } };
+    }
+
+    case 'refuse-gift-turn': {
+      const afterEvent = applyEvent(state, {
+        kind: 'gift-refused',
+        playerId: event.recipientId,
+      });
+      return { ok: true, value: { next: { state: afterEvent } } };
     }
 
     case 'end-turn': {
