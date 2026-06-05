@@ -63,7 +63,7 @@ export interface ValidatedSetup {
  * Rules (in order):
  *   1. Caller must be the room's host.
  *   2. Room must be in `lobby` state (not playing/finished).
- *   3. Player count must be 2..4 (matches `deckCountFor`).
+ *   3. Player count must be 1..6 (matches `deckCountFor`).
  *   4. Every player must have a zodiac_sign set.
  *   5. Zodiac signs must be unique across players (design rule).
  *
@@ -85,13 +85,13 @@ export function validateAndBuildSetup(
       error: { kind: 'not-lobby', currentState: room.state },
     };
   }
-  if (players.length < 2) {
+  if (players.length < 1) {
     return {
       ok: false,
       error: { kind: 'too-few-players', count: players.length },
     };
   }
-  if (players.length > 4) {
+  if (players.length > 6) {
     return {
       ok: false,
       error: { kind: 'too-many-players', count: players.length },
