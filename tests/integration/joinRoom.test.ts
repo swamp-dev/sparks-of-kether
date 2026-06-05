@@ -111,6 +111,102 @@ describe('integration: joinRoom multi-player flow (real Supabase)', () => {
     expect(r.error.kind).toBe('room-not-found');
   });
 
+  it('fills the room to 6 players without seat collision', async () => {
+    const host = await makeAnonClient();
+    const created = await createRoom({ nickname: 'Andy', client: host.client });
+    if (!created.ok) {
+      throw new Error(`createRoom failed: ${JSON.stringify(created.error)}`);
+    }
+
+    const seatsAssigned: number[] = [0]; // host's seat
+    for (const nick of ['Bea', 'Cyrus', 'Dara', 'Eve', 'Felix']) {
+      const guest = await makeAnonClient();
+      const r = await joinRoom({
+        code: created.value.code,
+        nickname: nick,
+        client: guest.client,
+      });
+      if (!r.ok) {
+        throw new Error(`joinRoom (${nick}) failed: ${JSON.stringify(r.error)}`);
+      }
+      seatsAssigned.push(r.value.seat);
+    }
+    // Seats are unique 0..5.
+    expect([...seatsAssigned].sort()).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it('rejects a 7th player with room-full after 6 are seated', async () => {
+    const host = await makeAnonClient();
+    const created = await createRoom({ nickname: 'Andy', client: host.client });
+    if (!created.ok) {
+      throw new Error(`createRoom failed: ${JSON.stringify(created.error)}`);
+    }
+
+    for (const nick of ['Bea', 'Cyrus', 'Dara', 'Eve', 'Felix']) {
+      const guest = await makeAnonClient();
+      const r = await joinRoom({
+        code: created.value.code,
+        nickname: nick,
+        client: guest.client,
+      });
+      if (!r.ok) {
+        throw new Error(`joinRoom (${nick}) failed: ${JSON.stringify(r.error)}`);
+      }
+    }
+
+    // 7th player must be rejected.
+    const seventh = await makeAnonClient();
+    const r = await joinRoom({
+      code: created.value.code,
+      nickname: 'George',
+      client: seventh.client,
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.error.kind).toBe('room-full');
+  });
+
+  it('assigns seats 4 and 5 correctly after seats 0–3 are taken', async () => {
+    const host = await makeAnonClient();
+    const created = await createRoom({ nickname: 'Andy', client: host.client });
+    if (!created.ok) {
+      throw new Error(`createRoom failed: ${JSON.stringify(created.error)}`);
+    }
+
+    // Fill seats 0–3.
+    for (const nick of ['Bea', 'Cyrus', 'Dara']) {
+      const guest = await makeAnonClient();
+      const r = await joinRoom({
+        code: created.value.code,
+        nickname: nick,
+        client: guest.client,
+      });
+      if (!r.ok) {
+        throw new Error(`joinRoom (${nick}) failed: ${JSON.stringify(r.error)}`);
+      }
+    }
+
+    // 5th player must land in seat 4.
+    const fifth = await makeAnonClient();
+    const r5 = await joinRoom({
+      code: created.value.code,
+      nickname: 'Eve',
+      client: fifth.client,
+    });
+    if (!r5.ok) throw new Error(`joinRoom (Eve) failed: ${JSON.stringify(r5.error)}`);
+    expect(r5.value.seat).toBe(4);
+
+    // 6th player must land in seat 5.
+    const sixth = await makeAnonClient();
+    const r6 = await joinRoom({
+      code: created.value.code,
+      nickname: 'Felix',
+      client: sixth.client,
+    });
+    if (!r6.ok) throw new Error(`joinRoom (Felix) failed: ${JSON.stringify(r6.error)}`);
+    expect(r6.value.seat).toBe(5);
+  });
+
   it('is idempotent — joining the same room twice as the same auth user returns the existing seat', async () => {
     const host = await makeAnonClient();
     const created = await createRoom({ nickname: 'Andy', client: host.client });
