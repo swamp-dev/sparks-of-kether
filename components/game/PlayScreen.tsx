@@ -726,14 +726,19 @@ export function PlayScreen({
             className="w-full"
           />
         </div>
-        <div className="flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+        {/*
+          z-40 paints above the floating Hand (z-30, fixed); pointer-events-none
+          lets the Hand's peek zone receive clicks. Only the button group
+          restores pointer-events-auto — the label spans are display-only.
+        */}
+        <div className="pointer-events-none relative z-40 flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
           <span className="text-xs uppercase tracking-widest opacity-60" data-phase-hint>
             {phaseHint(turn.phase)}
           </span>
-          <span className="font-display tracking-widest">
+          <span className="font-display tracking-widest" data-turn-indicator>
             {activePlayer?.name ?? '—'}&apos;s turn
           </span>
-          <div className="flex gap-2">
+          <div className="pointer-events-auto flex gap-2">
             {turn.phase === 'move' || turn.phase === 'end' ? (
               <MeditateButton
                 onMeditate={() => setShowMeditateConfirm(true)}
