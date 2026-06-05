@@ -55,6 +55,9 @@ test.skip(
 // review spec is dev-tooling-only (gated on `PLAYWRIGHT_RUN_REVIEW=1`)
 // and shouldn't be imported from a CI-gated spec.
 async function walkToPlayScreen(page: Page): Promise<void> {
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   // P1 sign → P1 ritual → P1 summary continue.
   await page.locator('[data-zodiac-sign-picker]').waitFor();
   await page.getByRole('button', { name: /^Confirm Aries$/ }).click();

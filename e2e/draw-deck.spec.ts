@@ -28,6 +28,9 @@ async function walkToPlayScreen(page: Page): Promise<void> {
   await hotseatLink.click();
   await page.waitForURL('**/play');
 
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   // P1: confirm Aries (default-focused), skip-roll the blessing, continue.
   await page.locator('[data-zodiac-sign-picker]').waitFor();
   await page.getByRole('button', { name: /^Confirm Aries$/ }).click();

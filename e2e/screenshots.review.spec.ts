@@ -48,11 +48,12 @@ test.beforeAll(async () => {
 // to be idempotent within a single test (one fresh page per test).
 
 /**
- * Post-#255 the ZodiacSignPicker is the first screen on `/play`. P1
- * confirms Aries (the default-focused carousel stage) to advance to
- * the BlessingRitual.
+ * Post-#275 the count-picker is the first screen on `/play`. Selects
+ * 2 players, then P1 confirms Aries at the ZodiacSignPicker.
  */
 async function pickAriesAtSignPicker(page: Page): Promise<void> {
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
   await page.locator('[data-zodiac-sign-picker]').waitFor();
   await page.getByRole('button', { name: /^Confirm Aries$/ }).click();
 }

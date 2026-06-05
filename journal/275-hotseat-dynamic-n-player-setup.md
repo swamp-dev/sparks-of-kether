@@ -27,3 +27,20 @@ on this branch.
 **Second pass verdict: Ship.** No new findings.
 
 **Branch rebased** on `origin/main` (which had #297 squash-merged between worktree creation and push) before opening PR.
+
+---
+
+## 2026-06-05T06:00:00+00:00 — push 2 (fix e2e breakage from count-picker phase)
+
+**Pushed:** Hosted CI e2e job failed — 21 tests broken across 8 specs.
+
+**Root cause:** All `walkToPlayScreen` helpers and inline navigation sequences in the e2e suite expected `[data-zodiac-sign-picker]` to be the first screen on `/play`. After #275, the count-picker phase is first. Every test that navigated to `/play` timed out waiting for the sign picker that no longer comes immediately.
+
+**Fix:**
+- Added `await page.getByRole('button', { name: '2' }).click()` after each `waitForURL('**/play')` in `play-flow`, `shell-strip`, `sound` (×2), `encounter`, `discard-pile`, `draw-deck`.
+- Added same click at start of `walkToPlayScreen` in `drag-to-play` and `visual-regression`.
+- Updated `pickAriesAtSignPicker` helper in `screenshots.review.spec.ts` to click count picker first.
+- Updated visual-regression baselines for `play-{desktop,tablet,mobile}-chromium-linux.png` (count-picker screen is now shorter than the old sign-picker, so height changed from 1386px → 667px on mobile).
+- Verified `play-mid-game` baselines unchanged (walker produces same 2-player game).
+
+**Full e2e local run: 97 passed, 0 failed.**

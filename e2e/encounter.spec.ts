@@ -55,6 +55,9 @@ test('hot-seat /play route renders without flipping into multiplayer mode', asyn
   await hotseatLink.click();
   await page.waitForURL('**/play');
 
+  // #275: count-picker is now the first phase — select 2 players before sign.
+  await page.getByRole('button', { name: '2' }).click();
+
   // Walk both players through the blessing ritual + sign pick. Mirrors
   // the existing `play-flow.spec.ts` to land on the play screen.
   // #255: sign-pick now runs BEFORE the blessing ritual.
