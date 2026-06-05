@@ -204,7 +204,7 @@ Seven steps forming a linear chain. Each step has a `prerequisiteId` pointing to
 **Why `warn`.** The player cannot progress until they play a card or Meditate; missing this instruction causes the turn to feel stuck. No `tap-anywhere` escape for the same reason.
 
 **copy:**
-> "Select a card, then tap a glowing path on the board to travel it. You must play a card to Move — or choose Meditate to draw 2 instead."
+> "Select a card, then tap a glowing path on the board to travel it. You can Move, Meditate (draw 2), or both — in any order."
 
 **`hinted-action` wiring:** the card-play handler in `PlayScreen.tsx` and the Meditate button both call `markDismissed` when the active hint is `'tutorial-play-card'`.
 

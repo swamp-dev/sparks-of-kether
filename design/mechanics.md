@@ -214,20 +214,16 @@ On your turn, in order:
    turn 1*, where the initial deal of 4 serves as your first draw. If
    the draw pile is empty when you'd draw, the discard pile is
    reshuffled face-down to form a new draw pile first.
-2. **Move or Meditate.** Play an Arcanum to travel its path to an
-   adjacent Sefirah, OR draw 2 extra cards (*Meditate*). Meditate may
-   be taken **at most once per turn**, and after Meditate you may
-   still play a card to Move that turn — the freshly drawn cards are
-   usable immediately. Drawing stops at the hand-size cap of 6 unless
-   Meditate pushes you over (in which case you trim down to 6 before
-   end-of-turn).
+2. **Move and/or Meditate (in any order).** You may play an Arcanum to
+   travel its path to an adjacent Sefirah (*Move*), draw 2 extra cards
+   (*Meditate*), or both — in either order. Meditate may be taken **at
+   most once per turn**. The freshly drawn cards are usable immediately.
+   Drawing stops at the hand-size cap of 6 unless Meditate pushes you
+   over (in which case you trim down to 6 before end-of-turn). The turn
+   does not auto-advance after Meditate — click End Turn when ready.
 3. **Challenge** (if you arrived at an uncleared Sefirah). See below.
 4. **Assist** (optional). Spend Sparks to help allies.
-5. **Meditate (optional, once per turn).** After arriving at a cleared Sefirah
-   (which lands you in *end* phase), you may still Meditate once if you have
-   not already meditated this turn. Draw 2 cards; the turn does not
-   auto-advance — click End Turn when you are ready.
-6. **End turn.**
+5. **End turn.**
 
 Malkuth has no challenge. Kether has the **Final Threshold** (collective,
 endgame only).

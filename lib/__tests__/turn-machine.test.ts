@@ -1864,6 +1864,48 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     expect(second.reason.kind).toBe('already-meditated');
   });
 
+  it('move (no challenge) then meditate — ordering is allowed (#297)', () => {
+    // #297: lifting the ordering restriction. A player should be able to
+    // Move first (landing in end phase after a no-challenge arrival) and
+    // then Meditate in the same turn. Chains the two events through the
+    // reducer to confirm the sequence succeeds end-to-end.
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21, 1, 2], // card 21 = The World, path 32 (Malkuth↔Yesod)
+      clearedSefirot: new Set(['yesod']), // skip challenge on arrival
+    });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        deck: [10, 11, 12],
+        discardPile: [],
+      },
+    );
+    // Step 1: Move (Malkuth → Yesod, already cleared → no challenge → 'end').
+    const moved = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    expect(moved.value.next.state.phase).toBe('end');
+    expect(moved.value.next.state.players[0]?.position).toBe('yesod');
+    // Step 2: Meditate from end phase — should succeed.
+    const meditated = turnReducer(moved.value.next, { kind: 'meditate' }, RNG);
+    expect(meditated.ok).toBe(true);
+    if (!meditated.ok) return;
+    // Phase stays 'end'; meditatedThisTurn flips true; hand grows.
+    expect(meditated.value.next.state.phase).toBe('end');
+    expect(meditated.value.next.state.meditatedThisTurn).toBe(true);
+    const afterPlayer = meditated.value.next.state.players.find((p) => p.id === 'p1');
+    // Started with 2 cards (21 was played), drew 2 → 4 total.
+    expect(afterPlayer?.hand).toHaveLength(4);
+  });
+
   it('end-turn with stale pendingDiscard skips the cap-check (#523)', () => {
     // #523 (deferred from #502/#503 review): the cap-check guard
     // `=== 0` is what stops the reducer from re-writing
