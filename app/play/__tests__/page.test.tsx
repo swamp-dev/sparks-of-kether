@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ZodiacSignKey } from '@/data';
 import type { StatSheet } from '@/engine/types';
@@ -114,8 +114,11 @@ describe('PlayPage — player count picker', () => {
 });
 
 describe('PlayPage — 1-player (solo) flow', () => {
-  it('walks count → sign → ritual → lobby with 1 ready player', async () => {
+  beforeEach(() => {
     capturedLobbyPlayers = [];
+  });
+
+  it('walks count → sign → ritual → lobby with 1 ready player', async () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
 
@@ -146,8 +149,11 @@ describe('PlayPage — 1-player (solo) flow', () => {
 });
 
 describe('PlayPage — 6-player flow', () => {
-  it('walks 6 sign+ritual pairs then reaches lobby with 6 ready players', async () => {
+  beforeEach(() => {
     capturedLobbyPlayers = [];
+  });
+
+  it('walks 6 sign+ritual pairs then reaches lobby with 6 ready players', async () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
 
