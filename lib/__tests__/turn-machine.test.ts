@@ -4538,6 +4538,152 @@ describe('turnReducer — Tiferet required burn (difficulty increase)', () => {
   });
 });
 
+describe('turnReducer — multi-path moves per turn (#298)', () => {
+  // #298: a player may move along any number of paths in a single turn.
+  // Each no-challenge arrival stays in 'move' phase and sets movedThisTurn.
+  // A challenge entry sets movedThisTurn at the moment the player moves
+  // (so End Turn stays available after the challenge resolves). On
+  // resolution, react-continue and accept-setback return to 'move' instead
+  // of 'end'. End Turn from 'move' is permitted when movedThisTurn=true.
+
+  it('no-challenge move → phase stays move, movedThisTurn=true (#298)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21],
+      clearedSefirot: new Set(['yesod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.movedThisTurn).toBe(true);
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+
+  it('two sequential no-challenge moves in one turn (#298)', () => {
+    // card 21=The World(path 32 Malkuth↔Yesod), card 19=The Sun(path 30 Yesod↔Hod)
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21, 19],
+      clearedSefirot: new Set(['yesod', 'hod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const first = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.value.next.state.phase).toBe('move');
+    expect(first.value.next.state.players[0]?.position).toBe('yesod');
+
+    const second = turnReducer(first.value.next, { kind: 'move', pathNumber: 30 }, RNG);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.next.state.phase).toBe('move');
+    expect(second.value.next.state.players[0]?.position).toBe('hod');
+    expect(second.value.next.state.movedThisTurn).toBe(true);
+  });
+
+  it('end-turn from move with movedThisTurn=true is allowed (#298)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21],
+      clearedSefirot: new Set(['yesod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const moved = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    const ended = turnReducer(moved.value.next, { kind: 'end-turn' }, RNG);
+    expect(ended.ok).toBe(true);
+    if (!ended.ok) return;
+    // Seat rotation clears movedThisTurn.
+    expect(ended.value.next.state.movedThisTurn).toBe(false);
+  });
+
+  it('challenge entry sets movedThisTurn=true (#298)', () => {
+    // Moving into an uncleared Sefirah triggers a challenge. The move has
+    // already happened, so movedThisTurn must be true when we enter 'challenge'.
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.movedThisTurn).toBe(true);
+  });
+
+  it('react-continue → phase returns to move (#298)', () => {
+    const player = makePlayer({ id: 'p1', position: 'hod', hand: [] });
+    const state = makeState({}, { players: [player], movedThisTurn: true });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: {
+            rolled: 20,
+            statContribution: 10,
+            modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+            total: 30,
+            effectiveDC: 8,
+            pass: true,
+          },
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+
+  it('accept-setback → phase returns to move (#298)', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        separation: 3,
+        shells: { ...EMPTY_SHELL_STATE, malkuth: 'banished' },
+        movedThisTurn: true,
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'accept-setback', sefirah: 'gevurah' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+});
+
 describe('turnReducer — Binah required burn (difficulty increase)', () => {
   // Difficulty change: Binah (DC 16) requires at least one staged
   // card-burn before prep-confirm, same gate pattern as Gevurah (#487).

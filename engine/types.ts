@@ -435,6 +435,16 @@ export interface GameState {
    */
   readonly meditatedThisTurn?: boolean | undefined;
   /**
+   * Set to `true` once the active player has moved at least once this
+   * turn (#298). Like `meditatedThisTurn`, this flag enables End Turn
+   * from `phase: 'move'` when no challenge is pending, and is cleared
+   * to `false` on seat rotation in `engine/turn.ts:endTurn`.
+   *
+   * Optional/additive: snapshots predating this field deserialize with
+   * `movedThisTurn === undefined`, treated as `false` by the reducer.
+   */
+  readonly movedThisTurn?: boolean | undefined;
+  /**
    * Discriminator for the most recent action that landed the active
    * player in `phase: 'end'` (#292). Read by the UI's auto-advance
    * timer (`PlayScreen.tsx`) to distinguish a Move/Challenge end
