@@ -35,6 +35,26 @@ const HELD_SPARKS: ReadonlySet<SefirahKey> = new Set(['gevurah', 'tiferet'] as c
 
 const HELD_SPARKS_P2: ReadonlySet<SefirahKey> = new Set(['hod'] as const);
 
+/** Solo coda fixture (#278). `?count=1&subPhase=trial` mounts a 1-player trial. */
+function buildSoloTrialFixture(): GameState {
+  const p1 = makePlayer({
+    id: 'p1',
+    name: 'Alex',
+    position: 'kether',
+    hand: [10, 11],
+    zodiacSign: 'aries',
+    sparksHeld: HELD_SPARKS,
+  });
+  const baseState = makeState({}, { players: [p1], activePlayerId: 'p1' });
+  const initResult = initKetherRitual(baseState, { p1: 100 });
+  if (!initResult.ok) {
+    throw new Error(
+      `final-threshold demo (solo): initKetherRitual rejected — ${initResult.reason.kind}`,
+    );
+  }
+  return initResult.value;
+}
+
 export default function FinalThresholdDemoPage(): JSX.Element {
   if (process.env.NODE_ENV === 'production') {
     notFound();
@@ -51,8 +71,14 @@ function FinalThresholdDemoContent(): JSX.Element {
   const subPhaseParam = searchParams.get('subPhase');
   const subPhase: DemoSubPhase =
     subPhaseParam === 'trial' || subPhaseParam === 'close' ? subPhaseParam : 'hold';
+  const isSoloDemo = searchParams.get('count') === '1';
 
   const initialState = useMemo<GameState>(() => {
+    // Solo fixture: bypass all 2-player paths (#278).
+    if (isSoloDemo && subPhase === 'trial') {
+      return buildSoloTrialFixture();
+    }
+
     if (subPhase === 'hold') {
       // P1 at Kether (held), P2 still climbing. `phase !== 'kether'`
       // so the screen routes to the pre-ritual hold view.
@@ -120,7 +146,7 @@ function FinalThresholdDemoContent(): JSX.Element {
       players: initResult.value.players.map((p) => ({ ...p, hand: [] })),
       ketherRitual: ritual,
     };
-  }, [subPhase]);
+  }, [subPhase, isSoloDemo]);
 
   // RNG identity has to stay stable across renders so `useTurn`'s
   // memoised callbacks don't churn — `useRef` pins one seeded RNG for
