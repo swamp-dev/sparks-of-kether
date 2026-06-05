@@ -1812,11 +1812,8 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
         return { ok: false, reason: { kind: 'gift-discard-not-in-hand' } };
       }
       // Remove exactly one copy of each arcanum (duplicates possible with multiple decks).
-      const giverIdx2 = player.hand.indexOf(event.arcanum);
-      const newGiverHand = [
-        ...player.hand.slice(0, giverIdx2),
-        ...player.hand.slice(giverIdx2 + 1),
-      ];
+      const giverIdx = player.hand.indexOf(event.arcanum);
+      const newGiverHand = [...player.hand.slice(0, giverIdx), ...player.hand.slice(giverIdx + 1)];
       const discardIdx = recipient.hand.indexOf(event.discardArcanum);
       const newRecipientHand = [
         ...recipient.hand.slice(0, discardIdx),

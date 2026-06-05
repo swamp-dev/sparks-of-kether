@@ -1070,8 +1070,12 @@ export function PlayScreen({
             }
           }}
           onAcceptOverCap={(arcanum, recipientId, discardArcanum) => {
-            turn.giftTurnAcceptOverCap(arcanum, recipientId, discardArcanum);
+            const result = turn.giftTurnAcceptOverCap(arcanum, recipientId, discardArcanum);
+            // Always close — unexpected failure (e.g. Hoarding race) is not user-actionable;
+            // the transfer did NOT happen, but the modal can still dismiss cleanly.
             setGiftStep(null);
+            if (!result.ok)
+              console.error('[gift] accept-over-cap unexpected failure', result.reason);
           }}
           onShowRefuseWarning={(arcanum, recipientId) =>
             setGiftStep({ kind: 'refuse-warning', arcanum, recipientId })
