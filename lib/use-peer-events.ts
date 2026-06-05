@@ -135,15 +135,18 @@ export function usePeerEvents(
       pendingRef.current = event;
     }
 
-    if (debounceTimer.current !== null) return;
+    if (debounceTimer.current === null) {
+      debounceTimer.current = setTimeout(() => {
+        debounceTimer.current = null;
+        const toShow = pendingRef.current;
+        pendingRef.current = null;
+        if (toShow) setVisible(toShow);
+      }, DEBOUNCE_MS);
+    }
 
-    debounceTimer.current = setTimeout(() => {
-      debounceTimer.current = null;
-      const toShow = pendingRef.current;
-      pendingRef.current = null;
-      if (toShow) setVisible(toShow);
-    }, DEBOUNCE_MS);
-
+    // Always return cleanup so unmount clears the timer regardless of
+    // which invocation last ran (the early-return paths return undefined,
+    // but this branch always provides a cleanup for the active timer).
     return () => {
       if (debounceTimer.current !== null) {
         clearTimeout(debounceTimer.current);
