@@ -75,6 +75,7 @@ function FinalThresholdDemoContent(): JSX.Element {
 
   const initialState = useMemo<GameState>(() => {
     // Solo fixture: bypass all 2-player paths (#278).
+    // hold/close with ?count=1 are out of scope — they fall through to the 2-player fixtures.
     if (isSoloDemo && subPhase === 'trial') {
       return buildSoloTrialFixture();
     }

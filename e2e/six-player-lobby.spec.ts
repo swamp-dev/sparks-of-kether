@@ -30,7 +30,7 @@ test.skip(
  *   0:aries 1:taurus 2:gemini 3:cancer 4:leo 5:virgo
  *   6:libra 7:scorpio 8:sagittarius 9:capricorn 10:aquarius 11:pisces
  *
- * #370: carousel opens at first un-taken sign (wrapping).
+ * Carousel opens at first un-taken sign (wrapping).
  *
  * P1 → aries (0): default, 0 clicks.
  * P2 → opens at taurus (1). Want leo (4): +3 clicks.
@@ -96,5 +96,6 @@ test('6-player: home → setup (6 players) → all sign + ritual → lobby → p
   // Play screen renders for a 6-player game.
   await expect(page.locator('[data-play-screen]')).toBeVisible();
   await expect(page.locator('[data-hand]')).toBeVisible();
+  await expect(page.locator('[data-stat-sheet]')).toBeVisible();
   await expect(page.locator('[data-play-screen]')).toHaveAttribute('data-phase', 'move');
 });

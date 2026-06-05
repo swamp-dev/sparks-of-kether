@@ -99,6 +99,8 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
       .select()
       .eq('id', created.value.roomId)
       .maybeSingle<RoomRow>();
+    expect(roomRow.error).toBeNull();
+    expect(roomRow.data).not.toBeNull();
     const playersRow = await svc
       .from('players')
       .select()
@@ -121,8 +123,8 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
 
     expect(initialState.players).toHaveLength(1);
     expect(initialState.players[0]?.zodiacSign).toBe(SOLO_SIGN);
-    // Solo game starts with 1 deck (design: 1–2 players → 1 deck).
-    expect(initialState.deck.length).toBeGreaterThan(0);
+    // 1–2 players → 1 deck of 22 Major Arcana; 1 player × 3 dealt = 19 remaining.
+    expect(initialState.deck.length).toBe(22 - 1 * 3);
     // First player is the active player.
     expect(initialState.activePlayerId).toBe(initialState.players[0]?.id);
   });
@@ -166,6 +168,8 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
       .select()
       .eq('id', created.value.roomId)
       .maybeSingle<RoomRow>();
+    expect(roomRow.error).toBeNull();
+    expect(roomRow.data).not.toBeNull();
     const playersRow = await svc
       .from('players')
       .select()
@@ -199,7 +203,6 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
     });
 
     const guestNicknames = ['Bea', 'Cyrus', 'Dara', 'Eve', 'Felix'];
-    const guestPlayerIds: string[] = [];
     for (let i = 0; i < guestNicknames.length; i++) {
       const guest = await makeAnonClient();
       const joined = await joinRoom({
@@ -209,7 +212,6 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
       });
       if (!joined.ok)
         throw new Error(`joinRoom (${guestNicknames[i]}) failed: ${JSON.stringify(joined.error)}`);
-      guestPlayerIds.push(joined.value.playerId);
       const svc = getServiceClient();
       await svc
         .from('players')
@@ -223,6 +225,8 @@ describe('integration: start-game validation — solo + 6-player (#278)', () => 
       .select()
       .eq('id', created.value.roomId)
       .maybeSingle<RoomRow>();
+    expect(roomRow.error).toBeNull();
+    expect(roomRow.data).not.toBeNull();
     const playersRow = await svc
       .from('players')
       .select()
