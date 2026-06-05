@@ -258,5 +258,4 @@ describe('initializeGame — determinism', () => {
       }),
     ).toThrow('Unsupported player count: 0 (must be 1..6)');
   });
-
 });
