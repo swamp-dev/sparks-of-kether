@@ -26,7 +26,7 @@ returns int
 language plpgsql
 security definer
 set search_path = ''
-stable
+volatile
 as $$
 declare
   caller_uid uuid := auth.uid();
