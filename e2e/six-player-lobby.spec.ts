@@ -61,7 +61,7 @@ test('6-player: home → setup (6 players) → all sign + ritual → lobby → p
   await page.waitForURL('**/play');
 
   // Select 6 players.
-  await page.getByRole('button', { name: '6' }).click();
+  await page.getByRole('button', { name: '6 players' }).click();
 
   // Walk all 6 players through sign pick + blessing ritual.
   for (let i = 0; i < SIX_PLAYERS.length; i++) {
