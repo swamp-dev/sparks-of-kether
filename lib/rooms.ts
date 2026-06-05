@@ -19,7 +19,7 @@ type Client = SupabaseClient<Database>;
  * (`design/mechanics.md` § Player count scaling) and the engine's
  * `initializeGame` upper bound.
  */
-export const MAX_PLAYERS_PER_ROOM = 4;
+export const MAX_PLAYERS_PER_ROOM = 6;
 
 /**
  * Number of times to retry on a unique-code collision before giving
@@ -232,7 +232,7 @@ export async function joinRoom(
   }
 
   // Service-role-equivalent (security definer) seat pick. Returns
-  // the assigned seat 0..3, or null if the room is full / doesn't
+  // the assigned seat 0..5, or null if the room is full / doesn't
   // exist. We've already established the room exists via the lookup
   // above, so a null return here means the room is full.
   //
