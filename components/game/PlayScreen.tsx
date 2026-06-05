@@ -25,6 +25,9 @@ import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useSound } from '@/lib/sound/useSound';
 import { useMusic } from '@/lib/music/useMusic';
 import { usePantheon } from '@/lib/settings/pantheon';
+import { usePeerEvents } from '@/lib/use-peer-events';
+import { TurnBanner } from '@/components/game/TurnBanner';
+import { GameEventToast } from '@/components/game/GameEventToast';
 import type { Rng } from '@/engine/rng';
 import type { GameState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
@@ -204,6 +207,10 @@ export function PlayScreen({
   // Tracks whether the KetherCelebration "Continue" has been clicked.
   // When true, the win path advances to JourneySummary.
   const [celebrationDone, setCelebrationDone] = useState(false);
+  // #299: show full-screen TurnBanner when the turn rotates to the
+  // local player. Reset on each activePlayerId transition.
+  const [showTurnBanner, setShowTurnBanner] = useState(false);
+  const prevActivePlayerIdRef = useRef<string | undefined>(undefined);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -354,6 +361,21 @@ export function PlayScreen({
       : activePlayer;
   const isMyTurn = currentPlayerId === undefined || currentPlayerId === activePlayer?.id;
   const endgame = checkEndgame(turn.state);
+
+  // #299: TurnBanner — fire when the turn rotates to the local player.
+  // Tracks the previous activePlayerId via a ref so the banner only
+  // shows on transitions, not on initial mount.
+  useEffect(() => {
+    const prev = prevActivePlayerIdRef.current;
+    prevActivePlayerIdRef.current = activePlayerId;
+    if (prev === undefined) return; // skip initial mount
+    if (isMyTurn && prev !== activePlayerId) {
+      setShowTurnBanner(true);
+    }
+  }, [activePlayerId, isMyTurn]);
+
+  // #299: peer event toasts — non-active multiplayer players only.
+  const peerEvent = usePeerEvents(turn.state, currentPlayerId, roomCode !== undefined);
 
   // #526: ambient music. Must come before any early returns so the hook
   // fires on every render path. During a challenge, the active player's
@@ -948,15 +970,31 @@ export function PlayScreen({
        * hand cards directly so players can hover for path-lighting
        * before committing.
        */}
+      {/* #299: discard mode amber wash — subtle fixed overlay so the
+          entire play surface takes on a warm amber hue while the
+          player must shed cards. pointer-events-none so it doesn't
+          block clicks on the board below. */}
+      {pendingDiscardCount > 0 && isMyTurn ? (
+        <div aria-hidden="true" className="bg-amber-400/8 pointer-events-none fixed inset-0 z-10" />
+      ) : null}
+      {/* #299: prominent discard banner replaces the subtle status div. */}
       {pendingDiscardCount > 0 && isMyTurn ? (
         <div
           role="status"
           aria-live="polite"
           data-discard-status
-          className="w-full max-w-xl rounded border border-veil/30 bg-ground/80 px-4 py-2 text-center text-xs text-veil"
+          className="fixed inset-x-0 bottom-36 z-20 mx-auto flex w-full max-w-xl flex-col items-center gap-1 rounded-lg border border-amber-400/50 bg-ground/95 px-6 py-4 text-center shadow-lg shadow-amber-400/10 sm:bottom-32"
         >
-          Shed {pendingDiscardCount} card{pendingDiscardCount === 1 ? '' : 's'} — hover a card to
-          see its paths, then click <span aria-hidden>✕</span> to discard
+          <p className="font-display text-lg tracking-widest text-amber-300">
+            Shed {pendingDiscardCount} Card{pendingDiscardCount === 1 ? '' : 's'}
+          </p>
+          <p className="text-xs text-veil/70">
+            Hover a card to see its paths, then click{' '}
+            <span aria-hidden className="text-veil/90">
+              ✕
+            </span>{' '}
+            to discard
+          </p>
         </div>
       ) : null}
 
@@ -989,6 +1027,14 @@ export function PlayScreen({
           }}
         />
       ) : null}
+      {/* #299: TurnBanner — full-screen atmospheric overlay on turn
+          rotation. Active player only; auto-dismisses in 2.5s. */}
+      {showTurnBanner && activePlayer ? (
+        <TurnBanner playerName={activePlayer.name} onDismiss={() => setShowTurnBanner(false)} />
+      ) : null}
+      {/* #299: GameEventToast — peer narrative pills for non-active
+          multiplayer players. usePeerEvents handles debounce + dismiss. */}
+      <GameEventToast event={peerEvent} />
     </main>
   );
 }
