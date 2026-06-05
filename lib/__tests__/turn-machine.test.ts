@@ -4671,3 +4671,68 @@ describe('turnReducer — Binah required burn (difficulty increase)', () => {
     expect(result.reason.kind).toBe('binah-requires-burn');
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Solo (1-player) action guards — #277
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe('solo action guards (#277)', () => {
+  const soloHodState = (() => {
+    const player = makePlayer({ id: 'p1', position: 'hod', hand: [1, 2, 3] });
+    const base = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    return { ...base, phase: 'challenge' as TurnPhase, challengeSubPhase: 'prep' as const };
+  })();
+
+  it('rejects assist-request with solo-no-allies when players.length === 1', () => {
+    const result = turnReducer(
+      { state: soloHodState },
+      { kind: 'prep-add-modifier', modifier: { kind: 'assist-request', allyId: 'p1' } },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('solo-no-allies');
+  });
+
+  it('rejects gift-card with solo-no-gift-recipient when players.length === 1', () => {
+    const result = turnReducer(
+      { state: soloHodState },
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'gift-card', arcanum: 1, recipientId: 'p1' },
+      },
+      RNG,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('solo-no-gift-recipient');
+  });
+
+  it('allows assist-request when players.length >= 2 (control)', () => {
+    const active = makePlayer({ id: 'p1', position: 'hod', hand: [1, 2, 3] });
+    const ally = makePlayer({ id: 'p2', position: 'hod' });
+    const multiState = makeState(
+      {},
+      {
+        players: [active, ally],
+        activePlayerId: 'p1',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS },
+      },
+    );
+    const result = turnReducer(
+      { state: { ...multiState, phase: 'challenge', challengeSubPhase: 'prep' } },
+      { kind: 'prep-add-modifier', modifier: { kind: 'assist-request', allyId: 'p2' } },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});
