@@ -381,7 +381,11 @@ export function applyClientAction(
       // end-turn) pre-date this ticket and have load-bearing
       // exercises in integration tests; tightening those is out of
       // scope here and would balloon the PR.
-      if (state.phase === 'move' && state.meditatedThisTurn !== true && state.movedThisTurn !== true) {
+      if (
+        state.phase === 'move' &&
+        state.meditatedThisTurn !== true &&
+        state.movedThisTurn !== true
+      ) {
         return {
           ok: false,
           error: {

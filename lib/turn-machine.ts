@@ -1688,8 +1688,7 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // paths, already meditated) is softlocked.
       const allowEndTurn =
         phase === 'end' ||
-        (phase === 'move' &&
-          (state.meditatedThisTurn === true || state.movedThisTurn === true));
+        (phase === 'move' && (state.meditatedThisTurn === true || state.movedThisTurn === true));
       if (!allowEndTurn) {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'end', actual: phase } };
       }

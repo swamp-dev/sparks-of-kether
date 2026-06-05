@@ -762,8 +762,7 @@ export function PlayScreen({
              */}
             {turn.phase === 'end' ||
             (turn.phase === 'move' &&
-              (turn.state.meditatedThisTurn === true ||
-                turn.state.movedThisTurn === true)) ? (
+              (turn.state.meditatedThisTurn === true || turn.state.movedThisTurn === true)) ? (
               <button
                 type="button"
                 onClick={() => turn.endTurn()}

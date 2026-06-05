@@ -163,9 +163,9 @@ describe('PlayScreen — Meditate from end phase (#287)', () => {
       vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 3);
     });
     // Seat has NOT rotated (no auto-advance from 'move').
-    expect(
-      container.querySelector('[data-play-screen]')?.getAttribute('data-active-player'),
-    ).toBe(initialActive);
+    expect(container.querySelector('[data-play-screen]')?.getAttribute('data-active-player')).toBe(
+      initialActive,
+    );
     // End Turn works: movedThisTurn=true so the button is present.
     const endBtn = container.querySelector<HTMLButtonElement>('[data-action="end-turn"]');
     expect(endBtn).not.toBeNull();
