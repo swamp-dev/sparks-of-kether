@@ -29,6 +29,11 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
+// Required by PlayPage (count-picker, sign, ritual, lobby phases).
+vi.mock('@/lib/music/useMusic', () => ({ useMusic: vi.fn() }));
+vi.mock('@/components/play/SettingsButton', () => ({ SettingsButton: () => null }));
+vi.mock('@/components/atmosphere/ColorBloom', () => ({ ColorBloom: () => null }));
+
 // vitest-axe's `extend-expect` ships an empty file in 0.1.0 and the
 // matcher pattern fights vitest 4's expect-context lifecycle. Assert
 // on `axe(...).violations` directly instead — same coverage, simpler
@@ -559,5 +564,14 @@ describe('a11y — major UI surfaces', () => {
       );
       expectNoViolations(await axe(container));
     });
+  });
+
+  // #304: count-picker buttons now carry descriptive aria-labels. Axe
+  // scan of the initial PlayPage state (the count-picker screen) pins
+  // the contract that no WCAG violation is introduced by the label change.
+  it('PlayPage count-picker is axe-clean (#304)', async () => {
+    const PlayPage = (await import('@/app/play/page')).default;
+    const { container } = render(<PlayPage />);
+    expectNoViolations(await axe(container));
   });
 });
