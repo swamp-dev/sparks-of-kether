@@ -26,7 +26,7 @@ import { hexToRgbTriplet } from '@/lib/hex-to-rgb-triplet';
  * but retains the static atmosphere layer.
  */
 
-const LOBBY_QUOTE = 'Two seekers. One Tree. The light ascends together.';
+const LOBBY_QUOTE = 'Seekers of the light. The Tree awaits your ascent.';
 
 export interface LobbyPlayer {
   readonly id: string;
@@ -93,8 +93,8 @@ export function Lobby({
     .filter((s): s is NonNullable<typeof s> => s !== null);
   const hasDuplicateSigns = new Set(pickedSigns).size < pickedSigns.length;
   const allReady =
-    players.length >= 2 &&
-    players.length <= 4 &&
+    players.length >= 1 &&
+    players.length <= 6 &&
     players.every((p) => p.ready && p.zodiacSign !== null) &&
     !hasDuplicateSigns;
   const canBegin = isHost && allReady && onBegin !== undefined && !beginning;
@@ -113,7 +113,7 @@ export function Lobby({
           <p className="mt-1 text-sm opacity-70">
             {players.length} player{players.length === 1 ? '' : 's'}
             {' · '}
-            {players.length < 2
+            {players.length < 1
               ? 'Waiting for more players'
               : allReady
                 ? 'Everyone is ready'
@@ -227,20 +227,20 @@ export function Lobby({
  * hint at a time to keep the call to action focused.
  */
 function BeginHint({ players }: { players: readonly LobbyPlayer[] }): JSX.Element | null {
-  if (players.length < 2) {
+  if (players.length < 1) {
     return (
       <p data-begin-hint="too-few-players" className="text-xs uppercase tracking-widest opacity-60">
-        At least two seekers needed
+        At least one seeker needed
       </p>
     );
   }
-  if (players.length > 4) {
+  if (players.length > 6) {
     return (
       <p
         data-begin-hint="too-many-players"
         className="text-xs uppercase tracking-widest opacity-60"
       >
-        Up to four can ascend together
+        Up to six can ascend together
       </p>
     );
   }
