@@ -238,11 +238,8 @@ describe('POST /api/rooms/[code]/start', () => {
     expect(roomUpdates).toHaveLength(0);
   });
 
-  it('returns 422 too-few-players when only the host is in the room', async () => {
-    playersResponse = {
-      data: [validPlayers[0]],
-      error: null,
-    };
+  it('returns 422 too-few-players when no players are in the room', async () => {
+    playersResponse = { data: [], error: null };
     const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
       params: { code: 'ABCDEF' },
     });
@@ -250,6 +247,17 @@ describe('POST /api/rooms/[code]/start', () => {
     const body = (await res.json()) as { reason: { kind: string } };
     expect(body.reason.kind).toBe('too-few-players');
     expect(snapshotInserts).toHaveLength(0);
+  });
+
+  it('returns 200 when only the host is in the room (solo play)', async () => {
+    playersResponse = { data: [validPlayers[0]], error: null };
+    const res = await POST(makeRequest({ authorization: 'Bearer x' }), {
+      params: { code: 'ABCDEF' },
+    });
+    expect(res.status).toBe(200);
+    expect(snapshotInserts).toHaveLength(1);
+    const inserted = snapshotInserts[0] as { snapshot: { activePlayerId: string } };
+    expect(inserted.snapshot.activePlayerId).toBe('host-uid');
   });
 
   it('returns 422 duplicate-zodiac-signs when two players share a sign', async () => {
