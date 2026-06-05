@@ -600,7 +600,8 @@ function buildSoloTrialState(): GameState {
 describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
   it('renders data-coda-mode="solo" when players.length === 1', () => {
     const state = buildSoloTrialState();
-    const player = state.players[0]!;
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
     const { result } = renderHook(() =>
       useTurn({
         initialState: state,
@@ -610,12 +611,7 @@ describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
       }),
     );
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     expect(container.querySelector('[data-trial-panel]')?.getAttribute('data-coda-mode')).toBe(
       'solo',
@@ -624,7 +620,8 @@ describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
 
   it('does not render the trial-order ribbon (chorus UI) when players.length === 1', () => {
     const state = buildSoloTrialState();
-    const player = state.players[0]!;
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
     const { result } = renderHook(() =>
       useTurn({
         initialState: state,
@@ -634,19 +631,15 @@ describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
       }),
     );
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     expect(container.querySelector('[data-trial-order]')).toBeNull();
   });
 
   it('renders the Roll button for the solo player (their turn is always active)', () => {
     const state = buildSoloTrialState();
-    const player = state.players[0]!;
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
     const { result } = renderHook(() =>
       useTurn({
         initialState: state,
@@ -656,12 +649,7 @@ describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
       }),
     );
     const { container } = render(
-      <FinalThresholdScreen
-        state={state}
-        player={player}
-        turn={result.current}
-        mode="hot-seat"
-      />,
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
     );
     const rollBtn = container.querySelector('[data-action="kether-trial-resolve"]');
     expect(rollBtn).not.toBeNull();

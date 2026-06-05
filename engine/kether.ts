@@ -143,7 +143,7 @@ export function initKetherRitual(
   const trialChallenges: KetherTrialChallenge[] = trialOrder.map((_, idx) => {
     const entry = TRIAL_SEFIROT[idx % TRIAL_SEFIROT.length];
     // entry is always defined because TRIAL_SEFIROT has 8 entries and
-    // player count is at most 4 — the modulo is a defensive fallback.
+    // player count is at most 6 — the modulo is a defensive fallback.
     return {
       sefirahKey: entry?.sefirahKey ?? 'chokmah',
       stat: entry?.stat ?? 'insight',
