@@ -1764,14 +1764,15 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       if (!player.hand.includes(event.arcanum)) {
         return { ok: false, reason: { kind: 'gift-card-not-in-hand' } };
       }
-      const recipient = state.players.find(
-        (p) => p.id === event.recipientId && p.id !== player.id,
-      );
+      const recipient = state.players.find((p) => p.id === event.recipientId && p.id !== player.id);
       if (!recipient) {
         return { ok: false, reason: { kind: 'gift-invalid-recipient' } };
       }
       if (recipient.hand.length >= HAND_CAP) {
-        return { ok: false, reason: { kind: 'gift-recipient-at-cap', recipientId: event.recipientId } };
+        return {
+          ok: false,
+          reason: { kind: 'gift-recipient-at-cap', recipientId: event.recipientId },
+        };
       }
       const newGiverHand = player.hand.filter((c) => c !== event.arcanum);
       const newRecipientHand = [...recipient.hand, event.arcanum];
@@ -1797,9 +1798,7 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       if (!player.hand.includes(event.arcanum)) {
         return { ok: false, reason: { kind: 'gift-card-not-in-hand' } };
       }
-      const recipient = state.players.find(
-        (p) => p.id === event.recipientId && p.id !== player.id,
-      );
+      const recipient = state.players.find((p) => p.id === event.recipientId && p.id !== player.id);
       if (!recipient) {
         return { ok: false, reason: { kind: 'gift-invalid-recipient' } };
       }

@@ -215,6 +215,19 @@ export interface UseTurnReturn {
    * invocation; the reducer no-ops if the card is not in hand.
    */
   readonly encounterBurnDiscard: (arcanum: number) => GameState;
+  /** Gift a card from the active player's hand to an ally. +1 Illumination on accept. */
+  readonly giftTurn: (
+    arcanum: number,
+    recipientId: string,
+  ) => Result<TurnReducerSuccess, TurnReducerError>;
+  /** Accept a gift when recipient is at hand cap by discarding one of their cards first. */
+  readonly giftTurnAcceptOverCap: (
+    arcanum: number,
+    recipientId: string,
+    discardArcanum: number,
+  ) => Result<TurnReducerSuccess, TurnReducerError>;
+  /** Refuse a pending gift. +1 Separation. */
+  readonly refuseGiftTurn: (recipientId: string) => Result<TurnReducerSuccess, TurnReducerError>;
   readonly endTurn: () => void;
   /** Force a state replacement — used when an external action mutates state out-of-band. */
   readonly setState: (s: GameState) => void;
@@ -609,6 +622,44 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, state, opts.rng],
   );
 
+  const giftTurn = useCallback(
+    (arcanum: number, recipientId: string): Result<TurnReducerSuccess, TurnReducerError> => {
+      const result = turnReducer(snapshot, { kind: 'gift-turn', arcanum, recipientId }, opts.rng);
+      if (!result.ok) return result;
+      setSnapshot(result.value.next);
+      return result;
+    },
+    [snapshot, opts.rng],
+  );
+
+  const giftTurnAcceptOverCap = useCallback(
+    (
+      arcanum: number,
+      recipientId: string,
+      discardArcanum: number,
+    ): Result<TurnReducerSuccess, TurnReducerError> => {
+      const result = turnReducer(
+        snapshot,
+        { kind: 'gift-turn-accept-over-cap', arcanum, recipientId, discardArcanum },
+        opts.rng,
+      );
+      if (!result.ok) return result;
+      setSnapshot(result.value.next);
+      return result;
+    },
+    [snapshot, opts.rng],
+  );
+
+  const refuseGiftTurn = useCallback(
+    (recipientId: string): Result<TurnReducerSuccess, TurnReducerError> => {
+      const result = turnReducer(snapshot, { kind: 'refuse-gift-turn', recipientId }, opts.rng);
+      if (!result.ok) return result;
+      setSnapshot(result.value.next);
+      return result;
+    },
+    [snapshot, opts.rng],
+  );
+
   // Extracted so the deps array references stable per-render bindings
   // rather than the opts object, matching the Kether methods' pattern.
   const endTurnDispatch = opts.dispatchClientAction;
@@ -795,6 +846,9 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       acceptChallengeSetback,
       discard,
       encounterBurnDiscard,
+      giftTurn,
+      giftTurnAcceptOverCap,
+      refuseGiftTurn,
       endTurn,
       setState: replaceState,
       currentTrialPlayerId: trialPointer,
@@ -823,6 +877,9 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       acceptChallengeSetback,
       discard,
       encounterBurnDiscard,
+      giftTurn,
+      giftTurnAcceptOverCap,
+      refuseGiftTurn,
       endTurn,
       replaceState,
       trialPointer,

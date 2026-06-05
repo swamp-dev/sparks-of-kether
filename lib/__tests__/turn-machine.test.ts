@@ -4912,7 +4912,11 @@ describe('turnReducer — gift-turn (#296)', () => {
 
   it('transfers the card from giver to recipient, +1 Illumination', () => {
     const state = makeGiftState({ giverHand: [1, 2, 3], recipientHand: [4, 5] });
-    const result = turnReducer({ state }, { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' }, RNG);
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' },
+      RNG,
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state;
@@ -4943,7 +4947,11 @@ describe('turnReducer — gift-turn (#296)', () => {
 
   it('rejects when active player does not have the card', () => {
     const state = makeGiftState({ giverHand: [2, 3] });
-    const result = turnReducer({ state }, { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' }, RNG);
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' },
+      RNG,
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('gift-card-not-in-hand');
@@ -4963,7 +4971,11 @@ describe('turnReducer — gift-turn (#296)', () => {
 
   it('rejects when recipient is the active player (self-gift)', () => {
     const state = makeGiftState({ giverHand: [1, 2] });
-    const result = turnReducer({ state }, { kind: 'gift-turn', arcanum: 1, recipientId: 'p1' }, RNG);
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn', arcanum: 1, recipientId: 'p1' },
+      RNG,
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('gift-invalid-recipient');
@@ -4972,7 +4984,11 @@ describe('turnReducer — gift-turn (#296)', () => {
   it('rejects with gift-recipient-at-cap when recipient hand is at HAND_CAP', () => {
     const atCap = Array.from({ length: HAND_CAP }, (_, i) => i + 10);
     const state = makeGiftState({ giverHand: [1, 2], recipientHand: atCap });
-    const result = turnReducer({ state }, { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' }, RNG);
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' },
+      RNG,
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('gift-recipient-at-cap');
@@ -4980,7 +4996,11 @@ describe('turnReducer — gift-turn (#296)', () => {
 
   it('rejects when Hoarding shell (Shell of Chesed) is active', () => {
     const state = makeGiftState({ shells: { chesed: 'active' } });
-    const result = turnReducer({ state }, { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' }, RNG);
+    const result = turnReducer(
+      { state },
+      { kind: 'gift-turn', arcanum: 1, recipientId: 'p2' },
+      RNG,
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('gift-hoarding-shell-active');
@@ -5056,11 +5076,7 @@ describe('turnReducer — refuse-gift-turn (#296)', () => {
       {},
       { players: [giver, recipient], activePlayerId: 'p1', phase: 'move', separation: 0 },
     );
-    const result = turnReducer(
-      { state },
-      { kind: 'refuse-gift-turn', recipientId: 'p2' },
-      RNG,
-    );
+    const result = turnReducer({ state }, { kind: 'refuse-gift-turn', recipientId: 'p2' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const after = result.value.next.state;

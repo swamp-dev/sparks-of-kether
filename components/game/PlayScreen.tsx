@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
+import { arcanumByNumber, isPathShortcut, sefirahByKey, tryPathByNumber } from '@/data';
 import { NODE_RADIUS, TREE_ROOT_SVG_SELECTOR, TREE_VIEW_W } from '@/data/tree-layout';
 import type { SefirahKey } from '@/data';
 import { TreeBoard } from '@/components/tree/TreeBoard';
@@ -19,6 +19,7 @@ import { FinalThresholdScreen } from '@/components/game/FinalThresholdScreen';
 import { KetherCelebration } from '@/components/game/KetherCelebration';
 import { JourneySummary } from '@/components/game/JourneySummary';
 import { isKetherHeld } from '@/engine/kether';
+import { isHoardingActive } from '@/engine/shells';
 import { isHandVisible } from '@/components/hand/visibility';
 import { useTurn, type DispatchClientAction, type TurnPhase } from '@/lib/use-turn';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
@@ -29,7 +30,7 @@ import { usePeerEvents } from '@/lib/use-peer-events';
 import { TurnBanner } from '@/components/game/TurnBanner';
 import { GameEventToast } from '@/components/game/GameEventToast';
 import type { Rng } from '@/engine/rng';
-import type { GameState } from '@/engine/types';
+import type { GameState, PlayerState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
 import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
 
@@ -111,6 +112,12 @@ interface PlayScreenProps {
    */
   readonly onQuit?: () => void;
 }
+
+type GiftStep =
+  | { readonly kind: 'pick-card' }
+  | { readonly kind: 'pick-recipient'; readonly arcanum: number }
+  | { readonly kind: 'over-cap'; readonly arcanum: number; readonly recipientId: string }
+  | { readonly kind: 'refuse-warning'; readonly arcanum: number; readonly recipientId: string };
 
 /**
  * Delay before the orchestrator auto-advances from `'end'` phase to
@@ -204,6 +211,7 @@ export function PlayScreen({
   // or Escape.
   const [openSefirah, setOpenSefirah] = useState<SefirahKey | undefined>(undefined);
   const [showMeditateConfirm, setShowMeditateConfirm] = useState(false);
+  const [giftStep, setGiftStep] = useState<GiftStep | null>(null);
   // Tracks whether the KetherCelebration "Continue" has been clicked.
   // When true, the win path advances to JourneySummary.
   const [celebrationDone, setCelebrationDone] = useState(false);
@@ -363,6 +371,7 @@ export function PlayScreen({
       ? turn.state.players.find((p) => p.id === currentPlayerId)
       : activePlayer;
   const isMyTurn = currentPlayerId === undefined || currentPlayerId === activePlayer?.id;
+  const hoardingActive = isHoardingActive(turn.state);
   const endgame = checkEndgame(turn.state);
 
   // #299: TurnBanner — fire when the turn rotates to the local player.
@@ -764,6 +773,17 @@ export function PlayScreen({
             {activePlayer?.name ?? '—'}&apos;s turn
           </span>
           <div className="pointer-events-auto flex gap-2">
+            {turn.phase === 'move' && turn.state.players.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setGiftStep({ kind: 'pick-card' })}
+                disabled={!isMyTurn || hoardingActive || (activePlayer?.hand.length ?? 0) === 0}
+                data-action="gift-card"
+                className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:opacity-40"
+              >
+                Gift card
+              </button>
+            ) : null}
             {turn.phase === 'move' || turn.phase === 'end' ? (
               <MeditateButton
                 onMeditate={() => setShowMeditateConfirm(true)}
@@ -1031,6 +1051,37 @@ export function PlayScreen({
           }}
         />
       ) : null}
+      {giftStep !== null && activePlayer !== undefined ? (
+        <GiftModal
+          step={giftStep}
+          activePlayer={activePlayer}
+          players={turn.state.players}
+          onClose={() => setGiftStep(null)}
+          onPickCard={(arcanum) => setGiftStep({ kind: 'pick-recipient', arcanum })}
+          onPickRecipient={(arcanum, recipientId) => {
+            const result = turn.giftTurn(arcanum, recipientId);
+            if (result.ok) {
+              setGiftStep(null);
+            } else if (result.reason.kind === 'gift-recipient-at-cap') {
+              setGiftStep({ kind: 'over-cap', arcanum, recipientId });
+            }
+          }}
+          onAcceptOverCap={(arcanum, recipientId, discardArcanum) => {
+            const result = turn.giftTurnAcceptOverCap(arcanum, recipientId, discardArcanum);
+            if (result.ok) setGiftStep(null);
+          }}
+          onShowRefuseWarning={(arcanum, recipientId) =>
+            setGiftStep({ kind: 'refuse-warning', arcanum, recipientId })
+          }
+          onBackToOverCap={(arcanum, recipientId) =>
+            setGiftStep({ kind: 'over-cap', arcanum, recipientId })
+          }
+          onRefuse={(recipientId) => {
+            turn.refuseGiftTurn(recipientId);
+            setGiftStep(null);
+          }}
+        />
+      ) : null}
       {/* #299: TurnBanner — full-screen atmospheric overlay on turn
           rotation. Active player only; auto-dismisses in 2.5s. */}
       {showTurnBanner && activePlayer ? (
@@ -1201,6 +1252,184 @@ function MeditateConfirmDialog({
             Confirm
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function GiftModal({
+  step,
+  activePlayer,
+  players,
+  onClose,
+  onPickCard,
+  onPickRecipient,
+  onAcceptOverCap,
+  onShowRefuseWarning,
+  onBackToOverCap,
+  onRefuse,
+}: {
+  step: GiftStep;
+  activePlayer: PlayerState;
+  players: readonly PlayerState[];
+  onClose: () => void;
+  onPickCard: (arcanum: number) => void;
+  onPickRecipient: (arcanum: number, recipientId: string) => void;
+  onAcceptOverCap: (arcanum: number, recipientId: string, discardArcanum: number) => void;
+  onShowRefuseWarning: (arcanum: number, recipientId: string) => void;
+  onBackToOverCap: (arcanum: number, recipientId: string) => void;
+  onRefuse: (recipientId: string) => void;
+}): JSX.Element {
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === 'Escape') onCloseRef.current();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  const otherPlayers = players.filter((p) => p.id !== activePlayer.id);
+
+  let title: string;
+  let body: JSX.Element;
+
+  if (step.kind === 'pick-card') {
+    title = 'Gift a card';
+    body = (
+      <div className="flex flex-col gap-2">
+        <p className="text-xs opacity-70">Choose a card from your hand to give to an ally.</p>
+        <div className="flex flex-wrap gap-2">
+          {activePlayer.hand.map((arcanum) => {
+            const card = arcanumByNumber(arcanum);
+            return (
+              <button
+                key={arcanum}
+                type="button"
+                onClick={() => onPickCard(arcanum)}
+                className="rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              >
+                {card.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  } else if (step.kind === 'pick-recipient') {
+    const cardName = arcanumByNumber(step.arcanum).name;
+    title = `Gift ${cardName} to…`;
+    body = (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
+          {otherPlayers.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPickRecipient(step.arcanum, p.id)}
+              className="rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  } else if (step.kind === 'over-cap') {
+    const recipient = players.find((p) => p.id === step.recipientId);
+    const cardName = arcanumByNumber(step.arcanum).name;
+    title = `${recipient?.name ?? 'Recipient'}'s hand is full`;
+    body = (
+      <div className="flex flex-col gap-3">
+        <p className="text-xs opacity-70">
+          Discard one card to make room for {cardName}, or refuse the gift (+1 Separation).
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(recipient?.hand ?? []).map((arcanum) => {
+            const card = arcanumByNumber(arcanum);
+            return (
+              <button
+                key={arcanum}
+                type="button"
+                onClick={() => onAcceptOverCap(step.arcanum, step.recipientId, arcanum)}
+                className="rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+              >
+                Discard {card.name}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={() => onShowRefuseWarning(step.arcanum, step.recipientId)}
+          className="self-start rounded border border-separation/40 px-3 py-2 text-xs hover:border-separation focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+        >
+          Refuse gift (+1 Separation)
+        </button>
+      </div>
+    );
+  } else {
+    title = 'Refuse the gift?';
+    body = (
+      <div className="flex flex-col gap-3">
+        <p className="text-xs opacity-70">
+          Refusing adds +1 Separation to the team&apos;s total. This cannot be undone.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onBackToOverCap(step.arcanum, step.recipientId)}
+            className="rounded border border-veil/30 px-4 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            Back
+          </button>
+          {/* autoFocus: Enter confirms when dialog has keyboard focus. */}
+          <button
+            type="button"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            onClick={() => onRefuse(step.recipientId)}
+            className="rounded border border-separation/40 px-4 py-2 text-xs hover:border-separation focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            Refuse (+1 Separation)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-gift-modal-backdrop
+      onClick={onClose}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-ground/60 backdrop-blur-sm"
+    >
+      <div
+        data-gift-modal
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gift-modal-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-4 rounded-md border border-veil/30 bg-ground/95 px-5 py-4 text-veil shadow-2xl outline-none focus:outline-none"
+      >
+        <div className="flex items-center justify-between">
+          <p id="gift-modal-title" className="text-sm font-medium">
+            {title}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded px-2 py-1 text-xs opacity-60 hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+          >
+            ✕
+          </button>
+        </div>
+        {body}
       </div>
     </div>
   );
