@@ -63,16 +63,18 @@ export const HAND_CAP = 5;
 /**
  * Number of full Major-Arcana decks (22 cards each) shuffled into
  * the draw pile. Per `design/mechanics.md`:
- *   - 2 players → 1 deck (22 cards)
- *   - 3 or 4 players → 2 decks (44 cards)
+ *   - 1–2 players → 1 deck (22 cards)
+ *   - 3–4 players → 2 decks (44 cards)
+ *   - 5–6 players → 3 decks (66 cards)
  *
  * Throws on out-of-range player counts; this is a programmer error
- * (the lobby should reject 1- or 5+-player rooms before calling).
+ * (the lobby should reject out-of-range rooms before calling).
  */
-export function deckCountFor(playerCount: number): 1 | 2 {
-  if (playerCount === 2) return 1;
+export function deckCountFor(playerCount: number): 1 | 2 | 3 {
+  if (playerCount === 1 || playerCount === 2) return 1;
   if (playerCount === 3 || playerCount === 4) return 2;
-  throw new Error(`Unsupported player count: ${playerCount} (must be 2..4)`);
+  if (playerCount === 5 || playerCount === 6) return 3;
+  throw new Error(`Unsupported player count: ${playerCount} (must be 1..6)`);
 }
 
 /**

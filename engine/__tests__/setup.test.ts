@@ -8,7 +8,7 @@ import { DEFAULT_STATS } from '@/test/fixtures';
 function setup(count: number): PlayerSetup[] {
   // Net-neutral or mildly positive picks per fixture convention so
   // tests don't get surprise stat shifts on default setups.
-  const signs: ZodiacSignKey[] = ['aries', 'leo', 'libra', 'cancer'];
+  const signs: ZodiacSignKey[] = ['aries', 'leo', 'libra', 'cancer', 'scorpio', 'pisces'];
   return Array.from({ length: count }, (_, i) => ({
     id: `p${i + 1}`,
     name: `Player ${i + 1}`,
@@ -18,24 +18,29 @@ function setup(count: number): PlayerSetup[] {
 }
 
 describe('deckCountFor', () => {
-  it('returns 1 for 2 players, 2 for 3 or 4 players', () => {
+  it('returns correct deck count for all valid player counts 1–6', () => {
+    expect(deckCountFor(1)).toBe(1);
     expect(deckCountFor(2)).toBe(1);
     expect(deckCountFor(3)).toBe(2);
     expect(deckCountFor(4)).toBe(2);
+    expect(deckCountFor(5)).toBe(3);
+    expect(deckCountFor(6)).toBe(3);
   });
 
   it('throws on out-of-range counts', () => {
-    expect(() => deckCountFor(1)).toThrow();
-    expect(() => deckCountFor(5)).toThrow();
-    expect(() => deckCountFor(0)).toThrow();
+    expect(() => deckCountFor(0)).toThrow('Unsupported player count: 0 (must be 1..6)');
+    expect(() => deckCountFor(7)).toThrow('Unsupported player count: 7 (must be 1..6)');
   });
 });
 
 describe('initializeGame — hand sizes', () => {
   it.each([
+    [1, 1, 22],
     [2, 1, 22],
     [3, 2, 44],
     [4, 2, 44],
+    [5, 3, 66],
+    [6, 3, 66],
   ])('%i players → %i deck(s) → %i total cards in circulation', (count, decks, totalCards) => {
     const state = initializeGame({
       players: setup(count),
@@ -82,6 +87,17 @@ describe('initializeGame — starting state', () => {
       expect(p.clearedSefirot.size).toBe(0);
       expect(p.sparksHeld.size).toBe(0);
     }
+  });
+
+  it('initializes with 1 player (solo)', () => {
+    const state = initializeGame({
+      players: setup(1),
+      rng: seededRng(1),
+    });
+    expect(state.players).toHaveLength(1);
+    expect(state.players[0]?.position).toBe('malkuth');
+    expect(state.players[0]?.hand).toHaveLength(STARTING_HAND_SIZE);
+    expect(state.deck.length + STARTING_HAND_SIZE).toBe(22);
   });
 });
 
@@ -224,15 +240,6 @@ describe('initializeGame — determinism', () => {
     expect(a.deck).toEqual(b.deck);
   });
 
-  it('throws on out-of-range player count (1 player)', () => {
-    expect(() =>
-      initializeGame({
-        players: setup(1),
-        rng: seededRng(1),
-      }),
-    ).toThrow('Unsupported player count: 1 (must be 2..4)');
-  });
-
   it('throws on empty player list (0 players)', () => {
     // The empty-players input is gated by `deckCountFor(0)` at the
     // top of `initializeGame` — that throw fires before the
@@ -249,17 +256,6 @@ describe('initializeGame — determinism', () => {
         players: setup(0),
         rng: seededRng(1),
       }),
-    ).toThrow('Unsupported player count: 0 (must be 2..4)');
-  });
-
-  it('throws on out-of-range player count (5 players)', () => {
-    // Companion to the 1-player and 0-player cases: pin the upper
-    // bound so a regression that loosened `deckCountFor` is caught.
-    expect(() =>
-      initializeGame({
-        players: setup(5),
-        rng: seededRng(1),
-      }),
-    ).toThrow('Unsupported player count: 5 (must be 2..4)');
+    ).toThrow('Unsupported player count: 0 (must be 1..6)');
   });
 });
