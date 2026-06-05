@@ -956,6 +956,12 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // play with no challenge). Phase stays 'end' and lastAction is
       // cleared to prevent the PlayScreen auto-advance timer from
       // firing while the player reviews their new cards.
+      // #298: Post-#298 no live code path transitions to 'end' from a
+      // Move, so the `phase === 'end'` branch in the spread below is
+      // unreachable in normal gameplay. It is preserved for legacy
+      // save-state replay (snapshots serialised before #298 may carry
+      // `phase: 'end'` from a prior Move) and for `pendingDiscard`
+      // edge cases that still transit through 'end'.
       const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng, {
         overCap: true,
       });

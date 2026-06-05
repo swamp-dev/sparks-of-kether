@@ -375,12 +375,12 @@ export function applyClientAction(
       // the corresponding reducer gate at `lib/turn-machine.ts:1423`
       // for this specific case (move without meditate).
       //
-      // Scope: this guard fires ONLY for `'move'` without
-      // `meditatedThisTurn`. Other phase asymmetries between the
-      // dispatcher and the reducer (e.g. `'challenge'` or `'kether'`
-      // end-turn) pre-date this ticket and have load-bearing
-      // exercises in integration tests; tightening those is out of
-      // scope here and would balloon the PR.
+      // Scope: this guard fires for `'move'` only when NEITHER
+      // `meditatedThisTurn` nor `movedThisTurn` is set — i.e. the
+      // player has neither moved nor meditated yet this turn. Other
+      // phase asymmetries between the dispatcher and the reducer
+      // (e.g. `'challenge'` or `'kether'` end-turn) pre-date this
+      // ticket and have load-bearing exercises in integration tests.
       if (
         state.phase === 'move' &&
         state.meditatedThisTurn !== true &&
