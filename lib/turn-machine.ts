@@ -899,20 +899,21 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
         return { ok: true, value: { next: { state: stateAfter } } };
       }
       // Decide the next phase: if the arrival is an uncleared
-      // standard-check Sefirah, enter `challenge`; otherwise jump
-      // straight to `'end'` (Malkuth's no-check, Kether's collective,
-      // and already-cleared Sefirot all skip the challenge phase).
-      // Pre-#502 the no-challenge branch transitioned to `'draw'`; the
-      // start-of-turn refill change folded that step into `end-turn`.
-      let nextPhase: TurnPhase = 'end';
+      // standard-check Sefirah, enter `challenge`; otherwise stay in
+      // `'move'` so the player may move again (#298: multi-path turns).
+      // Malkuth's no-check, Kether's collective, and already-cleared
+      // Sefirot all skip the challenge branch. Pre-#298 the no-challenge
+      // branch transitioned to `'end'`; multi-path moves keeps the
+      // player in `'move'` until they explicitly end the turn.
+      let enterChallenge = false;
       if (movedPlayer) {
         const arrival = sefirahByKey(movedPlayer.position);
         const alreadyCleared = movedPlayer.clearedSefirot.has(movedPlayer.position);
         if (arrival.challenge.kind === 'check' && !alreadyCleared) {
-          nextPhase = 'challenge';
+          enterChallenge = true;
         }
       }
-      if (nextPhase === 'challenge' && movedPlayer) {
+      if (enterChallenge && movedPlayer) {
         // Entering challenge: clear any stale prep state from a
         // prior encounter and seed the prep sub-phase. #334
         // (`design/per-sefirah-mechanics.md` § 2.6 (b)): also
@@ -921,6 +922,8 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
         // GameState fields, retryCount = 0. Surface only; the per-
         // mechanic fields (dreamPillar, chokmahPriorAttempts, etc.)
         // are filled in by downstream per-Sefirah tickets.
+        // #298: set movedThisTurn here so End Turn stays available
+        // after the challenge resolves back to 'move'.
         const cleanState: GameState = {
           ...newState,
           pendingModifiers: EMPTY_PENDING_MODIFIERS,
@@ -928,23 +931,20 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
           challengeSubPhase: 'prep',
           lastOutcome: undefined,
           encounter: initEncounterEnvelope(newState, movedPlayer.position),
+          movedThisTurn: true,
         };
         return { ok: true, value: { next: { state: cleanState } } };
       }
-      // Non-challenge arrival (already-cleared / no-check): the
-      // encounter envelope must be cleared — a stale envelope cannot
-      // leak across the seat boundary. #502: tag `lastAction` so the
-      // PlayScreen auto-advance timer fires (the canonical #131
-      // cadence). Pre-#502 the same tag was set in the now-deleted
-      // `'draw'` case; with that case gone, the move case sets it
-      // directly when it transitions to `'end'`.
+      // Non-challenge arrival: stay in 'move' so the player may move
+      // again (#298). Set movedThisTurn=true so End Turn is permitted.
+      // Clear the encounter envelope — a stale one must not leak.
       const nextState: GameState = {
         ...newState,
-        phase: nextPhase,
+        phase: 'move',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         encounter: undefined,
-        lastAction: nextPhase === 'end' ? 'move-draw' : undefined,
+        movedThisTurn: true,
       };
       return { ok: true, value: { next: { state: nextState } } };
     }
@@ -974,6 +974,12 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // play with no challenge). Phase stays 'end' and lastAction is
       // cleared to prevent the PlayScreen auto-advance timer from
       // firing while the player reviews their new cards.
+      // #298: Post-#298 no live code path transitions to 'end' from a
+      // Move, so the `phase === 'end'` branch in the spread below is
+      // unreachable in normal gameplay. It is preserved for legacy
+      // save-state replay (snapshots serialised before #298 may carry
+      // `phase: 'end'` from a prior Move) and for `pendingDiscard`
+      // edge cases that still transit through 'end'.
       const drewState = drawNCards(state, player.id, MEDITATE_DRAW, HAND_CAP, rng, {
         overCap: true,
       });
@@ -1628,18 +1634,19 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       if (state.lastOutcome === undefined || !state.lastOutcome.pass) {
         return { ok: false, reason: { kind: 'react-continue-on-fail' } };
       }
-      // #502: pass-path lands in `'end'` directly (pre-#502 this
-      // transitioned to `'draw'`; the start-of-turn refill folded
-      // the discrete draw step into `end-turn`). `lastAction` is
-      // tagged so PlayScreen's auto-advance timer fires.
+      // #298: pass-path returns to 'move' (not 'end') so the player may
+      // move again. movedThisTurn was set when the move triggered the
+      // challenge, so End Turn remains available from 'move'.
+      // Pre-#298 this transitioned to 'end' with lastAction='move-draw'
+      // to fire the auto-advance timer; neither applies when staying in
+      // 'move'.
       const cleared: GameState = {
         ...state,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
-        phase: 'end',
+        phase: 'move',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         encounter: undefined,
-        lastAction: 'move-draw',
       };
       return { ok: true, value: { next: { state: cleared } } };
     }
@@ -1673,17 +1680,16 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // sub-phase / lastOutcome (now on GameState). #334 (§ 2.6 (b)):
       // also clear the encounter envelope — the encounter has ended
       // (failure absorbed) so the next encounter must start with a
-      // fresh envelope. #502: lands in `'end'` directly (pre-#502 this
-      // transitioned to `'draw'`); `lastAction` is tagged so the
-      // auto-advance timer fires.
+      // fresh envelope. #298: returns to 'move' (not 'end') so the
+      // player may move again. Pre-#298 landed in 'end' with
+      // lastAction='move-draw'; neither applies here.
       const cleared: GameState = {
         ...next,
         pendingModifiers: EMPTY_PENDING_MODIFIERS,
-        phase: 'end',
+        phase: 'move',
         challengeSubPhase: undefined,
         lastOutcome: undefined,
         encounter: undefined,
-        lastAction: 'move-draw',
       };
       return { ok: true, value: { next: { state: cleared } } };
     }
@@ -1708,16 +1714,14 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
     }
 
     case 'end-turn': {
-      // #503: end-turn is permitted from `'move'` when the player has
-      // already meditated this turn — Meditate is itself a complete
-      // turn-action (the player has drawn cards), so they can end the
-      // turn directly even if they choose not to play one of the
-      // freshly drawn cards. Without this branch, a player who
-      // meditates but finds no usable path is softlocked. Pre-#503
-      // Meditate transitioned straight to `'end'`, so this affordance
-      // wasn't needed.
+      // End Turn is permitted from 'move' when the player has already
+      // meditated (#503) or moved (#298) this turn — both are complete
+      // turn-actions that satisfy the "did something" invariant. Without
+      // these branches a player at the end of their options (no usable
+      // paths, already meditated) is softlocked.
       const allowEndTurn =
-        phase === 'end' || (phase === 'move' && state.meditatedThisTurn === true);
+        phase === 'end' ||
+        (phase === 'move' && (state.meditatedThisTurn === true || state.movedThisTurn === true));
       if (!allowEndTurn) {
         return { ok: false, reason: { kind: 'wrong-phase', expected: 'end', actual: phase } };
       }

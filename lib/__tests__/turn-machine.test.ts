@@ -145,10 +145,10 @@ describe('turnReducer — phase transitions', () => {
     const moved = turnReducer(meditated.value.next, { kind: 'move', pathNumber: 32 }, RNG);
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
-    // Sefirah arrival: player is now at yesod, phase is 'end' (already-
-    // cleared so the move skipped the challenge branch).
+    // Sefirah arrival: player is now at yesod, phase stays 'move' (#298:
+    // multi-path turns keep the phase in 'move' after no-challenge moves).
     expect(moved.value.next.state.players[0]?.position).toBe('yesod');
-    expect(moved.value.next.state.phase).toBe('end');
+    expect(moved.value.next.state.phase).toBe('move');
   });
 
   it('end-turn from move is allowed when meditatedThisTurn is true (#503)', () => {
@@ -182,11 +182,11 @@ describe('turnReducer — phase transitions', () => {
     expect(result.value.next.state.players[0]?.position).toBe('yesod');
   });
 
-  it('move into already-cleared Sefirah → end phase (no sub-phase)', () => {
-    // #502: pre-#502 the no-challenge branch transitioned to `'draw'`.
-    // With the start-of-turn refill (and the discrete `'draw'` phase
-    // gone), the move case now lands in `'end'` directly and tags
-    // `lastAction: 'move-draw'` so the auto-advance timer fires.
+  it('move into already-cleared Sefirah → stays in move phase, no sub-phase (#298)', () => {
+    // #298: no-challenge arrivals stay in 'move' so the player may move
+    // again. movedThisTurn is set. lastAction stays undefined (the
+    // auto-advance timer no longer fires after a move — the player
+    // clicks End Turn explicitly).
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
@@ -201,15 +201,14 @@ describe('turnReducer — phase transitions', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
-    expect(result.value.next.state.lastAction).toBe('move-draw');
+    expect(result.value.next.state.movedThisTurn).toBe(true);
   });
 
-  it('accept-setback from challenge react sub-phase → end + +1 separation + cleared sub-phase', () => {
-    // #502: same shape as the move-into-cleared test — the discrete
-    // `'draw'` phase is gone, so accept-setback lands in `'end'`
-    // directly with `lastAction: 'move-draw'` set.
+  it('accept-setback from challenge react sub-phase → move + +1 separation + cleared sub-phase (#298)', () => {
+    // #298: accept-setback now returns to 'move' so the player may move
+    // again after absorbing the setback. Previously landed in 'end'.
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
     // Pre-banish 1 shell: a real game at sep=3 would have already
     // activated the first shell, so the maybeActivateShell hook is a no-op.
@@ -224,10 +223,10 @@ describe('turnReducer — phase transitions', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.separation).toBe(4);
-    expect(result.value.next.state.lastAction).toBe('move-draw');
+    expect(result.value.next.state.lastAction).toBeUndefined();
   });
 
   it('end-turn from end → move phase + active player rotates', () => {
@@ -994,9 +993,9 @@ describe('turnReducer — prep sub-phase: prep-confirm', () => {
     expect(setback.value.next.state.separation).toBe(2);
     // #275: position rolls back to tiferet (other endpoint of path 25).
     expect(setback.value.next.state.players[0]?.position).toBe('tiferet');
-    // Phase teardown: leaves challenge → end (#502: pre-#502 this was
-    // 'draw'), sub-phase cleared.
-    expect(setback.value.next.state.phase).toBe('end');
+    // Phase teardown: leaves challenge → move (#298: pre-#298 this was
+    // 'end'), sub-phase cleared.
+    expect(setback.value.next.state.phase).toBe('move');
     expect(setback.value.next.state.challengeSubPhase).toBeUndefined();
   });
 });
@@ -1469,7 +1468,7 @@ describe('turnReducer — react sub-phase: react-continue (#385)', () => {
     pass: false,
   };
 
-  it('transitions phase → draw and clears all challenge machinery on pass', () => {
+  it('transitions phase → move and clears all challenge machinery on pass (#298)', () => {
     const player = makePlayer({ id: 'p1', position: 'gevurah' });
     const state = makeState({}, { players: [player] });
     const result = turnReducer(
@@ -1490,11 +1489,11 @@ describe('turnReducer — react sub-phase: react-continue (#385)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.lastOutcome).toBeUndefined();
     expect(result.value.next.state.encounter).toBeUndefined();
-    expect(result.value.next.state.lastAction).toBe('move-draw');
+    expect(result.value.next.state.lastAction).toBeUndefined();
     expect(result.value.next.state.pendingModifiers).toEqual(EMPTY_PENDING_MODIFIERS);
   });
 
@@ -1884,7 +1883,8 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
         discardPile: [],
       },
     );
-    // Step 1: Move (Malkuth → Yesod, already cleared → no challenge → 'end').
+    // Step 1: Move (Malkuth → Yesod, already cleared → no challenge → 'move').
+    // #298: no-challenge arrivals stay in 'move' (not 'end').
     const moved = turnReducer(
       { state: { ...state, phase: 'move' } },
       { kind: 'move', pathNumber: 32 },
@@ -1892,14 +1892,14 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     );
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
-    expect(moved.value.next.state.phase).toBe('end');
+    expect(moved.value.next.state.phase).toBe('move');
     expect(moved.value.next.state.players[0]?.position).toBe('yesod');
-    // Step 2: Meditate from end phase — should succeed.
+    // Step 2: Meditate from move phase — should succeed.
     const meditated = turnReducer(moved.value.next, { kind: 'meditate' }, RNG);
     expect(meditated.ok).toBe(true);
     if (!meditated.ok) return;
-    // Phase stays 'end'; meditatedThisTurn flips true; hand grows.
-    expect(meditated.value.next.state.phase).toBe('end');
+    // Phase stays 'move'; meditatedThisTurn flips true; hand grows.
+    expect(meditated.value.next.state.phase).toBe('move');
     expect(meditated.value.next.state.meditatedThisTurn).toBe(true);
     const afterPlayer = meditated.value.next.state.players.find((p) => p.id === 'p1');
     // Started with 2 cards (21 was played), drew 2 → 4 total.
@@ -2040,8 +2040,10 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
     expect(moved.value.next.state.players[0]?.hand.length).toBe(5);
-    expect(moved.value.next.state.phase).toBe('end');
-    // End turn — cap check sees hand at 6 (not over), so no prompt;
+    // #298: phase stays 'move' after no-challenge move. End Turn is
+    // permitted because movedThisTurn=true.
+    expect(moved.value.next.state.phase).toBe('move');
+    // End turn — cap check sees hand at 5 (at cap), so no prompt;
     // seat rotates cleanly.
     const ended = turnReducer(moved.value.next, { kind: 'end-turn' }, RNG);
     expect(ended.ok).toBe(true);
@@ -2072,23 +2074,19 @@ describe('turnReducer — meditate draws 2 cards (capped at HAND_CAP) and stays 
   });
 });
 
-describe('turnReducer — lastAction discriminator on entry to end phase (#292)', () => {
-  // #292: the auto-advance timer (PlayScreen.tsx) needs to know that
-  // the active player has finished a Move/Challenge so the seat can
-  // rotate. The reducer stamps `lastAction: 'move-draw'` on
-  // `'end'`-phase entry so the UI can gate the timer without re-
-  // deriving intent from the diff.
+describe('turnReducer — lastAction discriminator (#292)', () => {
+  // #292: the auto-advance timer (PlayScreen.tsx) reads `lastAction` to
+  // decide whether to auto-rotate the seat. Pre-#298 a Move/Challenge
+  // resolution stamped `lastAction: 'move-draw'` on `'end'`-phase entry.
   //
-  // Pre-#503 a `'meditate'` literal sat on the discriminator union
-  // (Meditate transitioned to `'end'` and the timer suppressed).
-  // Post-#503 Meditate stays in `'move'`, so `'meditate'` is no
-  // longer reachable in `'end'` — the discriminator collapses to
-  // `'move-draw' | undefined`.
-  it('move into already-cleared Sefirah lands in end with lastAction = "move-draw"', () => {
-    // #502: pre-#502 the same flow took two reducer steps (`move` →
-    // `'draw'` then `draw` → `'end'`). With the start-of-turn refill
-    // (and the discrete `'draw'` phase gone), `move` lands in `'end'`
-    // directly with the discriminator already set.
+  // Post-#298: moves no longer transition to 'end' — the player stays in
+  // 'move' and clicks End Turn. `lastAction` is therefore `undefined`
+  // after a no-challenge move; `'move-draw'` is no longer produced by
+  // any live code path. The auto-advance timer only fires from `'end'`
+  // phase, which is now only reachable from legacy saved-state replay.
+  it('no-challenge move → phase stays move, lastAction stays undefined (#298)', () => {
+    // #298: moves stay in 'move'. The `lastAction` discriminator is not
+    // set — players end their turns explicitly.
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
@@ -2111,8 +2109,8 @@ describe('turnReducer — lastAction discriminator on entry to end phase (#292)'
     );
     expect(moved.ok).toBe(true);
     if (!moved.ok) return;
-    expect(moved.value.next.state.phase).toBe('end');
-    expect(moved.value.next.state.lastAction).toBe('move-draw');
+    expect(moved.value.next.state.phase).toBe('move');
+    expect(moved.value.next.state.lastAction).toBeUndefined();
   });
 
   it('end-turn clears lastAction so the next seat starts clean', () => {
@@ -2294,9 +2292,8 @@ describe('turnReducer — sub-phase teardown when phase leaves challenge', () =>
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // #502: post-#502 accept-setback lands in `'end'` directly (the
-    // discrete `'draw'` phase has been folded into `end-turn`).
-    expect(result.value.next.state.phase).toBe('end');
+    // #298: accept-setback returns to 'move' so the player may keep moving.
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.challengeSubPhase).toBeUndefined();
     expect(result.value.next.state.lastOutcome).toBeUndefined();
     expect(result.value.next.state.pendingModifiers).toEqual({
@@ -2489,7 +2486,8 @@ describe('turnReducer — edge cases: full pass → accept-setback teardown is i
     const setback = turnReducer(snap, { kind: 'accept-setback', sefirah: 'gevurah' }, RNG);
     expect(setback.ok).toBe(true);
     if (!setback.ok) return;
-    expect(setback.value.next.state.phase).toBe('end');
+    // #298: returns to 'move' instead of 'end'.
+    expect(setback.value.next.state.phase).toBe('move');
     expect(setback.value.next.state.challengeSubPhase).toBeUndefined();
     expect(setback.value.next.state.lastOutcome).toBeUndefined();
     expect(setback.value.next.state.pendingModifiers).toEqual({
@@ -2645,7 +2643,7 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
 
   it('does not set encounter when move lands on already-cleared Sefirah', () => {
     // Already-cleared arrival skips the challenge phase, so no
-    // encounter is initialized.
+    // encounter is initialized. #298: phase stays 'move'.
     const player = makePlayer({
       id: 'p1',
       position: 'malkuth',
@@ -2660,7 +2658,7 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.encounter).toBeUndefined();
   });
 
@@ -2820,7 +2818,8 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.next.state.phase).toBe('end');
+    // #298: returns to 'move' instead of 'end'.
+    expect(result.value.next.state.phase).toBe('move');
     expect(result.value.next.state.encounter).toBeUndefined();
   });
 
@@ -4535,6 +4534,152 @@ describe('turnReducer — Tiferet required burn (difficulty increase)', () => {
       RNG,
     );
     expect(result.ok).toBe(true);
+  });
+});
+
+describe('turnReducer — multi-path moves per turn (#298)', () => {
+  // #298: a player may move along any number of paths in a single turn.
+  // Each no-challenge arrival stays in 'move' phase and sets movedThisTurn.
+  // A challenge entry sets movedThisTurn at the moment the player moves
+  // (so End Turn stays available after the challenge resolves). On
+  // resolution, react-continue and accept-setback return to 'move' instead
+  // of 'end'. End Turn from 'move' is permitted when movedThisTurn=true.
+
+  it('no-challenge move → phase stays move, movedThisTurn=true (#298)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21],
+      clearedSefirot: new Set(['yesod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.movedThisTurn).toBe(true);
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+
+  it('two sequential no-challenge moves in one turn (#298)', () => {
+    // card 21=The World(path 32 Malkuth↔Yesod), card 19=The Sun(path 30 Yesod↔Hod)
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21, 19],
+      clearedSefirot: new Set(['yesod', 'hod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const first = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.value.next.state.phase).toBe('move');
+    expect(first.value.next.state.players[0]?.position).toBe('yesod');
+
+    const second = turnReducer(first.value.next, { kind: 'move', pathNumber: 30 }, RNG);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.next.state.phase).toBe('move');
+    expect(second.value.next.state.players[0]?.position).toBe('hod');
+    expect(second.value.next.state.movedThisTurn).toBe(true);
+  });
+
+  it('end-turn from move with movedThisTurn=true is allowed (#298)', () => {
+    const player = makePlayer({
+      id: 'p1',
+      position: 'malkuth',
+      hand: [21],
+      clearedSefirot: new Set(['yesod']),
+    });
+    const state = makeState({}, { players: [player] });
+    const moved = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    const ended = turnReducer(moved.value.next, { kind: 'end-turn' }, RNG);
+    expect(ended.ok).toBe(true);
+    if (!ended.ok) return;
+    // Seat rotation clears movedThisTurn.
+    expect(ended.value.next.state.movedThisTurn).toBe(false);
+  });
+
+  it('challenge entry sets movedThisTurn=true (#298)', () => {
+    // Moving into an uncleared Sefirah triggers a challenge. The move has
+    // already happened, so movedThisTurn must be true when we enter 'challenge'.
+    const player = makePlayer({ id: 'p1', position: 'malkuth', hand: [21] });
+    const state = makeState({}, { players: [player] });
+    const result = turnReducer(
+      { state: { ...state, phase: 'move' } },
+      { kind: 'move', pathNumber: 32 },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('challenge');
+    expect(result.value.next.state.movedThisTurn).toBe(true);
+  });
+
+  it('react-continue → phase returns to move (#298)', () => {
+    const player = makePlayer({ id: 'p1', position: 'hod', hand: [] });
+    const state = makeState({}, { players: [player], movedThisTurn: true });
+    const result = turnReducer(
+      {
+        state: {
+          ...state,
+          phase: 'challenge',
+          challengeSubPhase: 'react',
+          lastOutcome: {
+            rolled: 20,
+            statContribution: 10,
+            modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+            total: 30,
+            effectiveDC: 8,
+            pass: true,
+          },
+        },
+      },
+      { kind: 'react-continue' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastAction).toBeUndefined();
+  });
+
+  it('accept-setback → phase returns to move (#298)', () => {
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        separation: 3,
+        shells: { ...EMPTY_SHELL_STATE, malkuth: 'banished' },
+        movedThisTurn: true,
+      },
+    );
+    const result = turnReducer(
+      { state: { ...state, phase: 'challenge', challengeSubPhase: 'react' } },
+      { kind: 'accept-setback', sefirah: 'gevurah' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.phase).toBe('move');
+    expect(result.value.next.state.challengeSubPhase).toBeUndefined();
+    expect(result.value.next.state.lastAction).toBeUndefined();
   });
 });
 

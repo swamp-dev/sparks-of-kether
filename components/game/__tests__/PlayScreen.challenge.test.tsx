@@ -52,6 +52,9 @@ function makePassReadyState(opts: { readonly destination: 'yesod' }): GameState 
     pendingModifiers: EMPTY_PENDING_MODIFIERS,
     lastOutcome: undefined,
     separation: 0,
+    // #298: a challenge is always entered via a move, so movedThisTurn
+    // must be true for End Turn to be available after react-continue.
+    movedThisTurn: true,
   };
 }
 
@@ -101,10 +104,10 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
         fireEvent.click(continueBtn as HTMLButtonElement);
       });
 
-      // #502: after the click, modal unmounted, phase is now `'end'`
-      // (pre-#502 this was `'draw'`).
+      // #298: after the click, modal unmounted, phase returns to `'move'`
+      // (pre-#298 this was `'end'`; pre-#502 this was `'draw'`).
       expect(document.querySelector('[data-encounter-screen]')).toBeNull();
-      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('end');
+      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('move');
     } finally {
       vi.useRealTimers();
     }
@@ -156,6 +159,7 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
     // action bar in the viewport, swallowing clicks on End Turn.
     // The fix adds `relative z-40` to the action bar so it stacks
     // above the Hand. This test verifies the button is not disabled
+    // #298: phase after Continue is now 'move', not 'end'.
     // and that clicking it advances the phase out of 'end'.
     vi.useFakeTimers();
     try {
@@ -178,13 +182,13 @@ describe('PlayScreen — pass + Continue advances phase out of challenge (#385)'
         fireEvent.click(continueBtn as HTMLButtonElement);
       });
 
-      // Phase is now 'end' — End Turn button should be present and enabled.
-      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('end');
+      // Phase is now 'move' (#298) — End Turn button should be present and enabled.
+      expect(document.querySelector('[data-play-screen]')?.getAttribute('data-phase')).toBe('move');
       const endTurnBtn = document.querySelector<HTMLButtonElement>('[data-action="end-turn"]');
       expect(endTurnBtn).not.toBeNull();
       expect(endTurnBtn?.disabled).toBe(false);
 
-      // Clicking End Turn advances to the next turn ('move').
+      // Clicking End Turn rotates to the next player (back to 'move').
       act(() => {
         fireEvent.click(endTurnBtn as HTMLButtonElement);
       });

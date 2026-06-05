@@ -435,19 +435,29 @@ export interface GameState {
    */
   readonly meditatedThisTurn?: boolean | undefined;
   /**
+   * Set to `true` once the active player has moved at least once this
+   * turn (#298). Like `meditatedThisTurn`, this flag enables End Turn
+   * from `phase: 'move'` when no challenge is pending, and is cleared
+   * to `false` on seat rotation in `engine/turn.ts:endTurn`.
+   *
+   * Optional/additive: snapshots predating this field deserialize with
+   * `movedThisTurn === undefined`, treated as `false` by the reducer.
+   */
+  readonly movedThisTurn?: boolean | undefined;
+  /**
    * Discriminator for the most recent action that landed the active
    * player in `phase: 'end'` (#292). Read by the UI's auto-advance
    * timer (`PlayScreen.tsx`) to distinguish a Move/Challenge end
    * from a state with no end-of-turn intent.
    *
-   *   - `'move-draw'` — the active player has finished a move
-   *     (with or without a challenge); the timer flips the seat after
-   *     `AUTO_ADVANCE_DELAY_MS`. (#131 cadence.) The literal name is
-   *     historical: pre-#502 a discrete `'draw'` phase set this
-   *     discriminant after the end-of-turn refill. With the refill
-   *     moved to start-of-turn (#502), this literal now fires from
-   *     the `move`, `react-continue`, and `accept-setback` cases when
-   *     they transition to `'end'` directly.
+   *   - `'move-draw'` — **vestigial as of #298.** Pre-#298 this was
+   *     set when `move`, `react-continue`, and `accept-setback` cases
+   *     transitioned to `'end'`; the auto-advance timer read it to
+   *     confirm a move had finished. Post-#298 those transitions land
+   *     in `'move'` instead, so no live code path writes `'move-draw'`
+   *     any more. The literal is preserved for backward-compat with
+   *     serialised snapshots that may carry it; the auto-advance timer
+   *     still fires on `phase === 'end'` (legacy save-state replay).
    *   - `undefined` — no end-of-turn intent yet (e.g. mid-move,
    *     mid-challenge, or just-meditated and still in `'move'`).
    *

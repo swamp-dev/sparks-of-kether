@@ -72,11 +72,10 @@ describe('PlayScreen — auto-advance turn', () => {
     vi.useRealTimers();
   });
 
-  it('auto-advances to the next player after the end-phase delay (Move into already-cleared Sefirah)', () => {
-    // #502: Move into an already-cleared Sefirah lands directly in
-    // `'end'` (pre-#502 it landed in `'draw'` and required a separate
-    // Draw click). The auto-advance timer flips the seat after the
-    // delay.
+  it('move into already-cleared Sefirah stays in move, End Turn rotates seat (#298)', () => {
+    // #298: no-challenge arrivals stay in 'move'. There is no auto-advance
+    // timer; the player clicks End Turn explicitly. movedThisTurn=true so
+    // the End Turn button is shown.
     const state = makeEndPhaseViaPathState();
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
@@ -85,14 +84,24 @@ describe('PlayScreen — auto-advance turn', () => {
     expect(initialActive).toBeTruthy();
 
     playPathToYesod(container);
-    expect(main?.getAttribute('data-phase')).toBe('end');
+    // Phase stays 'move' (#298).
+    expect(main?.getAttribute('data-phase')).toBe('move');
 
-    // Pre-timer: active player unchanged.
+    // Active player has NOT changed yet (no auto-advance).
     expect(main?.getAttribute('data-active-player')).toBe(initialActive);
 
-    // Advance the auto-advance timer.
+    // Advance well past where the auto-advance would have fired — seat
+    // must NOT rotate, since auto-advance no longer fires from 'move'.
     act(() => {
-      vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
+      vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 3);
+    });
+    expect(main?.getAttribute('data-active-player')).toBe(initialActive);
+
+    // Click End Turn — seat rotates.
+    const endBtn = container.querySelector('[data-action="end-turn"]') as HTMLButtonElement;
+    expect(endBtn).not.toBeNull();
+    act(() => {
+      fireEvent.click(endBtn);
     });
     const newActive = main?.getAttribute('data-active-player');
     expect(newActive).toBeTruthy();
@@ -142,17 +151,17 @@ describe('PlayScreen — auto-advance turn', () => {
     expect(main?.getAttribute('data-active-player')).not.toBe(initialActive);
   });
 
-  it('end-phase meditate suppresses auto-advance (#287)', () => {
-    // After playing a path into a cleared Sefirah (→ 'end'), the player
-    // meditates. meditatedThisTurn flips true; the auto-advance timer
-    // must not fire — they review cards at their own pace.
+  it('move then meditate stays in move, no auto-advance (#298)', () => {
+    // #298: after a no-challenge move, phase stays 'move'. Mediating
+    // also keeps 'move'. No auto-advance fires from 'move'. The player
+    // reviews cards at their own pace and clicks End Turn.
     const state = makeEndPhaseViaPathState();
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
     const main = container.querySelector('[data-play-screen]');
     const initialActive = main?.getAttribute('data-active-player');
 
     playPathToYesod(container);
-    expect(main?.getAttribute('data-phase')).toBe('end');
+    expect(main?.getAttribute('data-phase')).toBe('move');
 
     // Click Meditate and confirm.
     act(() => {
@@ -163,9 +172,9 @@ describe('PlayScreen — auto-advance turn', () => {
         container.querySelector('[data-meditate-confirm-confirm]') as HTMLButtonElement,
       );
     });
-    expect(main?.getAttribute('data-phase')).toBe('end');
+    expect(main?.getAttribute('data-phase')).toBe('move');
 
-    // Advance well past the auto-advance window — seat must NOT rotate.
+    // Advance well past any auto-advance window — seat must NOT rotate.
     act(() => {
       vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 3);
     });
@@ -199,10 +208,10 @@ describe('PlayScreen — auto-advance turn', () => {
     expect(main?.getAttribute('data-active-player')).not.toBe(initialActive);
   });
 
-  it('clicking End Turn manually cancels the pending auto-advance (no double-fire)', () => {
-    // Move into an already-cleared Sefirah lands in `'end'` directly
-    // (#502) and arms the auto-advance timer. Clicking End Turn before
-    // the timer fires must rotate the seat exactly once.
+  it('clicking End Turn after move rotates seat exactly once (no double-fire) (#298)', () => {
+    // #298: move stays in 'move', End Turn is shown (movedThisTurn=true).
+    // Clicking it must rotate the seat exactly once; advancing the timer
+    // afterwards must not produce a second rotation.
     const state = makeEndPhaseViaPathState();
     const { container } = render(<PlayScreen initialState={state} rng={seededRng(2)} />);
 
@@ -210,18 +219,18 @@ describe('PlayScreen — auto-advance turn', () => {
     const initialActive = main?.getAttribute('data-active-player');
 
     playPathToYesod(container);
-    expect(main?.getAttribute('data-phase')).toBe('end');
+    expect(main?.getAttribute('data-phase')).toBe('move');
 
-    // Click End Turn before the timer fires.
+    // Click End Turn — one rotation.
     const endBtn = container.querySelector('[data-action="end-turn"]') as HTMLButtonElement;
+    expect(endBtn).not.toBeNull();
     act(() => {
       fireEvent.click(endBtn);
     });
     const afterClick = main?.getAttribute('data-active-player');
     expect(afterClick).not.toBe(initialActive);
 
-    // Advance past where the timer would have fired. Active should
-    // still be the post-click player (no second rotation).
+    // Advance timers — should produce no second rotation.
     act(() => {
       vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
     });

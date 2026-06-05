@@ -554,7 +554,8 @@ describe('applyClientAction — react-continue (#390)', () => {
   // #502: pre-#502 the post-pass landing phase was `'draw'`. With
   // the start-of-turn refill and the discrete `'draw'` phase gone,
   // react-continue lands in `'end'` directly.
-  it('advances phase from challenge.react to end on a passed challenge', () => {
+  it('advances phase from challenge.react to move on a passed challenge (#298)', () => {
+    // #298: react-continue returns to 'move' so the player may move again.
     const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
     const state = makeState({}, { players: [player] });
     const passedState: typeof state = {
@@ -577,7 +578,7 @@ describe('applyClientAction — react-continue (#390)', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.newState.phase).toBe('end');
+    expect(result.newState.phase).toBe('move');
     expect(result.newState.challengeSubPhase).toBeUndefined();
     expect(result.newState.lastOutcome).toBeUndefined();
   });

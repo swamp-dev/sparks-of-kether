@@ -107,10 +107,10 @@ describe('PlayScreen — drag-to-play (#412)', () => {
 
     await performDragWithDropTarget(cardBtn, path32Hit);
 
-    // Move resolved → phase has left 'move'. Yesod was pre-cleared
-    // so the post-move challenge phase doesn't fire and we land
-    // directly in 'end'.
-    expect(main?.getAttribute('data-phase')).not.toBe('move');
+    // Move resolved: phase stays 'move' (#298: multi-path turns), but
+    // movedThisTurn=true so the End Turn button now appears.
+    expect(main?.getAttribute('data-phase')).toBe('move');
+    expect(container.querySelector('[data-action="end-turn"]')).not.toBeNull();
   });
 
   it('dropping a card on a non-matching path announces rejection without dispatching', async () => {
@@ -175,8 +175,9 @@ describe('PlayScreen — drag-to-play (#412)', () => {
       Math.hypot(x - 220, y - 300) <= NODE_RADIUS ? sefirahBtn : path32Hit,
     );
 
-    // The drop resolved — phase has left 'move'.
-    expect(main?.getAttribute('data-phase')).not.toBe('move');
+    // The drop resolved: phase stays 'move' (#298) but End Turn button appears.
+    expect(main?.getAttribute('data-phase')).toBe('move');
+    expect(container.querySelector('[data-action="end-turn"]')).not.toBeNull();
   });
 
   it('dropping a card outside any drop zone announces rejection without dispatching', async () => {

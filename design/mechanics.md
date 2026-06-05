@@ -214,13 +214,15 @@ On your turn, in order:
    turn 1*, where the initial deal of 4 serves as your first draw. If
    the draw pile is empty when you'd draw, the discard pile is
    reshuffled face-down to form a new draw pile first.
-2. **Move and/or Meditate (in any order).** You may play an Arcanum to
-   travel its path to an adjacent Sefirah (*Move*), draw 2 extra cards
-   (*Meditate*), or both — in either order. Meditate may be taken **at
-   most once per turn**. The freshly drawn cards are usable immediately.
-   Drawing stops at the hand-size cap of 6 unless Meditate pushes you
-   over (in which case you trim down to 6 before end-of-turn). The turn
-   does not auto-advance after Meditate — click End Turn when ready.
+2. **Move any number of times and/or Meditate once (in any order).**
+   You may play Arcana to travel paths (*Move*) any number of times in
+   a single turn; each Move spends one card and steps to one adjacent
+   Sefirah. You may also draw 2 extra cards (*Meditate*) — at most **once
+   per turn** — before, after, or between Moves. The freshly drawn cards
+   are usable immediately. If an arrival triggers a Challenge, resolve it
+   before the next Move is available. Drawing stops at the hand-size cap
+   of 6 unless Meditate pushes you over (trim to 6 before end-of-turn).
+   Click **End Turn** when you are done moving and meditating.
 3. **Challenge** (if you arrived at an uncleared Sefirah). See below.
 4. **Assist** (optional). Spend Sparks to help allies.
 5. **End turn.**
