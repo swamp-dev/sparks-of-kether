@@ -99,11 +99,10 @@ describe('validateAndBuildSetup', () => {
     expect(result.error.currentState).toBe('playing');
   });
 
-  it('rejects with too-few-players when only one player is present', () => {
-    const players = [makePlayerRow({ id: 'host-uid', zodiac_sign: 'aries' })];
+  it('rejects with too-few-players when 0 players are present', () => {
     const result = validateAndBuildSetup({
       room: makeRoom(),
-      players,
+      players: [],
       callerId: 'host-uid',
     });
     expect(result.ok).toBe(false);
@@ -111,13 +110,52 @@ describe('validateAndBuildSetup', () => {
     expect(result.error.kind).toBe('too-few-players');
   });
 
-  it('rejects with too-many-players when 5+ players are present', () => {
-    const players = Array.from({ length: 5 }, (_, i) =>
-      makePlayerRow({
-        id: i === 0 ? 'host-uid' : `p${i + 1}`,
-        zodiac_sign: 'aries',
-        seat: i,
-      }),
+  it('accepts 1 player (solo)', () => {
+    const players = [makePlayerRow({ id: 'host-uid', zodiac_sign: 'aries' })];
+    const result = validateAndBuildSetup({
+      room: makeRoom(),
+      players,
+      callerId: 'host-uid',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.setups).toHaveLength(1);
+  });
+
+  it('accepts 5 players', () => {
+    const signs = ['aries', 'leo', 'libra', 'cancer', 'scorpio'] as const;
+    const players = signs.map((sign, i) =>
+      makePlayerRow({ id: i === 0 ? 'host-uid' : `p${i + 1}`, zodiac_sign: sign, seat: i }),
+    );
+    const result = validateAndBuildSetup({
+      room: makeRoom(),
+      players,
+      callerId: 'host-uid',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.setups).toHaveLength(5);
+  });
+
+  it('accepts 6 players', () => {
+    const signs = ['aries', 'leo', 'libra', 'cancer', 'scorpio', 'pisces'] as const;
+    const players = signs.map((sign, i) =>
+      makePlayerRow({ id: i === 0 ? 'host-uid' : `p${i + 1}`, zodiac_sign: sign, seat: i }),
+    );
+    const result = validateAndBuildSetup({
+      room: makeRoom(),
+      players,
+      callerId: 'host-uid',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.setups).toHaveLength(6);
+  });
+
+  it('rejects with too-many-players when 7 players are present', () => {
+    const signs = ['aries', 'leo', 'libra', 'cancer', 'scorpio', 'pisces', 'gemini'] as const;
+    const players = signs.map((sign, i) =>
+      makePlayerRow({ id: i === 0 ? 'host-uid' : `p${i + 1}`, zodiac_sign: sign, seat: i }),
     );
     const result = validateAndBuildSetup({
       room: makeRoom(),
