@@ -42,7 +42,7 @@ export function TurnBanner({ playerName, onDismiss }: TurnBannerProps): JSX.Elem
       data-testid="turn-banner"
       aria-live="assertive"
       aria-atomic="true"
-      className="z-60 fixed inset-0 flex cursor-pointer flex-col items-center justify-center bg-ground"
+      className="fixed inset-0 z-[60] flex cursor-pointer flex-col items-center justify-center bg-ground"
       onClick={onDismiss}
     >
       <ColorBloom color={TIFERET_GOLD} position="center" radius={65} intensity={0.28} />

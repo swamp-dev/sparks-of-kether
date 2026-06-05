@@ -128,11 +128,10 @@ export function usePeerEvents(
     if (!event) return;
 
     // Debounce: accumulate within the window; keep highest priority.
+    // `>=` so a second event of equal priority (e.g. two encounters)
+    // replaces the first rather than being silently dropped.
     const current = pendingRef.current;
-    if (
-      current === null ||
-      PEER_EVENT_PRIORITY[event.kind] > PEER_EVENT_PRIORITY[current.kind]
-    ) {
+    if (current === null || PEER_EVENT_PRIORITY[event.kind] >= PEER_EVENT_PRIORITY[current.kind]) {
       pendingRef.current = event;
     }
 
@@ -144,6 +143,13 @@ export function usePeerEvents(
       pendingRef.current = null;
       if (toShow) setVisible(toShow);
     }, DEBOUNCE_MS);
+
+    return () => {
+      if (debounceTimer.current !== null) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+    };
   }, [state, currentPlayerId, isMultiplayer]);
 
   // Auto-dismiss

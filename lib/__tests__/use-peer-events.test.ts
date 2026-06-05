@@ -72,12 +72,15 @@ describe('diffPeerEvent', () => {
     it('returns encounter when phase transitions to challenge', () => {
       const atHod = makePlayer({ id: 'p1', name: 'Alex', position: 'hod' });
       const prev = makeState({}, { players: [atHod, p2], activePlayerId: 'p1', phase: 'move' });
-      const next = makeState({}, {
-        players: [atHod, p2],
-        activePlayerId: 'p1',
-        phase: 'challenge',
-        encounter: { sefirah: 'hod' } as GameState['encounter'],
-      });
+      const next = makeState(
+        {},
+        {
+          players: [atHod, p2],
+          activePlayerId: 'p1',
+          phase: 'challenge',
+          encounter: { sefirah: 'hod' } as GameState['encounter'],
+        },
+      );
       const event = diffPeerEvent(prev, next);
       expect(event?.kind).toBe('encounter');
       expect(event?.playerName).toBe('Alex');
@@ -87,45 +90,66 @@ describe('diffPeerEvent', () => {
     it('prefers encounter over move when both change in the same diff', () => {
       const atHod = makePlayer({ id: 'p1', name: 'Alex', position: 'hod' });
       const prev = makeState({}, { players: [p1, p2], activePlayerId: 'p1', phase: 'move' });
-      const next = makeState({}, {
-        players: [atHod, p2],
-        activePlayerId: 'p1',
-        phase: 'challenge',
-        encounter: { sefirah: 'hod' } as GameState['encounter'],
-      });
+      const next = makeState(
+        {},
+        {
+          players: [atHod, p2],
+          activePlayerId: 'p1',
+          phase: 'challenge',
+          encounter: { sefirah: 'hod' } as GameState['encounter'],
+        },
+      );
       expect(diffPeerEvent(prev, next)?.kind).toBe('encounter');
     });
 
     it('does not fire when phase was already challenge', () => {
       const atHod = makePlayer({ id: 'p1', name: 'Alex', position: 'hod' });
-      const state = makeState({}, {
-        players: [atHod, p2],
-        activePlayerId: 'p1',
-        phase: 'challenge',
-        encounter: { sefirah: 'hod' } as GameState['encounter'],
-      });
+      const state = makeState(
+        {},
+        {
+          players: [atHod, p2],
+          activePlayerId: 'p1',
+          phase: 'challenge',
+          encounter: { sefirah: 'hod' } as GameState['encounter'],
+        },
+      );
       expect(diffPeerEvent(state, state)).toBeNull();
     });
   });
 
   describe('meditate', () => {
     it('returns meditate when meditatedThisTurn flips true', () => {
-      const prev = makeState({}, { players: [p1, p2], activePlayerId: 'p1', phase: 'end', meditatedThisTurn: false });
-      const next = makeState({}, { players: [p1, p2], activePlayerId: 'p1', phase: 'end', meditatedThisTurn: true });
+      const prev = makeState(
+        {},
+        { players: [p1, p2], activePlayerId: 'p1', phase: 'end', meditatedThisTurn: false },
+      );
+      const next = makeState(
+        {},
+        { players: [p1, p2], activePlayerId: 'p1', phase: 'end', meditatedThisTurn: true },
+      );
       const event = diffPeerEvent(prev, next);
       expect(event?.kind).toBe('meditate');
       expect(event?.playerName).toBe('Alex');
     });
 
     it('does not fire when meditatedThisTurn was already true', () => {
-      const state = makeState({}, { players: [p1, p2], activePlayerId: 'p1', phase: 'end', meditatedThisTurn: true });
+      const state = makeState(
+        {},
+        { players: [p1, p2], activePlayerId: 'p1', phase: 'end', meditatedThisTurn: true },
+      );
       expect(diffPeerEvent(state, state)).toBeNull();
     });
 
     it('prefers move over meditate when both change', () => {
       const moved = makePlayer({ id: 'p1', name: 'Alex', position: 'tiferet' });
-      const prev = makeState({}, { players: [p1, p2], activePlayerId: 'p1', phase: 'move', meditatedThisTurn: false });
-      const next = makeState({}, { players: [moved, p2], activePlayerId: 'p1', phase: 'move', meditatedThisTurn: true });
+      const prev = makeState(
+        {},
+        { players: [p1, p2], activePlayerId: 'p1', phase: 'move', meditatedThisTurn: false },
+      );
+      const next = makeState(
+        {},
+        { players: [moved, p2], activePlayerId: 'p1', phase: 'move', meditatedThisTurn: true },
+      );
       expect(diffPeerEvent(prev, next)?.kind).toBe('move');
     });
   });

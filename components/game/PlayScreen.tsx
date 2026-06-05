@@ -211,6 +211,9 @@ export function PlayScreen({
   // local player. Reset on each activePlayerId transition.
   const [showTurnBanner, setShowTurnBanner] = useState(false);
   const prevActivePlayerIdRef = useRef<string | undefined>(undefined);
+  // Stable ref so TurnBanner's useEffect deps don't reset the timer
+  // on every PlayScreen re-render (e.g. Realtime pushes in multiplayer).
+  const handleDismissTurnBanner = useCallback(() => setShowTurnBanner(false), []);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -1030,7 +1033,7 @@ export function PlayScreen({
       {/* #299: TurnBanner — full-screen atmospheric overlay on turn
           rotation. Active player only; auto-dismisses in 2.5s. */}
       {showTurnBanner && activePlayer ? (
-        <TurnBanner playerName={activePlayer.name} onDismiss={() => setShowTurnBanner(false)} />
+        <TurnBanner playerName={activePlayer.name} onDismiss={handleDismissTurnBanner} />
       ) : null}
       {/* #299: GameEventToast — peer narrative pills for non-active
           multiplayer players. usePeerEvents handles debounce + dismiss. */}

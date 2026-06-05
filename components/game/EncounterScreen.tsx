@@ -858,17 +858,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // substrate underneath.
       className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow}${className ? ` ${className}` : ''}`}
     >
-      {/* #299: Sefirah-keyed bloom behind the encounter content. The
-          `relative` on the section and `-z-10` on ColorBloom keep it
-          below all text/controls. intensity is stronger than the board
-          bloom (0.22 vs 0.18) so it reads through the `bg-ground`. */}
-      <ColorBloom
-        color={sefirahData.color}
-        position="center"
-        radius={55}
-        intensity={0.22}
-        className="-z-10"
-      />
+      {/* #299: Sefirah-keyed bloom behind the encounter content.
+          ColorBloom is `position:fixed` so it washes the full viewport
+          — the `bg-ground/80` backdrop in PlayScreen absorbs most of it;
+          the remainder gives the dialog a warm Sefirah tint. The
+          component's own `-z-10` keeps it below all text/controls. */}
+      <ColorBloom color={sefirahData.color} position="center" radius={55} intensity={0.22} />
       {/*
         Header row: title block + small avatar. In `prep`, the avatar
         moves down to the stage section (#479) where it leads the
