@@ -1,5 +1,5 @@
+import { zodiacSignByKey } from '@/data';
 import { GROUND } from '@/data/colors';
-import { zodiacSigns } from '@/data/zodiac-signs';
 import type { ZodiacSignKey } from '@/data/types';
 
 /**
@@ -29,7 +29,7 @@ const PLAYER_COLORS: Readonly<Record<1 | 2 | 3 | 4, string>> = {
 
 export function PlayerToken({ variant, zodiacSign, className }: PlayerTokenProps): JSX.Element {
   const color = PLAYER_COLORS[variant];
-  const sign = zodiacSigns.find((z) => z.key === zodiacSign);
+  const sign = zodiacSign ? zodiacSignByKey(zodiacSign) : undefined;
   const glyph = sign?.glyph ?? String(variant);
   const label = `Player token ${variant}${sign ? ` (${sign.name})` : ''}`;
   return (

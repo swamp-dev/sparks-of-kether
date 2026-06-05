@@ -1,6 +1,5 @@
 import { useId, useMemo, type KeyboardEvent } from 'react';
-import { letterByKey, paths, sefirahByKey, sefirot } from '@/data';
-import { zodiacSigns } from '@/data/zodiac-signs';
+import { letterByKey, paths, sefirahByKey, sefirot, zodiacSignByKey } from '@/data';
 import {
   NODE_RADIUS,
   TREE_VIEW_H,
@@ -990,8 +989,7 @@ function PlayerTokens({
     const color = tokenColorForId(player.id);
     const isActive = player.id === activePlayerId;
     const zodiacGlyph =
-      zodiacSigns.find((z) => z.key === player.zodiacSign)?.glyph ??
-      String(state.players.indexOf(player) + 1);
+      zodiacSignByKey(player.zodiacSign).glyph;
     // #312: data-just-moved is true iff this player's last arrival
     // path is recorded (which means they moved at least once). The
     // active-ring picks up the `path-travel-pulse` keyframe in that
