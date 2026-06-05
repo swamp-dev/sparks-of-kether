@@ -257,6 +257,7 @@ function CountPickerScreen({ onPick }: { readonly onPick: (n: number) => void })
           <button
             key={n}
             type="button"
+            aria-label={n === 1 ? '1 player' : `${n} players`}
             onClick={() => onPick(n)}
             className="h-14 w-14 rounded-full border border-current font-display text-2xl hover:bg-veil/10 focus:outline-none focus:ring-2 focus:ring-current"
           >

@@ -85,7 +85,8 @@ describe('PlayPage — player count picker', () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
     for (let n = 1; n <= 6; n++) {
-      expect(screen.getByRole('button', { name: String(n) })).toBeInTheDocument();
+      const label = n === 1 ? '1 player' : `${n} players`;
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
   });
 
@@ -98,14 +99,14 @@ describe('PlayPage — player count picker', () => {
   it('clicking a count button advances to the sign phase', async () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
-    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '2 players' }));
     expect(screen.getByRole('button', { name: /pick sign/i })).toBeInTheDocument();
   });
 
   it('count picker buttons are keyboard-triggerable', async () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
-    const btn = screen.getByRole('button', { name: '3' });
+    const btn = screen.getByRole('button', { name: '3 players' });
     btn.focus();
     fireEvent.keyDown(btn, { key: 'Enter' });
     fireEvent.click(btn);
@@ -122,7 +123,7 @@ describe('PlayPage — 1-player (solo) flow', () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
 
-    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '1 player' }));
     // sign phase
     expect(screen.getByRole('button', { name: /pick sign/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /pick sign/i }));
@@ -139,7 +140,7 @@ describe('PlayPage — 1-player (solo) flow', () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
 
-    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '1 player' }));
     fireEvent.click(screen.getByRole('button', { name: /pick sign/i }));
     fireEvent.click(screen.getByRole('button', { name: /complete ritual/i }));
     fireEvent.click(screen.getByRole('button', { name: /begin/i }));
@@ -157,7 +158,7 @@ describe('PlayPage — 6-player flow', () => {
     const PlayPage = await importPage();
     render(<PlayPage />);
 
-    fireEvent.click(screen.getByRole('button', { name: '6' }));
+    fireEvent.click(screen.getByRole('button', { name: '6 players' }));
     for (let i = 0; i < 6; i++) {
       fireEvent.click(screen.getByRole('button', { name: /pick sign/i }));
       fireEvent.click(screen.getByRole('button', { name: /complete ritual/i }));

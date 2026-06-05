@@ -36,7 +36,7 @@ test('solo: home → setup (1 player) → sign → ritual → lobby → play scr
   await page.waitForURL('**/play');
 
   // Select 1 player.
-  await page.getByRole('button', { name: '1' }).click();
+  await page.getByRole('button', { name: '1 player' }).click();
 
   // Solo player walks through sign pick + blessing ritual.
   await expect(page.getByRole('heading', { name: /Choose your sign/i })).toBeVisible();
