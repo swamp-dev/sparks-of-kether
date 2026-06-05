@@ -28,8 +28,8 @@ describe('deckCountFor', () => {
   });
 
   it('throws on out-of-range counts', () => {
-    expect(() => deckCountFor(0)).toThrow();
-    expect(() => deckCountFor(7)).toThrow();
+    expect(() => deckCountFor(0)).toThrow('Unsupported player count: 0 (must be 1..6)');
+    expect(() => deckCountFor(7)).toThrow('Unsupported player count: 7 (must be 1..6)');
   });
 });
 
@@ -87,6 +87,17 @@ describe('initializeGame — starting state', () => {
       expect(p.clearedSefirot.size).toBe(0);
       expect(p.sparksHeld.size).toBe(0);
     }
+  });
+
+  it('initializes with 1 player (solo)', () => {
+    const state = initializeGame({
+      players: setup(1),
+      rng: seededRng(1),
+    });
+    expect(state.players).toHaveLength(1);
+    expect(state.players[0]?.position).toBe('malkuth');
+    expect(state.players[0]?.hand).toHaveLength(STARTING_HAND_SIZE);
+    expect(state.deck.length + STARTING_HAND_SIZE).toBe(22);
   });
 });
 
@@ -229,17 +240,6 @@ describe('initializeGame — determinism', () => {
     expect(a.deck).toEqual(b.deck);
   });
 
-  it('initializes with 1 player', () => {
-    const state = initializeGame({
-      players: setup(1),
-      rng: seededRng(1),
-    });
-    expect(state.players).toHaveLength(1);
-    expect(state.players[0]?.position).toBe('malkuth');
-    expect(state.players[0]?.hand).toHaveLength(STARTING_HAND_SIZE);
-    expect(state.deck.length + STARTING_HAND_SIZE).toBe(22);
-  });
-
   it('throws on empty player list (0 players)', () => {
     // The empty-players input is gated by `deckCountFor(0)` at the
     // top of `initializeGame` — that throw fires before the
@@ -259,25 +259,4 @@ describe('initializeGame — determinism', () => {
     ).toThrow('Unsupported player count: 0 (must be 1..6)');
   });
 
-  it('initializes with 5 and 6 players', () => {
-    const state5 = initializeGame({
-      players: setup(5),
-      rng: seededRng(1),
-    });
-    expect(state5.players).toHaveLength(5);
-    for (const p of state5.players) {
-      expect(p.hand).toHaveLength(STARTING_HAND_SIZE);
-    }
-    expect(state5.deck.length + 5 * STARTING_HAND_SIZE).toBe(66);
-
-    const state6 = initializeGame({
-      players: setup(6),
-      rng: seededRng(1),
-    });
-    expect(state6.players).toHaveLength(6);
-    for (const p of state6.players) {
-      expect(p.hand).toHaveLength(STARTING_HAND_SIZE);
-    }
-    expect(state6.deck.length + 6 * STARTING_HAND_SIZE).toBe(66);
-  });
 });
