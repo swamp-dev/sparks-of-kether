@@ -576,3 +576,104 @@ describe('FinalThresholdScreen — mode flag', () => {
     ).toBe('multiplayer');
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Solo coda — abbreviated single-voice variant (#277)
+// ──────────────────────────────────────────────────────────────────────────────
+
+function buildSoloTrialState(): GameState {
+  const player = makePlayer({
+    id: 'p1',
+    name: 'Alex',
+    position: 'kether',
+    hand: [10, 11],
+    zodiacSign: 'aries',
+  });
+  const baseState = makeState({}, { players: [player], activePlayerId: 'p1' });
+  const initResult = initKetherRitual(baseState, { p1: 100 });
+  if (!initResult.ok) {
+    throw new Error(`buildSoloTrialState: initKetherRitual failed — ${initResult.reason.kind}`);
+  }
+  return initResult.value;
+}
+
+describe('FinalThresholdScreen — solo coda (§ 2.2 / #277)', () => {
+  it('renders data-coda-mode="solo" when players.length === 1', () => {
+    const state = buildSoloTrialState();
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
+    const { result } = renderHook(() =>
+      useTurn({
+        initialState: state,
+        rng: seededRng(1),
+        dispatchClientAction: () => undefined,
+        selfPlayerId: 'p1',
+      }),
+    );
+    const { container } = render(
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
+    );
+    expect(container.querySelector('[data-trial-panel]')?.getAttribute('data-coda-mode')).toBe(
+      'solo',
+    );
+  });
+
+  it('does not render the trial-order ribbon (chorus UI) when players.length === 1', () => {
+    const state = buildSoloTrialState();
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
+    const { result } = renderHook(() =>
+      useTurn({
+        initialState: state,
+        rng: seededRng(1),
+        dispatchClientAction: () => undefined,
+        selfPlayerId: 'p1',
+      }),
+    );
+    const { container } = render(
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
+    );
+    expect(container.querySelector('[data-trial-order]')).toBeNull();
+  });
+
+  it('renders the Roll button for the solo player (their turn is always active)', () => {
+    const state = buildSoloTrialState();
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
+    const { result } = renderHook(() =>
+      useTurn({
+        initialState: state,
+        rng: seededRng(1),
+        dispatchClientAction: () => undefined,
+        selfPlayerId: 'p1',
+      }),
+    );
+    const { container } = render(
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
+    );
+    const rollBtn = container.querySelector('[data-action="kether-trial-resolve"]');
+    expect(rollBtn).not.toBeNull();
+  });
+
+  it('never shows "Waiting for the rest of the team to arrive" text for solo (AC #2)', () => {
+    // The pre-ritual hold view is unreachable for solo because
+    // maybeTriggerKetherRitual fires immediately when the only player reaches
+    // Kether, transitioning phase to 'kether' before the component renders.
+    // This test pins that invariant so any future regression is caught.
+    const state = buildSoloTrialState();
+    const player = state.players.find((p) => p.id === 'p1');
+    if (!player) throw new Error('solo coda test: p1 not in state');
+    const { result } = renderHook(() =>
+      useTurn({
+        initialState: state,
+        rng: seededRng(1),
+        dispatchClientAction: () => undefined,
+        selfPlayerId: 'p1',
+      }),
+    );
+    const { container } = render(
+      <FinalThresholdScreen state={state} player={player} turn={result.current} mode="hot-seat" />,
+    );
+    expect(container.textContent).not.toMatch(/Waiting for the rest of the team/i);
+  });
+});

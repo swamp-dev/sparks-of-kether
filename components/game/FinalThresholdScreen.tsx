@@ -246,50 +246,54 @@ function TrialPanel(props: TrialPanelProps): JSX.Element {
     [trialStagedSparks, player.id],
   );
 
+  const isSolo = state.players.length === 1;
+
   return (
-    <div data-trial-panel className="space-y-6">
-      {/* Council order ribbon */}
-      <div
-        data-trial-order
-        role="list"
-        aria-label="Trial order"
-        className="flex flex-wrap justify-center gap-3"
-      >
-        {trialOrder.map((id, idx) => {
-          const p = state.players.find((pl) => pl.id === id);
-          if (!p) return null;
-          const isCurrent = idx === trialTurnIndex;
-          const challenge = trialChallenges[idx];
-          const isDone = challenge?.passed !== null && challenge?.passed !== undefined;
-          return (
-            <div
-              key={id}
-              role="listitem"
-              data-trial-seat={id}
-              data-trial-active={isCurrent ? 'true' : 'false'}
-              className={`flex items-center gap-2 rounded-full border px-3 py-1 ${
-                isCurrent
-                  ? 'border-illumination shadow-glow-kether'
-                  : isDone
-                    ? 'border-veil/20 opacity-60'
-                    : 'border-veil/30'
-              }`}
-            >
-              <PlayerGlyph player={p} />
-              <span className="font-display text-sm tracking-widest">{p.name}</span>
-              {isDone ? (
-                <span className="text-xs">
-                  {challenge?.passed ? (
-                    <span className="text-illumination">✓</span>
-                  ) : (
-                    <span className="opacity-60">✗</span>
-                  )}
-                </span>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+    <div data-trial-panel data-coda-mode={isSolo ? 'solo' : 'chorus'} className="space-y-6">
+      {/* Council order ribbon — hidden for solo (degenerate chorus of one) */}
+      {!isSolo ? (
+        <div
+          data-trial-order
+          role="list"
+          aria-label="Trial order"
+          className="flex flex-wrap justify-center gap-3"
+        >
+          {trialOrder.map((id, idx) => {
+            const p = state.players.find((pl) => pl.id === id);
+            if (!p) return null;
+            const isCurrent = idx === trialTurnIndex;
+            const challenge = trialChallenges[idx];
+            const isDone = challenge?.passed !== null && challenge?.passed !== undefined;
+            return (
+              <div
+                key={id}
+                role="listitem"
+                data-trial-seat={id}
+                data-trial-active={isCurrent ? 'true' : 'false'}
+                className={`flex items-center gap-2 rounded-full border px-3 py-1 ${
+                  isCurrent
+                    ? 'border-illumination shadow-glow-kether'
+                    : isDone
+                      ? 'border-veil/20 opacity-60'
+                      : 'border-veil/30'
+                }`}
+              >
+                <PlayerGlyph player={p} />
+                <span className="font-display text-sm tracking-widest">{p.name}</span>
+                {isDone ? (
+                  <span className="text-xs">
+                    {challenge?.passed ? (
+                      <span className="text-illumination">✓</span>
+                    ) : (
+                      <span className="opacity-60">✗</span>
+                    )}
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       {/* Whose-turn status */}
       <div

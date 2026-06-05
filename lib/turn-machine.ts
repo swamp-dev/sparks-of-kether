@@ -374,7 +374,25 @@ export type TurnReducerError =
       readonly kind: 'react-continue-on-fail';
     }
   | { readonly kind: 'move-rejected'; readonly cause: MoveRejection }
-  | { readonly kind: 'challenge-rejected'; readonly cause: ChallengeRejection };
+  | { readonly kind: 'challenge-rejected'; readonly cause: ChallengeRejection }
+  | {
+      /**
+       * #277 — solo guard: `assist-request` is unavailable when there is
+       * only one player (no allies to request). The UI hides the ally
+       * fieldset via `allies.length > 0`; this engine gate closes the
+       * bypass path from a stale client or malformed wire event.
+       */
+      readonly kind: 'solo-no-allies';
+    }
+  | {
+      /**
+       * #277 — solo guard: `gift-card` is unavailable when there is only
+       * one player (no valid recipient exists). The Chesed gift UI is not
+       * yet built; this gate is defensive-forward so the engine surface is
+       * consistent with the design before the UI ships.
+       */
+      readonly kind: 'solo-no-gift-recipient';
+    };
 
 export interface TurnReducerSuccess {
   readonly next: TurnSnapshot;
@@ -1030,6 +1048,11 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
           break;
         }
         case 'assist-request':
+          // #277 — solo guard: no allies exist in a 1-player game.
+          // Fires before the Binah gate so the UI gets a precise reason.
+          if (state.players.length === 1) {
+            return { ok: false, reason: { kind: 'solo-no-allies' } };
+          }
           // #491 — design § 3.7: at Binah, ally assists are blocked.
           // "Demeter sits alone." Fires BEFORE the cap check so the
           // rejection surfaces the actual reason. The prohibition is
@@ -1080,6 +1103,10 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
           };
           break;
         case 'gift-card':
+          // #277 — solo guard: no valid recipient in a 1-player game.
+          if (state.players.length === 1) {
+            return { ok: false, reason: { kind: 'solo-no-gift-recipient' } };
+          }
           // #486 — design § 3.3: Shell of Chesed (Hoarding) blocks
           // gift-card staging for the duration of the Shell's one-
           // round window. "no card gifts, in any direction." The

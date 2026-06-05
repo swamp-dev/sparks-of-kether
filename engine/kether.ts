@@ -142,8 +142,10 @@ export function initKetherRitual(
   const dc = trialDcFor(state.illumination, state.separation);
   const trialChallenges: KetherTrialChallenge[] = trialOrder.map((_, idx) => {
     const entry = TRIAL_SEFIROT[idx % TRIAL_SEFIROT.length];
-    // entry is always defined because TRIAL_SEFIROT has 8 entries and
-    // player count is at most 4 — the modulo is a defensive fallback.
+    // entry is always defined because TRIAL_SEFIROT.length (8) exceeds the
+    // maximum player count (6). For 5–6 players the modulo wraps, meaning two
+    // or three players share a repeated sefirah challenge — intentional; the
+    // gauntlet adapts to team size with the available trial sefirot.
     return {
       sefirahKey: entry?.sefirahKey ?? 'chokmah',
       stat: entry?.stat ?? 'insight',
