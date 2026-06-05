@@ -25,8 +25,15 @@ export default function TokensDemoPage(): JSX.Element {
       <div data-demo-canvas>
         <Section title="Player tokens (variants 1–4)">
           <div className="flex gap-4">
-            {([1, 2, 3, 4] as const).map((v) => (
-              <PlayerToken key={v} variant={v} initial={`P${v}`} className="h-12 w-12" />
+            {(
+              [
+                [1, 'aries'],
+                [2, 'taurus'],
+                [3, 'gemini'],
+                [4, 'cancer'],
+              ] as const
+            ).map(([v, sign]) => (
+              <PlayerToken key={v} variant={v} zodiacSign={sign} className="h-12 w-12" />
             ))}
           </div>
         </Section>
