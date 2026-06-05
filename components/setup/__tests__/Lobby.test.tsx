@@ -130,9 +130,7 @@ describe('Lobby — Begin button', () => {
 
   it('Begin enabled for a solo player (1 player, ready, sign picked)', () => {
     const onBegin = vi.fn();
-    render(
-      <Lobby isHost onBegin={onBegin} players={[player('p1', { ready: true })]} />,
-    );
+    render(<Lobby isHost onBegin={onBegin} players={[player('p1', { ready: true })]} />);
     const begin = screen.getByRole('button', { name: /^Begin$/ }) as HTMLButtonElement;
     expect(begin.disabled).toBe(false);
     fireEvent.click(begin);
