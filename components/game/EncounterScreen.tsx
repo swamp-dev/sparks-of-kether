@@ -44,6 +44,7 @@ import { D20Button } from './encounter/D20Button';
 import { SEFIRAH_FRAME_TOKENS } from './encounter/sefirah-frame-tokens';
 import { StatReadout } from './encounter/StatReadout';
 import { VerdictReveal } from './encounter/VerdictReveal';
+import { ColorBloom } from '@/components/atmosphere/ColorBloom';
 
 /**
  * EncounterScreen — replaces `ChallengeModal` (#228) as the visual layer
@@ -857,6 +858,12 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       // substrate underneath.
       className={`relative rounded-lg border bg-ground p-6 text-veil ${frameTokens.frameBorder} ${frameTokens.frameShadow}${className ? ` ${className}` : ''}`}
     >
+      {/* #299: Sefirah-keyed bloom behind the encounter content.
+          ColorBloom is `position:fixed` so it washes the full viewport
+          — the `bg-ground/80` backdrop in PlayScreen absorbs most of it;
+          the remainder gives the dialog a warm Sefirah tint. The
+          component's own `-z-10` keeps it below all text/controls. */}
+      <ColorBloom color={sefirahData.color} position="center" radius={55} intensity={0.22} />
       {/*
         Header row: title block + small avatar. In `prep`, the avatar
         moves down to the stage section (#479) where it leads the
