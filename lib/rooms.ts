@@ -98,7 +98,15 @@ export async function createRoom(
   // Room creation always starts fresh — the caller is explicitly leaving
   // any prior state behind. joinRoom omits this because its self-lookup
   // (lines 240–260) returns the existing seat idempotently if the row exists.
-  const { error: signOutError } = await client.auth.signOut();
+  //
+  // scope:'local' — clears browser-side state only; no server round-trip.
+  // Default 'global' scope authenticates the logout with the current access
+  // token; when that token is expired the client falls back to
+  // grant_type=refresh_token. If the refresh token is also stale (common for
+  // returning players whose anon session has timed out) the signOut itself
+  // errors, and every subsequent "New game" click hits the same loop.
+  // Local-only clears the session without touching the network.
+  const { error: signOutError } = await client.auth.signOut({ scope: 'local' });
   if (signOutError) {
     return { ok: false, error: { kind: 'auth-failed', cause: signOutError.message } };
   }

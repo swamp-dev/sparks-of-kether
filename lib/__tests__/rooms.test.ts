@@ -17,7 +17,9 @@ interface SupabaseStubs {
       data: { user: { id: string } | null };
       error: { message: string } | null;
     }>;
-    readonly signOut?: () => Promise<{ error: { message: string } | null }>;
+    readonly signOut?: (options?: {
+      scope?: 'local' | 'global' | 'others';
+    }) => Promise<{ error: { message: string } | null }>;
   };
   readonly tableHandlers?: Partial<
     Record<'rooms' | 'players' | 'game_states' | 'game_events', TableHandler>
@@ -291,10 +293,54 @@ describe('createRoom', () => {
     expect(signOut).toHaveBeenCalledOnce();
   });
 
+  it('calls signOut with scope:local so a stale/expired refresh token cannot block the sign-out', async () => {
+    // With the default scope:global, signOut makes a server round-trip.
+    // If the existing access token is expired the client tries to refresh it
+    // first (grant_type=refresh_token). When that refresh also fails (e.g. the
+    // anon user's session was invalidated by a prior signOut) the signOut call
+    // itself errors and createRoom returns auth-failed — repeatedly, on every
+    // attempt. scope:local clears only the local session without any network
+    // call, so it succeeds regardless of server-side token state.
+    const signOut = vi.fn(async () => ({ error: null }));
+    const client = makeClient({
+      auth: { signOut },
+      tableHandlers: {
+        rooms: {
+          insert: () => ({
+            select: () => ({
+              single: async () => ({
+                data: {
+                  id: 'room-4',
+                  code: 'ABCDEF',
+                  host_id: 'auth-user-1',
+                  state: 'lobby',
+                  created_at: 'now',
+                  started_at: null,
+                  finished_at: null,
+                  paused_at: null,
+                } as RoomRow,
+                error: null,
+              }),
+            }),
+          }),
+        },
+        players: {
+          insert: () => Promise.resolve({ data: null, error: null }),
+        },
+      },
+    });
+    await createRoom({ nickname: 'Andy', client });
+    expect(signOut).toHaveBeenCalledOnce();
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
   it('returns auth-failed when signOut fails (silently keeping the stale session regenerates the 23505)', async () => {
     // If signOut errors, the stale session stays active. ensureAnonymousSession
     // then returns the OLD userId via getUser() — skipping signInAnonymously —
     // and the player insert hits 23505 again. Surface the error early instead.
+    // With scope:'local' a failure here is theoretical (clearing memory can't
+    // meaningfully fail), but the error path still exists in code and should
+    // remain covered.
     const client = makeClient({
       auth: {
         signOut: vi.fn(async () => ({ error: { message: 'network error' } })),
