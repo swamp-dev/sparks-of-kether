@@ -1316,6 +1316,7 @@ function GiftModal({
               <button
                 key={arcanum}
                 type="button"
+                // autoFocus: keyboard focus lands on the first card so the player can act without Tabbing in.
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus={idx === 0}
                 onClick={() => onPickCard(arcanum)}
@@ -1338,6 +1339,7 @@ function GiftModal({
             <button
               key={p.id}
               type="button"
+              // autoFocus: keyboard focus lands on the first recipient so the player can act without Tabbing in.
               // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus={idx === 0}
               onClick={() => onPickRecipient(step.arcanum, p.id)}
