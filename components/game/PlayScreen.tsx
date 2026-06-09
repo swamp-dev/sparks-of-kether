@@ -1310,12 +1310,14 @@ function GiftModal({
       <div className="flex flex-col gap-2">
         <p className="text-xs opacity-70">Choose a card from your hand to give to an ally.</p>
         <div className="flex flex-wrap gap-2">
-          {activePlayer.hand.map((arcanum) => {
+          {activePlayer.hand.map((arcanum, idx) => {
             const card = arcanumByNumber(arcanum);
             return (
               <button
                 key={arcanum}
                 type="button"
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus={idx === 0}
                 onClick={() => onPickCard(arcanum)}
                 className="rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
@@ -1332,10 +1334,12 @@ function GiftModal({
     body = (
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
-          {otherPlayers.map((p) => (
+          {otherPlayers.map((p, idx) => (
             <button
               key={p.id}
               type="button"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus={idx === 0}
               onClick={() => onPickRecipient(step.arcanum, p.id)}
               className="rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
             >
