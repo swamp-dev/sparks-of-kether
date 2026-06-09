@@ -16,6 +16,11 @@ test.skip(
   'Set PLAYWRIGHT_BROWSERS_INSTALLED=1 after `pnpm exec playwright install chromium`',
 );
 
+// 2-minute timeout: reachPlayScreen drives ~40 clicks through the 2-player setup
+// wizard (~20-25s on CI), leaving the default 30s with too little headroom for tab
+// interactions and assertions to complete.
+test.setTimeout(120_000);
+
 test.use({ viewport: { width: 375, height: 667 } });
 
 async function reachPlayScreen(page: Page): Promise<void> {
