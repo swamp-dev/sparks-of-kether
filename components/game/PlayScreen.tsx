@@ -706,7 +706,7 @@ export function PlayScreen({
       // column breathe more after the viewport-height-aware sizing.
       // Below lg, the original gap-6 / p-6 is preserved. At ≤767px the
       // mobile tab pattern (#15) takes over via MobilePlaySurface.
-      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4${className ? ` ${className}` : ''}`}
+      className={`mx-auto grid max-w-6xl grid-cols-1 gap-0 p-0 md:gap-6 md:p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4${className ? ` ${className}` : ''}`}
     >
       {!isMobile ? (
         // Desktop layout (#411) — section + aside side-by-side.

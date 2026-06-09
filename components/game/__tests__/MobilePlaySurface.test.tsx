@@ -20,16 +20,24 @@ function renderSurface(overrides: Partial<React.ComponentProps<typeof MobilePlay
 }
 
 describe('MobilePlaySurface', () => {
-  it('shows tree content when activeView is "tree"', () => {
-    renderSurface({ activeView: 'tree' });
-    expect(screen.getByTestId('tree-slot')).toBeDefined();
-    expect(screen.queryByTestId('hand-slot')).toBeNull();
+  it('shows tree panel when activeView is "tree"', () => {
+    const { container } = renderSurface({ activeView: 'tree' });
+    expect(
+      container.querySelector('[role="tabpanel"][aria-label="Tree view"]'),
+    ).not.toHaveAttribute('hidden');
+    expect(container.querySelector('[role="tabpanel"][aria-label="Hand view"]')).toHaveAttribute(
+      'hidden',
+    );
   });
 
-  it('shows hand content when activeView is "hand"', () => {
-    renderSurface({ activeView: 'hand' });
-    expect(screen.getByTestId('hand-slot')).toBeDefined();
-    expect(screen.queryByTestId('tree-slot')).toBeNull();
+  it('shows hand panel when activeView is "hand"', () => {
+    const { container } = renderSurface({ activeView: 'hand' });
+    expect(
+      container.querySelector('[role="tabpanel"][aria-label="Hand view"]'),
+    ).not.toHaveAttribute('hidden');
+    expect(container.querySelector('[role="tabpanel"][aria-label="Tree view"]')).toHaveAttribute(
+      'hidden',
+    );
   });
 
   it('always renders the MobileHud regardless of view', () => {

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MobileHud } from '../MobileHud';
 import { EMPTY_SHELL_STATE } from '@/engine/types';
+import type { ShellStateMap } from '@/engine/types';
 
 function renderHud(overrides: Partial<React.ComponentProps<typeof MobileHud>> = {}) {
   const defaults = {
@@ -13,6 +14,8 @@ function renderHud(overrides: Partial<React.ComponentProps<typeof MobileHud>> = 
     shells: EMPTY_SHELL_STATE,
     activeView: 'tree' as const,
     onSetView: vi.fn(),
+    treePanelId: 'tree-panel',
+    handPanelId: 'hand-panel',
   };
   return render(<MobileHud {...defaults} {...overrides} />);
 }
@@ -72,5 +75,18 @@ describe('MobileHud', () => {
   it('tab list has an accessible label', () => {
     renderHud();
     expect(screen.getByRole('tablist', { name: /view/i })).toBeDefined();
+  });
+
+  it('shows no shell warnings when all shells are dormant', () => {
+    renderHud({ shells: EMPTY_SHELL_STATE });
+    expect(screen.queryByTestId('mobile-shell-warnings')).toBeNull();
+  });
+
+  it('shows a warning chip for each active shell', () => {
+    const shells: ShellStateMap = { ...EMPTY_SHELL_STATE, chesed: 'active', hod: 'active' };
+    renderHud({ shells });
+    const warnings = screen.getByTestId('mobile-shell-warnings');
+    expect(warnings.textContent).toMatch(/Chesed/);
+    expect(warnings.textContent).toMatch(/Hod/);
   });
 });

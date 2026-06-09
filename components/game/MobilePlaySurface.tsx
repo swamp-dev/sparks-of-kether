@@ -1,4 +1,5 @@
 'use client';
+import { useId } from 'react';
 import type { ReactNode } from 'react';
 import type { ShellStateMap } from '@/engine/types';
 import type { TurnPhase } from '@/lib/use-turn';
@@ -29,6 +30,9 @@ export interface MobilePlaySurfaceProps {
  *     the corresponding blocks from the desktop layout.
  *
  * This component itself stays stateless — it is purely view-state-driven.
+ *
+ * Inactive panels always render in the DOM (the HTML `hidden` attribute handles
+ * visibility) so the ARIA tabpanel relationship is always intact for AT users.
  */
 export function MobilePlaySurface({
   activeView,
@@ -40,28 +44,31 @@ export function MobilePlaySurface({
   illumination,
   separation,
   shells,
-}: MobilePlaySurfaceProps) {
+}: MobilePlaySurfaceProps): JSX.Element {
+  const id = useId();
+  const treePanelId = `${id}-tree-panel`;
+  const handPanelId = `${id}-hand-panel`;
+
   return (
-    <div
-      data-testid="mobile-play-surface"
-      className="flex min-h-svh flex-col"
-    >
+    <div data-testid="mobile-play-surface" className="flex min-h-svh flex-col">
       <div
-        id="mobile-tree-panel"
+        id={treePanelId}
         role="tabpanel"
         aria-label="Tree view"
-        className={`flex-1 overflow-y-auto ${activeView === 'tree' ? 'block' : 'hidden'}`}
+        hidden={activeView !== 'tree'}
+        className="flex-1 overflow-y-auto"
       >
-        {activeView === 'tree' ? treeContent : null}
+        {treeContent}
       </div>
 
       <div
-        id="mobile-hand-panel"
+        id={handPanelId}
         role="tabpanel"
         aria-label="Hand view"
-        className={`flex-1 overflow-y-auto ${activeView === 'hand' ? 'block' : 'hidden'}`}
+        hidden={activeView !== 'hand'}
+        className="flex-1 overflow-y-auto"
       >
-        {activeView === 'hand' ? handContent : null}
+        {handContent}
       </div>
 
       <MobileHud
@@ -72,6 +79,8 @@ export function MobilePlaySurface({
         shells={shells}
         activeView={activeView}
         onSetView={onSetView}
+        treePanelId={treePanelId}
+        handPanelId={handPanelId}
       />
     </div>
   );
