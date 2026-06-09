@@ -1155,7 +1155,7 @@ export function PlayScreen({
           the game. Renders fixed bottom-right; the inline div keeps
           it inside the main layout for SR ordering, but the
           component itself uses `position: fixed` so it floats. */}
-      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      {!isMobile && <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />}
       {/* #384: in-game Sefirah info popover. Mounted at the play-
           screen root so the backdrop covers the full viewport, but
           inside <main> so accessibility-tree ordering keeps it
