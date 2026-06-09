@@ -18,7 +18,7 @@ function renderGameWithRecipientAtCap(): void {
   const state = {
     ...base,
     players: base.players.map((p, i) =>
-      i === 1 ? { ...p, hand: [10, 11, 12, 13, 14] as const } : p,
+      i === 1 ? { ...p, hand: [10, 11, 12, 13, 14] } : p,
     ),
   };
   const rng = seededRng(2);
