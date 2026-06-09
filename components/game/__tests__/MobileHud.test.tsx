@@ -77,6 +77,26 @@ describe('MobileHud', () => {
     expect(screen.getByRole('tablist', { name: /view/i })).toBeDefined();
   });
 
+  it('calls onSetView with "hand" and moves focus when ArrowRight is pressed on Tree tab', async () => {
+    const onSetView = vi.fn();
+    renderHud({ activeView: 'tree', onSetView });
+    const treeTab = screen.getByRole('tab', { name: /tree/i });
+    treeTab.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onSetView).toHaveBeenCalledWith('hand');
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: /hand/i }));
+  });
+
+  it('calls onSetView with "tree" and moves focus when ArrowLeft is pressed on Hand tab', async () => {
+    const onSetView = vi.fn();
+    renderHud({ activeView: 'hand', onSetView });
+    const handTab = screen.getByRole('tab', { name: /hand/i });
+    handTab.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(onSetView).toHaveBeenCalledWith('tree');
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: /tree/i }));
+  });
+
   it('shows no shell warnings when all shells are dormant', () => {
     renderHud({ shells: EMPTY_SHELL_STATE });
     expect(screen.queryByTestId('mobile-shell-warnings')).toBeNull();

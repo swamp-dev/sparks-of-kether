@@ -31,8 +31,9 @@ export interface MobilePlaySurfaceProps {
  *
  * This component itself stays stateless — it is purely view-state-driven.
  *
- * Inactive panels always render in the DOM (the HTML `hidden` attribute handles
- * visibility) so the ARIA tabpanel relationship is always intact for AT users.
+ * Inactive panels always render in the DOM so `aria-controls` always resolves
+ * to a live node. The HTML `hidden` attribute removes inactive panels from the
+ * accessibility tree (correct per ARIA tabs spec) while keeping the DOM reference.
  */
 export function MobilePlaySurface({
   activeView,

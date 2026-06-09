@@ -1,4 +1,5 @@
 'use client';
+import { useRef } from 'react';
 import { sefirot } from '@/data';
 import type { ShellStateMap } from '@/engine/types';
 import type { TurnPhase } from '@/lib/use-turn';
@@ -44,6 +45,8 @@ export function MobileHud({
   treePanelId,
   handPanelId,
 }: MobileHudProps): JSX.Element {
+  const treeTabRef = useRef<HTMLButtonElement>(null);
+  const handTabRef = useRef<HTMLButtonElement>(null);
   const activeShells = sefirot.filter((s) => shells[s.key] === 'active');
   return (
     <div
@@ -91,11 +94,17 @@ export function MobileHud({
           aria-label="Play surface view"
           className="flex rounded border border-veil/20 text-xs"
           onKeyDown={(e) => {
-            if (e.key === 'ArrowRight') onSetView('hand');
-            else if (e.key === 'ArrowLeft') onSetView('tree');
+            if (e.key === 'ArrowRight') {
+              onSetView('hand');
+              handTabRef.current?.focus();
+            } else if (e.key === 'ArrowLeft') {
+              onSetView('tree');
+              treeTabRef.current?.focus();
+            }
           }}
         >
           <button
+            ref={treeTabRef}
             role="tab"
             aria-selected={activeView === 'tree'}
             aria-controls={treePanelId}
@@ -110,6 +119,7 @@ export function MobileHud({
             Tree
           </button>
           <button
+            ref={handTabRef}
             role="tab"
             aria-selected={activeView === 'hand'}
             aria-controls={handPanelId}
