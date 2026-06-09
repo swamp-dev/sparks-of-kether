@@ -1355,12 +1355,15 @@ function GiftModal({
           Discard one card to make room for {cardName}, or refuse the gift (+1 Separation).
         </p>
         <div className="flex flex-wrap gap-2">
-          {(recipient?.hand ?? []).map((arcanum) => {
+          {(recipient?.hand ?? []).map((arcanum, idx) => {
             const card = arcanumByNumber(arcanum);
             return (
               <button
                 key={arcanum}
                 type="button"
+                // autoFocus: keyboard focus lands on the first discard button so the player can act without Tabbing in.
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus={idx === 0}
                 onClick={() => onAcceptOverCap(step.arcanum, step.recipientId, arcanum)}
                 className="rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
               >
