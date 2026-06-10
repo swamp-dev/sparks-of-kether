@@ -33,6 +33,7 @@ import type { Rng } from '@/engine/rng';
 import type { GameState, PlayerState } from '@/engine/types';
 import { checkEndgame } from '@/engine/endgame';
 import { soulDoorDcDelta } from '@/engine/soul-door-bonus';
+import { MobilePlaySurface } from './MobilePlaySurface';
 
 /**
  * Top-level play surface. Composes every Phase 3 component around the
@@ -222,6 +223,19 @@ export function PlayScreen({
   // Stable ref so TurnBanner's useEffect deps don't reset the timer
   // on every PlayScreen re-render (e.g. Realtime pushes in multiplayer).
   const handleDismissTurnBanner = useCallback(() => setShowTurnBanner(false), []);
+
+  // #15: mobile tab pattern. SSR-safe — starts false (desktop) so server
+  // render and first client paint match; flips to real viewport after mount.
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState<'tree' | 'hand'>('tree');
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mql = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent): void => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   // #321: sound wiring. The Meters and ShellPanel below already
   // expose state-change callbacks (`onIlluminationIncrease`,
@@ -690,16 +704,18 @@ export function PlayScreen({
       // shrinks (gap-6 → gap-4), and the sidebar narrows (400px →
       // 320px). Every reclaimed pixel of chrome lets the Tree
       // column breathe more after the viewport-height-aware sizing.
-      // Below lg, the original gap-6 / p-6 is preserved — mobile
-      // is explicitly out of scope for this ticket; mobile-tab
-      // pattern is queued as #466.
-      className={`mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4${className ? ` ${className}` : ''}`}
+      // Below lg, the original gap-6 / p-6 is preserved. At ≤767px the
+      // mobile tab pattern (#15) takes over via MobilePlaySurface.
+      className={`mx-auto grid max-w-6xl grid-cols-1 gap-0 p-0 md:gap-6 md:p-6 lg:grid-cols-[1fr_320px] lg:gap-4 lg:p-4${className ? ` ${className}` : ''}`}
     >
-      <section
-        aria-label="Tree of Life board"
-        className="flex flex-col items-center gap-4 lg:gap-3"
-      >
-        {/*
+      {!isMobile ? (
+        // Desktop layout (#411) — section + aside side-by-side.
+        <>
+          <section
+            aria-label="Tree of Life board"
+            className="flex flex-col items-center gap-4 lg:gap-3"
+          >
+            {/*
           #579: free-floating Hand. Pre-#579 the Hand sat as inline-flow
           at the bottom of this column under the #411 fit-on-screen
           budget; the wrapper had `lg:h-[calc(100vh-388px)]` because
@@ -722,175 +738,175 @@ export function PlayScreen({
           `inline-block` would defeat the aspect-ratio sizing if
           applied to the wrapper itself.
         */}
-        <div className="w-full max-w-2xl lg:aspect-[400/620] lg:h-[calc(100vh-120px)] lg:max-h-[820px] lg:w-auto lg:max-w-none">
-          <TreeBoard
-            state={turn.state}
-            {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
-            {...(isMyTurn ? { onPathClick: handlePathClick } : {})}
-            // #384: opens an inline popover instead of navigating to
-            // the Codex detail page (which would strand the player
-            // off-game with no return-to-game affordance).
-            onSefirahClick={(key) => setOpenSefirah(key)}
-            // #129: only highlight paths during the move phase. Once
-            // the player has moved, the board is decorative until the
-            // next turn begins; the action panel below carries the
-            // available affordances (End Turn, etc.).
-            movesEnabled={turn.phase === 'move' && isMyTurn}
-            // #312 + #405: light the corresponding paths on the Tree
-            // when the player is considering a card. The signal source
-            // is `hoveredCard` (mouse / focus) with `selectedCard` as
-            // a sticky fallback — a clicked card stays lit even when
-            // the mouse moves to the Tree. Active across all phases
-            // except `'challenge'` (the resolution moment) so the
-            // path-light doesn't compete with movement animation. The
-            // `'move'` phase covers both the pre-move card evaluation
-            // and (post-#503) the post-Meditate review window where
-            // the player is considering whether to play a freshly
-            // drawn card.
-            {...((): { highlightedCard?: number } => {
-              if (turn.phase === 'challenge') return {};
-              // #412: drag wins over hover wins over select. While
-              // a card is mid-drag the pointer has left the card
-              // (it's hovering over the Tree), so `hoveredCard` is
-              // undefined; without this precedence the path-light
-              // would drop the moment the gesture leaves the hand.
-              const effective = draggingCard ?? hoveredCard ?? selectedCard;
-              return effective === undefined ? {} : { highlightedCard: effective };
-            })()}
-            className="w-full"
-          />
-        </div>
-        {/*
+            <div className="w-full max-w-2xl lg:aspect-[400/620] lg:h-[calc(100vh-120px)] lg:max-h-[820px] lg:w-auto lg:max-w-none">
+              <TreeBoard
+                state={turn.state}
+                {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
+                {...(isMyTurn ? { onPathClick: handlePathClick } : {})}
+                // #384: opens an inline popover instead of navigating to
+                // the Codex detail page (which would strand the player
+                // off-game with no return-to-game affordance).
+                onSefirahClick={(key) => setOpenSefirah(key)}
+                // #129: only highlight paths during the move phase. Once
+                // the player has moved, the board is decorative until the
+                // next turn begins; the action panel below carries the
+                // available affordances (End Turn, etc.).
+                movesEnabled={turn.phase === 'move' && isMyTurn}
+                // #312 + #405: light the corresponding paths on the Tree
+                // when the player is considering a card. The signal source
+                // is `hoveredCard` (mouse / focus) with `selectedCard` as
+                // a sticky fallback — a clicked card stays lit even when
+                // the mouse moves to the Tree. Active across all phases
+                // except `'challenge'` (the resolution moment) so the
+                // path-light doesn't compete with movement animation. The
+                // `'move'` phase covers both the pre-move card evaluation
+                // and (post-#503) the post-Meditate review window where
+                // the player is considering whether to play a freshly
+                // drawn card.
+                {...((): { highlightedCard?: number } => {
+                  if (turn.phase === 'challenge') return {};
+                  // #412: drag wins over hover wins over select. While
+                  // a card is mid-drag the pointer has left the card
+                  // (it's hovering over the Tree), so `hoveredCard` is
+                  // undefined; without this precedence the path-light
+                  // would drop the moment the gesture leaves the hand.
+                  const effective = draggingCard ?? hoveredCard ?? selectedCard;
+                  return effective === undefined ? {} : { highlightedCard: effective };
+                })()}
+                className="w-full"
+              />
+            </div>
+            {/*
           z-40 paints above the floating Hand (z-30, fixed); pointer-events-none
           lets the Hand's peek zone receive clicks. Only the button group
           restores pointer-events-auto — the label spans are display-only.
         */}
-        <div className="pointer-events-none relative z-40 flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-          <span className="text-xs uppercase tracking-widest opacity-60" data-phase-hint>
-            {phaseHint(turn.phase)}
-          </span>
-          <span className="font-display tracking-widest" data-turn-indicator>
-            {activePlayer?.name ?? '—'}&apos;s turn
-          </span>
-          <div className="pointer-events-auto flex gap-2">
-            {turn.phase === 'move' && turn.state.players.length > 1 ? (
-              <button
-                type="button"
-                onClick={() => setGiftStep({ kind: 'pick-card' })}
-                disabled={!isMyTurn || hoardingActive || (activePlayer?.hand.length ?? 0) === 0}
-                data-action="gift-card"
-                className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:opacity-40"
+            <div className="pointer-events-none relative z-40 flex w-full max-w-xl flex-col items-stretch gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+              <span className="text-xs uppercase tracking-widest opacity-60" data-phase-hint>
+                {phaseHint(turn.phase)}
+              </span>
+              <span className="font-display tracking-widest" data-turn-indicator>
+                {activePlayer?.name ?? '—'}&apos;s turn
+              </span>
+              <div className="pointer-events-auto flex gap-2">
+                {turn.phase === 'move' && turn.state.players.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setGiftStep({ kind: 'pick-card' })}
+                    disabled={!isMyTurn || hoardingActive || (activePlayer?.hand.length ?? 0) === 0}
+                    data-action="gift-card"
+                    className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:opacity-40"
+                  >
+                    Gift card
+                  </button>
+                ) : null}
+                {turn.phase === 'move' || turn.phase === 'end' ? (
+                  <MeditateButton
+                    onMeditate={() => setShowMeditateConfirm(true)}
+                    disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
+                  />
+                ) : null}
+                {/*
+                 * #503: post-Meditate, the player remains in `'move'`
+                 * phase but may not want to play one of their freshly
+                 * drawn cards (e.g. they meditated for a path-key that
+                 * still hasn't surfaced). The End turn affordance must
+                 * be reachable from `'move'` in that case. Pre-#503 the
+                 * Meditate path transitioned straight to `'end'` so this
+                 * affordance was not needed.
+                 *
+                 * Gate: only show End turn from `'move'` when the player
+                 * has already meditated this turn. Without that gate the
+                 * player could end their turn cold (no Move, no Meditate),
+                 * which violates the engine invariant that every turn does
+                 * something.
+                 */}
+                {turn.phase === 'end' ||
+                (turn.phase === 'move' &&
+                  (turn.state.meditatedThisTurn === true || turn.state.movedThisTurn === true)) ? (
+                  <button
+                    type="button"
+                    onClick={() => turn.endTurn()}
+                    disabled={!isMyTurn}
+                    data-action="end-turn"
+                    className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                  >
+                    End turn
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            {/*
+             * #292/#503: post-Meditate a11y callout. Post-#503 Meditate
+             * stays in `'move'` phase rather than transitioning to
+             * `'end'`, so the callout fires while `meditatedThisTurn`
+             * is true and the player is still in `'move'`. The aria-live
+             * region nudges screen-reader users that the player has just
+             * drawn cards and may still play one. `polite` (not
+             * `assertive`) so it queues behind any in-progress
+             * announcement (e.g. the move resolution) rather than
+             * interrupting it.
+             */}
+            {(turn.phase === 'move' || turn.phase === 'end') &&
+            turn.state.meditatedThisTurn === true ? (
+              <div
+                role="status"
+                aria-live="polite"
+                data-meditate-callout
+                className="w-full max-w-xl rounded border border-veil/20 bg-ground/40 px-4 py-2 text-xs italic opacity-80"
               >
-                Gift card
-              </button>
+                {turn.phase === 'move'
+                  ? 'You drew 2 cards. You may still play a card, or End your turn.'
+                  : 'You drew 2 cards. End your turn when ready.'}
+              </div>
             ) : null}
-            {turn.phase === 'move' || turn.phase === 'end' ? (
-              <MeditateButton
-                onMeditate={() => setShowMeditateConfirm(true)}
-                disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
+            {turn.phase === 'end' && activePlayer?.position === 'malkuth' ? (
+              <HestiaCompanionLine sign={activePlayer.zodiacSign} pantheon={pantheon} rng={rng} />
+            ) : null}
+            {viewerPlayer ? (
+              <Hand
+                hand={viewerPlayer.hand}
+                visible={isHandVisible(turn.state, viewerPlayer.id, viewerPlayer.id)}
+                {...(isMyTurn && pendingDiscardCount === 0
+                  ? { onCardSelect: (n: number) => setSelectedCard(n) }
+                  : {})}
+                {...(isMyTurn ? { onCardHover: (n: number | undefined) => setHoveredCard(n) } : {})}
+                // #412: drag-to-play wiring. drag-start lights the path
+                // beneath the gesture; drag-end runs the drop handler;
+                // drag-cancel clears the highlight without dispatching.
+                {...(isMyTurn
+                  ? {
+                      onCardDragStart: (n: number) => setDraggingCard(n),
+                      onCardDragEnd: handleCardDrop,
+                      onCardDragCancel: () => setDraggingCard(undefined),
+                    }
+                  : {})}
+                {...(isMyTurn && selectedCard !== undefined && pendingDiscardCount === 0
+                  ? { selectedArcanum: selectedCard }
+                  : {})}
+                {...(isMyTurn && pendingDiscardCount > 0
+                  ? {
+                      discardMode: true as const,
+                      onDiscard: (arcanum: number) => turn.discard(arcanum),
+                    }
+                  : {})}
+                ariaLabel={`${viewerPlayer.name}'s hand`}
+                className="w-full max-w-xl"
               />
             ) : null}
-            {/*
-             * #503: post-Meditate, the player remains in `'move'`
-             * phase but may not want to play one of their freshly
-             * drawn cards (e.g. they meditated for a path-key that
-             * still hasn't surfaced). The End turn affordance must
-             * be reachable from `'move'` in that case. Pre-#503 the
-             * Meditate path transitioned straight to `'end'` so this
-             * affordance was not needed.
-             *
-             * Gate: only show End turn from `'move'` when the player
-             * has already meditated this turn. Without that gate the
-             * player could end their turn cold (no Move, no Meditate),
-             * which violates the engine invariant that every turn does
-             * something.
-             */}
-            {turn.phase === 'end' ||
-            (turn.phase === 'move' &&
-              (turn.state.meditatedThisTurn === true || turn.state.movedThisTurn === true)) ? (
-              <button
-                type="button"
-                onClick={() => turn.endTurn()}
-                disabled={!isMyTurn}
-                data-action="end-turn"
-                className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
-              >
-                End turn
-              </button>
-            ) : null}
-          </div>
-        </div>
-        {/*
-         * #292/#503: post-Meditate a11y callout. Post-#503 Meditate
-         * stays in `'move'` phase rather than transitioning to
-         * `'end'`, so the callout fires while `meditatedThisTurn`
-         * is true and the player is still in `'move'`. The aria-live
-         * region nudges screen-reader users that the player has just
-         * drawn cards and may still play one. `polite` (not
-         * `assertive`) so it queues behind any in-progress
-         * announcement (e.g. the move resolution) rather than
-         * interrupting it.
-         */}
-        {(turn.phase === 'move' || turn.phase === 'end') &&
-        turn.state.meditatedThisTurn === true ? (
-          <div
-            role="status"
-            aria-live="polite"
-            data-meditate-callout
-            className="w-full max-w-xl rounded border border-veil/20 bg-ground/40 px-4 py-2 text-xs italic opacity-80"
-          >
-            {turn.phase === 'move'
-              ? 'You drew 2 cards. You may still play a card, or End your turn.'
-              : 'You drew 2 cards. End your turn when ready.'}
-          </div>
-        ) : null}
-        {turn.phase === 'end' && activePlayer?.position === 'malkuth' ? (
-          <HestiaCompanionLine sign={activePlayer.zodiacSign} pantheon={pantheon} rng={rng} />
-        ) : null}
-        {viewerPlayer ? (
-          <Hand
-            hand={viewerPlayer.hand}
-            visible={isHandVisible(turn.state, viewerPlayer.id, viewerPlayer.id)}
-            {...(isMyTurn && pendingDiscardCount === 0
-              ? { onCardSelect: (n: number) => setSelectedCard(n) }
-              : {})}
-            {...(isMyTurn ? { onCardHover: (n: number | undefined) => setHoveredCard(n) } : {})}
-            // #412: drag-to-play wiring. drag-start lights the path
-            // beneath the gesture; drag-end runs the drop handler;
-            // drag-cancel clears the highlight without dispatching.
-            {...(isMyTurn
-              ? {
-                  onCardDragStart: (n: number) => setDraggingCard(n),
-                  onCardDragEnd: handleCardDrop,
-                  onCardDragCancel: () => setDraggingCard(undefined),
-                }
-              : {})}
-            {...(isMyTurn && selectedCard !== undefined && pendingDiscardCount === 0
-              ? { selectedArcanum: selectedCard }
-              : {})}
-            {...(isMyTurn && pendingDiscardCount > 0
-              ? {
-                  discardMode: true as const,
-                  onDiscard: (arcanum: number) => turn.discard(arcanum),
-                }
-              : {})}
-            ariaLabel={`${viewerPlayer.name}'s hand`}
-            className="w-full max-w-xl"
-          />
-        ) : null}
-        {/* #412: aria-live region for invalid drag-to-play attempts. */}
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          data-drag-announcement
-          className="sr-only"
-        >
-          {dragAnnouncement}
-        </div>
-      </section>
+            {/* #412: aria-live region for invalid drag-to-play attempts. */}
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              data-drag-announcement
+              className="sr-only"
+            >
+              {dragAnnouncement}
+            </div>
+          </section>
 
-      {/*
+          {/*
         #411: at lg+ the inter-panel gap drops to gap-3 (was gap-6)
         and per-panel padding drops to p-3 (was p-4) — reclaims
         ~48 px of aside height so the right column stops dominating
@@ -898,48 +914,160 @@ export function PlayScreen({
         preserved unchanged. ShellPanel collapse-to-strip shipped in
         #14 — active Shells show full-size, dormant/banished collapse.
       */}
-      <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
-        {/*
-         * #507 + #25: deck/discard cluster. Both are informational and
-         * not phase-gated — they stay mounted across `move` /
-         * `challenge` / `end` and reflect engine state live.
-         * DrawDeck is visualization-only since #502 folded the discrete
-         * 'draw' phase into end-turn / Meditate.
-         */}
-        <div className="flex justify-center gap-4 rounded border border-veil/20 bg-ground/40 p-4 lg:p-2">
-          <DrawDeck deck={turn.state.deck} />
-          <DiscardPile
-            discardPile={turn.state.discardPile}
-            dragActive={draggingCard !== undefined}
-          />
-        </div>
-        {activePlayer ? (
-          <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
-            <StatSheet player={activePlayer} />
-          </div>
-        ) : null}
-        <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
-          <TeamMeters
-            illumination={turn.state.illumination}
-            separation={turn.state.separation}
-            pillarStreak={turn.state.pillarStreak}
-            // #321: route the per-meter callbacks straight into
-            // `playSound`. The hook itself is a no-op when sound is
-            // off and throttled per cue, so we don't need a guard
-            // here.
-            onIlluminationIncrease={() => playSound('illumination-up')}
-            onSeparationIncrease={() => playSound('separation-up')}
-          />
-        </div>
-        <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
-          <ShellStrip
-            shells={turn.state.shells}
-            headingLevel={3}
-            onShellAwakened={() => playSound('shell-awakened')}
-            onShellBanished={() => playSound('shell-banished')}
-          />
-        </div>
-      </aside>
+          <aside aria-label="Game status" className="flex flex-col gap-6 text-veil lg:gap-3">
+            {/*
+             * #507 + #25: deck/discard cluster. Both are informational and
+             * not phase-gated — they stay mounted across `move` /
+             * `challenge` / `end` and reflect engine state live.
+             * DrawDeck is visualization-only since #502 folded the discrete
+             * 'draw' phase into end-turn / Meditate.
+             */}
+            <div className="flex justify-center gap-4 rounded border border-veil/20 bg-ground/40 p-4 lg:p-2">
+              <DrawDeck deck={turn.state.deck} />
+              <DiscardPile
+                discardPile={turn.state.discardPile}
+                dragActive={draggingCard !== undefined}
+              />
+            </div>
+            {activePlayer ? (
+              <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+                <StatSheet player={activePlayer} />
+              </div>
+            ) : null}
+            <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+              <TeamMeters
+                illumination={turn.state.illumination}
+                separation={turn.state.separation}
+                pillarStreak={turn.state.pillarStreak}
+                // #321: route the per-meter callbacks straight into
+                // `playSound`. The hook itself is a no-op when sound is
+                // off and throttled per cue, so we don't need a guard
+                // here.
+                onIlluminationIncrease={() => playSound('illumination-up')}
+                onSeparationIncrease={() => playSound('separation-up')}
+              />
+            </div>
+            <div className="rounded border border-veil/20 bg-ground/40 p-4 lg:p-3">
+              <ShellStrip
+                shells={turn.state.shells}
+                headingLevel={3}
+                onShellAwakened={() => playSound('shell-awakened')}
+                onShellBanished={() => playSound('shell-banished')}
+              />
+            </div>
+          </aside>
+        </>
+      ) : (
+        // Mobile layout (#15) — tab pattern with persistent MobileHud strip.
+        <MobilePlaySurface
+          activeView={mobileView}
+          onSetView={setMobileView}
+          phase={turn.phase}
+          activePlayerName={activePlayer?.name ?? '—'}
+          illumination={turn.state.illumination}
+          separation={turn.state.separation}
+          shells={turn.state.shells}
+          treeContent={
+            <div className="flex flex-col items-center gap-4 p-4">
+              <div className="w-full">
+                <TreeBoard
+                  state={turn.state}
+                  {...(activePlayer ? { activePlayerId: activePlayer.id } : {})}
+                  {...(isMyTurn ? { onPathClick: handlePathClick } : {})}
+                  onSefirahClick={(key) => setOpenSefirah(key)}
+                  movesEnabled={turn.phase === 'move' && isMyTurn}
+                  {...((): { highlightedCard?: number } => {
+                    if (turn.phase === 'challenge') return {};
+                    const effective = selectedCard;
+                    return effective === undefined ? {} : { highlightedCard: effective };
+                  })()}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex w-full flex-col gap-2 rounded border border-veil/20 bg-ground/40 px-4 py-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  {turn.phase === 'move' && turn.state.players.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setGiftStep({ kind: 'pick-card' })}
+                      disabled={
+                        !isMyTurn || hoardingActive || (activePlayer?.hand.length ?? 0) === 0
+                      }
+                      data-action="gift-card"
+                      className="min-h-11 rounded border border-veil/30 px-3 py-2 text-xs hover:border-veil/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80 disabled:opacity-40"
+                    >
+                      Gift card
+                    </button>
+                  ) : null}
+                  {turn.phase === 'move' || turn.phase === 'end' ? (
+                    <MeditateButton
+                      onMeditate={() => setShowMeditateConfirm(true)}
+                      disabled={!isMyTurn || turn.state.meditatedThisTurn === true}
+                    />
+                  ) : null}
+                  {turn.phase === 'end' ||
+                  (turn.phase === 'move' &&
+                    (turn.state.meditatedThisTurn === true ||
+                      turn.state.movedThisTurn === true)) ? (
+                    <button
+                      type="button"
+                      onClick={() => turn.endTurn()}
+                      disabled={!isMyTurn}
+                      data-action="end-turn"
+                      className="min-h-11 rounded bg-illumination px-3 py-2 text-xs text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illumination/80"
+                    >
+                      End turn
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {(turn.phase === 'move' || turn.phase === 'end') &&
+              turn.state.meditatedThisTurn === true ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-meditate-callout
+                  className="w-full rounded border border-veil/20 bg-ground/40 px-4 py-2 text-xs italic opacity-80"
+                >
+                  {turn.phase === 'move'
+                    ? 'You drew 2 cards. You may still play a card, or End your turn.'
+                    : 'You drew 2 cards. End your turn when ready.'}
+                </div>
+              ) : null}
+            </div>
+          }
+          handContent={
+            viewerPlayer ? (
+              <div className="flex flex-col items-center p-4">
+                <Hand
+                  layout="inline"
+                  hand={viewerPlayer.hand}
+                  visible={isHandVisible(turn.state, viewerPlayer.id, viewerPlayer.id)}
+                  {...(isMyTurn && pendingDiscardCount === 0
+                    ? {
+                        onCardSelect: (n: number) => {
+                          setSelectedCard(n);
+                          setMobileView('tree');
+                        },
+                      }
+                    : {})}
+                  {...(isMyTurn && selectedCard !== undefined && pendingDiscardCount === 0
+                    ? { selectedArcanum: selectedCard }
+                    : {})}
+                  {...(isMyTurn && pendingDiscardCount > 0
+                    ? {
+                        discardMode: true as const,
+                        onDiscard: (arcanum: number) => turn.discard(arcanum),
+                      }
+                    : {})}
+                  ariaLabel={`${viewerPlayer.name}'s hand`}
+                  className="w-full"
+                />
+              </div>
+            ) : null
+          }
+        />
+      )}
 
       {challengeContext && activePlayer ? (
         // #38: full-screen overlay on narrow viewports — the modal's
@@ -1027,7 +1155,7 @@ export function PlayScreen({
           the game. Renders fixed bottom-right; the inline div keeps
           it inside the main layout for SR ordering, but the
           component itself uses `position: fixed` so it floats. */}
-      <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />
+      {!isMobile && <SettingsButton {...(onQuit !== undefined ? { onQuit } : {})} />}
       {/* #384: in-game Sefirah info popover. Mounted at the play-
           screen root so the backdrop covers the full viewport, but
           inside <main> so accessibility-tree ordering keeps it
