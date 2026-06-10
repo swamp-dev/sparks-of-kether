@@ -5,6 +5,7 @@ import { Starfield } from '@/components/atmosphere/Starfield';
 import { Substrate } from '@/components/atmosphere/Substrate';
 import { OrreryBackdrop } from '@/components/atmosphere/OrreryBackdrop';
 import { SoundSettingsProvider } from '@/lib/sound/settings';
+import { MusicProvider } from '@/lib/music/MusicProvider';
 import { PantheonSettingsProvider } from '@/lib/settings/pantheon';
 import './globals.css';
 
@@ -50,11 +51,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             The provider holds a single boolean; all real audio work
             (lazy load, throttle) lives in `useSound`. */}
         <SoundSettingsProvider>
-          {/* #548 / Epic #293 Phase A2: pantheon selection context.
-              Mounted alongside SoundSettings so any descendant can call
-              `usePantheon()` to read the active pantheon. The provider
-              persists the chosen id to localStorage. */}
-          <PantheonSettingsProvider>{children}</PantheonSettingsProvider>
+          {/* #26: ambient music engine. Nested inside SoundSettingsProvider
+              so MusicProvider can read musicEnabled from context. Wraps all
+              routes so any route can call useMusic(track) without a separate
+              provider mount. The single <audio> element is shared; crossfades
+              happen inside MusicProvider when the track key changes. */}
+          <MusicProvider>
+            {/* #548 / Epic #293 Phase A2: pantheon selection context.
+                Mounted alongside SoundSettings so any descendant can call
+                `usePantheon()` to read the active pantheon. The provider
+                persists the chosen id to localStorage. */}
+            <PantheonSettingsProvider>{children}</PantheonSettingsProvider>
+          </MusicProvider>
         </SoundSettingsProvider>
       </body>
     </html>
