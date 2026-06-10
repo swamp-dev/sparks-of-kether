@@ -6,24 +6,31 @@ import {
   MUSIC_ENABLED_STORAGE_KEY,
   useSoundEnabled,
 } from '@/lib/sound/settings';
+import { MusicProvider, CROSSFADE_INTERVAL_MS } from '../MusicProvider';
 import { useMusic } from '../useMusic';
 
 /**
- * Pin the `useMusic` hook contract (#526):
+ * Pin the `useMusic` hook contract (#26).
  *
- *   - When soundEnabled is false (default), no audio plays.
- *   - When soundEnabled is true, the correct track URL plays with loop=true.
- *   - The track switches when the `track` argument changes.
- *   - The old track pauses before the new one starts.
- *   - Toggling soundEnabled pauses/resumes the current track.
- *   - Audio pauses on unmount.
+ * The hook delegates to `MusicProvider`, so tests wrap with both
+ * `SoundSettingsProvider` and `MusicProvider`. Behaviours pinned here:
+ *
+ *   - When musicEnabled is false (default), no audio plays.
+ *   - When musicEnabled is true, the correct track URL plays with loop=true.
+ *   - Same track re-called → no new Audio element (no-op).
+ *   - Track changes → crossfade: old pauses after CROSSFADE_STEPS ticks.
+ *   - Toggling musicEnabled pauses/resumes the current track.
+ *   - Audio pauses when the provider unmounts.
  *   - SefirahKey arguments map to encounter track URLs via the manifest.
+ *
+ * Per-behavior crossfade and visibility tests live in MusicProvider.test.tsx.
  */
 
 interface AudioStub {
   src: string;
   loop: boolean;
   volume: number;
+  paused: boolean;
   play: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
 }
@@ -38,8 +45,14 @@ function installAudioStub(): void {
       src: string;
       loop = false;
       volume = 1;
-      play = vi.fn().mockResolvedValue(undefined);
-      pause = vi.fn();
+      paused = true;
+      play = vi.fn().mockImplementation(() => {
+        (this as unknown as AudioStub).paused = false;
+        return Promise.resolve();
+      });
+      pause = vi.fn().mockImplementation(() => {
+        (this as unknown as AudioStub).paused = true;
+      });
       constructor(src?: string) {
         this.src = src ?? '';
         audioInstances.push(this as unknown as AudioStub);
@@ -48,12 +61,18 @@ function installAudioStub(): void {
   );
 }
 
+const CROSSFADE_STEPS = 15;
+
 function withSound(enabled: boolean) {
   return function Wrapper({ children }: { children: ReactNode }): JSX.Element {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(MUSIC_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
     }
-    return <SoundSettingsProvider>{children}</SoundSettingsProvider>;
+    return (
+      <SoundSettingsProvider>
+        <MusicProvider>{children}</MusicProvider>
+      </SoundSettingsProvider>
+    );
   };
 }
 
@@ -61,9 +80,11 @@ describe('useMusic', () => {
   beforeEach(() => {
     localStorage.clear();
     installAudioStub();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -103,7 +124,7 @@ describe('useMusic', () => {
     expect(audioInstances[0]?.loop).toBe(true);
   });
 
-  it('pauses the track on unmount', () => {
+  it('pauses the track when the provider unmounts', () => {
     const { unmount } = renderHook(() => useMusic('play'), { wrapper: withSound(true) });
     const instance = audioInstances[0];
     expect(instance?.pause).not.toHaveBeenCalled();
@@ -139,7 +160,6 @@ describe('useMusic', () => {
       },
       { wrapper: withSound(false) },
     );
-    // Sound off — no play yet.
     expect(audioInstances.filter((a) => a.play.mock.calls.length > 0)).toHaveLength(0);
 
     act(() => {
@@ -163,6 +183,9 @@ describe('useMusic', () => {
     expect(lobbyInstance?.pause).not.toHaveBeenCalled();
 
     rerender({ track: 'play' as const });
+
+    // Advance timers to complete the crossfade.
+    vi.advanceTimersByTime(CROSSFADE_INTERVAL_MS * CROSSFADE_STEPS + 10);
 
     expect(lobbyInstance?.pause).toHaveBeenCalled();
     const playInstance = audioInstances.find((a) => a.src.includes('/audio/play.mp3'));
