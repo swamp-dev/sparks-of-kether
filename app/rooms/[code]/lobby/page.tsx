@@ -10,6 +10,7 @@ import { usePresence } from '@/lib/presence';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { sefirot, zodiacSigns } from '@/data';
 import type { ZodiacSignKey } from '@/data';
+import { useMusic } from '@/lib/music/useMusic';
 
 /**
  * Maps each zodiac sign to its primary-ruler Sefirah accent color.
@@ -57,6 +58,7 @@ interface LobbyPageProps {
 export default function LobbyPage({ params }: LobbyPageProps): JSX.Element {
   const { code } = params;
   const router = useRouter();
+  useMusic('lobby');
   const {
     room,
     players,

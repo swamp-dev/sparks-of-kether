@@ -1,3 +1,4 @@
+import { HomeMusic } from '@/components/home/HomeMusic';
 import { Hero } from '@/components/home/Hero';
 import { PrimaryCTA } from '@/components/home/PrimaryCTA';
 import { ContinueGame } from '@/components/home/ContinueGame';
@@ -40,6 +41,9 @@ const SUBTITLE = 'The lightning descends. The serpent ascends.';
 export default function HomePage(): JSX.Element {
   return (
     <main data-home-page className="relative flex min-h-screen flex-col text-veil">
+      {/* #26: play lobby ambient music while on the home page. The home
+          page is a server component; HomeMusic is the client boundary. */}
+      <HomeMusic />
       {/* Hero band. Title + subtitle stack above the Tree silhouette;
           the portal CTA sits beneath. The substrate from
           `app/layout.tsx` provides the warm bloom underneath — no
