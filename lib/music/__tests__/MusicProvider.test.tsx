@@ -167,6 +167,47 @@ describe('MusicProvider + useMusic integration', () => {
     expect(audioInstances.filter((a) => a.play.mock.calls.length > 0).length).toBeGreaterThan(0);
   });
 
+  it('resume after mid-crossfade disable restores volume to MUSIC_VOLUME', () => {
+    // Regression: if music is disabled while a crossfade is in flight, the
+    // incoming audio element stays at whatever intermediate volume the fade
+    // had reached. Re-enabling must normalize it back to MUSIC_VOLUME, not
+    // resume at the sub-target level.
+    interface Props {
+      track: Parameters<typeof useMusic>[0];
+    }
+    const { result, rerender } = renderHook(
+      ({ track }: Props) => {
+        const { setMusicEnabled } = useSoundEnabled();
+        useMusic(track);
+        return { setMusicEnabled };
+      },
+      { wrapper: withMusicProvider(true), initialProps: { track: 'lobby' } as Props },
+    );
+
+    // Switch track to start a crossfade.
+    rerender({ track: 'play' as const });
+
+    // Advance partway through the fade so incoming volume is intermediate.
+    vi.advanceTimersByTime(CROSSFADE_INTERVAL_MS * 5);
+
+    const playInstance = audioInstances.find((a) => a.src.includes('/audio/play.mp3'));
+    const midVolume = playInstance?.volume ?? 0;
+    expect(midVolume).toBeGreaterThan(0);
+    expect(midVolume).toBeLessThan(0.35);
+
+    // Disable music mid-crossfade.
+    act(() => {
+      result.current.setMusicEnabled(false);
+    });
+
+    // Re-enable — volume must be reset to MUSIC_VOLUME, not the mid-fade level.
+    act(() => {
+      result.current.setMusicEnabled(true);
+    });
+
+    expect(playInstance?.volume).toBeCloseTo(0.35, 2);
+  });
+
   it('same-track call is a no-op (no new Audio element)', () => {
     interface Props {
       track: Parameters<typeof useMusic>[0];

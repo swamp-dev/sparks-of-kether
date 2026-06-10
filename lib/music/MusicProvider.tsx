@@ -177,6 +177,9 @@ export function MusicProvider({ children }: MusicProviderProps): JSX.Element {
     const audio = audioRef.current;
     if (!audio) return;
     if (musicEnabled) {
+      // Normalize volume — a cancelled mid-crossfade may have left the
+      // element at an intermediate level (e.g. 0.10 of 0.35).
+      audio.volume = MUSIC_VOLUME;
       const p = audio.play();
       if (p?.catch) p.catch(() => undefined);
     } else {
