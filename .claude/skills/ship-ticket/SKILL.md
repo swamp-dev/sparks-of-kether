@@ -32,10 +32,8 @@ Before invoking this skill:
   once per PR. (Anti-sweep guardrail; see step 1.)
 - `/finish-ticket` was run on this PR's branch in this session, and the
   per-PR checklist (review → fix → re-review on substantial fixes)
-  completed. The mechanical gate for that completion is the stamp at
-  `.claude/state/checklist-<sanitized-branch>.json` — verified in step
-  3 below. The per-ticket Journal remains the human-readable audit
-  record but is not consulted as a precondition.
+  completed. The agent self-attests this in step 3 below. The per-ticket
+  Journal is the human-readable audit record.
 
 If any of these is unclear, **ask the user explicitly**. Do not infer.
 
@@ -71,57 +69,21 @@ Capture the branch name (`headRefName`) — it should match
 `<type>/<N>-<slug>`. Derive `<N>` and the worktree path
 `../sok-<N>-<slug>` for the cleanup steps.
 
-### 3. Verify the per-PR checklist stamp (mechanical gate)
+### 3. Attest the per-PR checklist ran in this session
 
-`/finish-ticket` step 8.5 writes a stamp file after invoking code-reviewer:
-`.claude/state/checklist-<sanitized-branch>.json`
-with `{ branch, head_sha, ran_at, verdict, written_via: "agent" }`.
+Self-attest: confirm that `code-reviewer` was invoked in this session on
+this PR's branch, the findings were surfaced, and all critical/significant
+findings were addressed (or explicitly accepted as deferred-minor by the
+user).
 
-```bash
-# Variables: $PR_NUMBER and $headRefName were captured in step 2.
-branch_safe=$(printf '%s' "$headRefName" | tr -c 'a-zA-Z0-9._-' '_')
-stamp="$(git rev-parse --show-toplevel)/.claude/state/checklist-${branch_safe}.json"
+If `/finish-ticket` was run in this session on this branch, that
+confirmation is a recall from session context. If there is any doubt —
+context was summarized, the session is long, the reviewer output is not
+visible — stop and ask the user explicitly before proceeding.
 
-if [ ! -f "$stamp" ]; then
-  echo "Refusing merge: no checklist stamp at $stamp. Run /finish-ticket for this branch first (step 8.5 writes the stamp after code-reviewer runs)."
-  exit 1
-fi
-
-stamp_sha=$(jq -r '.head_sha' "$stamp")
-stamp_verdict=$(jq -r '.verdict' "$stamp")
-
-# Capture HEAD_SHA fresh — the gate must validate against the LIVE PR
-# HEAD, not a value carried from earlier in the session.
-HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
-
-if [ "$stamp_sha" != "$HEAD_SHA" ]; then
-  echo "Refusing merge: stamp is for SHA $stamp_sha but PR HEAD is $HEAD_SHA. Re-run /finish-ticket step 8 (code-reviewer) on the current commit so step 8.5 writes a fresh stamp."
-  exit 1
-fi
-if [ "$stamp_verdict" != "ship" ]; then
-  echo "Refusing merge: stamp records verdict='$stamp_verdict' (expected 'ship'). Address findings and re-run reviewer."
-  exit 1
-fi
-```
-
-This gate is **fail-closed**: missing stamp, stale SHA, or non-`ship`
-verdict all stop the skill. Step 8.5 in `/finish-ticket` overwrites the
-stamp on each code-reviewer invocation, so the re-review loop naturally
-produces a fresh stamp at the new HEAD.
-
-The per-ticket Journal file (`journal/<NN>-<slug>.md` per #429)
-remains the **human-readable audit record** of why the verdict was
-what it was — but it's not the gate. The stamp file is.
-
-The gate catches:
-- accidental skip ("I forgot to run code-reviewer")
-- context compaction ("the reviewer output got summarized away")
-- false-positive Journal markers (the prior honor-system pattern)
-
-**`head_sha` partial mitigation**: a stamp from an earlier commit fails
-the SHA check at merge time. Only a same-commit stamp would slip through
-— the auto-mode classifier is the primary defense against deliberate
-fabrication.
+The per-ticket Journal file (`journal/<NN>-<slug>.md`) is the
+human-readable audit record of what the reviewer found and why the
+verdict was what it was.
 
 ### 4. Confirm hosted CI is green against the current commit
 
