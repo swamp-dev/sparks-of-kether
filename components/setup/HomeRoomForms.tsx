@@ -171,9 +171,7 @@ export function HomeRoomForms(): JSX.Element {
 function isNetworkError(cause: string): boolean {
   const lower = cause.toLowerCase();
   return (
-    lower.includes('failed to fetch') ||
-    lower.includes('networkerror') ||
-    lower === 'load failed'
+    lower.includes('failed to fetch') || lower.includes('networkerror') || lower === 'load failed'
   );
 }
 
