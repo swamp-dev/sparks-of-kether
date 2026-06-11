@@ -79,7 +79,9 @@ user).
 If `/finish-ticket` was run in this session on this branch, that
 confirmation is a recall from session context. If there is any doubt —
 context was summarized, the session is long, the reviewer output is not
-visible — stop and ask the user explicitly before proceeding.
+visible — stop and ask the user explicitly before proceeding. A concrete
+signal: if you cannot locate the reviewer's `## Verdict` line in your
+current context window, treat that as doubt.
 
 The per-ticket Journal file (`journal/<NN>-<slug>.md`) is the
 human-readable audit record of what the reviewer found and why the

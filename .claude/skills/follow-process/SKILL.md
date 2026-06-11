@@ -13,16 +13,16 @@ short-circuited.** Examples of common drift:
 
 - Pushed a commit without a Journal entry in `journal/<N>-<slug>.md`.
 - Used the legacy `Journal.md` instead of the per-ticket file (#429).
-- Invoked `code-reviewer` and addressed findings, but didn't complete
-  whatever the current `/finish-ticket` SKILL.md says about recording
-  the verdict / writing the per-PR-checklist artifact (currently the
-  mechanical stamp at `.claude/state/checklist-<sanitized-branch>.json`,
-  whatever the active gate is).
+- Invoked `code-reviewer` and addressed findings, but can't recall the
+  verdict being surfaced or critical/significant findings being addressed
+  (or explicitly deferred with user sign-off) — the in-session
+  attestation `/ship-ticket` step 3 depends on.
 - Ran fixes that were substantial (per `/finish-ticket`'s re-review
   heuristic) but didn't re-fire `code-reviewer`.
 - About to `/ship-ticket` without verifying CI is green against the
-  current HEAD SHA, or with the per-PR-checklist gate's input missing
-  / stale.
+  current HEAD SHA, or without being able to clearly recall that
+  code-reviewer ran on this branch in this session and all
+  critical/significant findings were addressed.
 - Considering bulk-merging multiple PRs (anti-11-PR-incident
   guardrail in `/ship-ticket`).
 - Opened a PR with the body's `Closes #NN` line, but didn't link the
