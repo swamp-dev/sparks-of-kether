@@ -28,7 +28,7 @@ export interface HintDefinition {
   where: HintAnchor;
   copy: string;
   severity: 'info' | 'warn';
-  dismissibleVia: DismissMethod[];
+  dismissibleVia: readonly DismissMethod[];
   prerequisiteId?: string;
 }
 
