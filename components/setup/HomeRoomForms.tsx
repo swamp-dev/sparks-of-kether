@@ -165,9 +165,24 @@ export function HomeRoomForms(): JSX.Element {
   );
 }
 
-function formatCreateError(err: CreateRoomError): string {
+// Browser fetch error messages vary by engine:
+// Chrome: "Failed to fetch", Firefox: "NetworkError when attempting to fetch
+// resource", Safari: "Load failed". All are network-level, not Supabase errors.
+function isNetworkError(cause: string): boolean {
+  const lower = cause.toLowerCase();
+  return (
+    lower.includes('failed to fetch') ||
+    lower.includes('networkerror') ||
+    lower.includes('load failed')
+  );
+}
+
+export function formatCreateError(err: CreateRoomError): string {
   switch (err.kind) {
     case 'auth-failed':
+      if (isNetworkError(err.cause)) {
+        return "Can't reach the game server — please check your connection and try again.";
+      }
       return `Couldn't start an anonymous session. ${err.cause}`;
     case 'code-generation-exhausted':
       return 'The lobby is unusually busy. Please try again in a moment.';
@@ -179,9 +194,12 @@ function formatCreateError(err: CreateRoomError): string {
   }
 }
 
-function formatJoinError(err: JoinRoomError): string {
+export function formatJoinError(err: JoinRoomError): string {
   switch (err.kind) {
     case 'auth-failed':
+      if (isNetworkError(err.cause)) {
+        return "Can't reach the game server — please check your connection and try again.";
+      }
       return `Couldn't start an anonymous session. ${err.cause}`;
     case 'room-not-found':
       return `No room with code ${err.code}.`;
