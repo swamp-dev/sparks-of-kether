@@ -691,6 +691,13 @@ export interface EncounterEnvelope {
    * active. Optional; the downstream Hod ticket fills this in.
    */
   readonly deceptionMisreport?: number;
+  /**
+   * #332 — Chesed Hoarding. True when the player failed at Chesed
+   * with cards in hand but staged no gifts. The turn-machine reads
+   * this to block `react-retry` and route `accept-setback` to
+   * `acceptHoardingSetback` (+2 Separation instead of +1).
+   */
+  readonly hoardingFail?: boolean;
 }
 
 /**

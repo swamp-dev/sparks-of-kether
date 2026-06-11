@@ -19,6 +19,7 @@ import {
   binahBurnTierBonus,
   chokmahTilt,
   CHOKMAH_FLASH_BONUS,
+  acceptHoardingSetback,
   type CheckModifiers,
 } from '../checks';
 import { makePlayer, makeState, statSheet } from '@/test/fixtures';
@@ -2771,6 +2772,77 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     });
   });
 
+  it('hoarding-fail (0 gifts, non-empty hand, d20 fail) → hoardingFail: true on encounter', () => {
+    // Design § 3.3: when the player hoards (no gifts staged), has cards
+    // in hand, and fails the d20 → mark hoardingFail on the encounter
+    // envelope so the turn-machine can block react-retry and route
+    // accept-setback to +2 Separation.
+    const state = makeState(
+      { position: 'chesed', stats: statSheet({ lovingkindness: 0 }), hand: [1, 2] },
+      {
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState.encounter?.hoardingFail).toBe(true);
+  });
+
+  it('hoarding-fail NOT set when hand is empty (nothing to hoard)', () => {
+    const state = makeState(
+      { position: 'chesed', stats: statSheet({ lovingkindness: 0 }), hand: [] },
+      {
+        pendingModifiers: EMPTY_PENDING_MODIFIERS,
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.outcome.pass).toBe(false);
+    expect(result.value.newState.encounter?.hoardingFail).toBeUndefined();
+  });
+
+  it('hoarding-fail NOT set on unfolding (gifts staged forces pass)', () => {
+    const state = makeState(
+      { position: 'chesed', stats: statSheet({ lovingkindness: 0 }), hand: [1, 2] },
+      {
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          giftCards: [{ arcanum: 1, recipientId: 'p2' }],
+        },
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+      },
+    );
+    const result = resolveChallenge({
+      state,
+      playerId: 'p1',
+      sefirah: 'chesed',
+      modifiers: blankMods,
+      rng: { d20: () => 1, int: () => 1 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Unfolding always passes — hoardingFail must NOT be set
+    expect(result.value.outcome.pass).toBe(true);
+    expect(result.value.newState.encounter?.hoardingFail).toBeUndefined();
+  });
+
   it('non-Chesed Sefirah: giftCards staged is ignored (Hod control)', () => {
     // Regression guard: the gift-DC-reduction is gated on
     // `sefirah === 'chesed'`. A Hod resolve with stale giftCards must
@@ -2795,6 +2867,22 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     if (!result.ok) return;
     expect(result.value.outcome.effectiveDC).toBe(12); // Hod base, no Chesed tilt
     expect(result.value.chesedOverflowBonus).toBeUndefined();
+  });
+});
+
+// ──────────────── acceptHoardingSetback (#332) ────────────────
+
+describe('acceptHoardingSetback (#332)', () => {
+  it('applies +2 Separation (chesed-hoarding-fail event)', () => {
+    const state = makeState({ position: 'chesed', id: 'p1' }, { separation: 0 });
+    const after = acceptHoardingSetback(state, 'p1', 'chesed');
+    expect(after.separation).toBe(2);
+  });
+
+  it('leaves illumination unchanged', () => {
+    const state = makeState({ position: 'chesed', id: 'p1' }, { illumination: 3, separation: 0 });
+    const after = acceptHoardingSetback(state, 'p1', 'chesed');
+    expect(after.illumination).toBe(3);
   });
 });
 

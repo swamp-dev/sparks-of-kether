@@ -994,10 +994,30 @@ export function resolveChallenge(
     : stateAfterBuffConsume;
 
   if (!effectiveOutcome.pass) {
+    // #332 — Chesed Hoarding. Mark hoardingFail on the encounter envelope
+    // when: failed at Chesed, no gifts staged (not unfolding), and the
+    // player had cards in hand they could have given. The turn-machine
+    // reads this to block react-retry and route accept-setback to +2 Sep.
+    // Gated on encounter being present and at Chesed so test fixtures
+    // that omit an envelope pass through unchanged (same reference).
+    const hoardingEncounter = stateAfterNetzachFailBump.encounter;
+    const chesedHoardingFail =
+      sefirah === 'chesed' &&
+      !chesedUnfolding &&
+      player.hand.length > 0 &&
+      hoardingEncounter !== undefined &&
+      hoardingEncounter.sefirah === 'chesed';
+    const stateAfterHoardingMark =
+      chesedHoardingFail && hoardingEncounter !== undefined
+        ? {
+            ...stateAfterNetzachFailBump,
+            encounter: { ...hoardingEncounter, hoardingFail: true },
+          }
+        : stateAfterNetzachFailBump;
     return {
       ok: true,
       value: {
-        newState: stateAfterNetzachFailBump,
+        newState: stateAfterHoardingMark,
         outcome: effectiveOutcome,
         ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
         ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
@@ -1294,6 +1314,36 @@ export function acceptSetback(state: GameState, input: SetbackInput): GameState 
   }
 
   return rollbackPosition(afterShells, input.playerId);
+}
+
+/**
+ * #332 — Absorb a Chesed hoarding failure.
+ *
+ * Fires when the player failed at Chesed with cards in hand but staged
+ * no gifts (the "hoarding" branch per design § 3.3). The penalty is
+ * +2 Separation — a `chesed-hoarding-fail` event rather than the
+ * standard `check-failed-accepted` event, so the counter log shows
+ * the hoarding penalty as its own category.
+ *
+ * No position rollback — Chesed (path 16) is a non-shortcut path, and
+ * non-shortcut setbacks leave position unchanged (same as `acceptSetback`
+ * with `shortcut === false`). Only the Separation tick (+2 instead of +1)
+ * differs from a standard accepted setback.
+ *
+ * No retry allowed — the turn-machine blocks `react-retry` when
+ * `encounter.hoardingFail` is set.
+ */
+export function acceptHoardingSetback(
+  state: GameState,
+  playerId: string,
+  sefirah: SefirahKey,
+): GameState {
+  const afterCounterTick = applyEvent(state, {
+    kind: 'chesed-hoarding-fail',
+    playerId,
+    sefirah,
+  });
+  return maybeActivateShell(afterCounterTick);
 }
 
 /**

@@ -4,6 +4,7 @@ import { applyMove } from '@/engine/movement';
 import { isKetherHeld, maybeTriggerKetherRitual } from '@/engine/kether';
 import {
   acceptSetback,
+  acceptHoardingSetback,
   resolveChallenge,
   type ChallengeRejection,
   type ChallengeSuccess,
@@ -388,6 +389,17 @@ export type TurnReducerError =
       readonly sourcePlayerId: string;
     }
   | { readonly kind: 'react-retry-on-pass' }
+  | {
+      /**
+       * #332 — design § 3.3: `react-retry` is not allowed when the
+       * player failed at Chesed by hoarding (non-empty hand, no gifts
+       * staged). The Chesed gate saw no gift; the encounter ends
+       * without a retry option. The UI hides the Retry button when
+       * `encounter.hoardingFail` is set; this gate closes the bypass
+       * path from a stale client or malformed wire event.
+       */
+      readonly kind: 'chesed-hoarding-blocks-retry';
+    }
   | {
       /**
        * #503: a `meditate` event fired while `state.meditatedThisTurn`
@@ -1591,6 +1603,13 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       if (state.lastOutcome === undefined || state.lastOutcome.pass) {
         return { ok: false, reason: { kind: 'react-retry-on-pass' } };
       }
+      // #332 — Chesed hoarding: retry is not allowed when the player
+      // failed by hoarding (non-empty hand, no gifts staged). The
+      // encounter envelope carries the flag so the multiplayer
+      // dispatcher reads truth from the persisted snapshot.
+      if (state.encounter?.hoardingFail) {
+        return { ok: false, reason: { kind: 'chesed-hoarding-blocks-retry' } };
+      }
       // Loop back to prep. `pendingModifiers` is preserved because
       // the fail path of `prep-confirm` left the cumulative stacks
       // (cardBurns / sparkBurns / assistRequests) alone — the kernel
@@ -1712,11 +1731,18 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
           },
         };
       }
-      const next = acceptSetback(state, {
-        playerId: player.id,
-        sefirah: event.sefirah,
-        shortcut: event.shortcut ?? false,
-      });
+      // #332 — Chesed hoarding: route through the dedicated hoarding
+      // setback function which applies +2 Separation (chesed-hoarding-fail
+      // event) instead of the standard +1. Use state.encounter.sefirah
+      // (the authoritative server-side value) not event.sefirah to prevent
+      // a malformed client from corrupting the event log.
+      const next = state.encounter?.hoardingFail
+        ? acceptHoardingSetback(state, player.id, state.encounter.sefirah)
+        : acceptSetback(state, {
+            playerId: player.id,
+            sefirah: event.sefirah,
+            shortcut: event.shortcut ?? false,
+          });
       // Phase leaves 'challenge' → clear prep machinery and the
       // sub-phase / lastOutcome (now on GameState). #334 (§ 2.6 (b)):
       // also clear the encounter envelope — the encounter has ended

@@ -2028,3 +2028,150 @@ describe('EncounterScreen — burn-discard picker (#286)', () => {
     }
   });
 });
+
+describe('EncounterScreen — Chesed gift prep UI (#332)', () => {
+  const chesedContext: ChallengeContext = {
+    sefirah: 'chesed',
+    stat: 10,
+    statLabel: 'Lovingkindness',
+    availableAllies: [{ id: 'p2', name: 'Player 2', stat: 8 }],
+    availableCardBurns: 3,
+    availableSparkBurns: 0,
+  };
+
+  function makeChesedChallengeState(): GameState {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? {
+            ...p,
+            position: 'chesed' as const,
+            hand: [1, 2, 3] as readonly number[],
+            stats: { ...p.stats, lovingkindness: 10 },
+          }
+        : { ...p, position: 'chesed' as const },
+    );
+    return {
+      ...base,
+      players,
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
+      lastOutcome: undefined,
+      encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+    };
+  }
+
+  it('renders gift fieldset in prep when player has cards', () => {
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: makeChesedChallengeState(),
+      context: chesedContext,
+    });
+    expect(document.querySelector('[data-modifier="gift-card"]')).not.toBeNull();
+  });
+
+  it('shows empty-hand message when player has no cards at Chesed', () => {
+    const base = makeChesedChallengeState();
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx ? { ...p, hand: [] as readonly number[] } : p,
+    );
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: { ...base, players },
+      context: { ...chesedContext, availableCardBurns: 0 },
+    });
+    expect(document.querySelector('[data-modifier="gift-card"]')).not.toBeNull();
+    expect(screen.getByText(/Chesed asks nothing/i)).toBeInTheDocument();
+  });
+
+  it('shows shell-blocked message when Shell of Chesed (Hoarding) is active', () => {
+    const base = makeChesedChallengeState();
+    renderEncounter({
+      mode: 'hot-seat',
+      initialState: { ...base, shells: { ...base.shells, chesed: 'active' as const } },
+      context: chesedContext,
+    });
+    expect(document.querySelector('[data-shell-blocked]')).not.toBeNull();
+  });
+});
+
+describe('EncounterScreen — Chesed hoarding-fail react UI (#332)', () => {
+  // stat=1 vs Chesed DC 13 → guaranteed fail → hoardingFail triggered
+  // because makeChesedChallengeState sets encounter + non-empty hand + no gifts.
+  const hoardingContext: ChallengeContext = {
+    sefirah: 'chesed',
+    stat: 1,
+    statLabel: 'Lovingkindness',
+    availableAllies: [],
+    availableCardBurns: 3,
+    availableSparkBurns: 0,
+  };
+
+  function makeChesedChallengeState(): GameState {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? { ...p, position: 'chesed' as const, hand: [1, 2, 3] as readonly number[] }
+        : { ...p, position: 'chesed' as const },
+    );
+    return {
+      ...base,
+      players,
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
+      lastOutcome: undefined,
+      encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
+    };
+  }
+
+  it('hides retry button in hoarding-fail react phase', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = renderEncounter({
+        mode: 'hot-seat',
+        initialState: makeChesedChallengeState(),
+        context: hoardingContext,
+        seed: 7, // seededRng(7).d20()=1 → 1+stat(1)=2 < DC(13) → guaranteed fail
+      });
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      expect(document.querySelector('[data-fail-choice="retry"]')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows +2 Separation note in hoarding-fail accept button', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = renderEncounter({
+        mode: 'hot-seat',
+        initialState: makeChesedChallengeState(),
+        context: hoardingContext,
+        seed: 7, // seededRng(7).d20()=1 → 1+stat(1)=2 < DC(13) → guaranteed fail
+      });
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      rerender();
+      const acceptBtn = document.querySelector('[data-fail-choice="accept"]');
+      expect(acceptBtn).not.toBeNull();
+      expect(acceptBtn?.textContent).toMatch(/\+2/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

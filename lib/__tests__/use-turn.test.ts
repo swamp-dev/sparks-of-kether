@@ -431,13 +431,28 @@ describe('useTurn — per-step prep methods (E4 / #229)', () => {
   });
 
   it('reactRetry after a failed prepConfirm returns to prep with pendingModifiers preserved', () => {
-    const { result } = hookViaMoveIntoPrep();
+    // Use Yesod via path 25 (Tiferet → Yesod, Temperance, arcanum 14)
+    // rather than Chesed: Chesed's hoarding guard (#332) blocks retry
+    // when the player has cards in hand and staged no gifts.
+    const player: PlayerState = makePlayer({
+      id: 'p1',
+      name: 'Andy',
+      position: 'tiferet',
+      hand: [5, 7, 11, 14],
+      sparksHeld: new Set(),
+    });
+    const initialState = makeState({}, { players: [player], activePlayerId: 'p1' });
+    const harness = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
+    act(() => {
+      harness.result.current.move(25);
+    }); // tiferet ↔ yesod, arcanum 14
+    const { result } = harness;
     act(() => {
       result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
     });
     expect(result.current.pendingModifiers?.cardBurns).toEqual([7]);
     act(() => {
-      result.current.prepConfirm('chesed', {
+      result.current.prepConfirm('yesod', {
         rolled: 1,
         statContribution: 10,
         modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
