@@ -1135,17 +1135,17 @@ export function PlayScreen({
           role="status"
           aria-live="polite"
           data-discard-status
-          className="fixed inset-x-0 bottom-20 z-20 mx-auto flex w-full max-w-xl flex-col items-center gap-1 rounded-lg border border-amber-400/50 bg-ground/95 px-6 py-4 text-center shadow-lg shadow-amber-400/10 sm:bottom-32"
+          className="fixed inset-x-0 bottom-24 z-20 mx-auto flex w-full max-w-xl flex-col items-center gap-1 rounded-lg border border-amber-400/50 bg-ground/95 px-6 py-4 text-center shadow-lg shadow-amber-400/10 min-[768px]:bottom-32"
         >
           <p className="font-display text-lg tracking-widest text-amber-300">
             Shed {pendingDiscardCount} Card{pendingDiscardCount === 1 ? '' : 's'}
           </p>
           <p className="text-xs text-veil/70">
-            <span className="sm:hidden">Tap</span>
-            <span className="hidden sm:inline">Hover</span>
+            <span className="min-[768px]:hidden">Tap</span>
+            <span className="hidden min-[768px]:inline">Hover</span>
             {' '}a card to see its paths, then{' '}
-            <span className="sm:hidden">tap</span>
-            <span className="hidden sm:inline">click</span>
+            <span className="min-[768px]:hidden">tap</span>
+            <span className="hidden min-[768px]:inline">click</span>
             {' '}
             <span aria-hidden className="text-veil/90">
               ✕
