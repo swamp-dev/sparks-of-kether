@@ -4,9 +4,9 @@ import { formatCreateError, formatJoinError } from '../HomeRoomForms';
 describe('formatCreateError', () => {
   describe('auth-failed — network error', () => {
     it('returns a human message for "Failed to fetch" (Chrome)', () => {
-      expect(
-        formatCreateError({ kind: 'auth-failed', cause: 'Failed to fetch' }),
-      ).toBe("Can't reach the game server — please check your connection and try again.");
+      expect(formatCreateError({ kind: 'auth-failed', cause: 'Failed to fetch' })).toBe(
+        "Can't reach the game server — please check your connection and try again.",
+      );
     });
 
     it('returns a human message for Firefox NetworkError', () => {
@@ -19,9 +19,9 @@ describe('formatCreateError', () => {
     });
 
     it('returns a human message for Safari "Load failed"', () => {
-      expect(
-        formatCreateError({ kind: 'auth-failed', cause: 'Load failed' }),
-      ).toBe("Can't reach the game server — please check your connection and try again.");
+      expect(formatCreateError({ kind: 'auth-failed', cause: 'Load failed' })).toBe(
+        "Can't reach the game server — please check your connection and try again.",
+      );
     });
   });
 
@@ -37,9 +37,9 @@ describe('formatCreateError', () => {
 describe('formatJoinError', () => {
   describe('auth-failed — network error', () => {
     it('returns a human message for "Failed to fetch"', () => {
-      expect(
-        formatJoinError({ kind: 'auth-failed', cause: 'Failed to fetch' }),
-      ).toBe("Can't reach the game server — please check your connection and try again.");
+      expect(formatJoinError({ kind: 'auth-failed', cause: 'Failed to fetch' })).toBe(
+        "Can't reach the game server — please check your connection and try again.",
+      );
     });
   });
 
