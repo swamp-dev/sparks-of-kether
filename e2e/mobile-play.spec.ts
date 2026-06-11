@@ -110,6 +110,12 @@ test('mobile: selecting a card auto-switches to Tree view', async ({ page }) => 
   await page.getByRole('tab', { name: /hand/i }).click();
   await expect(page.locator('[data-hand]')).toBeVisible();
 
+  // Guard: data-visible="true" confirms it is the active player's turn —
+  // onCardSelect is only wired when visible=true, so without this a click
+  // on slot 0 would not flip data-selected even if the slot is rendered.
+  await expect(page.locator('[data-hand][data-visible="true"]')).toBeVisible();
+  expect(await page.locator('[data-card-slot]').count()).toBeGreaterThan(0);
+
   // Tap the first card.
   const card0 = page.locator('[data-card-slot="0"]');
   await expect(card0).toBeVisible();
