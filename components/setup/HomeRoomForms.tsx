@@ -173,7 +173,7 @@ function isNetworkError(cause: string): boolean {
   return (
     lower.includes('failed to fetch') ||
     lower.includes('networkerror') ||
-    lower.includes('load failed')
+    lower === 'load failed'
   );
 }
 
