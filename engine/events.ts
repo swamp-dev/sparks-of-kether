@@ -64,6 +64,18 @@ export type GameEvent =
        */
       readonly kind: 'chesed-overflow-bonus';
       readonly playerId: string;
+    }
+  | {
+      /**
+       * #332 — Chesed Hoarding fail. Emitted by `acceptHoardingSetback`
+       * when the player failed at Chesed with cards in hand but staged
+       * no gifts. Design § 3.3: +2 Separation (the gate saw no gift).
+       * Distinct from `check-failed-accepted` so a counter-log shows
+       * the hoarding penalty separately.
+       */
+      readonly kind: 'check-failed-hoarding';
+      readonly playerId: string;
+      readonly sefirah: SefirahKey;
     };
 
 /** Pure counter delta. Engine reducers shouldn't read this directly — go through `applyEvent`. */
@@ -94,6 +106,7 @@ export function deltaFor(event: GameEvent): CounterDelta {
     case 'gift-refused':
       return { illumination: 0, separation: 1 };
     case 'shell-activated':
+    case 'check-failed-hoarding':
       return { illumination: 0, separation: 2 };
   }
 }

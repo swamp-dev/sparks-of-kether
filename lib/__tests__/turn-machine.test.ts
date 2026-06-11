@@ -1438,6 +1438,65 @@ describe('turnReducer — react sub-phase: react-retry', () => {
     );
     expect(result.ok).toBe(false);
   });
+
+  it('rejects react-retry with chesed-hoarding-blocks-retry when hoardingFail is set (#332)', () => {
+    const player = makePlayer({ id: 'p1', position: 'chesed', hand: [1, 2] });
+    const failedOutcome: CheckOutcome = {
+      rolled: 1,
+      statContribution: 5,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 6,
+      effectiveDC: 13,
+      pass: false,
+    };
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: failedOutcome,
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0, hoardingFail: true },
+      },
+    );
+    const result = turnReducer({ state }, { kind: 'react-retry' }, RNG);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('chesed-hoarding-blocks-retry');
+  });
+});
+
+describe('turnReducer — Chesed hoarding-fail: accept-setback applies +2 Separation (#332)', () => {
+  it('accept-setback on hoarding-fail state → Separation +2 instead of +1', () => {
+    const player = makePlayer({ id: 'p1', position: 'chesed', hand: [1, 2] });
+    const failedOutcome: CheckOutcome = {
+      rolled: 1,
+      statContribution: 5,
+      modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+      total: 6,
+      effectiveDC: 13,
+      pass: false,
+    };
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: failedOutcome,
+        separation: 0,
+        encounter: { sefirah: 'chesed', seed: 1, retryCount: 0, hoardingFail: true },
+      },
+    );
+    const result = turnReducer(
+      { state },
+      { kind: 'accept-setback', sefirah: 'chesed' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.next.state.separation).toBe(2);
+  });
 });
 
 describe('turnReducer — react sub-phase: react-continue (#385)', () => {

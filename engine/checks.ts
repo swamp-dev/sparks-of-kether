@@ -994,10 +994,27 @@ export function resolveChallenge(
     : stateAfterBuffConsume;
 
   if (!effectiveOutcome.pass) {
+    // #332 — Chesed Hoarding. Mark hoardingFail on the encounter envelope
+    // when: failed at Chesed, no gifts staged (not unfolding), and the
+    // player had cards in hand they could have given. The turn-machine
+    // reads this to block react-retry and route accept-setback to +2 Sep.
+    // Gated on encounter being present and at Chesed so test fixtures
+    // that omit an envelope pass through unchanged (same reference).
+    const chesedHoardingFail =
+      sefirah === 'chesed' &&
+      !chesedUnfolding &&
+      player.hand.length > 0 &&
+      stateAfterNetzachFailBump.encounter?.sefirah === 'chesed';
+    const stateAfterHoardingMark = chesedHoardingFail
+      ? {
+          ...stateAfterNetzachFailBump,
+          encounter: { ...stateAfterNetzachFailBump.encounter!, hoardingFail: true as const },
+        }
+      : stateAfterNetzachFailBump;
     return {
       ok: true,
       value: {
-        newState: stateAfterNetzachFailBump,
+        newState: stateAfterHoardingMark,
         outcome: effectiveOutcome,
         ...(hod !== undefined ? { hodWordMatch: hod.event } : {}),
         ...(yesod !== undefined ? { yesodDreamPeek: yesod.event } : {}),
@@ -1294,6 +1311,32 @@ export function acceptSetback(state: GameState, input: SetbackInput): GameState 
   }
 
   return rollbackPosition(afterShells, input.playerId);
+}
+
+/**
+ * #332 — Absorb a Chesed hoarding failure.
+ *
+ * Fires when the player failed at Chesed with cards in hand but staged
+ * no gifts (the "hoarding" branch per design § 3.3). The penalty is
+ * +2 Separation — a `check-failed-hoarding` event rather than the
+ * standard `check-failed-accepted` event, so the counter log shows
+ * the hoarding penalty as its own category.
+ *
+ * No position rollback (this is not a shortcut path), and no retry
+ * allowed (the turn-machine blocks `react-retry` when
+ * `encounter.hoardingFail` is set).
+ */
+export function acceptHoardingSetback(
+  state: GameState,
+  playerId: string,
+  sefirah: SefirahKey,
+): GameState {
+  const afterCounterTick = applyEvent(state, {
+    kind: 'check-failed-hoarding',
+    playerId,
+    sefirah,
+  });
+  return maybeActivateShell(afterCounterTick);
 }
 
 /**
