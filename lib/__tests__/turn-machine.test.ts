@@ -1488,11 +1488,7 @@ describe('turnReducer — Chesed hoarding-fail: accept-setback applies +2 Separa
         encounter: { sefirah: 'chesed', seed: 1, retryCount: 0, hoardingFail: true },
       },
     );
-    const result = turnReducer(
-      { state },
-      { kind: 'accept-setback', sefirah: 'chesed' },
-      RNG,
-    );
+    const result = turnReducer({ state }, { kind: 'accept-setback', sefirah: 'chesed' }, RNG);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.next.state.separation).toBe(2);

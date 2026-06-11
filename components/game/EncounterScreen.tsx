@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { arcanumByNumber, sefirahByKey, zodiacSigns } from '@/data';
 import { Hand } from '@/components/hand/Hand';
 import type { EncounterAvatarKey } from '@/data/types';
@@ -17,12 +17,14 @@ import { pickFraming } from '@/data/pantheons/greco-roman/framing';
 import { sefirahTwist } from '@/data/sefirah-twists';
 import {
   CARD_BURN_BONUS,
+  CHESED_DC_REDUCTION_CAP,
   SHORTCUT_DC_PENALTY,
   SPARK_BURN_BONUS,
   rollCheck,
   type CheckModifiers,
   type CheckOutcome,
 } from '@/engine/checks';
+import { isHoardingActive } from '@/engine/shells';
 import type { Rng } from '@/engine/rng';
 import type { PlayerState } from '@/engine/types';
 import { StatSheet } from '@/components/player/StatSheet';
@@ -313,6 +315,11 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   // #286: selected card in the burn-discard picker (select → confirm flow).
   const [burnDiscardSelected, setBurnDiscardSelected] = useState<number | undefined>(undefined);
 
+  // #332 — Chesed gift staging UI state. Two-step pick flow:
+  // idle → pick-card → pick-recipient → idle (card staged).
+  const [giftPickStep, setGiftPickStep] = useState<'idle' | 'pick-card' | 'pick-recipient'>('idle');
+  const [giftPickCard, setGiftPickCard] = useState<number | undefined>(undefined);
+
   // Reset staged counters when the engine sub-phase loops back to
   // 'prep' (a `react-retry`). The engine's `pendingModifiers` carries
   // the cumulative card / spark burns from the failed roll forward;
@@ -528,6 +535,35 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   );
   const requiresBurn =
     requiresBurnSefirah !== undefined && cumulativeCardBurns === 0 && maxCardBurns > 0;
+
+  // #332 — Chesed gift prep derivations.
+  const isChesed = context.sefirah === 'chesed';
+  const chesedShellActive = isChesed && isHoardingActive(turn.state);
+  const stagedGiftCards = turn.state.pendingModifiers.giftCards;
+  const giftRecipientCandidates = useMemo(() => {
+    const activeId = turn.state.activePlayerId;
+    return turn.state.players
+      .filter((p) => p.id !== activeId)
+      .map((p) => ({ id: p.id, name: p.name }));
+  }, [turn.state]);
+
+  const addGiftCard = useCallback(
+    (arcanum: number, recipientId: string): void => {
+      turn.prepAddModifier({ kind: 'gift-card', arcanum, recipientId });
+      setGiftPickStep('idle');
+      setGiftPickCard(undefined);
+    },
+    [turn],
+  );
+
+  const removeGiftCard = useCallback(
+    (arcanum: number, recipientId: string): void => {
+      turn.prepRemoveModifier({ kind: 'gift-card', arcanum, recipientId });
+    },
+    [turn],
+  );
+
+  const hoardingFail = turn.state.encounter?.hoardingFail === true;
 
   const assistTotal = useMemo(() => {
     return allies
@@ -1039,6 +1075,25 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             frameBorderClass={frameTokens.frameBorder}
             requiresBurn={requiresBurn}
             {...(requiresBurnSefirah !== undefined ? { requiresBurnSefirah } : {})}
+            {...(isChesed
+              ? {
+                  sefirah: context.sefirah,
+                  playerHand: player?.hand ?? [],
+                  chesedShellActive,
+                  stagedGiftCards,
+                  giftPickStep,
+                  ...(giftPickCard !== undefined ? { giftPickCard } : {}),
+                  onGiftPickStart: () => setGiftPickStep('pick-card'),
+                  onGiftCardSelect: (arcanum: number) => {
+                    setGiftPickCard(arcanum);
+                    setGiftPickStep('pick-recipient');
+                  },
+                  onGiftRecipientSelect: addGiftCard,
+                  onGiftRemove: removeGiftCard,
+                  giftRecipientCandidates,
+                  baseDC,
+                }
+              : {})}
           />
           {awaitingBurnDiscard && player ? (
             <div
@@ -1097,6 +1152,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           onAccept={handleAccept}
           reducedMotion={reducedMotion}
           glowClass={frameTokens.buttonGlow}
+          {...(hoardingFail ? { hoardingFail: true } : {})}
           {...(avatarHasCopy ? { avatarName: pantheon.avatarNames[avatarKey].primary } : {})}
           {...(verdictLine !== undefined ? { verdictLine } : {})}
         />
@@ -1144,6 +1200,22 @@ interface PrepPanelProps {
   readonly requiresBurn?: boolean;
   /** Which Sefirah triggered the gate — drives the hint copy. */
   readonly requiresBurnSefirah?: 'gevurah' | 'tiferet' | 'binah';
+  // #332 — Chesed gift staging props. Only passed when sefirah === 'chesed'.
+  readonly sefirah?: string;
+  readonly playerHand?: readonly number[];
+  readonly chesedShellActive?: boolean;
+  readonly stagedGiftCards?: readonly {
+    readonly arcanum: number;
+    readonly recipientId: string;
+  }[];
+  readonly giftPickStep?: 'idle' | 'pick-card' | 'pick-recipient';
+  readonly giftPickCard?: number;
+  readonly onGiftPickStart?: () => void;
+  readonly onGiftCardSelect?: (arcanum: number) => void;
+  readonly onGiftRecipientSelect?: (arcanum: number, recipientId: string) => void;
+  readonly onGiftRemove?: (arcanum: number, recipientId: string) => void;
+  readonly giftRecipientCandidates?: readonly { readonly id: string; readonly name: string }[];
+  readonly baseDC?: number;
 }
 
 function PrepPanel(props: PrepPanelProps): JSX.Element {
@@ -1173,6 +1245,18 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     frameBorderClass,
     requiresBurn,
     requiresBurnSefirah,
+    sefirah,
+    playerHand,
+    chesedShellActive,
+    stagedGiftCards,
+    giftPickStep,
+    giftPickCard,
+    onGiftPickStart,
+    onGiftCardSelect,
+    onGiftRecipientSelect,
+    onGiftRemove,
+    giftRecipientCandidates,
+    baseDC,
   } = props;
   return (
     <div className="mt-4 space-y-4" data-encounter-prep>
@@ -1225,6 +1309,84 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
           <p className="mt-1 text-xs opacity-60">
             Assist contribution: <span data-assist-total>+{assistTotal}</span>
           </p>
+        </fieldset>
+      ) : null}
+
+      {sefirah === 'chesed' ? (
+        <fieldset data-modifier="gift-card">
+          <legend className="text-xs uppercase tracking-widest opacity-60">
+            Chesed unfolds. Give to lower the threshold.
+          </legend>
+          {chesedShellActive ? (
+            <p data-shell-blocked className="mt-1 text-xs opacity-70">
+              The Hoarding seals the exchange. No gifts flow.
+            </p>
+          ) : (playerHand ?? []).length === 0 ? (
+            <p data-empty-hand className="mt-1 text-xs opacity-70">
+              Chesed asks nothing. Pass freely.
+            </p>
+          ) : (
+            <div className="mt-1 space-y-1">
+              {(stagedGiftCards ?? []).map((g, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span>Card {g.arcanum}</span>
+                  <span className="opacity-60">→</span>
+                  <span>
+                    {(giftRecipientCandidates ?? []).find((r) => r.id === g.recipientId)?.name ??
+                      g.recipientId}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onGiftRemove?.(g.arcanum, g.recipientId)}
+                    className="ml-auto text-xs opacity-60 hover:opacity-100"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              {giftPickStep === 'idle' ? (
+                <button
+                  type="button"
+                  data-action="add-gift"
+                  onClick={() => onGiftPickStart?.()}
+                  className="text-xs underline opacity-70"
+                >
+                  Add a gift
+                </button>
+              ) : giftPickStep === 'pick-card' ? (
+                <Hand
+                  hand={playerHand ?? []}
+                  visible
+                  layout="inline"
+                  onCardSelect={(n) => onGiftCardSelect?.(n)}
+                  ariaLabel="Select a card to gift"
+                />
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {(giftRecipientCandidates ?? []).map((ally) => (
+                    <button
+                      key={ally.id}
+                      type="button"
+                      onClick={() =>
+                        giftPickCard !== undefined && onGiftRecipientSelect?.(giftPickCard, ally.id)
+                      }
+                      className="rounded border border-veil/30 px-3 py-1 text-sm"
+                    >
+                      {ally.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {(stagedGiftCards ?? []).length > 0 && baseDC !== undefined ? (
+                <p data-dc-preview className="text-xs opacity-70">
+                  DC {baseDC} →{' '}
+                  {baseDC - Math.min((stagedGiftCards ?? []).length + 1, CHESED_DC_REDUCTION_CAP)} (
+                  {(stagedGiftCards ?? []).length} gift
+                  {(stagedGiftCards ?? []).length !== 1 ? 's' : ''})
+                </p>
+              ) : null}
+            </div>
+          )}
         </fieldset>
       ) : null}
 
@@ -1380,6 +1542,11 @@ interface ReactPanelProps {
   readonly reducedMotion: boolean;
   readonly glowClass: string;
   /**
+   * #332 — Chesed hoarding fail. When true, hide the retry button and
+   * change the accept copy to show the +2 Separation penalty.
+   */
+  readonly hoardingFail?: boolean;
+  /**
    * Greek avatar name (e.g. "Hermes", "Demeter"). Optional — when
    * absent (demo / tests without a player sign), the placeholder
    * "The gate considers you." line is rendered instead. Roman names
@@ -1403,6 +1570,7 @@ function ReactPanel({
   onAccept,
   reducedMotion,
   glowClass,
+  hoardingFail,
   avatarName,
   verdictLine,
 }: ReactPanelProps): JSX.Element {
@@ -1450,26 +1618,27 @@ function ReactPanel({
         </button>
       ) : (
         <div className="mt-2 flex gap-2">
-          <button
-            type="button"
-            onClick={onRetry}
-            data-fail-choice="retry"
-            // Fail / retry: bright option — burn-another-card is the
-            // active choice. Borders use the Sefirah glow so it
-            // stays themed.
-            className={`rounded border border-illumination px-4 py-2 text-sm ${glowClass}`}
-          >
-            Burn another card to retry
-          </button>
+          {!hoardingFail ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              data-fail-choice="retry"
+              // Fail / retry: bright option — burn-another-card is the
+              // active choice. Borders use the Sefirah glow so it
+              // stays themed.
+              className={`rounded border border-illumination px-4 py-2 text-sm ${glowClass}`}
+            >
+              Burn another card to retry
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onAccept}
             data-fail-choice="accept"
-            // Fail / accept: dim/heavy — visually the resigned
-            // option. No glow; muted background; opacity dropped.
+            // Fail / accept: dim/heavy — visually the resigned option.
             className="rounded bg-veil/10 px-4 py-2 text-sm opacity-70"
           >
-            Accept setback
+            {hoardingFail ? 'Accept setback (+2 Separation)' : 'Accept setback'}
           </button>
         </div>
       )}

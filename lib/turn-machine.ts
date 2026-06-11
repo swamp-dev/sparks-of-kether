@@ -1732,10 +1732,12 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
         };
       }
       // #332 — Chesed hoarding: route through the dedicated hoarding
-      // setback function which applies +2 Separation (check-failed-hoarding
-      // event) instead of the standard +1.
+      // setback function which applies +2 Separation (chesed-hoarding-fail
+      // event) instead of the standard +1. Use state.encounter.sefirah
+      // (the authoritative server-side value) not event.sefirah to prevent
+      // a malformed client from corrupting the event log.
       const next = state.encounter?.hoardingFail
-        ? acceptHoardingSetback(state, player.id, event.sefirah)
+        ? acceptHoardingSetback(state, player.id, state.encounter.sefirah)
         : acceptSetback(state, {
             playerId: player.id,
             sefirah: event.sefirah,

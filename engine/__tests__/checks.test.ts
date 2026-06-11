@@ -2822,7 +2822,10 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
     const state = makeState(
       { position: 'chesed', stats: statSheet({ lovingkindness: 0 }), hand: [1, 2] },
       {
-        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, giftCards: [{ arcanum: 1, recipientId: 'p2' }] },
+        pendingModifiers: {
+          ...EMPTY_PENDING_MODIFIERS,
+          giftCards: [{ arcanum: 1, recipientId: 'p2' }],
+        },
         encounter: { sefirah: 'chesed', seed: 1, retryCount: 0 },
       },
     );
@@ -2870,20 +2873,14 @@ describe('resolveChallenge — Chesed Overflow (#486)', () => {
 // ──────────────── acceptHoardingSetback (#332) ────────────────
 
 describe('acceptHoardingSetback (#332)', () => {
-  it('applies +2 Separation (check-failed-hoarding event)', () => {
-    const state = makeState(
-      { position: 'chesed', id: 'p1' },
-      { separation: 0 },
-    );
+  it('applies +2 Separation (chesed-hoarding-fail event)', () => {
+    const state = makeState({ position: 'chesed', id: 'p1' }, { separation: 0 });
     const after = acceptHoardingSetback(state, 'p1', 'chesed');
     expect(after.separation).toBe(2);
   });
 
   it('leaves illumination unchanged', () => {
-    const state = makeState(
-      { position: 'chesed', id: 'p1' },
-      { illumination: 3, separation: 0 },
-    );
+    const state = makeState({ position: 'chesed', id: 'p1' }, { illumination: 3, separation: 0 });
     const after = acceptHoardingSetback(state, 'p1', 'chesed');
     expect(after.illumination).toBe(3);
   });

@@ -73,7 +73,7 @@ export type GameEvent =
        * Distinct from `check-failed-accepted` so a counter-log shows
        * the hoarding penalty separately.
        */
-      readonly kind: 'check-failed-hoarding';
+      readonly kind: 'chesed-hoarding-fail';
       readonly playerId: string;
       readonly sefirah: SefirahKey;
     };
@@ -106,7 +106,7 @@ export function deltaFor(event: GameEvent): CounterDelta {
     case 'gift-refused':
       return { illumination: 0, separation: 1 };
     case 'shell-activated':
-    case 'check-failed-hoarding':
+    case 'chesed-hoarding-fail':
       return { illumination: 0, separation: 2 };
   }
 }
