@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { arcanumByNumber } from '@/data';
 import { ArcanumCard } from '@/components/cards/ArcanumCard';
 import { useCardDrag } from '@/lib/hooks/useCardDrag';
