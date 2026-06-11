@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { arcanumByNumber } from '@/data';
 import { ArcanumCard } from '@/components/cards/ArcanumCard';
 import { useCardDrag } from '@/lib/hooks/useCardDrag';
@@ -344,6 +344,13 @@ export function Hand({
 
   // Reduced-motion: skip the peek animation entirely — always show the
   // full hand so no card information is hidden behind a motion barrier.
+  // useLayoutEffect fires before the first paint (#56) so reduced-motion
+  // users never see the peek position on mount. The useEffect below
+  // handles live OS-level preference changes after mount.
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setHandExpanded(true);
+  }, []);
   useEffect(() => {
     if (reduceMotion) setHandExpanded(true);
   }, [reduceMotion]);
