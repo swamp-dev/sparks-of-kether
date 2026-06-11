@@ -1142,11 +1142,9 @@ export function PlayScreen({
           </p>
           <p className="text-xs text-veil/70">
             <span className="min-[768px]:hidden">Tap</span>
-            <span className="hidden min-[768px]:inline">Hover</span>
-            {' '}a card to see its paths, then{' '}
+            <span className="hidden min-[768px]:inline">Hover</span> a card to see its paths, then{' '}
             <span className="min-[768px]:hidden">tap</span>
-            <span className="hidden min-[768px]:inline">click</span>
-            {' '}
+            <span className="hidden min-[768px]:inline">click</span>{' '}
             <span aria-hidden className="text-veil/90">
               ✕
             </span>{' '}
