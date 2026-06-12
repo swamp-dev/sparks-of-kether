@@ -50,8 +50,11 @@ describe('HINTS registry', () => {
     ]);
   });
 
-  it('is frozen (immutable at runtime)', () => {
+  it('is deeply frozen (array wrapper and each entry are immutable at runtime)', () => {
     expect(Object.isFrozen(HINTS)).toBe(true);
+    HINTS.forEach((h) => {
+      expect(Object.isFrozen(h), `entry '${h.id}' must be frozen`).toBe(true);
+    });
   });
 
   it('prerequisiteId chain forms a linear sequence matching the spec', () => {
