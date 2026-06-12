@@ -68,6 +68,7 @@ export function useHints(gameState: GameState): HintDefinition | null {
 
   // Reset tracking state on unmount so StrictMode's remount starts clean
   // and does not misread a stale prevPhase as a new transition.
+  // turnNumberRef intentionally omitted: it must not regress on StrictMode's simulated remount.
   useEffect(() => {
     return () => {
       prevPhaseRef.current = undefined;
@@ -127,7 +128,9 @@ export function useHints(gameState: GameState): HintDefinition | null {
   const activeHint = computeActiveHint(gameState, turnNumberRef.current);
 
   // Sync the module-level imperative accessor after commit so it is never
-  // written during an abandoned Concurrent Mode render.
+  // written during an abandoned Concurrent Mode render. Tradeoff: callers of
+  // getActiveHint() see a one-render stale value in the window between commit
+  // and effect flush — acceptable for event-handler use (handlers run post-effect).
   useEffect(() => {
     _activeHint = activeHint;
   });
