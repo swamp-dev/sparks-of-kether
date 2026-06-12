@@ -25,8 +25,7 @@ function isTriggerMatch(hint: HintDefinition, gameState: GameState, turnNumber: 
       return true;
     case 'phase-enter':
       return (
-        gameState.phase === when.phase &&
-        (when.minTurn === undefined || turnNumber >= when.minTurn)
+        gameState.phase === when.phase && (when.minTurn === undefined || turnNumber >= when.minTurn)
       );
     case 'first-event':
       return hasFirstEventFired(when.event);
@@ -102,7 +101,11 @@ export function useHints(gameState: GameState): HintDefinition | null {
 
     // Detect discard-prompt: pendingDiscard transitions from undefined to defined.
     const hasPendingDiscard = gameState.pendingDiscard !== undefined;
-    if (hasPendingDiscard && !prevHasPendingDiscardRef.current && !hasFirstEventFired('discard-prompt')) {
+    if (
+      hasPendingDiscard &&
+      !prevHasPendingDiscardRef.current &&
+      !hasFirstEventFired('discard-prompt')
+    ) {
       markFirstEventFired('discard-prompt');
       setVersion((v) => v + 1);
     }
