@@ -66,6 +66,16 @@ export function useHints(gameState: GameState): HintDefinition | null {
     return () => window.removeEventListener(HINT_CHANGE_EVENT, handler);
   }, []);
 
+  // Reset tracking state on unmount so StrictMode's remount starts clean
+  // and does not misread a stale prevPhase as a new transition.
+  useEffect(() => {
+    return () => {
+      prevPhaseRef.current = undefined;
+      prevClearedSizeRef.current = 0;
+      prevHasPendingDiscardRef.current = false;
+    };
+  }, []);
+
   // Run after every render to detect game-state transitions and mark first-events.
   // No dep array = runs after every render; prevPhaseRef holds the previous render's phase.
   useEffect(() => {
@@ -115,6 +125,12 @@ export function useHints(gameState: GameState): HintDefinition | null {
   });
 
   const activeHint = computeActiveHint(gameState, turnNumberRef.current);
-  _activeHint = activeHint;
+
+  // Sync the module-level imperative accessor after commit so it is never
+  // written during an abandoned Concurrent Mode render.
+  useEffect(() => {
+    _activeHint = activeHint;
+  });
+
   return activeHint;
 }

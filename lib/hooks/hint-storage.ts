@@ -16,6 +16,7 @@ export function isDismissed(id: string): boolean {
 
 export function markDismissed(id: string | undefined): void {
   if (id === undefined) return;
+  if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(`${HINT_PREFIX}${id}`, 'dismissed');
     window.dispatchEvent(new Event(HINT_CHANGE_EVENT));
@@ -25,6 +26,7 @@ export function markDismissed(id: string | undefined): void {
 }
 
 export function clearAllHints(): void {
+  if (typeof window === 'undefined') return;
   try {
     const keys = Object.keys(localStorage).filter((k) => k.startsWith(HINT_PREFIX));
     keys.forEach((k) => localStorage.removeItem(k));
@@ -44,6 +46,7 @@ export function hasFirstEventFired(event: FirstEvent): boolean {
 }
 
 export function markFirstEventFired(event: FirstEvent): void {
+  if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(`${FIRST_EVENT_PREFIX}${event}`, 'fired');
   } catch {

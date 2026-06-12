@@ -1,3 +1,4 @@
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useHints, markDismissed, clearAllHints, isDismissed } from '../useHints';
@@ -203,6 +204,30 @@ describe('useHints', () => {
 
       // tutorial-meditate: phase-enter:move, minTurn:2 (turn=2≥2), prereq=draw-replenish (just dismissed)
       expect(result.current?.id).toBe('tutorial-meditate');
+    });
+  });
+
+  describe('StrictMode: turn counter increments exactly once per end→move cycle', () => {
+    it('draw-replenish surfaces at turn 2 even under StrictMode double-invoke', () => {
+      localStorage.setItem('sok:hint:tutorial-welcome', 'dismissed');
+      localStorage.setItem('sok:hint:tutorial-hand-intro', 'dismissed');
+      localStorage.setItem('sok:hint:tutorial-play-card', 'dismissed');
+      sessionStorage.setItem('sok:first-event:move-phase', 'fired');
+
+      const { result, rerender } = renderHook(({ state }) => useHints(state), {
+        wrapper: React.StrictMode,
+        initialProps: { state: makeState({}, { phase: 'move' }) },
+      });
+
+      act(() => {
+        rerender({ state: makeState({}, { phase: 'end' }) });
+      });
+      act(() => {
+        rerender({ state: makeState({}, { phase: 'move' }) });
+      });
+
+      // draw-replenish triggers at exactly turn 2; phantom-increment to 3+ would miss it
+      expect(result.current?.id).toBe('tutorial-draw-replenish');
     });
   });
 
