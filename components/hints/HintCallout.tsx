@@ -95,8 +95,8 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
   const handleDismiss = useCallback(() => {
     if (!hint) return;
     if (isToast) {
-      // Animate out first, then fire the dismiss event so the parent
-      // re-evaluates useHints after the exit animation completes.
+      // Guard against double-tap: if the exit timer is already running, do nothing.
+      if (exitTimerRef.current !== null) return;
       setLeaving(true);
       exitTimerRef.current = setTimeout(() => markDismissed(hint.id), 200);
     } else {
@@ -121,7 +121,7 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
       <div
         className={[
           'fixed bottom-28 left-1/2 z-[55] -translate-x-1/2',
-          'transition-[opacity,transform] duration-200',
+          'transition-opacity duration-200 motion-safe:transition-[opacity,transform]',
           leaving
             ? 'opacity-0 ease-flow'
             : shown
