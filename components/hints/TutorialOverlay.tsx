@@ -48,7 +48,7 @@ export function TutorialOverlay({ hint }: TutorialOverlayProps): JSX.Element | n
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'Tab' || !panelRef.current) return;
     const focusables = panelRef.current.querySelectorAll<HTMLElement>(
-      'button:not([tabindex="-1"]), [tabindex="0"]',
+      'a[href], button:not([tabindex="-1"]), [tabindex="0"]',
     );
     if (focusables.length === 0) return;
     const first = focusables[0];
