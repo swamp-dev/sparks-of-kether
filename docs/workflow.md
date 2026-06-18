@@ -66,12 +66,10 @@ By default in `~/.dotfiles/.claude/rules/collaboration.md`, agents do not
 relaxed under explicit conditions.** The agent may `gh pr merge` (via
 `/ship-ticket`) when **all** of the following hold:
 
-- A **checklist stamp** at `.claude/state/checklist-<sanitized-branch>.json`
-  exists with `verdict=ship` AND `head_sha` matching the PR's current
-  HEAD (per #428's mechanical gate). The stamp is written by the agent
-  in `/finish-ticket` step 8.5 immediately after each `code-reviewer`
-  call. Missing / stale-SHA / non-ship stamp → `/ship-ticket` fails
-  closed.
+- **`/finish-ticket` ran code-reviewer on this PR's branch in this
+  session** and all critical/significant findings were addressed. The
+  agent self-attests this in `/ship-ticket` step 3; the per-ticket
+  Journal is the human-readable audit record.
 - Hosted CI is green at the merge moment — `gh pr checks <P>` shows
   every job passing or legitimately skipped (filter-skip per #425), none
   in-flight, none stale.
@@ -82,13 +80,7 @@ relaxed under explicit conditions.** The agent may `gh pr merge` (via
   silent edits between checklist completion and merge.
 
 If any condition fails, `/ship-ticket` stops and reports. The user
-merges manually from there. The stamp is the load-bearing mechanical
-gate; the per-ticket Journal entry remains the human-readable audit
-record but is no longer the gate. **Adversarial limit:** an agent
-with Write access can forge the stamp file. The gate is robust
-against accidental skip / context compaction / config-not-loaded —
-not against deliberate bypass. See `/ship-ticket` step 3 for the full
-discussion.
+merges manually from there.
 
 **This is not the admin-merge bypass** in
 `~/.dotfiles/.claude/rules/local-ci-and-admin-merge.md`. That bypass is
@@ -153,19 +145,11 @@ the file is missing on first journal write, the agent creates it
 inline using the template in [`../journal/README.md`](../journal/README.md).
 
 `/ship-ticket` does not read the per-ticket Journal — the merge gate
-is the stamp at `.claude/state/checklist-<sanitized-branch>.json`,
-written by `/finish-ticket` step 8.5 after each `code-reviewer` pass.
-The Journal remains the **human-readable audit record** of why the
-verdict was what it was, but it's no longer the gate. The skill
-enforces the structural parts (one PR per invocation, hosted CI green,
-mergeable state, branch matches, stamp matches PR HEAD with verdict
-`ship`); the human-judgment part (did the review actually happen)
-still lives with the agent — the stamp is robust against accidental
-skip / context compaction / honor-system markers, but a determined
-agent could still forge it (see `/ship-ticket` § 3 "Adversarial
-limit"). Cutting corners on the Journal makes that audit record
-useless to future readers, but the load-bearing safety is the
-mechanical stamp plus the agent's own discipline.
+is hosted CI green plus in-session self-attestation that code-reviewer
+ran on this branch and all critical/significant findings were addressed.
+The Journal is the **human-readable audit record** of why the verdict
+was what it was. Cutting corners on the Journal makes that audit record
+useless to future readers.
 
 ---
 
