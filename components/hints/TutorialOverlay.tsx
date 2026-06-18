@@ -26,16 +26,13 @@ export function TutorialOverlay({ hint }: TutorialOverlayProps): JSX.Element | n
   }, [hint?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-focus panel on mount and handle Escape key (treat as confirmation).
-  const hintIdRef = useRef(hint?.id);
-  hintIdRef.current = hint?.id;
   useEffect(() => {
     if (!hint) return;
     panelRef.current?.focus();
     if (!isExplicitButton) return;
+    const hintId = hint.id;
     function onKey(e: KeyboardEvent): void {
-      if (e.key === 'Escape' && hintIdRef.current !== undefined) {
-        markDismissed(hintIdRef.current);
-      }
+      if (e.key === 'Escape') markDismissed(hintId);
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -45,6 +42,30 @@ export function TutorialOverlay({ hint }: TutorialOverlayProps): JSX.Element | n
     if (!hint) return;
     markDismissed(hint.id);
   }, [hint]);
+
+  // Focus trap: Tab and Shift+Tab loop within the panel's focusable elements.
+  // Mirrors the pattern used in SettingsButton.tsx.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key !== 'Tab' || !panelRef.current) return;
+    const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+      'button:not([tabindex="-1"]), [tabindex="0"]',
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (!first || !last) return;
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
 
   if (!hint || hint.where.kind !== 'overlay') return null;
 
@@ -58,6 +79,7 @@ export function TutorialOverlay({ hint }: TutorialOverlayProps): JSX.Element | n
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        onKeyDown={handleKeyDown}
         className={[
           'relative mx-auto mt-[20vh] max-w-sm rounded-xl border border-veil/20 bg-ground/90 p-6 shadow-2xl outline-none',
           'transition-opacity duration-300 ease-emerge motion-safe:transition-[opacity,transform]',
