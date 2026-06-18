@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HintDefinition, NamedRegion } from '@/data/hints';
 import { markDismissed } from '@/lib/hooks/useHints';
 
@@ -52,7 +52,7 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
   }, [hint?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Position the region callout against the anchor's bounding rect.
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!hint || hint.where.kind !== 'region' || isToast) {
       setPosition(null);
       return;
@@ -84,13 +84,21 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
     };
   }, [hint?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Stored exit-animation timer so it can be cleared on unmount.
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (exitTimerRef.current !== null) clearTimeout(exitTimerRef.current);
+    };
+  }, []);
+
   const handleDismiss = useCallback(() => {
     if (!hint) return;
     if (isToast) {
       // Animate out first, then fire the dismiss event so the parent
       // re-evaluates useHints after the exit animation completes.
       setLeaving(true);
-      setTimeout(() => markDismissed(hint.id), 200);
+      exitTimerRef.current = setTimeout(() => markDismissed(hint.id), 200);
     } else {
       markDismissed(hint.id);
     }
@@ -134,10 +142,11 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
   // ── Region callout variant ───────────────────────────────────────────────
   if (hint.where.kind !== 'region') return null;
 
+  // position.top already has the 8px gap applied by the layout effect.
   const positionStyle: React.CSSProperties = position
     ? {
         position: 'fixed',
-        top: position.flipped ? `${position.top}px` : `${position.top - 8}px`,
+        top: `${position.top}px`,
         left: `${position.left}px`,
         transform: 'translateX(-50%)',
       }
@@ -158,7 +167,7 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
         style={positionStyle}
         className={[
           'z-[55] max-w-xs',
-          'transition-[opacity,transform] duration-200 ease-emerge',
+          'transition-opacity duration-200 ease-emerge motion-safe:transition-[opacity,transform]',
           shown ? 'scale-100 opacity-100' : 'opacity-0 motion-safe:scale-95',
         ].join(' ')}
         role="tooltip"
@@ -180,7 +189,7 @@ export function HintCallout({ hint }: HintCalloutProps): JSX.Element | null {
           <p className="font-sans text-sm leading-relaxed text-veil">{hint.copy}</p>
           {hasExplicitButton && (
             <button
-              onClick={() => markDismissed(hint.id)}
+              onClick={handleDismiss}
               className="mt-3 text-sm font-semibold text-kether transition-colors hover:text-kether/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kether/60"
             >
               Got it
