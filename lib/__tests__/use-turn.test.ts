@@ -1365,6 +1365,29 @@ const _typeCheck: PrepModifier = { kind: 'card-burn', arcanum: 0 };
 void _typeCheck;
 
 describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
+  /**
+   * Like `hookViaMoveIntoPrep` but lands at Yesod (malkuth ↔ yesod is
+   * path 32, arcanum 21): a plain check with no retry gate. Chesed's
+   * hoarding rule (#332) refuses `react-retry` with a non-empty hand,
+   * which would mask the retry cases below. Hand after the move is
+   * [7, 11, 14], same as the Chesed helper.
+   */
+  function hookIntoYesodPrep() {
+    const player: PlayerState = makePlayer({
+      id: 'p1',
+      name: 'Andy',
+      position: 'malkuth',
+      hand: [21, 7, 11, 14],
+      sparksHeld: new Set(),
+    });
+    const initialState = makeState({}, { players: [player], activePlayerId: 'p1' });
+    const harness = renderHook(() => useTurn({ initialState, rng: seededRng(1) }));
+    act(() => {
+      harness.result.current.move(32);
+    });
+    return harness;
+  }
+
   // #344: one staged burn must cost exactly the card(s) the player
   // chose in the release picker. The picker stages the chosen arcana
   // via `prepStageCardBurns`; `prep-confirm` is the single consumer.
@@ -1379,7 +1402,7 @@ describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
 
   it('stages exactly the chosen arcana when nothing is staged yet (hot-seat picker)', () => {
     // After move(16) the hand is [7, 11, 14].
-    const { result } = hookViaMoveIntoPrep();
+    const { result } = hookIntoYesodPrep();
     act(() => {
       result.current.prepStageCardBurns([14]);
     });
@@ -1387,12 +1410,12 @@ describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
   });
 
   it('hot-seat: picker-chosen card is the only card consumed, +3 once', () => {
-    const { result } = hookViaMoveIntoPrep();
+    const { result } = hookIntoYesodPrep();
     act(() => {
       result.current.prepStageCardBurns([14]);
     });
     act(() => {
-      result.current.submitChallenge('chesed', {
+      result.current.submitChallenge('yesod', {
         assistStats: [],
         cardBurns: 1,
         sparkBurns: 0,
@@ -1408,7 +1431,7 @@ describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
   });
 
   it('replaces head-of-hand staging (multiplayer stepper) with the chosen card', () => {
-    const { result } = hookViaMoveIntoPrep();
+    const { result } = hookIntoYesodPrep();
     act(() => {
       result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
     });
@@ -1419,12 +1442,12 @@ describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
   });
 
   it('on retry, keeps the consumed burn and adds only the new choice', () => {
-    const { result } = hookViaMoveIntoPrep();
+    const { result } = hookIntoYesodPrep();
     act(() => {
       result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
     });
     act(() => {
-      result.current.prepConfirm('chesed', FAIL_OUTCOME);
+      result.current.prepConfirm('yesod', FAIL_OUTCOME);
     });
     act(() => {
       result.current.reactRetry();
@@ -1436,7 +1459,7 @@ describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
     });
     expect(result.current.pendingModifiers?.cardBurns).toEqual([7, 14]);
     act(() => {
-      result.current.submitChallenge('chesed', {
+      result.current.submitChallenge('yesod', {
         assistStats: [],
         cardBurns: 2, // cumulative: 1 prior + 1 new
         sparkBurns: 0,
@@ -1452,18 +1475,18 @@ describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
     // Legacy count-based path (no picker): on retry the cumulative
     // count includes the prior consumed burn, so only ONE new card may
     // be taken from the hand head.
-    const { result } = hookViaMoveIntoPrep();
+    const { result } = hookIntoYesodPrep();
     act(() => {
       result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
     });
     act(() => {
-      result.current.prepConfirm('chesed', FAIL_OUTCOME);
+      result.current.prepConfirm('yesod', FAIL_OUTCOME);
     });
     act(() => {
       result.current.reactRetry();
     });
     act(() => {
-      result.current.submitChallenge('chesed', {
+      result.current.submitChallenge('yesod', {
         assistStats: [],
         cardBurns: 2,
         sparkBurns: 0,

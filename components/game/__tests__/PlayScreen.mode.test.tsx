@@ -89,22 +89,19 @@ describe('PlayScreen — EncounterScreen mode derivation (#278)', () => {
     // landing in `state.pendingModifiers.cardBurns` is the
     // observable proof the per-step event reached the wire layer.
     //
-    // Observable DOM signal: EncounterScreen renders the
-    // `[data-cumulative-burns]` block only when
-    // `pendingModifiers.cardBurns.length > 0` (the `isRetry` flag in
-    // the prep panel — surfaces "X cards burned, +Y modifier"
-    // copy so a player on a retry sees what's locked in). Pre-click
-    // the engine is fresh (`pendingModifiers.cardBurns` is empty);
-    // after one stepper click in multiplayer mode the dispatch
-    // appends to `pendingModifiers.cardBurns` and the block
-    // appears. In hot-seat the dispatch is deferred to Roll and
-    // the block stays absent.
+    // Observable DOM signal: EncounterScreen mirrors the engine's
+    // this-round staged card burns (`pendingModifiers.cardBurns` still
+    // in hand) onto `data-engine-staged-card-burns` (#344). Pre-click
+    // the engine is fresh (count 0); after one stepper click in
+    // multiplayer mode the dispatch appends to
+    // `pendingModifiers.cardBurns` and the count becomes 1. In
+    // hot-seat the dispatch is deferred to Roll and the count stays 0.
     const initial = makeChallengeState();
     render(<PlayScreen initialState={initial} rng={seededRng(3)} roomCode="ABCD" />);
 
-    // Pre-click: engine has no pending burns; the cumulative-burns
-    // hint is absent.
-    expect(document.querySelector('[data-cumulative-burns]')).toBeNull();
+    // Pre-click: engine has no pending burns.
+    const screenEl = document.querySelector('[data-encounter-screen]');
+    expect(screenEl?.getAttribute('data-engine-staged-card-burns')).toBe('0');
 
     const incBtn = document.querySelector(
       '[data-stepper="cardBurns"] button:last-of-type',
@@ -115,12 +112,11 @@ describe('PlayScreen — EncounterScreen mode derivation (#278)', () => {
       fireEvent.click(incBtn);
     });
 
-    // Post-click: dispatch landed on `pendingModifiers.cardBurns`,
-    // so the cumulative-burns hint is now rendered. This is the
-    // contract that pins the per-step round-trip — without the
-    // multiplayer dispatch the engine sees no event and this
-    // element never mounts.
-    expect(document.querySelector('[data-cumulative-burns]')).not.toBeNull();
+    // Post-click: dispatch landed on `pendingModifiers.cardBurns`.
+    // This is the contract that pins the per-step round-trip — without
+    // the multiplayer dispatch the engine sees no event and the count
+    // never moves.
+    expect(screenEl?.getAttribute('data-engine-staged-card-burns')).toBe('1');
   });
 
   it('hot-seat card-burn stepper does NOT dispatch until Roll (counter-example)', () => {
@@ -130,10 +126,8 @@ describe('PlayScreen — EncounterScreen mode derivation (#278)', () => {
     // burn events and confirms in one shot. So the
     // `[data-cumulative-burns]` block stays absent across stepper
     // clicks. A regression that accidentally dispatches in
-    // hot-seat too would mount the block and this test catches it
-    // (and would also double-count burns at Roll once
-    // `submitChallenge` synthesizes them on top of the
-    // already-staged dispatches).
+    // hot-seat too would move `data-engine-staged-card-burns` and
+    // this test catches it.
     const initial = makeChallengeState();
     render(<PlayScreen initialState={initial} rng={seededRng(3)} />);
 
@@ -149,9 +143,9 @@ describe('PlayScreen — EncounterScreen mode derivation (#278)', () => {
     });
 
     // Hot-seat default still in force AND the engine never saw an
-    // event — the cumulative-burns block stays absent.
+    // event — the engine-staged count stays at 0.
     const screenEl = document.querySelector('[data-encounter-screen]');
     expect(screenEl?.getAttribute('data-mode')).toBe('hot-seat');
-    expect(document.querySelector('[data-cumulative-burns]')).toBeNull();
+    expect(screenEl?.getAttribute('data-engine-staged-card-burns')).toBe('0');
   });
 });

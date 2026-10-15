@@ -16,11 +16,7 @@ import {
   HAND_CAP as ENGINE_HAND_CAP,
   STARTING_HAND_SIZE as ENGINE_STARTING_HAND_SIZE,
 } from '@/engine/setup';
-import {
-  discard as discardReducer,
-  encounterBurnDiscard as encounterBurnDiscardReducer,
-  endTurn as endTurnReducer,
-} from '@/engine/turn';
+import { discard as discardReducer, endTurn as endTurnReducer } from '@/engine/turn';
 import { applyEvent } from '@/engine/counters';
 import { isHoardingActive } from '@/engine/shells';
 import {
@@ -259,16 +255,6 @@ export type TurnEvent =
        * end of their turn; only their hand needs reconciling.
        */
       readonly kind: 'discard';
-      readonly arcanum: number;
-    }
-  | {
-      /**
-       * Encounter-burn forced discard: shed one card before rolling
-       * when the player has burned card(s) during challenge prep.
-       * Gating is a UI concern (EncounterScreen); the reducer no-ops
-       * if the card is not in hand.
-       */
-      readonly kind: 'encounter-burn-discard';
       readonly arcanum: number;
     }
   | { readonly kind: 'end-turn' }
@@ -612,6 +598,67 @@ function withRetryBumpedEnvelope(
 }
 
 /**
+ * Split the burns staged on `state.pendingModifiers` into the ones this
+ * `prep-confirm` will consume (card still in the challenger's hand /
+ * Spark still held by its source) and the ones a prior failed attempt
+ * already consumed (cumulative-on-retry, #281). Multiset-aware: two
+ * staged copies of one arcanum consume two hand slots only if the hand
+ * holds two.
+ *
+ * One owner for "which pending burns are still live" (#344): the
+ * confirm-time translation below, the hook's picker staging
+ * (`useTurn.prepStageCardBurns`), and EncounterScreen's cumulative
+ * burn display all derive from this.
+ */
+export function partitionPendingBurns(
+  state: GameState,
+  challenger: GameState['players'][number],
+): {
+  readonly cardsToConsume: readonly number[];
+  readonly cardsConsumed: readonly number[];
+  readonly sparksToConsume: readonly PendingModifiers['sparkBurns'][number][];
+  readonly sparksConsumed: readonly PendingModifiers['sparkBurns'][number][];
+} {
+  const pending = state.pendingModifiers;
+
+  const cardsToConsume: number[] = [];
+  const cardsConsumed: number[] = [];
+  const handByArcanum = new Map<number, number>();
+  for (const card of challenger.hand) {
+    handByArcanum.set(card, (handByArcanum.get(card) ?? 0) + 1);
+  }
+  for (const arcanum of pending.cardBurns) {
+    const remaining = handByArcanum.get(arcanum) ?? 0;
+    if (remaining > 0) {
+      cardsToConsume.push(arcanum);
+      handByArcanum.set(arcanum, remaining - 1);
+    } else {
+      cardsConsumed.push(arcanum);
+    }
+  }
+
+  const sparksToConsume: PendingModifiers['sparkBurns'][number][] = [];
+  const sparksConsumed: PendingModifiers['sparkBurns'][number][] = [];
+  const sparkLedger = new Map<string, Set<SefirahKey>>();
+  for (const burn of pending.sparkBurns) {
+    let held = sparkLedger.get(burn.sourcePlayerId);
+    if (held === undefined) {
+      const source = state.players.find((p) => p.id === burn.sourcePlayerId);
+      held = new Set(source?.sparksHeld ?? []);
+      sparkLedger.set(burn.sourcePlayerId, held);
+    }
+    if (held.has(burn.sefirah)) {
+      sparksToConsume.push({ sefirah: burn.sefirah, sourcePlayerId: burn.sourcePlayerId });
+      held.delete(burn.sefirah);
+    } else {
+      sparksConsumed.push(burn);
+    }
+  }
+
+  return { cardsToConsume, cardsConsumed, sparksToConsume, sparksConsumed };
+}
+
+/**
  * Translate a `PendingModifiers` blob into engine `CheckModifiers`,
  * AND determine which arcana / sparks to consume from the challenger's
  * hand / sparksHeld at confirm time (#281). Validation that the
@@ -656,48 +703,12 @@ function translatePendingModifiers(
   const sefirahRecord = sefirahByKey(sefirah);
   const dropped: PrepModifier[] = [];
 
-  // card-burn: cumulative count credited (length of staged list); only
-  // entries still in hand are queued for consumption. Track which
-  // arcanum-numbers have already "consumed" a hand slot so two staged
-  // copies of the same card don't both consume when the player only
-  // has one in hand.
+  // card-burn / spark-burn: the cumulative count is credited (length of
+  // the staged list); only entries still in hand / still held are queued
+  // for consumption. See `partitionPendingBurns` for the split.
   const cardBurns = pending.cardBurns.length;
-  const cardsToConsume: number[] = [];
-  const handByArcanum = new Map<number, number>();
-  for (const card of challenger.hand) {
-    handByArcanum.set(card, (handByArcanum.get(card) ?? 0) + 1);
-  }
-  for (const arcanum of pending.cardBurns) {
-    const remaining = handByArcanum.get(arcanum) ?? 0;
-    if (remaining > 0) {
-      cardsToConsume.push(arcanum);
-      handByArcanum.set(arcanum, remaining - 1);
-    }
-    // else: previously consumed by a prior failed prep-confirm. Still
-    // counts toward `cardBurns` (cumulative), not consumed again, not
-    // surfaced as `dropped`. See JSDoc above.
-  }
-
-  // spark-burn: same shape as card-burn (cumulative count, consume
-  // only those still held). Track per-source ledger so two staged
-  // copies of the same (sefirah, sourcePlayerId) don't both consume
-  // when the source only holds the spark once.
   const sparkBurns = pending.sparkBurns.length;
-  const sparksToConsume: { readonly sefirah: SefirahKey; readonly sourcePlayerId: string }[] = [];
-  const sparkLedger = new Map<string, Set<SefirahKey>>();
-  for (const burn of pending.sparkBurns) {
-    let held = sparkLedger.get(burn.sourcePlayerId);
-    if (held === undefined) {
-      const source = state.players.find((p) => p.id === burn.sourcePlayerId);
-      held = new Set(source?.sparksHeld ?? []);
-      sparkLedger.set(burn.sourcePlayerId, held);
-    }
-    if (held.has(burn.sefirah)) {
-      sparksToConsume.push({ sefirah: burn.sefirah, sourcePlayerId: burn.sourcePlayerId });
-      held.delete(burn.sefirah);
-    }
-    // else: previously consumed (retry semantic, mirrors cards above).
-  }
+  const { cardsToConsume, sparksToConsume } = partitionPendingBurns(state, challenger);
 
   // assist-request: ally must still be alive (currently always — no
   // death yet) and stand at the same Sefirah as the challenger.
@@ -1772,11 +1783,6 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // engine's `discard` is itself defensive (no-op if the card
       // isn't in hand).
       const after = discardReducer(state, player.id, event.arcanum);
-      return { ok: true, value: { next: { state: after } } };
-    }
-
-    case 'encounter-burn-discard': {
-      const after = encounterBurnDiscardReducer(state, player.id, event.arcanum);
       return { ok: true, value: { next: { state: after } } };
     }
 

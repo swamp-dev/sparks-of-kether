@@ -5232,12 +5232,7 @@ describe('partitionPendingBurns (#344)', () => {
         activePlayerId: 'p1',
         phase: 'challenge',
         challengeSubPhase: 'prep',
-        pendingModifiers: {
-          cardBurns: [7, 14, 14, 14],
-          sparkBurns: [],
-          assistRequests: [],
-          giftTransfers: [],
-        },
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [7, 14, 14, 14] },
       },
     );
     const parts = partitionPendingBurns(state, player);

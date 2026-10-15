@@ -156,6 +156,10 @@ describe('EncounterScreen — Binah requires-burn gate', () => {
     const base = makeBinahChallengeState({ handSize: 2 });
     const stateWithPriorBurn: GameState = {
       ...base,
+      // Card 0 was consumed by the failed roll, so it is no longer in hand (#344).
+      players: base.players.map((p) =>
+        p.id === base.activePlayerId ? { ...p, hand: p.hand.filter((c) => c !== 0) } : p,
+      ),
       pendingModifiers: {
         ...EMPTY_PENDING_MODIFIERS,
         cardBurns: [0],

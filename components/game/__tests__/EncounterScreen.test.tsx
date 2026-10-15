@@ -790,8 +790,14 @@ describe('EncounterScreen — cumulative card-burn display', () => {
       // Construct a state already in 'prep' with a preserved
       // pendingModifiers (simulating a post-failed-roll retry).
       const base = makeChallengeState();
+      // Cards 0 and 1 were consumed by the failed roll, so only card 2
+      // is still in hand (#344: in-hand pending entries are this round's
+      // staged burns, not prior ones).
       const stateWithPending: GameState = {
         ...base,
+        players: base.players.map((p) =>
+          p.id === base.activePlayerId ? { ...p, hand: [2] as readonly number[] } : p,
+        ),
         pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [0, 1] },
       };
       const rng = seededRng(1);
