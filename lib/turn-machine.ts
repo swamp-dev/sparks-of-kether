@@ -606,9 +606,10 @@ function withRetryBumpedEnvelope(
  * holds two.
  *
  * "Still in hand" stands in for "not yet consumed": a burned arcanum
- * can't re-enter the hand between a failed roll and its retry (draws
- * happen at end of turn, outside the encounter), so the two never
- * diverge while `pendingModifiers` is populated.
+ * can't re-enter the hand between a failed roll and its retry — draws
+ * occur only on seat rotation and Meditate, both outside
+ * `phase: 'challenge'` — so the two never diverge while
+ * `pendingModifiers` is populated.
  *
  * One owner for "which pending burns are still live" (#344): the
  * confirm-time translation below, the hook's picker staging

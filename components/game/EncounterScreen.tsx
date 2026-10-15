@@ -1221,6 +1221,11 @@ interface PrepPanelProps {
   readonly cumulativeCardBurns: number;
   readonly cumulativeSparkBurns: number;
   readonly isRetry: boolean;
+  /**
+   * `undefined` means "the release picker is open" — the only reason the
+   * caller withholds it. Roll AND the burn steppers lock on it (#344), so
+   * don't pass `undefined` for any other reason without splitting the prop.
+   */
   readonly onRoll: (() => void) | undefined;
   readonly onCancel: (() => void) | undefined;
   /**
