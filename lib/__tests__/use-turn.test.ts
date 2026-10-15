@@ -1363,3 +1363,125 @@ describe('useTurn — endTurn multiplayer dispatch (#270)', () => {
 // removed or renamed, this file fails to compile.)
 const _typeCheck: PrepModifier = { kind: 'card-burn', arcanum: 0 };
 void _typeCheck;
+
+describe('useTurn — prepStageCardBurns + burn consumption (#344)', () => {
+  // #344: one staged burn must cost exactly the card(s) the player
+  // chose in the release picker. The picker stages the chosen arcana
+  // via `prepStageCardBurns`; `prep-confirm` is the single consumer.
+  const FAIL_OUTCOME: CheckOutcome = {
+    rolled: 1,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
+    total: 14,
+    effectiveDC: 15,
+    pass: false,
+  };
+
+  it('stages exactly the chosen arcana when nothing is staged yet (hot-seat picker)', () => {
+    // After move(16) the hand is [7, 11, 14].
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepStageCardBurns([14]);
+    });
+    expect(result.current.pendingModifiers?.cardBurns).toEqual([14]);
+  });
+
+  it('hot-seat: picker-chosen card is the only card consumed, +3 once', () => {
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepStageCardBurns([14]);
+    });
+    act(() => {
+      result.current.submitChallenge('chesed', {
+        assistStats: [],
+        cardBurns: 1,
+        sparkBurns: 0,
+        shortcutPenalty: false,
+      });
+    });
+    const p1 = result.current.state.players.find((p) => p.id === 'p1');
+    expect(p1?.hand).toEqual([7, 11]);
+    expect(result.current.state.discardPile.filter((c) => c === 14)).toHaveLength(1);
+    expect(result.current.state.discardPile).not.toContain(7);
+    expect(result.current.state.discardPile).not.toContain(11);
+    expect(result.current.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(3);
+  });
+
+  it('replaces head-of-hand staging (multiplayer stepper) with the chosen card', () => {
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
+    });
+    act(() => {
+      result.current.prepStageCardBurns([11]);
+    });
+    expect(result.current.pendingModifiers?.cardBurns).toEqual([11]);
+  });
+
+  it('on retry, keeps the consumed burn and adds only the new choice', () => {
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
+    });
+    act(() => {
+      result.current.prepConfirm('chesed', FAIL_OUTCOME);
+    });
+    act(() => {
+      result.current.reactRetry();
+    });
+    // 7 was consumed by the failed confirm; hand is now [11, 14].
+    expect(result.current.state.players.find((p) => p.id === 'p1')?.hand).toEqual([11, 14]);
+    act(() => {
+      result.current.prepStageCardBurns([14]);
+    });
+    expect(result.current.pendingModifiers?.cardBurns).toEqual([7, 14]);
+    act(() => {
+      result.current.submitChallenge('chesed', {
+        assistStats: [],
+        cardBurns: 2, // cumulative: 1 prior + 1 new
+        sparkBurns: 0,
+        shortcutPenalty: false,
+      });
+    });
+    const p1 = result.current.state.players.find((p) => p.id === 'p1');
+    expect(p1?.hand).toEqual([11]);
+    expect(result.current.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(6);
+  });
+
+  it('submitChallenge count fallback synthesises only the delta beyond already-staged burns', () => {
+    // Legacy count-based path (no picker): on retry the cumulative
+    // count includes the prior consumed burn, so only ONE new card may
+    // be taken from the hand head.
+    const { result } = hookViaMoveIntoPrep();
+    act(() => {
+      result.current.prepAddModifier({ kind: 'card-burn', arcanum: 7 });
+    });
+    act(() => {
+      result.current.prepConfirm('chesed', FAIL_OUTCOME);
+    });
+    act(() => {
+      result.current.reactRetry();
+    });
+    act(() => {
+      result.current.submitChallenge('chesed', {
+        assistStats: [],
+        cardBurns: 2,
+        sparkBurns: 0,
+        shortcutPenalty: false,
+      });
+    });
+    const p1 = result.current.state.players.find((p) => p.id === 'p1');
+    expect(p1?.hand).toEqual([14]);
+    expect(result.current.state.discardPile).toEqual(expect.arrayContaining([7, 11]));
+  });
+
+  it('rejects outside the prep sub-phase without touching state', () => {
+    const { result } = freshHook();
+    let outcome: Result<unknown, unknown> | undefined;
+    act(() => {
+      outcome = result.current.prepStageCardBurns([0]);
+    });
+    expect(outcome?.ok).toBe(false);
+    expect(result.current.phase).toBe('move');
+  });
+});

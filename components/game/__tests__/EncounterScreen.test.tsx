@@ -2175,3 +2175,141 @@ describe('EncounterScreen — Chesed hoarding-fail react UI (#332)', () => {
     }
   });
 });
+
+describe('EncounterScreen — burn picker consumes exactly the chosen cards (#344)', () => {
+  /**
+   * Regression for #344. The earlier picker tests pass a `turn` object
+   * captured at render time, so the roll closed over a stale snapshot
+   * and the double-consumption was invisible. This harness owns the
+   * hook so the screen re-renders with the live `turn`, exactly as
+   * PlayScreen does.
+   */
+  function makeTwoCardState(): GameState {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? {
+            ...p,
+            position: 'gevurah' as const,
+            hand: [9, 4] as readonly number[], // The Hermit, The Emperor
+            sparksHeld: new Set() as ReadonlySet<never>,
+            stats: { ...p.stats, strength: 6 },
+          }
+        : p,
+    );
+    return {
+      ...base,
+      players,
+      discardPile: [],
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
+      lastOutcome: undefined,
+      encounter: { sefirah: 'gevurah', seed: 42, retryCount: 0 },
+    };
+  }
+
+  const context: ChallengeContext = {
+    sefirah: 'gevurah',
+    stat: 6,
+    statLabel: 'strength',
+    availableCardBurns: 2,
+    availableSparkBurns: 0,
+  };
+
+  function LiveHarness({
+    initialState,
+    latest,
+  }: {
+    readonly initialState: GameState;
+    readonly latest: { state: GameState };
+  }): JSX.Element {
+    const rng = seededRng(1);
+    const turn = useTurn({ initialState, rng });
+    latest.state = turn.state;
+    const player = turn.state.players.find((p) => p.id === turn.state.activePlayerId);
+    if (!player) throw new Error('active player missing');
+    return (
+      <EncounterScreen
+        context={context}
+        rng={rng}
+        mode="hot-seat"
+        turn={turn}
+        onResolved={vi.fn()}
+        player={player}
+      />
+    );
+  }
+
+  function clickBurnStepper(times: number): void {
+    for (let i = 0; i < times; i++) {
+      act(() => {
+        fireEvent.click(
+          document.querySelector(
+            '[data-stepper="cardBurns"] button:last-of-type',
+          ) as HTMLButtonElement,
+        );
+      });
+    }
+  }
+
+  function pickAndRelease(arcanum: number): void {
+    const pickerEl = document.querySelector('[data-burn-discard-picker]');
+    if (!pickerEl) throw new Error('picker not found');
+    act(() => {
+      fireEvent.click(pickerEl.querySelector(`[data-arcanum="${arcanum}"]`) as HTMLButtonElement);
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /Release this card/ }));
+    });
+  }
+
+  it('one staged burn with a 2-card hand costs only the chosen card and grants +3', () => {
+    vi.useFakeTimers();
+    try {
+      const latest = { state: makeTwoCardState() };
+      render(<LiveHarness initialState={latest.state} latest={latest} />);
+      clickBurnStepper(1);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      pickAndRelease(9);
+
+      const active = latest.state.players.find((p) => p.id === latest.state.activePlayerId);
+      expect(active?.hand).toEqual([4]);
+      expect(latest.state.discardPile).toEqual([9]);
+      expect(latest.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(3);
+      expect(document.querySelector('[data-burn-discard-picker]')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('two staged burns ask for two picks and consume exactly those two cards', () => {
+    vi.useFakeTimers();
+    try {
+      const latest = { state: makeTwoCardState() };
+      render(<LiveHarness initialState={latest.state} latest={latest} />);
+      clickBurnStepper(2);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      expect(screen.getByText(/Choose a card to release \(1 of 2\)/)).toBeInTheDocument();
+      pickAndRelease(4);
+      // Picker stays open for the second pick and no longer offers the first card.
+      const pickerEl = document.querySelector('[data-burn-discard-picker]');
+      expect(pickerEl).not.toBeNull();
+      expect(screen.getByText(/Choose a card to release \(2 of 2\)/)).toBeInTheDocument();
+      expect(pickerEl?.querySelector('[data-arcanum="4"]')).toBeNull();
+      pickAndRelease(9);
+
+      const active = latest.state.players.find((p) => p.id === latest.state.activePlayerId);
+      expect(active?.hand).toEqual([]);
+      expect(latest.state.discardPile).toEqual([4, 9]);
+      expect(latest.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
