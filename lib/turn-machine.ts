@@ -605,6 +605,11 @@ function withRetryBumpedEnvelope(
  * staged copies of one arcanum consume two hand slots only if the hand
  * holds two.
  *
+ * "Still in hand" stands in for "not yet consumed": a burned arcanum
+ * can't re-enter the hand between a failed roll and its retry (draws
+ * happen at end of turn, outside the encounter), so the two never
+ * diverge while `pendingModifiers` is populated.
+ *
  * One owner for "which pending burns are still live" (#344): the
  * confirm-time translation below, the hook's picker staging
  * (`useTurn.prepStageCardBurns`), and EncounterScreen's cumulative

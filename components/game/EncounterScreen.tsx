@@ -1105,6 +1105,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             cumulativeCardBurns={cumulativeCardBurns}
             cumulativeSparkBurns={cumulativeSparkBurns}
             isRetry={isRetry}
+            // `undefined` while the release picker is open: Roll and the
+            // burn steppers lock so the pick count can't drift mid-pick (#344).
             onRoll={awaitingBurnDiscard ? undefined : handleRoll}
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
@@ -1435,6 +1437,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         value={stagedCardBurns}
         max={maxCardBurns}
         onChange={adjustCardBurns}
+        locked={onRoll === undefined}
       />
       <Stepper
         kind="sparkBurns"
@@ -1442,6 +1445,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         value={stagedSparkBurns}
         max={maxSparkBurns}
         onChange={adjustSparkBurns}
+        locked={onRoll === undefined}
       />
 
       {requiresBurn === true ? (
@@ -1487,9 +1491,11 @@ interface StepperProps {
   readonly value: number;
   readonly max: number;
   readonly onChange: (n: number) => void;
+  /** Freeze both buttons — the release picker is open and the count is committed (#344). */
+  readonly locked: boolean;
 }
 
-function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Element {
+function Stepper({ kind, label, value, max, onChange, locked }: StepperProps): JSX.Element {
   const dec = (): void => onChange(Math.max(0, value - 1));
   const inc = (): void => onChange(Math.min(max, value + 1));
   return (
@@ -1500,7 +1506,7 @@ function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Eleme
           type="button"
           onClick={dec}
           aria-label={`Decrease ${label}`}
-          disabled={value === 0}
+          disabled={locked || value === 0}
           className="h-7 w-7 rounded border border-veil/30 disabled:opacity-30"
         >
           −
@@ -1512,7 +1518,7 @@ function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Eleme
           type="button"
           onClick={inc}
           aria-label={`Increase ${label}`}
-          disabled={value >= max}
+          disabled={locked || value >= max}
           className="h-7 w-7 rounded border border-veil/30 disabled:opacity-30"
         >
           +

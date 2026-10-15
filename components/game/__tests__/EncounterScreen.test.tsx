@@ -2227,9 +2227,11 @@ describe('EncounterScreen — burn picker consumes exactly the chosen cards (#34
   function LiveHarness({
     initialState,
     latest,
+    mode = 'hot-seat',
   }: {
     readonly initialState: GameState;
     readonly latest: { state: GameState };
+    readonly mode?: 'hot-seat' | 'multiplayer';
   }): JSX.Element {
     const rng = seededRng(1);
     const turn = useTurn({ initialState, rng });
@@ -2240,7 +2242,7 @@ describe('EncounterScreen — burn picker consumes exactly the chosen cards (#34
       <EncounterScreen
         context={context}
         rng={rng}
-        mode="hot-seat"
+        mode={mode}
         turn={turn}
         onResolved={vi.fn()}
         player={player}
@@ -2287,6 +2289,46 @@ describe('EncounterScreen — burn picker consumes exactly the chosen cards (#34
       expect(latest.state.discardPile).toEqual([9]);
       expect(latest.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(3);
       expect(document.querySelector('[data-burn-discard-picker]')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('locks the burn steppers while the picker is open', () => {
+    vi.useFakeTimers();
+    try {
+      const latest = { state: makeTwoCardState() };
+      render(<LiveHarness initialState={latest.state} latest={latest} />);
+      clickBurnStepper(1);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      expect(document.querySelector('[data-burn-discard-picker]')).not.toBeNull();
+      const stepperButtons = document.querySelectorAll('[data-stepper="cardBurns"] button');
+      expect(stepperButtons).toHaveLength(2);
+      for (const btn of stepperButtons) expect(btn).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('multiplayer: the pick replaces the stepper-staged head card, consuming only the pick', () => {
+    vi.useFakeTimers();
+    try {
+      const latest = { state: makeTwoCardState() };
+      render(<LiveHarness initialState={latest.state} latest={latest} mode="multiplayer" />);
+      clickBurnStepper(1);
+      // The stepper staged the head of the hand (9) on the engine.
+      expect(latest.state.pendingModifiers.cardBurns).toEqual([9]);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+      });
+      pickAndRelease(4);
+
+      const active = latest.state.players.find((p) => p.id === latest.state.activePlayerId);
+      expect(active?.hand).toEqual([9]);
+      expect(latest.state.discardPile).toEqual([4]);
+      expect(latest.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(3);
     } finally {
       vi.useRealTimers();
     }
