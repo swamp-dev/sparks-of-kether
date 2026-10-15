@@ -7,7 +7,7 @@ import {
   type GameState,
   type TurnPhase,
 } from '@/engine/types';
-import { HAND_CAP, turnReducer, type TurnSnapshot } from '../turn-machine';
+import { HAND_CAP, partitionPendingBurns, turnReducer, type TurnSnapshot } from '../turn-machine';
 import { makeFullGame, makePlayer, makeState } from '@/test/fixtures';
 
 /**
@@ -5219,5 +5219,24 @@ describe('turnReducer — refuse-gift-turn (#296)', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('wrong-phase');
+  });
+});
+
+describe('partitionPendingBurns (#344)', () => {
+  it('splits pending card burns into still-in-hand (this round) and already-consumed (prior attempts)', () => {
+    const player = makePlayer({ id: 'p1', hand: [11, 14, 14] });
+    const state = makeState(
+      {},
+      {
+        players: [player],
+        activePlayerId: 'p1',
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [7, 14, 14, 14] },
+      },
+    );
+    const parts = partitionPendingBurns(state, player);
+    expect(parts.cardsToConsume).toEqual([14, 14]);
+    expect(parts.cardsConsumed).toEqual([7, 14]);
   });
 });

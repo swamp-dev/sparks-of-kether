@@ -31,6 +31,7 @@ import type { ClientAction } from './room-actions';
 import {
   HAND_CAP as MACHINE_HAND_CAP,
   STARTING_HAND_SIZE as MACHINE_STARTING_HAND_SIZE,
+  partitionPendingBurns,
   turnReducer,
   type PrepModifier,
   type TurnReducerError,
@@ -114,10 +115,13 @@ export interface UseTurnReturn {
   readonly move: (pathNumber: number) => Result<GameState, MoveRejection>;
   readonly meditate: () => GameState;
   /**
-   * Hot-seat one-click wrapper. Internally synthesises real
-   * `prep-add-modifier` events for each staged card (taken from
-   * the head of the active player's hand) and Spark (taken from
-   * the active player's `sparksHeld`), then `prep-confirm`s with
+   * Hot-seat one-click wrapper. `modifiers.cardBurns` /
+   * `modifiers.sparkBurns` are the *cumulative* counts (prior failed
+   * attempts + this round, #281). Burns already on
+   * `pendingModifiers` — consumed by a prior attempt, or staged this
+   * round via `prepStageCardBurns` — are not synthesised again; only
+   * the difference is taken from the head of the active player's
+   * hand / `sparksHeld` (#344). Then `prep-confirm`s with
    * `directAssistStats` so the modal-supplied assist values reach
    * the engine unchanged.
    *
@@ -161,6 +165,19 @@ export interface UseTurnReturn {
    */
   readonly prepRemoveModifier: (
     modifier: PrepModifier,
+  ) => Result<TurnReducerSuccess, TurnReducerError>;
+  /**
+   * #344: make this round's staged card burns exactly `arcana` — the
+   * cards the player chose in the release picker. Burns a prior failed
+   * attempt already consumed are left alone; anything else staged
+   * (e.g. the multiplayer stepper's head-of-hand placeholders) is
+   * removed, and the chosen cards are added. Chains the per-step
+   * reducer events on a working snapshot and commits once, so a
+   * caller never sees a half-reconciled state. `prep-confirm` then
+   * consumes exactly these cards — there is no separate discard.
+   */
+  readonly prepStageCardBurns: (
+    arcana: readonly number[],
   ) => Result<TurnReducerSuccess, TurnReducerError>;
   /**
    * Confirm the staged modifiers and roll. The reducer translates
@@ -208,13 +225,6 @@ export interface UseTurnReturn {
    * `endTurn` then unblocks and the seat advances.
    */
   readonly discard: (arcanum: number) => GameState;
-  /**
-   * Encounter-burn forced discard: shed one card from the active
-   * player's hand before the die is rolled when they have burned
-   * card(s) during encounter prep. The UI (EncounterScreen) gates
-   * invocation; the reducer no-ops if the card is not in hand.
-   */
-  readonly encounterBurnDiscard: (arcanum: number) => GameState;
   /** Gift a card from the active player's hand to an ally. +1 Illumination on accept. */
   readonly giftTurn: (
     arcanum: number,
@@ -391,6 +401,57 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
     [snapshot, opts.rng],
   );
 
+  const prepStageCardBurns = useCallback(
+    (arcana: readonly number[]): Result<TurnReducerSuccess, TurnReducerError> => {
+      if (snapshot.state.phase !== 'challenge' || snapshot.state.challengeSubPhase !== 'prep') {
+        return {
+          ok: false,
+          reason: {
+            kind: 'wrong-sub-phase',
+            expected: 'prep',
+            actual:
+              snapshot.state.phase === 'challenge' ? snapshot.state.challengeSubPhase : undefined,
+          },
+        };
+      }
+      const player = snapshot.state.players.find((p) => p.id === snapshot.state.activePlayerId);
+      if (!player) return { ok: false, reason: { kind: 'no-active-player' } };
+
+      // Diff this round's staged burns (still in hand) against the
+      // chosen list as multisets: matches stay, leftovers are removed,
+      // missing ones are added.
+      const leftover = [...partitionPendingBurns(snapshot.state, player).cardsToConsume];
+      const toAdd: number[] = [];
+      for (const arcanum of arcana) {
+        const idx = leftover.indexOf(arcanum);
+        if (idx >= 0) leftover.splice(idx, 1);
+        else toAdd.push(arcanum);
+      }
+      let working: TurnSnapshot = snapshot;
+      for (const arcanum of leftover) {
+        const step = turnReducer(
+          working,
+          { kind: 'prep-remove-modifier', modifier: { kind: 'card-burn', arcanum } },
+          opts.rng,
+        );
+        if (!step.ok) return step;
+        working = step.value.next;
+      }
+      for (const arcanum of toAdd) {
+        const step = turnReducer(
+          working,
+          { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum } },
+          opts.rng,
+        );
+        if (!step.ok) return step;
+        working = step.value.next;
+      }
+      setSnapshot(working);
+      return { ok: true, value: { next: working } };
+    },
+    [snapshot, opts.rng],
+  );
+
   /**
    * Internal `prep-confirm` dispatcher. Both `prepConfirm` (public
    * per-step method) and `submitChallenge` (hot-seat wrapper) flow
@@ -460,18 +521,20 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   /**
    * Hot-seat one-click wrapper. The modal hands us pre-built
    * `CheckModifiers` (assist stats already in number form, card
-   * burns and spark burns as counts). We synthesise real
-   * `prep-add-modifier` events for each card-burn (taking the head
-   * of the active player's hand) and each spark-burn (taking the
-   * head of the active player's `sparksHeld`), then `prep-confirm`
-   * with `directAssistStats` so the modal-supplied assist
-   * contributions reach the engine without re-translation.
+   * burns and spark burns as *cumulative* counts). We synthesise real
+   * `prep-add-modifier` events only for burns not already on
+   * `pendingModifiers` — the count minus what a prior failed attempt
+   * consumed and what `prepStageCardBurns` staged this round (#344) —
+   * taking card-burns from the head of the active player's remaining
+   * hand and spark-burns from the head of their remaining
+   * `sparksHeld`, then `prep-confirm` with `directAssistStats` so the
+   * modal-supplied assist contributions reach the engine without
+   * re-translation.
    *
-   * The card / spark synthesis order is deterministic: first N
-   * arcana from the player's hand for card-burns, first N sparks
-   * (insertion order of the `Set`) for spark-burns. Callers that
-   * want a specific arcanum or spark to be staged should use the
-   * per-step methods.
+   * The synthesis order is deterministic: first N unstaged arcana from
+   * the player's hand, first N unstaged sparks (insertion order of
+   * the `Set`). Callers that want a specific arcanum staged should use
+   * `prepStageCardBurns` (the release picker does).
    *
    * If any staging step fails (e.g. `wrong-sub-phase` because the
    * caller invoked outside `prep`), the wrapper returns a
@@ -494,13 +557,24 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
         return { ok: false, reason: SYNTHETIC_CHALLENGE_REJECTION };
       }
 
-      // Synthesize card-burn events from the head of the player's
-      // hand. The reducer validates each card is in hand at
-      // `prep-confirm`, so picking from the actual hand
-      // guarantees no `meta.dropped` surprises here.
-      const cardBurns = Math.min(modifiers.cardBurns, player.hand.length);
+      // Burns already on the envelope — consumed by a prior failed
+      // attempt, or staged this round by the picker — must not be
+      // synthesised again (#344). Only the delta comes from the head of
+      // the player's *unstaged* hand / sparks.
+      const pending =
+        working.state.phase === 'challenge' ? working.state.pendingModifiers : undefined;
+      const live = pending ? partitionPendingBurns(working.state, player) : undefined;
+      const unstagedHand = [...player.hand];
+      for (const arcanum of live?.cardsToConsume ?? []) {
+        const idx = unstagedHand.indexOf(arcanum);
+        if (idx >= 0) unstagedHand.splice(idx, 1);
+      }
+      const cardBurns = Math.min(
+        Math.max(0, modifiers.cardBurns - (pending?.cardBurns.length ?? 0)),
+        unstagedHand.length,
+      );
       for (let i = 0; i < cardBurns; i++) {
-        const arcanum = player.hand[i];
+        const arcanum = unstagedHand[i];
         if (arcanum === undefined) break;
         const stepResult = turnReducer(
           working,
@@ -522,8 +596,16 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       // Hot-seat doesn't have ally-offered Sparks (no out-of-band
       // negotiation in single-machine play), so all sparks come
       // from the active player.
-      const heldSparks = Array.from(player.sparksHeld);
-      const sparkBurns = Math.min(modifiers.sparkBurns, heldSparks.length);
+      const stagedSparks = new Set(
+        (live?.sparksToConsume ?? [])
+          .filter((b) => b.sourcePlayerId === player.id)
+          .map((b) => b.sefirah),
+      );
+      const heldSparks = Array.from(player.sparksHeld).filter((s) => !stagedSparks.has(s));
+      const sparkBurns = Math.min(
+        Math.max(0, modifiers.sparkBurns - (pending?.sparkBurns.length ?? 0)),
+        heldSparks.length,
+      );
       for (let i = 0; i < sparkBurns; i++) {
         const sparkSefirah = heldSparks[i];
         if (sparkSefirah === undefined) break;
@@ -605,16 +687,6 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
   const discard = useCallback(
     (arcanum: number): GameState => {
       const result = turnReducer(snapshot, { kind: 'discard', arcanum }, opts.rng);
-      if (!result.ok) return state;
-      setSnapshot(result.value.next);
-      return result.value.next.state;
-    },
-    [snapshot, state, opts.rng],
-  );
-
-  const encounterBurnDiscard = useCallback(
-    (arcanum: number): GameState => {
-      const result = turnReducer(snapshot, { kind: 'encounter-burn-discard', arcanum }, opts.rng);
       if (!result.ok) return state;
       setSnapshot(result.value.next);
       return result.value.next.state;
@@ -840,12 +912,12 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       submitChallenge,
       prepAddModifier,
       prepRemoveModifier,
+      prepStageCardBurns,
       prepConfirm,
       reactRetry,
       reactContinue,
       acceptChallengeSetback,
       discard,
-      encounterBurnDiscard,
       giftTurn,
       giftTurnAcceptOverCap,
       refuseGiftTurn,
@@ -871,12 +943,12 @@ export function useTurn(opts: UseTurnOptions): UseTurnReturn {
       submitChallenge,
       prepAddModifier,
       prepRemoveModifier,
+      prepStageCardBurns,
       prepConfirm,
       reactRetry,
       reactContinue,
       acceptChallengeSetback,
       discard,
-      encounterBurnDiscard,
       giftTurn,
       giftTurnAcceptOverCap,
       refuseGiftTurn,

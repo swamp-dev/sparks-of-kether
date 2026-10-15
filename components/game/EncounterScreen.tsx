@@ -30,7 +30,7 @@ import type { PlayerState } from '@/engine/types';
 import { StatSheet } from '@/components/player/StatSheet';
 import type { ChallengeContext, ChallengeResolution } from '@/lib/challenge-types';
 import type { UseTurnReturn } from '@/lib/use-turn';
-import type { PrepModifier } from '@/lib/turn-machine';
+import { partitionPendingBurns, type PrepModifier } from '@/lib/turn-machine';
 import { useSound } from '@/lib/sound/useSound';
 import { avatarArrivesCueFor, avatarGreetingVoicePathFor } from '@/lib/sound/cues';
 import { useVoice } from '@/lib/voice/useVoice';
@@ -169,6 +169,16 @@ const RESOLVE_ANIMATION_MS = 800;
 const REDUCED_MOTION_RESOLVE_MS = 50;
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+/** Remove one occurrence of each `exclude` entry from `hand` (multiset difference). */
+function withoutEach(hand: readonly number[], exclude: readonly number[]): readonly number[] {
+  const out = [...hand];
+  for (const arcanum of exclude) {
+    const idx = out.indexOf(arcanum);
+    if (idx >= 0) out.splice(idx, 1);
+  }
+  return out;
+}
 
 export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const { context, rng, mode, turn, onResolved, onCancel, className } = props;
@@ -314,6 +324,9 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const [awaitingBurnDiscard, setAwaitingBurnDiscard] = useState(false);
   // #286: selected card in the burn-discard picker (select → confirm flow).
   const [burnDiscardSelected, setBurnDiscardSelected] = useState<number | undefined>(undefined);
+  // #344: cards already confirmed in the picker this round (N staged
+  // burns = N picks). Staged on the engine only once all picks are in.
+  const [burnDiscardChosen, setBurnDiscardChosen] = useState<readonly number[]>([]);
 
   // #332 — Chesed gift staging UI state. Two-step pick flow:
   // idle → pick-card → pick-recipient → idle (card staged).
@@ -343,6 +356,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       setAnimatingResolve(false);
       setAwaitingBurnDiscard(false);
       setBurnDiscardSelected(undefined);
+      setBurnDiscardChosen([]);
       // #321: clear the verdict-cue ref so a retry's new outcome
       // fires its own cue. Without this, a retry that lands on the
       // same boolean (fail → fail) would still be a NEW outcome
@@ -513,14 +527,23 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const maxCardBurns = context.availableCardBurns ?? 0;
   const maxSparkBurns = context.availableSparkBurns ?? 0;
 
-  // Cumulative card-burn count: engine's preserved `pendingModifiers`
-  // (from a prior failed roll, on retry) + this round's staged burns.
-  // Surfaces "X cards burned, +Y modifier" so the player sees they're
-  // stacking. On the initial encounter the engine's pending is empty
-  // and this is just `stagedCardBurns`.
-  const cumulativeCardBurns = (turn.pendingModifiers?.cardBurns.length ?? 0) + stagedCardBurns;
-  const cumulativeSparkBurns = (turn.pendingModifiers?.sparkBurns.length ?? 0) + stagedSparkBurns;
-  const isRetry = (turn.pendingModifiers?.cardBurns.length ?? 0) > 0;
+  // Cumulative burn counts: burns a prior failed roll already consumed
+  // (#281 retry semantic) + this round's staged burns. Surfaces "X cards
+  // burned, +Y modifier" so the player sees they're stacking. Only the
+  // *consumed* entries on `pendingModifiers` are counted — the envelope
+  // also carries this round's staged cards once the picker (hot-seat) or
+  // the stepper (multiplayer) stages them, and those are already in
+  // `stagedCardBurns` (#344).
+  const activePlayer = turn.state.players.find((p) => p.id === turn.state.activePlayerId);
+  const priorBurns =
+    turn.pendingModifiers !== undefined && activePlayer !== undefined
+      ? partitionPendingBurns(turn.state, activePlayer)
+      : undefined;
+  const priorCardBurns = priorBurns?.cardsConsumed.length ?? 0;
+  const priorSparkBurns = priorBurns?.sparksConsumed.length ?? 0;
+  const cumulativeCardBurns = priorCardBurns + stagedCardBurns;
+  const cumulativeSparkBurns = priorSparkBurns + stagedSparkBurns;
+  const isRetry = priorCardBurns > 0;
 
   // Mirror the engine's `prep-confirm` gate (turn-machine.ts § tiferet/binah/gevurah-requires-burn):
   // Gevurah, Tiferet, and Binah each require at least one staged card burn when
@@ -748,14 +771,14 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     }, delayMs);
   };
 
-  // #90: deferred roll after burn-discard. React 18 batches all setState
-  // calls in a single event handler; calling doRoll() directly inside
-  // handleBurnDiscard would let turn.submitChallenge close over the
-  // pre-discard snapshot and silently overwrite the card removal.
-  // This ref is set to true by handleBurnDiscard and cleared by the
-  // useLayoutEffect below, which fires on the NEXT render — after
-  // encounterBurnDiscard's setSnapshot has committed — so doRoll() sees
-  // the post-discard state.
+  // #90 / #344: deferred roll after the release picker. React 18 batches
+  // all setState calls in a single event handler; calling doRoll()
+  // directly inside handleBurnRelease would let the roll close over the
+  // snapshot from before `prepStageCardBurns` committed and silently
+  // overwrite the staged cards. This ref is set by handleBurnRelease and
+  // cleared by the useLayoutEffect below, which fires on the NEXT render
+  // — after the staging has committed — so doRoll() sees the staged
+  // burns.
   const pendingRollAfterBurnDiscardRef = useRef(false);
   useLayoutEffect(() => {
     if (!pendingRollAfterBurnDiscardRef.current) return;
@@ -769,21 +792,30 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
     // two rolls and consume two values from `rng`.
     if (uiSubPhase !== 'prep') return;
     if (turn.challengeSubPhase !== 'prep') return;
-    // #90: if the player staged card burns and still has cards, require
-    // a burn-discard before rolling. UI gates it; engine no-ops if hand
-    // is empty so we skip the picker in that edge case.
-    if (cumulativeCardBurns > 0 && (player?.hand.length ?? 0) > 0) {
+    // #90 / #344: if the player staged card burns this round and still
+    // has cards, they pick WHICH cards burn before rolling. Burns from a
+    // prior failed attempt are already consumed, so a retry with no new
+    // burns skips the picker.
+    if (stagedCardBurns > 0 && (player?.hand.length ?? 0) > 0) {
       setAwaitingBurnDiscard(true);
       return;
     }
     doRoll();
   };
 
-  const handleBurnDiscard = (arcanum: number): void => {
+  const handleBurnRelease = (arcanum: number): void => {
     if (!player) return;
-    turn.encounterBurnDiscard(arcanum);
-    setAwaitingBurnDiscard(false);
+    const chosen = [...burnDiscardChosen, arcanum];
     setBurnDiscardSelected(undefined);
+    if (chosen.length < stagedCardBurns) {
+      setBurnDiscardChosen(chosen);
+      return;
+    }
+    // All picks made: these cards are this round's burns. `prep-confirm`
+    // consumes exactly them — there is no separate discard (#344).
+    turn.prepStageCardBurns(chosen);
+    setBurnDiscardChosen([]);
+    setAwaitingBurnDiscard(false);
     // Defer the roll to the next render via pendingRollAfterBurnDiscardRef —
     // see the useLayoutEffect above for why doRoll() cannot be called here.
     pendingRollAfterBurnDiscardRef.current = true;
@@ -888,6 +920,10 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
       data-encounter-sub-phase={uiSubPhase}
       data-sefirah={context.sefirah}
       data-mode={mode}
+      // Card burns the engine holds for THIS round (still in hand) — the
+      // observable proof that a multiplayer stepper click reached the
+      // reducer, as opposed to hot-seat's deferred-to-Roll staging.
+      data-engine-staged-card-burns={priorBurns?.cardsToConsume.length ?? 0}
       // Border + shadow follow the challenged Sefirah's tokens
       // (`docs/motion.md` § Glow scale). The `bg-ground` keeps the
       // panel itself clearly differentiated from the void
@@ -1069,6 +1105,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             cumulativeCardBurns={cumulativeCardBurns}
             cumulativeSparkBurns={cumulativeSparkBurns}
             isRetry={isRetry}
+            // `undefined` while the release picker is open: Roll and the
+            // burn steppers lock so the pick count can't drift mid-pick (#344).
             onRoll={awaitingBurnDiscard ? undefined : handleRoll}
             onCancel={onCancel}
             glowClass={frameTokens.buttonGlow}
@@ -1104,12 +1142,15 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             >
               <p className="mb-1 font-display text-base tracking-widest">
                 Choose a card to release
+                {stagedCardBurns > 1
+                  ? ` (${burnDiscardChosen.length + 1} of ${stagedCardBurns})`
+                  : ''}
               </p>
               <p className="mb-3 text-xs opacity-60">
-                Burning costs a discard — select a card below, then confirm your choice.
+                This card burns for +3 — select it below, then confirm your choice.
               </p>
               <Hand
-                hand={player.hand}
+                hand={withoutEach(player.hand, burnDiscardChosen)}
                 visible={true}
                 layout="inline"
                 onCardSelect={(n) => setBurnDiscardSelected(n)}
@@ -1127,7 +1168,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
                     type="button"
                     data-action="confirm-burn-discard"
                     onClick={() => {
-                      handleBurnDiscard(burnDiscardSelected);
+                      handleBurnRelease(burnDiscardSelected);
                     }}
                     className={`rounded border px-4 py-1.5 font-display text-sm ${frameTokens.frameBorder} ${frameTokens.buttonGlow}`}
                   >
@@ -1180,6 +1221,11 @@ interface PrepPanelProps {
   readonly cumulativeCardBurns: number;
   readonly cumulativeSparkBurns: number;
   readonly isRetry: boolean;
+  /**
+   * `undefined` means "the release picker is open" — the only reason the
+   * caller withholds it. Roll AND the burn steppers lock on it (#344), so
+   * don't pass `undefined` for any other reason without splitting the prop.
+   */
   readonly onRoll: (() => void) | undefined;
   readonly onCancel: (() => void) | undefined;
   /**
@@ -1396,6 +1442,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         value={stagedCardBurns}
         max={maxCardBurns}
         onChange={adjustCardBurns}
+        locked={onRoll === undefined}
       />
       <Stepper
         kind="sparkBurns"
@@ -1403,6 +1450,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
         value={stagedSparkBurns}
         max={maxSparkBurns}
         onChange={adjustSparkBurns}
+        locked={onRoll === undefined}
       />
 
       {requiresBurn === true ? (
@@ -1448,9 +1496,11 @@ interface StepperProps {
   readonly value: number;
   readonly max: number;
   readonly onChange: (n: number) => void;
+  /** Freeze both buttons — the release picker is open and the count is committed (#344). */
+  readonly locked: boolean;
 }
 
-function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Element {
+function Stepper({ kind, label, value, max, onChange, locked }: StepperProps): JSX.Element {
   const dec = (): void => onChange(Math.max(0, value - 1));
   const inc = (): void => onChange(Math.min(max, value + 1));
   return (
@@ -1461,7 +1511,7 @@ function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Eleme
           type="button"
           onClick={dec}
           aria-label={`Decrease ${label}`}
-          disabled={value === 0}
+          disabled={locked || value === 0}
           className="h-7 w-7 rounded border border-veil/30 disabled:opacity-30"
         >
           −
@@ -1473,7 +1523,7 @@ function Stepper({ kind, label, value, max, onChange }: StepperProps): JSX.Eleme
           type="button"
           onClick={inc}
           aria-label={`Increase ${label}`}
-          disabled={value >= max}
+          disabled={locked || value >= max}
           className="h-7 w-7 rounded border border-veil/30 disabled:opacity-30"
         >
           +
