@@ -45,7 +45,7 @@ describe('ArcanumCard — structural invariants', () => {
       const img = container.querySelector('image[href]');
       expect(img, `card ${arc.number}`).not.toBeNull();
       const href = img?.getAttribute('href') ?? '';
-      expect(href, `card ${arc.number} href`).toMatch(/^\/rider-waite-cards\/.+\.jpg$/);
+      expect(href, `card ${arc.number} href`).toMatch(/^\/rider-waite-cards\/.+\.webp$/);
     }
   });
 

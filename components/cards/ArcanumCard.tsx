@@ -50,7 +50,8 @@ export function ArcanumCard(props: ArcanumCardProps): JSX.Element {
   const imageFile = RW_IMAGE_FILE[arcanum.number];
   if (!imageFile) throw new Error(`No Rider-Waite image mapped for arcanum ${arcanum.number}`);
 
-  // Scale image so its width fills ART_ZONE_W; RW cards are ~1:1.74 (w:h).
+  // Scale image so its width fills ART_ZONE_W. The 1910 Pam-A scans are ~1:1.68
+  // (w:h); 1.74 leaves a little vertical headroom and the slice crop absorbs it.
   const imgW = ART_ZONE_W;
   const imgH = Math.round(ART_ZONE_W * 1.74);
 
