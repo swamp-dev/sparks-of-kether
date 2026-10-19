@@ -45,7 +45,7 @@ multiple megabytes of binary into the main repo bloats clones for
 everyone. Current size: ~2623 KiB across 13 PNGs — **over the cap**; the
 pack was already ~2782 KiB before #369 (which shrank it by ~160 KiB by
 palette-quantising the two refreshed captures). Bringing the pack back
-under the cap is tracked separately.
+under the cap is tracked in #370.
 
 The cap was tightened from "1 MB" to "1024 KiB" in #266 (resolving
 SI-vs-binary ambiguity); #271 raised it to 1.5 MiB to accommodate

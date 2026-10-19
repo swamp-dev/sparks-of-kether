@@ -53,7 +53,8 @@ sha1sum assets/rider-waite-cards/*.jpg
   Marteau recolour, the 1997 Camoin-Jodorowsky restoration and the
   Flornoy restorations are 20th/21st-century derivative works and should
   be treated as protected; the CBD Tarot (Yoav Ben-Dov) is distributed
-  under a Creative Commons non-commercial licence per its author's site. If a Marseille look is ever wanted, use the
+  under a Creative Commons non-commercial licence per its author's
+  site. If a Marseille look is ever wanted, use the
   Jean Dodal (1701-1715) or Nicolas Conver (1760) scans on Wikimedia
   Commons / BnF Gallica, which are public domain on the same basis as
   the files here.
