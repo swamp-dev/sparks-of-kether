@@ -32,8 +32,9 @@ sha1sum assets/rider-waite-cards/*.jpg
 - **US Games Systems' 1971 recolour** and its later variants (Universal
   Waite, Radiant Rider-Waite, Centennial, etc.). US Games claims
   copyright in those colourings, card backs and boxes. The previous
-  contents of this folder were 199×340 JPEGs of unknown origin whose
-  colourway matched the 1971 edition; they were removed in #369.
+  contents of this folder and of `public/rider-waite-cards/` were
+  199×340 JPEGs of unknown origin whose colourway matched the 1971
+  edition; both copies were removed in #369.
 - **The "Rider-Waite" and "Rider" trademarks**, held by US Games. Use
   "Waite-Smith" or "Smith-Waite" in any product-facing copy; naming the
   source in a credits line is fine.
@@ -74,11 +75,27 @@ sha1sum assets/rider-waite-cards/*.jpg
 
 ## Runtime use
 
-Nothing in the app references this folder yet. These are **source
-assets** (~0.7–1.1 MB each, 1200 DPI scans). When a component first
-consumes them, derive sized WebPs into `public/` with the same
-`ffmpeg` recipe as `assets/portraits/LICENSE.md` and keep the originals
-here untouched so the SHA-1 table stays valid.
+`components/cards/ArcanumCard.tsx` renders the art zone from
+`public/rider-waite-cards/<NN>-<name>.webp`, mapped by
+`components/cards/rw-image-map.ts`. Those WebPs are **derived** from the
+source JPEGs in this directory; the originals stay untouched so the SHA-1
+table above remains valid.
+
+Rebuild recipe (deterministic — re-running on the same machine produces
+byte-identical output, so a developer can regenerate without diff churn):
+
+```bash
+for src in assets/rider-waite-cards/*.jpg; do
+  name=$(basename "$src" .jpg)
+  ffmpeg -y -loglevel error -i "$src" -vf "scale=400:-2:flags=lanczos" \
+    -c:v libwebp -compression_level 6 -quality 75 -preset picture \
+    "public/rider-waite-cards/$name.webp"
+done
+```
+
+Requires `ffmpeg` ≥ 5 with `libwebp`. 400 px wide (≈ 670 px tall) covers
+the card's 180-unit art zone at 2× device pixel ratio with headroom; the
+set weighs ~1.6 MB total, ~45–85 KB per card.
 
 ## Alternative set
 
