@@ -543,7 +543,15 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
   const priorSparkBurns = priorBurns?.sparksConsumed.length ?? 0;
   const cumulativeCardBurns = priorCardBurns + stagedCardBurns;
   const cumulativeSparkBurns = priorSparkBurns + stagedSparkBurns;
-  const isRetry = priorCardBurns > 0;
+  // #345 / #362: the envelope's `retryCount` is the canonical retry
+  // flag; prior consumed burns (card OR spark) also count so states
+  // without an envelope still show the cumulative block.
+  const isRetry =
+    (turn.state.encounter?.retryCount ?? 0) > 0 || priorCardBurns > 0 || priorSparkBurns > 0;
+  // #345 — mirror the engine's `retry-requires-new-burn` gate: a retry
+  // is a burn-and-re-roll, so Roll stays disabled until this round
+  // stages at least one new card or Spark burn.
+  const retryRequiresBurn = isRetry && stagedCardBurns === 0 && stagedSparkBurns === 0;
 
   // Mirror the engine's `prep-confirm` gate (turn-machine.ts § tiferet/binah/gevurah-requires-burn):
   // Gevurah, Tiferet, and Binah each require at least one staged card burn when
@@ -1105,6 +1113,7 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
             cumulativeCardBurns={cumulativeCardBurns}
             cumulativeSparkBurns={cumulativeSparkBurns}
             isRetry={isRetry}
+            retryRequiresBurn={retryRequiresBurn}
             // `undefined` while the release picker is open: Roll and the
             // burn steppers lock so the pick count can't drift mid-pick (#344).
             onRoll={awaitingBurnDiscard ? undefined : handleRoll}
@@ -1193,6 +1202,8 @@ export function EncounterScreen(props: EncounterScreenProps): JSX.Element {
           onAccept={handleAccept}
           reducedMotion={reducedMotion}
           glowClass={frameTokens.buttonGlow}
+          canRetry={maxCardBurns > 0 || maxSparkBurns > 0}
+          hasBurned={cumulativeCardBurns + cumulativeSparkBurns > 0}
           {...(hoardingFail ? { hoardingFail: true } : {})}
           {...(avatarHasCopy ? { avatarName: pantheon.avatarNames[avatarKey].primary } : {})}
           {...(verdictLine !== undefined ? { verdictLine } : {})}
@@ -1221,6 +1232,12 @@ interface PrepPanelProps {
   readonly cumulativeCardBurns: number;
   readonly cumulativeSparkBurns: number;
   readonly isRetry: boolean;
+  /**
+   * #345 — true on a retried attempt with no new burn staged this round.
+   * Roll is disabled and a callout explains the cost; mirrors the
+   * engine's `retry-requires-new-burn` rejection.
+   */
+  readonly retryRequiresBurn: boolean;
   /**
    * `undefined` means "the release picker is open" — the only reason the
    * caller withholds it. Roll AND the burn steppers lock on it (#344), so
@@ -1285,6 +1302,7 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
     cumulativeCardBurns,
     cumulativeSparkBurns,
     isRetry,
+    retryRequiresBurn,
     onRoll,
     onCancel,
     glowClass,
@@ -1466,13 +1484,22 @@ function PrepPanel(props: PrepPanelProps): JSX.Element {
                 ? 'Binah sits with the loss — burn at least one card before you roll.'
                 : 'Burn at least one card before you roll.'}
         </div>
+      ) : retryRequiresBurn ? (
+        <div
+          data-retry-requires-burn
+          className={`rounded border-l-4 bg-veil/10 px-4 py-3 text-sm ${frameBorderClass}`}
+        >
+          A retry costs a sacrifice — burn a card or a Spark before you roll again.
+        </div>
       ) : null}
       <div className="flex items-center justify-center gap-4 pt-2">
         <D20Button
           state="idle"
           glowClass={glowClass}
-          {...(onRoll !== undefined && requiresBurn !== true ? { onClick: onRoll } : {})}
-          disabled={requiresBurn === true || onRoll === undefined}
+          {...(onRoll !== undefined && requiresBurn !== true && !retryRequiresBurn
+            ? { onClick: onRoll }
+            : {})}
+          disabled={requiresBurn === true || retryRequiresBurn || onRoll === undefined}
           caption="Roll"
         />
         {onCancel ? (
@@ -1597,6 +1624,14 @@ interface ReactPanelProps {
    */
   readonly hoardingFail?: boolean;
   /**
+   * #345 — false when the player holds no cards and no Sparks: the
+   * retry could never confirm (`retry-requires-new-burn`), so the
+   * button is hidden and only Accept setback remains.
+   */
+  readonly canRetry: boolean;
+  /** #345 — whether any burn has been paid this encounter; drives the retry label. */
+  readonly hasBurned: boolean;
+  /**
    * Greek avatar name (e.g. "Hermes", "Demeter"). Optional — when
    * absent (demo / tests without a player sign), the placeholder
    * "The gate considers you." line is rendered instead. Roman names
@@ -1621,6 +1656,8 @@ function ReactPanel({
   reducedMotion,
   glowClass,
   hoardingFail,
+  canRetry,
+  hasBurned,
   avatarName,
   verdictLine,
 }: ReactPanelProps): JSX.Element {
@@ -1668,7 +1705,7 @@ function ReactPanel({
         </button>
       ) : (
         <div className="mt-2 flex gap-2">
-          {!hoardingFail ? (
+          {!hoardingFail && canRetry ? (
             <button
               type="button"
               onClick={onRetry}
@@ -1678,7 +1715,7 @@ function ReactPanel({
               // stays themed.
               className={`rounded border border-illumination px-4 py-2 text-sm ${glowClass}`}
             >
-              Burn another card to retry
+              {hasBurned ? 'Burn another card to retry' : 'Burn a card to retry'}
             </button>
           ) : null}
           <button

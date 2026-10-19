@@ -264,7 +264,10 @@ Illumination **+1**.
 
 **On failure:** Choose one:
 - *Burn a card for +3 and re-roll* (you can do this more than once; each
-  card burn is cumulative).
+  card burn is cumulative). A re-roll always costs at least one **new**
+  burn — a card from your hand or a Spark you hold; burns already paid on
+  the failed attempt keep their bonus but do not buy another roll. With
+  nothing left to burn, the only option is to accept the setback.
 - *Accept the setback.* Separation **+1**. You are pushed back one Sefirah
   along the path you just took. You may retry next turn.
 

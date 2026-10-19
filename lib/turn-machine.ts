@@ -388,6 +388,30 @@ export type TurnReducerError =
     }
   | {
       /**
+       * #345 — design § Stat checks → On failure: "Burn a card for +3
+       * and re-roll." A retry *is* a burn-and-re-roll, so once
+       * `encounter.retryCount > 0` a `prep-confirm` must stage at least
+       * one burn the engine can still consume (a card in hand or a
+       * Spark still held). Burns the failed attempt already consumed
+       * persist on `pendingModifiers` for the cumulative modifier but
+       * do not satisfy this gate — otherwise react-retry → prep-confirm
+       * is a free re-roll until the d20 passes. The UI disables Roll
+       * until a new burn is staged; this closes the wire-level bypass.
+       */
+      readonly kind: 'retry-requires-new-burn';
+    }
+  | {
+      /**
+       * #345 — `react-retry` when the player holds no cards and no
+       * Sparks. Nothing could satisfy `retry-requires-new-burn`, and
+       * `accept-setback` is react-only (#389), so the retry would strand
+       * the player in prep. The UI hides the Retry button in this case;
+       * the reducer rejects so only Accept setback remains.
+       */
+      readonly kind: 'retry-nothing-to-burn';
+    }
+  | {
+      /**
        * #503: a `meditate` event fired while `state.meditatedThisTurn`
        * is already true. Meditate is capped at one per turn; the UI
        * disables the Meditate button when the flag is set, so a
@@ -1432,6 +1456,17 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
         cardsToConsume,
         sparksToConsume,
       } = translatePendingModifiers(state, player, event.sefirah);
+      // #345 — a retry must pay for its re-roll. `cardsToConsume` /
+      // `sparksToConsume` are exactly the staged burns the failed
+      // attempt did NOT already consume (see `partitionPendingBurns`),
+      // so an empty pair on a retried attempt means no new sacrifice.
+      if (
+        (state.encounter?.retryCount ?? 0) > 0 &&
+        cardsToConsume.length === 0 &&
+        sparksToConsume.length === 0
+      ) {
+        return { ok: false, reason: { kind: 'retry-requires-new-burn' } };
+      }
       // Hot-seat override (#229 / E4). When `directAssistStats` is
       // supplied, replace the translated assistStats wholesale —
       // staged `assist-request`s are silently dropped from the
@@ -1626,6 +1661,14 @@ export function turnReducer(snapshot: TurnSnapshot, event: TurnEvent, rng: Rng):
       // dispatcher reads truth from the persisted snapshot.
       if (state.encounter?.hoardingFail) {
         return { ok: false, reason: { kind: 'chesed-hoarding-blocks-retry' } };
+      }
+      // #345 — with nothing left to burn, the retried prep could never
+      // confirm (`retry-requires-new-burn`) and accept-setback is
+      // react-only, so refuse the retry here while Accept is still
+      // available. Mirrors PlayScreen's `availableCardBurns` /
+      // `availableSparkBurns` (own hand, own Sparks).
+      if (player.hand.length === 0 && player.sparksHeld.size === 0) {
+        return { ok: false, reason: { kind: 'retry-nothing-to-burn' } };
       }
       // Loop back to prep. `pendingModifiers` is preserved because
       // the fail path of `prep-confirm` left the cumulative stacks

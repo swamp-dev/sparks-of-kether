@@ -2805,7 +2805,7 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
     const player = makePlayer({
       id: 'p1',
       position: 'gevurah',
-      hand: [],
+      hand: [21] /* #345: react-retry needs something to burn */,
       stats: {
         unity: 1,
         insight: 1,
@@ -3074,7 +3074,7 @@ describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
       readonly initial: string | undefined;
       readonly afterRetry: string | undefined;
     } {
-      const player = makePlayer({ id: 'p1', position: 'yesod', hand: [] });
+      const player = makePlayer({ id: 'p1', position: 'yesod', hand: [21] /* #345: react-retry needs something to burn */ });
       const failedOutcome: CheckOutcome = {
         rolled: 1,
         statContribution: 1,
@@ -3147,7 +3147,7 @@ describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
     // accidentally changes the formula (e.g. uses just `seed` or
     // `seed * retryCount`) is caught.
     const seed = 1;
-    const player = makePlayer({ id: 'p1', position: 'yesod', hand: [] });
+    const player = makePlayer({ id: 'p1', position: 'yesod', hand: [21] /* #345: react-retry needs something to burn */ });
     const failedOutcome: CheckOutcome = {
       rolled: 1,
       statContribution: 1,
@@ -3180,7 +3180,7 @@ describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
     // Defensive: re-seeding is gated on `state.encounter.sefirah ===
     // 'yesod'`. A regression that re-derives unconditionally would
     // mint a Yesod-only field onto unrelated encounters.
-    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [21] /* #345: react-retry needs something to burn */ });
     const failedOutcome: CheckOutcome = {
       rolled: 1,
       statContribution: 1,
@@ -4347,6 +4347,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at Chokmah after a 0-modifier-failed attempt: chokmahPriorAttempts += 1 (max-1 floor)', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'chokmah',
       stats: chokmahReducerStats(),
@@ -4373,6 +4374,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at Chokmah after a 3-modifier-failed attempt: chokmahPriorAttempts += 3', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'chokmah',
       stats: chokmahReducerStats(),
@@ -4403,6 +4405,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at Chokmah accumulates across multiple retries', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'chokmah',
       stats: chokmahReducerStats(),
@@ -4429,6 +4432,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at non-Chokmah Sefirah does NOT touch chokmahPriorAttempts (Hod control)', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'hod',
       stats: chokmahReducerStats(),
@@ -5238,5 +5242,159 @@ describe('partitionPendingBurns (#344)', () => {
     const parts = partitionPendingBurns(state, player);
     expect(parts.cardsToConsume).toEqual([14, 14]);
     expect(parts.cardsConsumed).toEqual([7, 14]);
+  });
+});
+
+// #345 — design/mechanics.md § Stat checks → On failure: "Burn a card
+// for +3 and re-roll". A retry IS a burn-and-re-roll, so the reducer
+// refuses a `prep-confirm` on a retried attempt unless at least one
+// *new* burn (a card still in hand or a Spark still held) is staged
+// on top of what the failed attempt already consumed. Without this a
+// player could loop react-retry → prep-confirm until the d20 passes.
+describe('turnReducer — #345 retry requires a new burn', () => {
+  const FAIL: CheckOutcome = {
+    rolled: 1,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 11,
+    effectiveDC: 25,
+    pass: false,
+  };
+
+  function failedAtHod(playerOverrides: Parameters<typeof makePlayer>[0]): TurnSnapshot {
+    const player = makePlayer({ id: 'p1', position: 'hod', ...playerOverrides });
+    return {
+      state: {
+        ...makeState({}, { players: [player], activePlayerId: 'p1' }),
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: FAIL,
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+      },
+    };
+  }
+
+  it('rejects prep-confirm on a retry when nothing new is staged', () => {
+    const retry = turnReducer(failedAtHod({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    expect(retry.value.next.state.encounter?.retryCount).toBe(1);
+
+    const confirm = turnReducer(
+      retry.value.next,
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(false);
+    if (confirm.ok) return;
+    expect(confirm.reason.kind).toBe('retry-requires-new-burn');
+  });
+
+  it('rejects prep-confirm on a retry when only already-consumed burns are staged', () => {
+    // Card 3 was burned on the failed attempt (no longer in hand, still
+    // on pendingModifiers). Re-confirming with just that is a free roll.
+    const snap = failedAtHod({ hand: [7] });
+    const withPrior: TurnSnapshot = {
+      state: {
+        ...snap.state,
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [3] },
+      },
+    };
+    const retry = turnReducer(withPrior, { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+
+    const confirm = turnReducer(
+      retry.value.next,
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(false);
+    if (confirm.ok) return;
+    expect(confirm.reason.kind).toBe('retry-requires-new-burn');
+  });
+
+  it('accepts prep-confirm on a retry once a new card burn is staged', () => {
+    const retry = turnReducer(failedAtHod({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    const add = turnReducer(
+      retry.value.next,
+      { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 3 } },
+      RNG,
+    );
+    expect(add.ok).toBe(true);
+    if (!add.ok) return;
+
+    const confirm = turnReducer(
+      add.value.next,
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(true);
+    if (!confirm.ok) return;
+    expect(confirm.value.next.state.players[0]?.hand).toEqual([7]);
+    expect(confirm.value.next.state.discardPile).toEqual([3]);
+  });
+
+  it('accepts prep-confirm on a retry when the new burn is a Spark', () => {
+    const retry = turnReducer(
+      failedAtHod({ hand: [], sparksHeld: new Set(['chesed']) }),
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    const add = turnReducer(
+      retry.value.next,
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'spark-burn', sefirah: 'chesed', sourcePlayerId: 'p1' },
+      },
+      RNG,
+    );
+    expect(add.ok).toBe(true);
+    if (!add.ok) return;
+
+    const confirm = turnReducer(
+      add.value.next,
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(true);
+    if (!confirm.ok) return;
+    expect(confirm.value.next.state.players[0]?.sparksHeld.has('chesed')).toBe(false);
+  });
+
+  it('does not gate the first attempt (retryCount 0)', () => {
+    const player = makePlayer({ id: 'p1', position: 'hod', hand: [3] });
+    const snap: TurnSnapshot = {
+      state: {
+        ...makeState({}, { players: [player], activePlayerId: 'p1' }),
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+      },
+    };
+    const confirm = turnReducer(snap, { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL }, RNG);
+    expect(confirm.ok).toBe(true);
+  });
+
+  it('rejects react-retry when the player has no cards and no Sparks to burn', () => {
+    // Accept-setback is react-only (#389), so a retry with nothing to
+    // burn would strand the player in prep with no legal confirm.
+    const result = turnReducer(failedAtHod({ hand: [] }), { kind: 'react-retry' }, RNG);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('retry-nothing-to-burn');
+  });
+
+  it('allows react-retry when the player holds a Spark but no cards', () => {
+    const result = turnReducer(
+      failedAtHod({ hand: [], sparksHeld: new Set(['chesed']) }),
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
   });
 });

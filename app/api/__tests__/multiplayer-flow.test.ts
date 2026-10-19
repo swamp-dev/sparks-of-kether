@@ -517,7 +517,7 @@ describe('multiplayer flow — start → events integration', () => {
         ? {
             ...p,
             position: 'gevurah' as const,
-            hand: [5],
+            hand: [5, 8], // #345: a second card so the retry can stage a new burn
             stats: { ...p.stats, strength: 12 },
           }
         : p,
@@ -578,6 +578,16 @@ describe('multiplayer flow — start → events integration', () => {
     expect(afterRetry?.lastOutcome).toBeUndefined();
     expect(afterRetry?.pendingModifiers.cardBurns).toEqual([5]);
 
+    // Step 3b (#345): a retry must stage a new burn — stack card 8 on
+    // top of the preserved card 5.
+    const stageAgain = await callEvent('ABCDEF', {
+      kind: 'prep-add-modifier',
+      playerId: 'p1',
+      modifier: { kind: 'card-burn', arcanum: 8 },
+    });
+    expect(stageAgain.status).toBe(200);
+    expect(db.game_states[0]?.snapshot.pendingModifiers.cardBurns).toEqual([5, 8]);
+
     // Step 4: confirm with a forced-pass outcome. Sefirah cleared,
     // Spark earned, prep stack cleared.
     const pass = await callEvent('ABCDEF', {
@@ -587,8 +597,8 @@ describe('multiplayer flow — start → events integration', () => {
       outcome: {
         rolled: 18,
         statContribution: 12,
-        modifierBreakdown: { assist: 0, cardBurn: 3, sparkBurn: 0 },
-        total: 33,
+        modifierBreakdown: { assist: 0, cardBurn: 6, sparkBurn: 0 },
+        total: 36,
         effectiveDC: 16,
         pass: true,
       },
@@ -599,9 +609,9 @@ describe('multiplayer flow — start → events integration', () => {
     expect(passedP1?.clearedSefirot).toContain('gevurah');
     expect(passedP1?.sparksHeld).toContain('gevurah');
     expect(afterPass?.pendingModifiers.cardBurns).toEqual([]);
-    // 4 events appended.
-    expect(db.game_events).toHaveLength(4);
-    expect(db.game_states[0]?.last_event_id).toBe(4);
+    // 5 events appended.
+    expect(db.game_events).toHaveLength(5);
+    expect(db.game_states[0]?.last_event_id).toBe(5);
   });
 
   it('full prep → confirm(fail) → accept-setback cycle through the events route', async () => {

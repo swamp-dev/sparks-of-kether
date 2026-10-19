@@ -497,7 +497,7 @@ describe('applyClientAction — react-retry', () => {
     let state = makeState(
       {},
       {
-        players: [makePlayer({ id: 'p1', position: 'gevurah', hand: [9] })],
+        players: [makePlayer({ id: 'p1', position: 'gevurah', hand: [9, 11] /* #345: a second card so react-retry has something to burn */ })],
         phase: 'challenge',
         challengeSubPhase: 'prep',
       },
