@@ -5240,3 +5240,157 @@ describe('partitionPendingBurns (#344)', () => {
     expect(parts.cardsConsumed).toEqual([7, 14]);
   });
 });
+
+// #345 — design/mechanics.md § Stat checks → On failure: "Burn a card
+// for +3 and re-roll". A retry IS a burn-and-re-roll, so the reducer
+// refuses a `prep-confirm` on a retried attempt unless at least one
+// *new* burn (a card still in hand or a Spark still held) is staged
+// on top of what the failed attempt already consumed. Without this a
+// player could loop react-retry → prep-confirm until the d20 passes.
+describe('turnReducer — #345 retry requires a new burn', () => {
+  const FAIL: CheckOutcome = {
+    rolled: 1,
+    statContribution: 10,
+    modifierBreakdown: { assist: 0, cardBurn: 0, sparkBurn: 0 },
+    total: 11,
+    effectiveDC: 25,
+    pass: false,
+  };
+
+  function failedAtGevurah(playerOverrides: Parameters<typeof makePlayer>[0]): TurnSnapshot {
+    const player = makePlayer({ id: 'p1', position: 'gevurah', ...playerOverrides });
+    return {
+      state: {
+        ...makeState({}, { players: [player], activePlayerId: 'p1' }),
+        phase: 'challenge',
+        challengeSubPhase: 'react',
+        lastOutcome: FAIL,
+        encounter: { sefirah: 'gevurah', seed: 1, retryCount: 0 },
+      },
+    };
+  }
+
+  it('rejects prep-confirm on a retry when nothing new is staged', () => {
+    const retry = turnReducer(failedAtGevurah({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    expect(retry.value.next.state.encounter?.retryCount).toBe(1);
+
+    const confirm = turnReducer(
+      retry.value.next,
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(false);
+    if (confirm.ok) return;
+    expect(confirm.reason.kind).toBe('retry-requires-new-burn');
+  });
+
+  it('rejects prep-confirm on a retry when only already-consumed burns are staged', () => {
+    // Card 3 was burned on the failed attempt (no longer in hand, still
+    // on pendingModifiers). Re-confirming with just that is a free roll.
+    const snap = failedAtGevurah({ hand: [7] });
+    const withPrior: TurnSnapshot = {
+      state: {
+        ...snap.state,
+        pendingModifiers: { ...EMPTY_PENDING_MODIFIERS, cardBurns: [3] },
+      },
+    };
+    const retry = turnReducer(withPrior, { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+
+    const confirm = turnReducer(
+      retry.value.next,
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(false);
+    if (confirm.ok) return;
+    expect(confirm.reason.kind).toBe('retry-requires-new-burn');
+  });
+
+  it('accepts prep-confirm on a retry once a new card burn is staged', () => {
+    const retry = turnReducer(failedAtGevurah({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    const add = turnReducer(
+      retry.value.next,
+      { kind: 'prep-add-modifier', modifier: { kind: 'card-burn', arcanum: 3 } },
+      RNG,
+    );
+    expect(add.ok).toBe(true);
+    if (!add.ok) return;
+
+    const confirm = turnReducer(
+      add.value.next,
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(true);
+    if (!confirm.ok) return;
+    expect(confirm.value.next.state.players[0]?.hand).toEqual([7]);
+    expect(confirm.value.next.state.discardPile).toEqual([3]);
+  });
+
+  it('accepts prep-confirm on a retry when the new burn is a Spark', () => {
+    const retry = turnReducer(
+      failedAtGevurah({ hand: [], sparksHeld: new Set(['chesed']) }),
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(retry.ok).toBe(true);
+    if (!retry.ok) return;
+    const add = turnReducer(
+      retry.value.next,
+      {
+        kind: 'prep-add-modifier',
+        modifier: { kind: 'spark-burn', sefirah: 'chesed', sourcePlayerId: 'p1' },
+      },
+      RNG,
+    );
+    expect(add.ok).toBe(true);
+    if (!add.ok) return;
+
+    const confirm = turnReducer(
+      add.value.next,
+      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      RNG,
+    );
+    expect(confirm.ok).toBe(true);
+    if (!confirm.ok) return;
+    expect(confirm.value.next.state.players[0]?.sparksHeld.has('chesed')).toBe(false);
+  });
+
+  it('does not gate the first attempt (retryCount 0)', () => {
+    const player = makePlayer({ id: 'p1', position: 'hod', hand: [3] });
+    const snap: TurnSnapshot = {
+      state: {
+        ...makeState({}, { players: [player], activePlayerId: 'p1' }),
+        phase: 'challenge',
+        challengeSubPhase: 'prep',
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+      },
+    };
+    const confirm = turnReducer(snap, { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL }, RNG);
+    expect(confirm.ok).toBe(true);
+  });
+
+  it('rejects react-retry when the player has no cards and no Sparks to burn', () => {
+    // Accept-setback is react-only (#389), so a retry with nothing to
+    // burn would strand the player in prep with no legal confirm.
+    const result = turnReducer(failedAtGevurah({ hand: [] }), { kind: 'react-retry' }, RNG);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason.kind).toBe('retry-nothing-to-burn');
+  });
+
+  it('allows react-retry when the player holds a Spark but no cards', () => {
+    const result = turnReducer(
+      failedAtGevurah({ hand: [], sparksHeld: new Set(['chesed']) }),
+      { kind: 'react-retry' },
+      RNG,
+    );
+    expect(result.ok).toBe(true);
+  });
+});
