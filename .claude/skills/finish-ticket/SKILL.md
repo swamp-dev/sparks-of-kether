@@ -177,44 +177,6 @@ with a note in the PR body.
 Note the commit SHA at the moment of the first review (`git rev-parse HEAD`)
 — step 8a uses it to compute "what changed since the first review."
 
-### 8.5. Write the checklist stamp
-
-After code-reviewer returns its verdict, write the stamp directly so
-`/ship-ticket` step 3 can verify the review ran in this session:
-
-```bash
-branch=$(git branch --show-current)
-branch_safe=$(printf '%s' "$branch" | tr -c 'a-zA-Z0-9._-' '_')
-head_sha=$(git rev-parse HEAD)
-verdict=<ship|fix|block|rework>   # from the reviewer's ## Verdict section
-ran_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
-mkdir -p "${main_repo}/.claude/state"
-cat > "${main_repo}/.claude/state/checklist-${branch_safe}.json" <<EOF
-{
-  "branch": "$branch",
-  "head_sha": "$head_sha",
-  "ran_at": "$ran_at",
-  "verdict": "$verdict",
-  "written_via": "agent"
-}
-EOF
-```
-
-Verify it was written:
-
-```bash
-main_repo=$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')
-jq '{verdict, head_sha}' "${main_repo}/.claude/state/checklist-${branch_safe}.json"
-```
-
-Expected: `verdict` matches what the reviewer returned (`ship`, `fix`,
-`block`, or `rework`); `head_sha` matches `git rev-parse HEAD`.
-
-If `verdict` is `unknown`, the reviewer output is missing the
-`## Verdict` markdown header — re-run code-reviewer asking for a
-clean verdict section.
-
 ### 8a. Re-review on substantial fixes
 
 After fixes are committed, decide whether step 5 of the per-PR checklist
@@ -237,20 +199,14 @@ git diff <first-review-sha>..HEAD --stat
 genuinely minor (typo, formatting, comment tweak, single-line guard).
 When in doubt, re-review; the cost is small and the safety is real.
 
-Loop steps 8 → 8.5 → 8a until either the reviewer returns no critical/
+Loop steps 8 → 8a until either the reviewer returns no critical/
 significant findings or the user explicitly accepts the remaining
-findings as deferred-minor. **Each re-review must also re-run step
-8.5** — write a fresh stamp — so the stamp captures the latest verdict
-at the latest HEAD SHA. The stamp write overwrites the previous file;
-nothing extra needed beyond writing it again.
+findings as deferred-minor.
 
 **Record the re-review in the Journal entry for the push that
 contained the fixes** — the per-ticket Journal file is the
-human-readable audit record of the re-review. (The merge gate is the
-stamp at `.claude/state/checklist-<sanitized-branch>.json`, written by
-step 8.5; the Journal is no longer consulted by `/ship-ticket`.) A
-line like `Notes: re-reviewed after fixes; reviewer returned clean`
-is enough.
+human-readable audit record of the re-review. A line like
+`Notes: re-reviewed after fixes; reviewer returned clean` is enough.
 
 For every push during 8/8a, follow the per-push Journal rule.
 
@@ -398,13 +354,11 @@ skill — the wait for hosted CI is asynchronous and operator-driven.
   (`journal/<NN>-<slug>.md`) grows, never shrinks. The legacy
   `Journal.md` at the repo root is frozen — never write to it.
 - The five-step per-PR checklist runs every time. Step 5 (re-review)
-  uses the heuristic in step 8a above. The merge gate is the
-  mechanical stamp file at `.claude/state/checklist-<sanitized-branch>.json`
-  written by the agent in step 8.5 — `/ship-ticket` refuses to merge
-  unless the stamp exists, its `head_sha` matches the live PR HEAD,
-  and `verdict` is `ship`. The per-ticket Journal file
-  (`journal/<NN>-<slug>.md`) remains the human-readable audit record
-  but is no longer the gate.
+  uses the heuristic in step 8a above. The merge gate is in-session
+  self-attestation: `/ship-ticket` step 3 confirms that code-reviewer
+  ran on this branch in this session and all critical/significant
+  findings were addressed. The per-ticket Journal file
+  (`journal/<NN>-<slug>.md`) is the human-readable audit record.
 - Tech-debt follow-up issues (step 8b) are filed automatically with
   `tech-debt` + `priority:low` labels. The `priority:low` label is
   the backlog signal — it keeps these out of the active queue without

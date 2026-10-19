@@ -31,18 +31,18 @@ source of truth for the actual procedure (which evolves over time).
 2. **Implement.** TDD where it makes sense — engine logic, reducers, pure functions, game-rule edge cases — failing test first, separate test/impl commits. UI and docs may test-after. Journal each push.
 3. **`/finish-ticket`** — runs the local gate, invokes `code-reviewer`, fixes, re-reviews on substantial fixes, journals the final push, pushes, opens the PR. The skill handles the per-PR-checklist mechanics (including any mechanical-stamp invocation if the gate is configured). Follow whatever the current SKILL.md documents — don't assume specific step numbers from this skill's text. Stop after the PR opens.
 4. **Wait for hosted CI green.** Use `/loop` to poll `gh pr checks <P>` at a sensible cadence (don't poll faster than the prompt-cache window). Path-filtered jobs that legitimately skip count as success-equivalent.
-5. **`/ship-ticket <P>`** — verifies the per-PR checklist completed (currently the mechanical stamp at `.claude/state/checklist-<sanitized-branch>.json`, whatever the active gate is per the current SKILL.md), confirms CI green against current HEAD SHA, squash-merges, comments closeouts, removes the worktree, deletes the local branch.
+5. **`/ship-ticket <P>`** — self-attests that the per-PR checklist completed in this session (code-reviewer ran on this branch, all critical/significant findings addressed), confirms CI green against current HEAD SHA, squash-merges, comments closeouts, removes the worktree, deletes the local branch.
 
 `/ship-ticket` is one PR per invocation. Never sweep multiple PRs in one shot — that's the explicit anti-11-PR-incident guardrail in the skill, and bypassing it loses the self-merge authority the project grants.
 
-**Gate-introducing PRs** (anything that changes the per-PR checklist's mechanism — `.claude/settings.json` hooks, `/finish-ticket` review-stamp wiring, or `/ship-ticket`'s checklist-verification step) are a structural exception: they require human merge because the agent satisfying the gate's input itself is indistinguishable from the bypass pattern that got #437 reverted. Ship the PR, hand off to the user.
+**Gate-introducing PRs** (anything that changes the per-PR checklist's mechanism — `.claude/settings.json` hooks, `/finish-ticket`'s review loop, or `/ship-ticket`'s checklist-attestation step) are a structural exception: they require human merge because the agent satisfying the gate's input itself is indistinguishable from the bypass pattern that got #437 reverted. Ship the PR, hand off to the user.
 
 ## When to stop
 
 - After each `/ship-ticket`, give me a one-line summary: shipped #N, next up #M (or "queue empty / re-triaging").
 - Stop and ask if: a ticket needs design judgment, code-reviewer returns critical findings I should see, or hosted CI fails for non-infrastructure reasons. Re-triage and continue if tickets in the queue turn out to be Blocked or Too-big — surface the pattern in narration but don't block on it.
 - If hosted CI fails for what looks like infrastructure (no logs, BlobNotFound, identical-shape failures across unrelated PRs), surface that to me — admin-merge bypass is the user's call per `~/.dotfiles/.claude/rules/local-ci-and-admin-merge.md`, never auto-applied.
-- If `/ship-ticket` refuses (per-PR-checklist gate failure — missing or stale mechanical stamp at `.claude/state/checklist-<sanitized-branch>.json`, whatever the current gate is), stop and ask. **Never** hand-fabricate the gate's input to satisfy it; that's the bypass pattern that got #437 reverted.
+- If `/ship-ticket` stops at step 3 (cannot clearly recall code-reviewer ran in this session or findings weren't addressed), stop and ask. **Never** rationalize through the attestation step when session context is unclear — treating uncertain recall as sufficient is the bypass pattern that got #437 reverted.
 
 ## Out of scope for this run
 
