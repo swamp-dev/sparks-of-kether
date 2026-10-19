@@ -2805,7 +2805,7 @@ describe('turnReducer — encounter envelope lifecycle (#334)', () => {
     const player = makePlayer({
       id: 'p1',
       position: 'gevurah',
-      hand: [],
+      hand: [21] /* #345: react-retry needs something to burn */,
       stats: {
         unity: 1,
         insight: 1,
@@ -3074,7 +3074,7 @@ describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
       readonly initial: string | undefined;
       readonly afterRetry: string | undefined;
     } {
-      const player = makePlayer({ id: 'p1', position: 'yesod', hand: [] });
+      const player = makePlayer({ id: 'p1', position: 'yesod', hand: [21] /* #345: react-retry needs something to burn */ });
       const failedOutcome: CheckOutcome = {
         rolled: 1,
         statContribution: 1,
@@ -3147,7 +3147,7 @@ describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
     // accidentally changes the formula (e.g. uses just `seed` or
     // `seed * retryCount`) is caught.
     const seed = 1;
-    const player = makePlayer({ id: 'p1', position: 'yesod', hand: [] });
+    const player = makePlayer({ id: 'p1', position: 'yesod', hand: [21] /* #345: react-retry needs something to burn */ });
     const failedOutcome: CheckOutcome = {
       rolled: 1,
       statContribution: 1,
@@ -3180,7 +3180,7 @@ describe('turnReducer — Yesod Dream-Peek seeding (#354)', () => {
     // Defensive: re-seeding is gated on `state.encounter.sefirah ===
     // 'yesod'`. A regression that re-derives unconditionally would
     // mint a Yesod-only field onto unrelated encounters.
-    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [] });
+    const player = makePlayer({ id: 'p1', position: 'gevurah', hand: [21] /* #345: react-retry needs something to burn */ });
     const failedOutcome: CheckOutcome = {
       rolled: 1,
       statContribution: 1,
@@ -4347,6 +4347,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at Chokmah after a 0-modifier-failed attempt: chokmahPriorAttempts += 1 (max-1 floor)', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'chokmah',
       stats: chokmahReducerStats(),
@@ -4373,6 +4374,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at Chokmah after a 3-modifier-failed attempt: chokmahPriorAttempts += 3', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'chokmah',
       stats: chokmahReducerStats(),
@@ -4403,6 +4405,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at Chokmah accumulates across multiple retries', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'chokmah',
       stats: chokmahReducerStats(),
@@ -4429,6 +4432,7 @@ describe('turnReducer — Chokmah Act Before Thought (#490)', () => {
 
   it('react-retry at non-Chokmah Sefirah does NOT touch chokmahPriorAttempts (Hod control)', () => {
     const player = makePlayer({
+      hand: [21], // #345: react-retry needs something to burn
       id: 'p1',
       position: 'hod',
       stats: chokmahReducerStats(),
@@ -5257,28 +5261,28 @@ describe('turnReducer — #345 retry requires a new burn', () => {
     pass: false,
   };
 
-  function failedAtGevurah(playerOverrides: Parameters<typeof makePlayer>[0]): TurnSnapshot {
-    const player = makePlayer({ id: 'p1', position: 'gevurah', ...playerOverrides });
+  function failedAtHod(playerOverrides: Parameters<typeof makePlayer>[0]): TurnSnapshot {
+    const player = makePlayer({ id: 'p1', position: 'hod', ...playerOverrides });
     return {
       state: {
         ...makeState({}, { players: [player], activePlayerId: 'p1' }),
         phase: 'challenge',
         challengeSubPhase: 'react',
         lastOutcome: FAIL,
-        encounter: { sefirah: 'gevurah', seed: 1, retryCount: 0 },
+        encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
       },
     };
   }
 
   it('rejects prep-confirm on a retry when nothing new is staged', () => {
-    const retry = turnReducer(failedAtGevurah({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
+    const retry = turnReducer(failedAtHod({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
     expect(retry.ok).toBe(true);
     if (!retry.ok) return;
     expect(retry.value.next.state.encounter?.retryCount).toBe(1);
 
     const confirm = turnReducer(
       retry.value.next,
-      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
       RNG,
     );
     expect(confirm.ok).toBe(false);
@@ -5289,7 +5293,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
   it('rejects prep-confirm on a retry when only already-consumed burns are staged', () => {
     // Card 3 was burned on the failed attempt (no longer in hand, still
     // on pendingModifiers). Re-confirming with just that is a free roll.
-    const snap = failedAtGevurah({ hand: [7] });
+    const snap = failedAtHod({ hand: [7] });
     const withPrior: TurnSnapshot = {
       state: {
         ...snap.state,
@@ -5302,7 +5306,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
 
     const confirm = turnReducer(
       retry.value.next,
-      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
       RNG,
     );
     expect(confirm.ok).toBe(false);
@@ -5311,7 +5315,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
   });
 
   it('accepts prep-confirm on a retry once a new card burn is staged', () => {
-    const retry = turnReducer(failedAtGevurah({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
+    const retry = turnReducer(failedAtHod({ hand: [3, 7] }), { kind: 'react-retry' }, RNG);
     expect(retry.ok).toBe(true);
     if (!retry.ok) return;
     const add = turnReducer(
@@ -5324,7 +5328,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
 
     const confirm = turnReducer(
       add.value.next,
-      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
       RNG,
     );
     expect(confirm.ok).toBe(true);
@@ -5335,7 +5339,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
 
   it('accepts prep-confirm on a retry when the new burn is a Spark', () => {
     const retry = turnReducer(
-      failedAtGevurah({ hand: [], sparksHeld: new Set(['chesed']) }),
+      failedAtHod({ hand: [], sparksHeld: new Set(['chesed']) }),
       { kind: 'react-retry' },
       RNG,
     );
@@ -5354,7 +5358,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
 
     const confirm = turnReducer(
       add.value.next,
-      { kind: 'prep-confirm', sefirah: 'gevurah', outcome: FAIL },
+      { kind: 'prep-confirm', sefirah: 'hod', outcome: FAIL },
       RNG,
     );
     expect(confirm.ok).toBe(true);
@@ -5379,7 +5383,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
   it('rejects react-retry when the player has no cards and no Sparks to burn', () => {
     // Accept-setback is react-only (#389), so a retry with nothing to
     // burn would strand the player in prep with no legal confirm.
-    const result = turnReducer(failedAtGevurah({ hand: [] }), { kind: 'react-retry' }, RNG);
+    const result = turnReducer(failedAtHod({ hand: [] }), { kind: 'react-retry' }, RNG);
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason.kind).toBe('retry-nothing-to-burn');
@@ -5387,7 +5391,7 @@ describe('turnReducer — #345 retry requires a new burn', () => {
 
   it('allows react-retry when the player holds a Spark but no cards', () => {
     const result = turnReducer(
-      failedAtGevurah({ hand: [], sparksHeld: new Set(['chesed']) }),
+      failedAtHod({ hand: [], sparksHeld: new Set(['chesed']) }),
       { kind: 'react-retry' },
       RNG,
     );
