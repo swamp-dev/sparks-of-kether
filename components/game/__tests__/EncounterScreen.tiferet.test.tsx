@@ -153,7 +153,7 @@ describe('EncounterScreen — Tiferet requires-burn gate', () => {
     expect(document.querySelector('[data-requires-burn]')).not.toBeNull();
   });
 
-  it('does not block Roll when pendingModifiers already carries burns from a prior retry', () => {
+  it('prior-retry burns satisfy the Sefirah gate but Roll still waits for a new burn (#345)', () => {
     const base = makeTiferetChallengeState({ handSize: 2 });
     const stateWithPriorBurn: GameState = {
       ...base,
@@ -184,7 +184,18 @@ describe('EncounterScreen — Tiferet requires-burn gate', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
+    // The per-Sefirah gate is satisfied by the prior burn…
     expect(document.querySelector('[data-requires-burn]')).toBeNull();
+    // …but #345 still holds Roll until this round stages a *new* burn.
+    expect(screen.getByRole('button', { name: /^Roll$/ })).toBeDisabled();
+    expect(document.querySelector('[data-retry-requires-burn]')).not.toBeNull();
+    act(() => {
+      fireEvent.click(
+        document.querySelector(
+          '[data-stepper="cardBurns"] button:last-of-type',
+        ) as HTMLButtonElement,
+      );
+    });
+    expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
   });
 });

@@ -1141,7 +1141,7 @@ describe('EncounterScreen — avatar verdict + player-response (#277)', () => {
             stat: 1,
             statLabel: 'Strength',
             availableAllies: [],
-            availableCardBurns: 0,
+            availableCardBurns: 1, // #345: Retry is hidden with nothing to burn
             availableSparkBurns: 0,
             playerSign: 'capricorn',
           }}
@@ -2356,6 +2356,118 @@ describe('EncounterScreen — burn picker consumes exactly the chosen cards (#34
       expect(active?.hand).toEqual([]);
       expect(latest.state.discardPile).toEqual([4, 9]);
       expect(latest.state.lastOutcome?.modifierBreakdown.cardBurn).toBe(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('EncounterScreen — retry must stage a new burn (#345)', () => {
+  // Hod (DC 12) has no per-Sefirah mandatory-burn gate, so the only
+  // thing standing between the player and Roll after a retry is #345.
+  const hodContext: ChallengeContext = {
+    sefirah: 'hod',
+    stat: 1,
+    statLabel: 'Intellect',
+    availableAllies: [],
+    availableCardBurns: 2,
+    availableSparkBurns: 0,
+  };
+
+  function makeHodChallengeState(hand: readonly number[]): GameState {
+    const base = makeFullGame({ playerCount: 2, seed: 1 });
+    const activeIdx = base.players.findIndex((p) => p.id === base.activePlayerId);
+    const players = base.players.map((p, idx) =>
+      idx === activeIdx
+        ? { ...p, position: 'hod' as const, hand, sparksHeld: new Set() as ReadonlySet<never> }
+        : { ...p, position: 'hod' as const },
+    );
+    return {
+      ...base,
+      players,
+      phase: 'challenge',
+      challengeSubPhase: 'prep',
+      pendingModifiers: EMPTY_PENDING_MODIFIERS,
+      lastOutcome: undefined,
+      encounter: { sefirah: 'hod', seed: 1, retryCount: 0 },
+    };
+  }
+
+  function rollToFail(rerender: () => void): void {
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /^Roll$/ }));
+    });
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    rerender();
+    expect(document.querySelector('[data-result="fail"]')).not.toBeNull();
+  }
+
+  it('labels the first retry "Burn a card to retry" when nothing has been burned', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = renderEncounter({
+        mode: 'hot-seat',
+        initialState: makeHodChallengeState([9, 4]),
+        context: hodContext,
+        seed: 7, // seededRng(7).d20()=1 → guaranteed fail
+      });
+      rollToFail(rerender);
+      const retryBtn = document.querySelector('[data-fail-choice="retry"]');
+      expect(retryBtn?.textContent).toBe('Burn a card to retry');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('disables Roll after a retry until a new burn is staged', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = renderEncounter({
+        mode: 'hot-seat',
+        initialState: makeHodChallengeState([9, 4]),
+        context: hodContext,
+        seed: 7,
+      });
+      rollToFail(rerender);
+      act(() => {
+        fireEvent.click(document.querySelector('[data-fail-choice="retry"]') as HTMLButtonElement);
+      });
+      rerender();
+
+      const roll = screen.getByRole('button', { name: /^Roll$/ });
+      expect(roll).toBeDisabled();
+      expect(document.querySelector('[data-retry-requires-burn]')).not.toBeNull();
+
+      // Stage one card burn → the gate lifts.
+      act(() => {
+        fireEvent.click(
+          document.querySelector(
+            '[data-stepper="cardBurns"] button:last-of-type',
+          ) as HTMLButtonElement,
+        );
+      });
+      rerender();
+      expect(screen.getByRole('button', { name: /^Roll$/ })).not.toBeDisabled();
+      expect(document.querySelector('[data-retry-requires-burn]')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('hides Retry when the player has nothing left to burn', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = renderEncounter({
+        mode: 'hot-seat',
+        initialState: makeHodChallengeState([]),
+        context: { ...hodContext, availableCardBurns: 0, availableSparkBurns: 0 },
+        seed: 7,
+      });
+      rollToFail(rerender);
+      expect(document.querySelector('[data-fail-choice="retry"]')).toBeNull();
+      expect(document.querySelector('[data-fail-choice="accept"]')).not.toBeNull();
     } finally {
       vi.useRealTimers();
     }

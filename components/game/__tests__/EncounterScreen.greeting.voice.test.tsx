@@ -156,7 +156,7 @@ describe('avatar greeting voice narration', () => {
             stat: 5, // low stat + low roll = fail
             statLabel: 'Intellect',
             availableAllies: [],
-            availableCardBurns: 0,
+            availableCardBurns: 1, // #345: Retry is hidden with nothing to burn
             availableSparkBurns: 0,
             playerSign: 'aries',
           }}
