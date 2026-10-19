@@ -1,4 +1,8 @@
-# Rider-Waite-Smith card asset licensing
+# Waite-Smith card asset licensing
+
+> Provenance notes written by the maintainers, not legal advice. Each
+> claim below names the basis it rests on; verify against your own
+> jurisdiction before relying on it commercially.
 
 The 22 major arcana JPEGs in this directory are **unmodified downloads
 from Wikimedia Commons** of a 1910 "Pam-A" printing of the tarot deck
@@ -19,13 +23,18 @@ sha1sum assets/rider-waite-cards/*.jpg
 
 - **United States:** published 1909/1910, i.e. before 1931, so the
   artwork is in the public domain regardless of any renewal history.
-- **UK / EU / life+70 jurisdictions:** the last surviving author,
-  Pamela Colman Smith, died in 1951; the work entered the public domain
-  on 2022-01-01.
-- **The scans themselves** add no new copyright: faithful reproductions
-  of public-domain 2D works are unprotected in the US (*Bridgeman Art
-  Library v. Corel*) and the EU (Directive 2019/790, Art. 14). Commons
-  tags the files `PD-old-80-expired` and `CC-PD-Mark`.
+- **UK / EU / life+70 jurisdictions:** the term runs from the death of
+  the last surviving author, Pamela Colman Smith (d. 1951), so the work
+  entered the public domain on 2022-01-01.
+- **The scans themselves:** faithful photographic reproductions of a
+  public-domain 2D work gain no new copyright under the US authority
+  usually cited (*Bridgeman Art Library v. Corel*, S.D.N.Y. 1999, a
+  district-court decision followed widely but not binding everywhere)
+  and, in EU member states, under Directive 2019/790 Art. 14. The UK has
+  no Art. 14 equivalent and relies on case law, so the UK position on
+  scans is less settled than on the underlying art. Commons tags the
+  files `PD-old-80-expired` and `CC-PD-Mark` (visible on each file page
+  linked in the table below).
 
 ## What is NOT covered (do not swap these in)
 
@@ -34,14 +43,17 @@ sha1sum assets/rider-waite-cards/*.jpg
   copyright in those colourings, card backs and boxes. The previous
   contents of this folder and of `public/rider-waite-cards/` were
   199×340 JPEGs of unknown origin whose colourway matched the 1971
-  edition; both copies were removed in #369.
+  edition; both copies were removed in #369. Removal is forward-only:
+  the old files remain in git history before that merge and nobody
+  should read "removed" as "purged".
 - **The "Rider-Waite" and "Rider" trademarks**, held by US Games. Use
   "Waite-Smith" or "Smith-Waite" in any product-facing copy; naming the
   source in a credits line is fine.
 - **Tarot de Marseille modern editions:** the 1930 Grimaud / Paul
-  Marteau recolour, the 1997 Camoin-Jodorowsky restoration, the Flornoy
-  restorations, and the CBD Tarot (Creative Commons, non-commercial
-  only) are all encumbered. If a Marseille look is ever wanted, use the
+  Marteau recolour, the 1997 Camoin-Jodorowsky restoration and the
+  Flornoy restorations are 20th/21st-century derivative works and should
+  be treated as protected; the CBD Tarot (Yoav Ben-Dov) is distributed
+  under a Creative Commons non-commercial licence per its author's site. If a Marseille look is ever wanted, use the
   Jean Dodal (1701-1715) or Nicolas Conver (1760) scans on Wikimedia
   Commons / BnF Gallica, which are public domain on the same basis as
   the files here.
@@ -81,8 +93,10 @@ sha1sum assets/rider-waite-cards/*.jpg
 source JPEGs in this directory; the originals stay untouched so the SHA-1
 table above remains valid.
 
-Rebuild recipe (deterministic — re-running on the same machine produces
-byte-identical output, so a developer can regenerate without diff churn):
+Rebuild recipe (reproducible: the same ffmpeg/libwebp build produces
+byte-identical output, so a developer can regenerate without diff churn;
+the committed WebPs were made with ffmpeg 5.1.9 / libwebp as packaged in
+Debian 12):
 
 ```bash
 for src in assets/rider-waite-cards/*.jpg; do
